@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -25,6 +26,14 @@ function supabaseConfigured(): boolean {
 }
 
 export async function POST(req: Request) {
+  const limit = rateLimit(ipKey(req));
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

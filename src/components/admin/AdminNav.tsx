@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
   { href: '/admin', label: 'Overview', Icon: LayoutDashboard, exact: true },
   { href: '/admin/review', label: 'Review queue', Icon: ClipboardCheck, exact: false },
   { href: '/admin/catalog', label: 'Catalog', Icon: Library, exact: false },
+  { href: '/admin/recoveries', label: 'Recoveries', Icon: Wallet, exact: false },
 ];
 
 /**

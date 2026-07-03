@@ -33,6 +33,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
       ? rawNext
       : null;
 
+  // Referral code from ?ref (set by /r/[code]) or the cm_ref cookie fallback.
+  function readRefCookie(): string | null {
+    if (typeof document === 'undefined') return null;
+    const m = document.cookie.match(/(?:^|;\s*)cm_ref=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  const rawRef = searchParams.get('ref') || readRefCookie();
+  const ref = rawRef ? rawRef.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || null : null;
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +66,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: { full_name: fullName, ...(ref ? { ref } : {}) },
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });

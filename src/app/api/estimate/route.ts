@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { estimateTotalOwed } from '@/lib/recovery';
 import { SAMPLE_LAWSUITS } from '@/lib/sample-data';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 import type { Lawsuit, Profile } from '@/lib/types';
 
 // Uses the createServiceClient-free path but touches recovery math + matcher;
@@ -16,7 +17,15 @@ export const runtime = 'nodejs';
  *
  * Response: { count, totalOwed, matches: { lawsuit, reasons, score }[] }
  */
-export async function POST() {
+export async function POST(req: Request) {
+  const limit = rateLimit(ipKey(req));
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

@@ -16,7 +16,7 @@ import { formatUSD } from '@/lib/recovery';
  * The recovery pipeline — an honest, receipt-style tracker for every claim
  * ClaimMatch has filed on the user's behalf. Server-safe (no hooks). Shows the
  * Submitted → Under review → Approved → Paid pipeline, receipt #, estimated
- * value, and (once a settlement pays out) the gross / our fee / net-to-you math.
+ * value, and (once a recovery is opened) the gross / our fee / net-to-you math.
  */
 const PIPELINE = ['Submitted', 'Under review', 'Approved', 'Paid'] as const;
 
@@ -42,13 +42,13 @@ export function RecoveryTracker({ claims }: { claims: Claim[] }) {
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-brand-700">
           <Wallet className="h-6 w-6" />
         </div>
-        <h3 className="mt-4 text-lg font-bold">No money yet — that’s normal</h3>
-        <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          Once you file a claim it shows up here, and we’ll track it all the way
-          to payout. Settlements move slowly — most take{' '}
+        <h3 className="mt-4 text-lg font-bold">No money yet — that&rsquo;s normal</h3>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-muted">
+          Once you file a claim it shows up here, and we&rsquo;ll track it all the
+          way to payout. Settlements move slowly — most take{' '}
           <span className="font-semibold text-ink">6 to 18 months</span> to pay
-          out after filing. We’ll handle the paperwork and email you at every
-          step.
+          out after filing. We&rsquo;ll handle the paperwork and email you at
+          every step.
         </p>
         <Link href="/lawsuits" className="btn-primary mt-6">
           Browse settlements <ArrowRight className="h-4 w-4" />
@@ -63,8 +63,9 @@ export function RecoveryTracker({ claims }: { claims: Claim[] }) {
         <RecoveryRow key={claim.id} claim={claim} />
       ))}
       <p className="pt-1 text-center text-xs text-ink-soft">
-        Settlements typically take 6–18 months to pay out. We only take our fee
-        once money actually lands in your pocket.
+        Settlements typically take{' '}
+        <span className="tabular-nums">6&ndash;18</span> months to pay out. We
+        only take our fee once money actually lands in your pocket.
       </p>
     </div>
   );
@@ -75,11 +76,9 @@ function RecoveryRow({ claim }: { claim: Claim }) {
   const rejected = claim.status === 'rejected';
   const current = stageIndex(claim.status);
   const recovery = claim.recovery;
-  const paidOut =
-    recovery != null && recovery.gross_amount > 0 && recovery.status !== 'denied';
 
   return (
-    <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
+    <article className="group rounded-2xl border border-gray-100 bg-white p-5 shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-card-hover sm:p-6">
       {/* Header --------------------------------------------------------------- */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -97,12 +96,13 @@ function RecoveryRow({ claim }: { claim: Claim }) {
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-soft">
             <span className="inline-flex items-center gap-1">
-              <Hash className="h-3.5 w-3.5" /> Receipt #{claim.receipt_number}
+              <Hash className="h-3.5 w-3.5" /> Receipt{' '}
+              <span className="tabular-nums">#{claim.receipt_number}</span>
             </span>
             {claim.estimated_value != null && (
               <span className="inline-flex items-center gap-1">
                 <Wallet className="h-3.5 w-3.5" /> Est. value{' '}
-                <span className="font-semibold text-success-600">
+                <span className="font-semibold tabular-nums text-success-600">
                   {formatUSD(claim.estimated_value)}
                 </span>
               </span>
@@ -126,8 +126,8 @@ function RecoveryRow({ claim }: { claim: Claim }) {
       {rejected ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700">
           <XCircle className="h-4 w-4 shrink-0" />
-          This claim wasn’t eligible. No fee, no cost to you — we’ll keep
-          watching for others you qualify for.
+          This claim wasn&rsquo;t eligible. No fee, no cost to you — we&rsquo;ll
+          keep watching for others you qualify for.
         </div>
       ) : (
         <ol className="mt-5 flex items-start">
@@ -135,17 +135,18 @@ function RecoveryRow({ claim }: { claim: Claim }) {
             const done = i < current;
             const active = i === current;
             const reached = i <= current;
+            const isPaidStep = i === 3;
             return (
               <Fragment key={label}>
-                <li className="flex w-14 shrink-0 flex-col items-center gap-1.5 sm:w-20">
+                <li className="flex w-14 shrink-0 flex-col items-center gap-1.5 sm:w-24">
                   <div
-                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold tabular-nums transition ${
                       reached
                         ? 'bg-brand-600 text-white'
                         : 'bg-gray-100 text-ink-soft'
                     } ${active ? 'ring-4 ring-brand-100' : ''}`}
                   >
-                    {done || (active && i === 3) ? (
+                    {done || (active && isPaidStep) ? (
                       <CheckCircle2 className="h-4 w-4" />
                     ) : (
                       i + 1
@@ -153,7 +154,11 @@ function RecoveryRow({ claim }: { claim: Claim }) {
                   </div>
                   <span
                     className={`text-center text-[11px] font-semibold leading-tight ${
-                      reached ? 'text-brand-700' : 'text-ink-soft'
+                      active
+                        ? 'text-brand-700'
+                        : reached
+                          ? 'text-brand-600'
+                          : 'text-ink-soft'
                     }`}
                   >
                     {label}
@@ -173,14 +178,14 @@ function RecoveryRow({ claim }: { claim: Claim }) {
       )}
 
       {/* Money breakdown ------------------------------------------------------ */}
-      {recovery && paidOut ? (
+      {recovery ? (
         <MoneyBreakdown recovery={recovery} />
       ) : (
         !rejected && (
           <div className="mt-5 flex items-center gap-2 rounded-xl bg-gray-50 px-4 py-3 text-xs text-ink-muted">
             <Clock className="h-4 w-4 shrink-0 text-ink-soft" />
-            No funds received yet. Settlements typically pay out 6–18 months
-            after filing — we’ll notify you the moment yours does.
+            No funds received yet. Settlements typically pay out 6&ndash;18
+            months after filing — we&rsquo;ll notify you the moment yours does.
           </div>
         )
       )}
@@ -194,8 +199,8 @@ function MoneyBreakdown({ recovery }: { recovery: Recovery }) {
     <div className="mt-5 grid gap-3 rounded-xl bg-success-50 p-4 sm:grid-cols-3">
       <Money label="Settlement paid" value={formatUSD(recovery.gross_amount)} />
       <Money
-        label={`Our fee (${feePct}%)`}
-        value={`− ${formatUSD(recovery.fee_amount)}`}
+        label="Our fee"
+        value={`${formatUSD(recovery.fee_amount)} (${feePct}%)`}
         muted
       />
       <Money label="Net to you" value={formatUSD(recovery.net_amount)} accent />
@@ -225,7 +230,7 @@ function Money({
         {label}
       </div>
       <div
-        className={`mt-0.5 text-lg font-extrabold ${
+        className={`mt-0.5 text-lg font-extrabold tabular-nums ${
           accent ? 'text-success-700' : muted ? 'text-ink-muted' : 'text-ink'
         }`}
       >
