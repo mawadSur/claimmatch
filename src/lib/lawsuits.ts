@@ -27,7 +27,7 @@ export async function getLawsuits(opts?: {
       let query = supabase
         .from('lawsuits')
         .select('*')
-        .neq('status', 'draft')
+        .eq('review_status', 'published')
         .order('is_featured', { ascending: false })
         .order('deadline', { ascending: true, nullsFirst: false });
 

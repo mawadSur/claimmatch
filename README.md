@@ -65,20 +65,23 @@ you add Supabase + Resend keys.
 ### Wire up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Apply the schema and seed data (SQL editor or CLI):
+2. Apply the migrations **in order**, then seed:
    ```bash
    # Option A — Supabase CLI
    supabase link --project-ref <your-ref>
-   supabase db push                       # applies supabase/migrations/*
-   # then paste supabase/seed.sql into the SQL editor, or:
-   psql "$SUPABASE_DB_URL" -f supabase/seed.sql
+   supabase db push                       # applies supabase/migrations/* in order
+   # then paste supabase/seed.sql into the SQL editor
    ```
    ```bash
-   # Option B — paste supabase/migrations/0001_init.sql then supabase/seed.sql
-   #           into the Supabase SQL editor and run them.
+   # Option B — in the Supabase SQL editor, run in this order:
+   #   1. supabase/migrations/0001_init.sql
+   #   2. supabase/migrations/0002_dream_state.sql   (recoveries, jobs, review workflow, admin)
+   #   3. supabase/seed.sql
    ```
 3. Copy your Project URL + anon key + service role key into `.env.local`.
-4. (Optional) `npm run seed` upserts the sample catalog via the service role key.
+4. **Make yourself an admin:** set `ADMIN_EMAILS=you@example.com` in the env, or run
+   `update public.profiles set is_admin = true where email = 'you@example.com';` after you sign up.
+5. (Optional) `npm run seed` upserts the sample catalog via the service role key.
 
 ### Environment variables
 
@@ -87,10 +90,13 @@ See [`.env.example`](./.env.example). Summary:
 | Var | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server Supabase access |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server jobs (scrape/match cron, seed) — never exposed to client |
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata + email links |
-| `RESEND_API_KEY` / `RESEND_FROM` | Transactional email (match alerts, welcome) |
-| `CRON_SECRET` | Protects `/api/cron/*` endpoints |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server jobs (pipeline/match cron, recovery writes, seed) — never exposed to client |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata + email + referral links |
+| `RESEND_API_KEY` / `RESEND_FROM` | Transactional email (match alerts, welcome, digest) |
+| `ANTHROPIC_API_KEY` | Claude (Opus 4.8) LLM extraction pipeline — scraped text → structured settlements |
+| `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access (also set `profiles.is_admin`) |
+| `NEXT_PUBLIC_CLAIMMATCH_FEE_PCT` | Contingency fee we take from a recovery (default `0.15` = 15%) |
+| `CRON_SECRET` | Protects `/api/cron/*` endpoints (Vercel Cron sends it automatically) |
 
 ---
 

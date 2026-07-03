@@ -8,19 +8,28 @@ import {
   Loader2,
   Check,
   AlertCircle,
+  PartyPopper,
+  Sparkles,
+  Search,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { US_STATES, cn } from '@/lib/utils';
+import { formatUSD } from '@/lib/recovery';
 import type { EligibilityQuestion } from '@/lib/types';
 
 type AnswerValue = string | boolean | string[] | undefined;
 type Answers = Record<string, AnswerValue>;
 
+interface Reveal {
+  count: number;
+  totalOwed: number;
+}
+
 /**
  * Step-through onboarding questionnaire. Renders ELIGIBILITY_QUESTIONS one at a
- * time, collects answers keyed by question.key, then writes them to the user's
- * profile (state promoted to profiles.state, everything into attributes) and
- * kicks off match computation before sending the user to their dashboard.
+ * time, collects answers keyed by question.key, saves them to the profile, then
+ * recomputes matches and reveals the estimated total the user is owed before
+ * sending them to their dashboard.
  */
 export function OnboardingWizard({
   questions,
@@ -32,6 +41,7 @@ export function OnboardingWizard({
   const [answers, setAnswers] = useState<Answers>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [reveal, setReveal] = useState<Reveal | null>(null);
 
   const total = questions.length;
   const current = questions[step];
@@ -66,42 +76,96 @@ export function OnboardingWizard({
     setStep((s) => Math.max(s - 1, 0));
   }
 
+  /**
+   * Persist the profile (state promoted to a column, everything into
+   * attributes) and mark it onboarded. Returns true on success.
+   */
+  async function saveProfile(collected: Answers): Promise<boolean> {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login?next=/onboarding');
+      return false;
+    }
+
+    const state = typeof collected.state === 'string' ? collected.state : null;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ state, attributes: collected, onboarded: true })
+      .eq('id', user.id);
+
+    if (updateError) {
+      setError(updateError.message || 'Could not save your profile.');
+      return false;
+    }
+    return true;
+  }
+
+  /** Finish the questionnaire: save, recompute matches, then reveal the total. */
   async function finish(collected: Answers) {
     setSubmitting(true);
     setError('');
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/login?next=/onboarding');
-        return;
-      }
-
-      const state =
-        typeof collected.state === 'string' ? collected.state : null;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ state, attributes: collected, onboarded: true })
-        .eq('id', user.id);
-
-      if (updateError) {
-        setError(updateError.message || 'Could not save your profile.');
+      const ok = await saveProfile(collected);
+      if (!ok) {
         setSubmitting(false);
         return;
       }
 
-      // Recompute matches; don't block the redirect if it fails — matches can
-      // always be recomputed later from the dashboard.
+      // Recompute + persist matches. Non-fatal if it hiccups.
+      let matchesCount = 0;
+      try {
+        const res = await fetch('/api/matches', { method: 'POST' });
+        if (res.ok) {
+          const j = await res.json();
+          matchesCount = Number(j.count) || 0;
+        }
+      } catch {
+        /* ignore — the estimate call below is the source of truth */
+      }
+
+      // Ask for the money reveal.
+      let count = matchesCount;
+      let totalOwed = 0;
+      try {
+        const res = await fetch('/api/estimate', { method: 'POST' });
+        if (res.ok) {
+          const j = await res.json();
+          count = Number(j.count) || 0;
+          totalOwed = Number(j.totalOwed) || 0;
+        }
+      } catch {
+        /* ignore — fall back to the matches count with no dollar figure */
+      }
+
+      setReveal({ count, totalOwed });
+      setSubmitting(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setSubmitting(false);
+    }
+  }
+
+  /** Skip the reveal — just save and head to the dashboard. */
+  async function skip() {
+    setSubmitting(true);
+    setError('');
+    try {
+      const ok = await saveProfile(answers);
+      if (!ok) {
+        setSubmitting(false);
+        return;
+      }
+      // Fire-and-forget a match recompute so the dashboard isn't empty.
       try {
         await fetch('/api/matches', { method: 'POST' });
       } catch {
         /* ignore */
       }
-
       router.push('/dashboard');
       router.refresh();
     } catch (e) {
@@ -110,6 +174,80 @@ export function OnboardingWizard({
     }
   }
 
+  function goToDashboard() {
+    router.push('/dashboard');
+    router.refresh();
+  }
+
+  // Reveal step ------------------------------------------------------------
+  if (reveal) {
+    const found = reveal.count > 0;
+    return (
+      <div className="rounded-2xl border border-brand-100 bg-white p-8 text-center shadow-card sm:p-10">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-100 text-brand-700">
+          {found ? (
+            <PartyPopper className="h-7 w-7" />
+          ) : (
+            <Sparkles className="h-7 w-7" />
+          )}
+        </div>
+
+        {found ? (
+          <>
+            <p className="mt-5 text-sm font-semibold uppercase tracking-wide text-brand-700">
+              Good news
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl">
+              We found {reveal.count}{' '}
+              {reveal.count === 1 ? 'settlement' : 'settlements'} you likely
+              qualify for
+            </h2>
+            {reveal.totalOwed > 0 && (
+              <p className="mt-4 text-ink-muted">
+                worth an estimated
+              </p>
+            )}
+            {reveal.totalOwed > 0 && (
+              <div className="mt-1 font-display text-5xl font-extrabold text-success-600 sm:text-6xl">
+                {formatUSD(reveal.totalOwed)}
+              </div>
+            )}
+            <p className="mx-auto mt-5 max-w-md text-sm text-ink-muted">
+              We’ll file every one of them on your behalf and only take our fee
+              when you actually get paid.
+            </p>
+            <button
+              type="button"
+              onClick={goToDashboard}
+              className="btn-primary mt-7 w-full sm:w-auto"
+            >
+              See my settlements <ArrowRight className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-5 text-2xl font-extrabold sm:text-3xl">
+              You’re all set
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-sm text-ink-muted">
+              We didn’t find an open settlement that fits your profile just yet —
+              but new ones open all the time. We’ll keep watching and email you
+              the moment a match appears.
+            </p>
+            <button
+              type="button"
+              onClick={goToDashboard}
+              className="btn-primary mt-7 w-full sm:w-auto"
+            >
+              Go to my dashboard <ArrowRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Questionnaire step -----------------------------------------------------
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
       {/* Progress ---------------------------------------------------------- */}
@@ -179,10 +317,12 @@ export function OnboardingWizard({
           className="btn-primary"
         >
           {submitting && isLast ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Finding your money…
+            </>
           ) : isLast ? (
             <>
-              Finish setup <Check className="h-4 w-4" />
+              See what I’m owed <Search className="h-4 w-4" />
             </>
           ) : (
             <>
@@ -196,7 +336,7 @@ export function OnboardingWizard({
       <div className="mt-4 text-center">
         <button
           type="button"
-          onClick={() => finish(answers)}
+          onClick={() => void skip()}
           disabled={submitting}
           className="text-sm font-medium text-ink-soft hover:text-ink-muted disabled:opacity-50"
         >

@@ -11,7 +11,7 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const protectedPaths = ['/dashboard', '/onboarding', '/claim'];
+  const protectedPaths = ['/dashboard', '/onboarding', '/claim', '/settings', '/admin'];
   const isProtected = protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p),
   );

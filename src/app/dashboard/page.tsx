@@ -1,12 +1,19 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
-  ArrowRight, DollarSign, FileText, Search, Sparkles, Target, UserCog,
+  ArrowRight,
+  Search,
+  Sparkles,
+  Target,
+  UserCog,
+  Wallet,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import type { Claim, Match, Profile } from '@/lib/types';
 import { LawsuitCard } from '@/components/LawsuitCard';
-import { ClaimCard } from '@/components/ClaimCard';
+import { MoneyHero } from '@/components/MoneyHero';
+import { RecoveryTracker } from '@/components/RecoveryTracker';
+import { FileAllButton } from '@/components/FileAllButton';
 import { RefreshMatches } from '@/components/RefreshMatches';
 import { Disclaimer } from '@/components/Disclaimer';
 
@@ -31,7 +38,7 @@ export default async function DashboardPage() {
     .maybeSingle();
   const profile = (profileData as Profile | null) ?? null;
 
-  // Matches (active) + claims, both with their joined lawsuit.
+  // Matches (active) + claims (with recovery), each with their joined lawsuit.
   const [{ data: matchesData }, { data: claimsData }] = await Promise.all([
     supabase
       .from('matches')
@@ -41,30 +48,37 @@ export default async function DashboardPage() {
       .order('score', { ascending: false }),
     supabase
       .from('claims')
-      .select('*, lawsuit:lawsuits(*)')
+      .select('*, lawsuit:lawsuits(*), recovery:recoveries(*)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false }),
   ]);
 
   const matches = ((matchesData ?? []) as unknown as Match[]).filter(
-    (m): m is Match & { lawsuit: NonNullable<Match['lawsuit']> } => Boolean(m.lawsuit),
+    (m): m is Match & { lawsuit: NonNullable<Match['lawsuit']> } =>
+      Boolean(m.lawsuit),
   );
-  const claims = (claimsData ?? []) as unknown as Claim[];
+
+  // PostgREST returns the (unique) recovery relation as an object, but normalize
+  // defensively in case it arrives as a one-element array.
+  const claims = ((claimsData ?? []) as unknown as (Claim & {
+    recovery?: Claim['recovery'] | Claim['recovery'][];
+  })[]).map((c) => ({
+    ...c,
+    recovery: Array.isArray(c.recovery) ? c.recovery[0] : c.recovery,
+  })) as Claim[];
 
   const displayName =
     profile?.full_name?.trim() || user.email?.split('@')[0] || 'there';
 
-  const openMatches = matches.length;
-  const activeClaims = claims.filter(
-    (c) => c.status !== 'rejected' && c.status !== 'paid',
-  ).length;
-  const opportunities = openMatches + claims.length;
+  // Matches the user hasn't filed a claim on yet → the "file these now" queue.
+  const claimedIds = new Set(claims.map((c) => c.lawsuit_id));
+  const freshMatches = matches.filter((m) => !claimedIds.has(m.lawsuit_id));
 
   return (
     <div className="bg-gray-50">
       <div className="container-page py-10 sm:py-14">
         {/* Greeting ---------------------------------------------------------- */}
-        <header className="reveal">
+        <header className="mb-8">
           <span className="badge-brand gap-1.5">
             <Sparkles className="h-3.5 w-3.5" /> Your dashboard
           </span>
@@ -72,14 +86,14 @@ export default async function DashboardPage() {
             Welcome back, {displayName}.
           </h1>
           <p className="mt-2 max-w-2xl text-ink-muted">
-            Here are the settlements matched to your profile and the claims
-            you’ve filed. We’ll email you the moment new matches open up.
+            Here’s what you’re owed, the settlements ready to file, and the money
+            we’re recovering for you.
           </p>
         </header>
 
         {/* Onboarding nudge -------------------------------------------------- */}
         {!profile?.onboarded && (
-          <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-6 shadow-card sm:flex-row sm:items-center">
+          <div className="mb-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-6 shadow-card sm:flex-row sm:items-center">
             <div className="flex items-start gap-4">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
                 <UserCog className="h-5 w-5" />
@@ -89,8 +103,9 @@ export default async function DashboardPage() {
                   Finish setting up your profile
                 </h2>
                 <p className="mt-1 max-w-xl text-sm text-ink-muted">
-                  Answer a few quick questions so we can match you to the
-                  settlements you actually qualify for. It takes about 2 minutes.
+                  Answer a few quick questions so we can find every settlement
+                  you qualify for — and show you exactly what you’re owed. Takes
+                  about 2 minutes.
                 </p>
               </div>
             </div>
@@ -100,69 +115,65 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Summary stats ----------------------------------------------------- */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <StatCard
-            icon={<Target className="h-5 w-5" />}
-            value={String(openMatches)}
-            label={openMatches === 1 ? 'Open match' : 'Open matches'}
-            tone="brand"
-          />
-          <StatCard
-            icon={<FileText className="h-5 w-5" />}
-            value={String(activeClaims)}
-            label={activeClaims === 1 ? 'Active claim' : 'Active claims'}
-            tone="ink"
-          />
-          <StatCard
-            icon={<DollarSign className="h-5 w-5" />}
-            value={opportunities > 0 ? 'Money on the table' : '$0'}
-            label={
-              opportunities > 0
-                ? `Across ${opportunities} ${opportunities === 1 ? 'opportunity' : 'opportunities'}`
-                : 'No opportunities yet'
-            }
-            tone="success"
-          />
-        </div>
+        {/* You're owed $X ---------------------------------------------------- */}
+        <MoneyHero openMatches={freshMatches} claims={claims} />
 
-        {/* Matched settlements ---------------------------------------------- */}
+        {/* File these now ---------------------------------------------------- */}
         <section className="mt-12">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <span className="badge-brand gap-1">
                 <Sparkles className="h-3.5 w-3.5" /> Matched to you
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold">
-                Settlements matched to you
-              </h2>
+              <h2 className="mt-3 text-2xl font-extrabold">File these now</h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                Settlements you match but haven’t filed yet. File them all in one
+                signed action.
+              </p>
             </div>
             <RefreshMatches />
           </div>
 
-          {matches.length > 0 ? (
-            <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {matches.map((m) => (
-                <LawsuitCard
-                  key={m.id}
-                  lawsuit={m.lawsuit}
-                  badge={{
-                    label: `Matched ${Math.round(m.score * 100)}%`,
-                    tone: 'brand',
-                  }}
-                  reasons={m.reasons}
-                  href={`/claim/${m.lawsuit.slug}`}
+          {freshMatches.length > 0 ? (
+            <>
+              <div className="mt-6">
+                <FileAllButton
+                  matches={freshMatches.map((m) => ({
+                    lawsuit: m.lawsuit,
+                    reasons: m.reasons,
+                  }))}
+                  defaultName={profile?.full_name || ''}
                 />
-              ))}
-            </div>
+              </div>
+              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {freshMatches.map((m) => (
+                  <LawsuitCard
+                    key={m.id}
+                    lawsuit={m.lawsuit}
+                    badge={{
+                      label: `Matched ${Math.round(m.score * 100)}%`,
+                      tone: 'brand',
+                    }}
+                    reasons={m.reasons}
+                    href={`/claim/${m.lawsuit.slug}`}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <EmptyState
               icon={<Target className="h-6 w-6" />}
-              title="No matches yet"
+              title={
+                matches.length > 0
+                  ? 'You’ve filed all your matches'
+                  : 'No matches yet'
+              }
               body={
-                profile?.onboarded
-                  ? 'We haven’t found a settlement that fits your profile yet. Refresh your matches or browse all open settlements.'
-                  : 'Finish setting up your profile so we can match you to the settlements you qualify for.'
+                matches.length > 0
+                  ? 'Nice work — every settlement we matched you to is filed and tracked below. We’ll surface new ones the moment they open.'
+                  : profile?.onboarded
+                    ? 'We haven’t found a settlement that fits your profile yet. Refresh your matches or browse all open settlements.'
+                    : 'Finish setting up your profile so we can find the settlements you qualify for and show you what you’re owed.'
               }
               primary={
                 profile?.onboarded
@@ -178,66 +189,26 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* Filed claims ------------------------------------------------------ */}
+        {/* Recovery tracker -------------------------------------------------- */}
         <section className="mt-14">
           <div>
             <span className="badge-gray gap-1">
-              <FileText className="h-3.5 w-3.5" /> Your filings
+              <Wallet className="h-3.5 w-3.5" /> Your recoveries
             </span>
-            <h2 className="mt-3 text-2xl font-extrabold">Your claims</h2>
+            <h2 className="mt-3 text-2xl font-extrabold">Money we’re recovering</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Every claim we’ve filed for you, tracked from submission to payout.
+            </p>
           </div>
 
-          {claims.length > 0 ? (
-            <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {claims.map((c) => (
-                <ClaimCard key={c.id} claim={c} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<FileText className="h-6 w-6" />}
-              title="You haven’t filed any claims yet"
-              body="When you file a claim, it’ll show up here with a receipt number so you can track its status."
-              primary={{ href: '/lawsuits', label: 'Browse settlements' }}
-            />
-          )}
+          <div className="mt-8">
+            <RecoveryTracker claims={claims} />
+          </div>
         </section>
 
         <div className="mt-14">
           <Disclaimer compact />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  value,
-  label,
-  tone,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  tone: 'brand' | 'success' | 'ink';
-}) {
-  const iconClass =
-    tone === 'brand'
-      ? 'bg-brand-100 text-brand-700'
-      : tone === 'success'
-        ? 'bg-success-50 text-success-600'
-        : 'bg-gray-100 text-ink';
-  const valueClass = tone === 'success' ? 'text-success-600' : 'text-ink';
-
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
-      <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${iconClass}`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <div className={`truncate text-xl font-extrabold ${valueClass}`}>{value}</div>
-        <div className="text-sm text-ink-muted">{label}</div>
       </div>
     </div>
   );

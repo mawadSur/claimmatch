@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { SITE } from '@/lib/utils';
 import { Scale } from 'lucide-react';
 import { NavAuthLinks } from './NavAuthLinks';
+import { getAdminUser } from '@/lib/admin';
 
 /**
  * Top navigation. Server component: reads the session to decide whether to
@@ -10,12 +10,16 @@ import { NavAuthLinks } from './NavAuthLinks';
  */
 export async function Nav() {
   let signedIn = false;
+  let isAdmin = false;
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     signedIn = !!user;
+    if (signedIn) {
+      isAdmin = !!(await getAdminUser());
+    }
   } catch {
     signedIn = false;
   }
@@ -39,12 +43,15 @@ export async function Nav() {
           <Link href="/how-it-works" className="text-sm font-medium text-ink-muted hover:text-brand-700">
             How it works
           </Link>
+          <Link href="/pricing" className="text-sm font-medium text-ink-muted hover:text-brand-700">
+            Pricing
+          </Link>
           <Link href="/about" className="text-sm font-medium text-ink-muted hover:text-brand-700">
             About
           </Link>
         </div>
 
-        <NavAuthLinks signedIn={signedIn} />
+        <NavAuthLinks signedIn={signedIn} isAdmin={isAdmin} />
       </nav>
     </header>
   );

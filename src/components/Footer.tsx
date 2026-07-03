@@ -25,6 +25,7 @@ export function Footer() {
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
               <li><Link href="/lawsuits" className="hover:text-brand-700">Browse settlements</Link></li>
               <li><Link href="/how-it-works" className="hover:text-brand-700">How it works</Link></li>
+              <li><Link href="/pricing" className="hover:text-brand-700">Pricing</Link></li>
               <li><Link href="/signup" className="hover:text-brand-700">Get matched</Link></li>
             </ul>
           </div>
@@ -33,6 +34,7 @@ export function Footer() {
             <h4 className="text-sm font-semibold text-ink">Company</h4>
             <ul className="mt-3 space-y-2 text-sm text-ink-soft">
               <li><Link href="/about" className="hover:text-brand-700">About</Link></li>
+              <li><Link href="/trust" className="hover:text-brand-700">Is this legit?</Link></li>
               <li><Link href="/privacy" className="hover:text-brand-700">Privacy</Link></li>
               <li><Link href="/terms" className="hover:text-brand-700">Terms</Link></li>
             </ul>

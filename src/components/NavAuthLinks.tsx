@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export function NavAuthLinks({ signedIn }: { signedIn: boolean }) {
+export function NavAuthLinks({
+  signedIn,
+  isAdmin = false,
+}: {
+  signedIn: boolean;
+  isAdmin?: boolean;
+}) {
   const router = useRouter();
 
   async function signOut() {
@@ -17,6 +23,14 @@ export function NavAuthLinks({ signedIn }: { signedIn: boolean }) {
   if (signedIn) {
     return (
       <div className="flex items-center gap-3">
+        {isAdmin && (
+          <Link href="/admin" className="hidden text-sm font-semibold text-ink-muted hover:text-brand-700 sm:inline">
+            Admin
+          </Link>
+        )}
+        <Link href="/settings" className="hidden text-sm font-medium text-ink-muted hover:text-brand-700 sm:inline">
+          Settings
+        </Link>
         <Link href="/dashboard" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
           Dashboard
         </Link>

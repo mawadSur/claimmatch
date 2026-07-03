@@ -11,6 +11,12 @@ export type ClaimStatus =
 
 export type LawsuitStatus = 'open' | 'closing_soon' | 'closed' | 'draft';
 
+export type ReviewStatus = 'draft' | 'pending_review' | 'published' | 'rejected';
+
+export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
+
+export type RecoveryStatus = 'pending' | 'awaiting_payout' | 'paid' | 'denied';
+
 /** A single eligibility question shown during onboarding. */
 export interface EligibilityQuestion {
   /** stable slug stored as a key in profiles.attributes */
@@ -67,6 +73,15 @@ export interface Lawsuit {
   external_id: string | null;
   hero_image_url: string | null;
   is_featured: boolean;
+  // Dream-state: extraction provenance + review workflow + value estimate
+  review_status: ReviewStatus;
+  extraction_confidence: number | null;
+  administrator: string | null;
+  raw_source_text: string | null;
+  estimated_value_min: number | null;
+  estimated_value_max: number | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -80,6 +95,11 @@ export interface Profile {
   attributes: Record<string, unknown>;
   email_opt_in: boolean;
   onboarded: boolean;
+  is_admin: boolean;
+  phone: string | null;
+  sms_opt_in: boolean;
+  referral_code: string | null;
+  referred_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -105,10 +125,88 @@ export interface Claim {
   lawsuit_title: string;
   status: ClaimStatus;
   form_data: Record<string, unknown>;
+  // Dream-state: e-sign authorization + filing lifecycle
+  authorized_at: string | null;
+  signature_name: string | null;
+  authorization_ip: string | null;
+  filed_at: string | null;
+  estimated_value: number | null;
   created_at: string;
   updated_at: string;
   /** joined lawsuit, when selected with a relation */
   lawsuit?: Lawsuit;
+  /** joined recovery, when selected with a relation */
+  recovery?: Recovery;
+}
+
+export interface Recovery {
+  id: string;
+  user_id: string;
+  claim_id: string;
+  gross_amount: number;
+  fee_pct: number;
+  fee_amount: number;
+  net_amount: number;
+  status: RecoveryStatus;
+  received_at: string | null;
+  paid_out_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Job {
+  id: string;
+  type: 'scrape' | 'extract' | 'match' | 'notify' | string;
+  payload: Record<string, unknown>;
+  status: JobStatus;
+  attempts: number;
+  max_attempts: number;
+  run_after: string;
+  locked_at: string | null;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string | null;
+  email: string | null;
+  channel: 'email' | 'sms' | string;
+  type: string;
+  subject: string | null;
+  body: string | null;
+  status: 'sent' | 'failed' | 'skipped' | string;
+  created_at: string;
+}
+
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  code: string;
+  referred_email: string | null;
+  referred_user: string | null;
+  status: 'pending' | 'signed_up' | 'rewarded' | string;
+  created_at: string;
+}
+
+/** Structured settlement extracted from unstructured text by the LLM pipeline. */
+export interface ExtractedLawsuit {
+  title: string;
+  summary: string;
+  description: string;
+  category: string;
+  administrator: string | null;
+  typical_payout: string;
+  estimated_value_min: number | null;
+  estimated_value_max: number | null;
+  proof_required: boolean;
+  deadline: string | null;
+  eligibility: EligibilityCriteria;
+  eligibility_text: string;
+  claim_url: string | null;
+  confidence: number; // 0..1
 }
 
 export interface Subscriber {

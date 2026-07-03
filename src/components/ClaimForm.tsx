@@ -10,19 +10,28 @@ import {
   LayoutDashboard,
   LogIn,
   AlertCircle,
+  FileSignature,
+  ShieldCheck,
 } from 'lucide-react';
 import { US_STATES } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { CLAIM_STATUS_LABELS } from '@/lib/types';
 import type { Lawsuit, Profile, ClaimStatus } from '@/lib/types';
+import { formatUSD } from '@/lib/recovery';
+import { SERVICES_AGREEMENT, ATTESTATION } from '@/lib/services-agreement';
 
-type Result = { id: string; receipt_number: number; status: ClaimStatus };
-type Phase = 'idle' | 'loading' | 'success' | 'error' | 'unauth';
+type Result = {
+  id: string;
+  receipt_number: number;
+  status: ClaimStatus;
+  estimated_value: number | null;
+};
+type Phase = 'idle' | 'loading' | 'success' | 'error' | 'unauth' | 'notfound';
 
 /**
- * Guided claim form. Pre-fills name / email / state from the user's profile,
- * POSTs to /api/claims, then shows a receipt panel mirroring the original
- * site's confirmation ("Your receipt number is: #…").
+ * Guided claim form. Pre-fills name / email / state / zip from the profile,
+ * collects the e-sign authorization (typed legal name + checkbox against the
+ * services agreement), POSTs to /api/claims, then shows a receipt panel.
  */
 export function ClaimForm({
   lawsuit,
@@ -40,6 +49,7 @@ export function ClaimForm({
     zip: profile?.zip ?? '',
     proof_note: '',
   });
+  const [signatureName, setSignatureName] = useState(profile?.full_name ?? '');
   const [confirmed, setConfirmed] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
@@ -49,9 +59,12 @@ export function ClaimForm({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  const canSubmit =
+    confirmed && signatureName.trim().length >= 2 && phase !== 'loading';
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!confirmed) return;
+    if (!canSubmit) return;
     setPhase('loading');
     setError('');
     try {
@@ -60,6 +73,7 @@ export function ClaimForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lawsuit_id: lawsuit.id,
+          signature_name: signatureName.trim(),
           form_data: { ...form, confirmed_eligibility: true },
         }),
       });
@@ -73,6 +87,11 @@ export function ClaimForm({
       if (res.ok && json) {
         setResult(json as Result);
         setPhase('success');
+      } else if (res.status === 404) {
+        setError(
+          json?.error || 'That settlement could not be found. It may have closed.',
+        );
+        setPhase('notfound');
       } else {
         setError(json?.error || 'Something went wrong. Please try again.');
         setPhase('error');
@@ -91,11 +110,11 @@ export function ClaimForm({
           <div className="grid h-14 w-14 place-items-center rounded-full bg-success-50 text-success-600">
             <CheckCircle2 className="h-7 w-7" />
           </div>
-          <h2 className="mt-4 text-2xl font-extrabold">Claim recorded</h2>
+          <h2 className="mt-4 text-2xl font-extrabold">Claim filed</h2>
           <p className="mt-2 max-w-md text-sm text-ink-muted">
-            We’ve saved your claim for{' '}
-            <span className="font-semibold text-ink">{lawsuit.title}</span>. Keep
-            your receipt number for your records.
+            We’ve filed your claim for{' '}
+            <span className="font-semibold text-ink">{lawsuit.title}</span> on
+            your behalf. Keep your receipt number for your records.
           </p>
 
           <div className="mt-6 w-full max-w-sm rounded-xl bg-gray-50 p-5">
@@ -105,10 +124,15 @@ export function ClaimForm({
             <div className="mt-1 text-3xl font-extrabold text-brand-700">
               #{result.receipt_number}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <span className="badge-green">
                 {CLAIM_STATUS_LABELS[result.status] ?? result.status}
               </span>
+              {result.estimated_value != null && (
+                <span className="badge-brand">
+                  Est. {formatUSD(result.estimated_value)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -123,14 +147,14 @@ export function ClaimForm({
                 rel="noopener noreferrer"
                 className="btn-secondary justify-center"
               >
-                <ExternalLink className="h-4 w-4" /> Finish on official site
+                <ExternalLink className="h-4 w-4" /> View official claim site
               </a>
             )}
           </div>
 
           <p className="mt-6 max-w-md text-xs leading-relaxed text-ink-soft">
-            To receive any payment you must complete your claim on the official
-            settlement site above. {SHORT_DISCLAIMER}
+            We’ll keep you posted on your claim’s status. If it pays out, we’ll
+            deduct our published fee and forward you the rest. {SHORT_DISCLAIMER}
           </p>
         </div>
       </div>
@@ -239,18 +263,58 @@ export function ClaimForm({
         </div>
       )}
 
-      <label className="mt-6 flex items-start gap-3 rounded-xl bg-gray-50 p-4">
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={(e) => setConfirmed(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
-        />
-        <span className="text-sm text-ink-muted">
-          I confirm the information above is accurate and that I believe I qualify
-          for this settlement.
-        </span>
-      </label>
+      {/* E-sign authorization -------------------------------------------- */}
+      <div className="mt-8 rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center gap-2">
+          <FileSignature className="h-5 w-5 text-brand-600" />
+          <h3 className="text-base font-bold">Authorize ClaimMatch to file</h3>
+        </div>
+
+        <div className="mt-3 flex items-start gap-2 rounded-lg bg-brand-50/70 p-3 text-xs text-ink-muted">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+          <span>
+            It costs nothing to file. ClaimMatch only earns its published fee as
+            a percentage of money you actually recover.
+          </span>
+        </div>
+
+        <label className="field-label mt-4">Services agreement</label>
+        <div className="mt-1 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-ink-muted">
+          {SERVICES_AGREEMENT}
+        </div>
+
+        <div className="mt-4">
+          <label className="field-label" htmlFor="claim-signature">
+            Type your full legal name to sign
+          </label>
+          <input
+            id="claim-signature"
+            type="text"
+            required
+            autoComplete="name"
+            className="field-input"
+            placeholder="e.g. Jordan A. Smith"
+            value={signatureName}
+            onChange={(e) => setSignatureName(e.target.value)}
+          />
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+            {ATTESTATION}
+          </p>
+        </div>
+
+        <label className="mt-4 flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
+          />
+          <span className="text-sm text-ink-muted">
+            I authorize ClaimMatch to file this claim on my behalf and attest the
+            information above is accurate.
+          </span>
+        </label>
+      </div>
 
       {phase === 'unauth' && (
         <div className="mt-5 flex items-start gap-2 rounded-xl bg-danger-50 p-4 text-sm text-danger-700">
@@ -268,7 +332,7 @@ export function ClaimForm({
         </div>
       )}
 
-      {phase === 'error' && (
+      {(phase === 'error' || phase === 'notfound') && (
         <div className="mt-5 flex items-start gap-2 rounded-xl bg-danger-50 p-4 text-sm text-danger-700">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
         </div>
@@ -276,7 +340,7 @@ export function ClaimForm({
 
       <button
         type="submit"
-        disabled={!confirmed || phase === 'loading'}
+        disabled={!canSubmit}
         className="btn-primary mt-6 w-full justify-center"
       >
         {phase === 'loading' ? (
@@ -285,14 +349,14 @@ export function ClaimForm({
           </>
         ) : (
           <>
-            File my claim <ArrowRight className="h-4 w-4" />
+            Sign &amp; file my claim <ArrowRight className="h-4 w-4" />
           </>
         )}
       </button>
 
       <p className="mt-4 text-xs leading-relaxed text-ink-soft">
-        {SHORT_DISCLAIMER} Filing here records your claim with ClaimMatch; you may
-        also need to complete it on the official settlement site.
+        {SHORT_DISCLAIMER} By signing you authorize ClaimMatch to submit this
+        claim on your behalf; our fee applies only to money you recover.
       </p>
     </form>
   );
