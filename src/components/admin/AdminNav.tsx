@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library, Wallet } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet, Handshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const LINKS = [
@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/admin/review', label: 'Review queue', Icon: ClipboardCheck, exact: false },
   { href: '/admin/catalog', label: 'Catalog', Icon: Library, exact: false },
   { href: '/admin/recoveries', label: 'Recoveries', Icon: Wallet, exact: false },
+  { href: '/admin/partners', label: 'Partners', Icon: Handshake, exact: false },
 ];
 
 /**

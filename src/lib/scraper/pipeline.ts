@@ -2,7 +2,7 @@ import { slugify } from '@/lib/utils';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { anthropicConfigured, extractLawsuit } from '@/lib/anthropic';
 import { SOURCE_ADAPTERS } from './sources';
-import type { ScrapedLawsuit } from '@/lib/types';
+import type { LawsuitStatus, ScrapedLawsuit } from '@/lib/types';
 
 /**
  * LLM extraction pipeline. Walks every registered source adapter, fetches its
@@ -32,6 +32,27 @@ export type IngestSummary = {
 const RAW_TEXT_LIMIT = 4000;
 /** Confidence at or above which an extraction auto-publishes. */
 const PUBLISH_THRESHOLD = 0.8;
+/** A settlement whose deadline is within this many days is "closing soon". */
+const CLOSING_SOON_DAYS = 14;
+
+/**
+ * Derive a lawsuit's lifecycle status from its claim deadline so a settlement
+ * doesn't sit "open" forever after its deadline passes:
+ *   - no deadline           → open
+ *   - deadline already past  → closed
+ *   - deadline within N days → closing_soon
+ *   - otherwise              → open
+ * Returns null for an unparseable deadline so the caller can leave status as-is.
+ */
+function deriveStatus(deadline: string | null): LawsuitStatus | null {
+  if (!deadline) return 'open';
+  const due = Date.parse(deadline);
+  if (Number.isNaN(due)) return null;
+  const now = Date.now();
+  if (due < now) return 'closed';
+  if (due - now <= CLOSING_SOON_DAYS * 24 * 60 * 60 * 1000) return 'closing_soon';
+  return 'open';
+}
 
 /**
  * A candidate row destined for the `lawsuits` table. Loosely typed because it
@@ -84,9 +105,36 @@ export async function ingestAndExtract(): Promise<IngestSummary> {
         // untouched. Otherwise upsert the full row (new or still-pending).
         const existing = await findExisting(supabase, sourceId, row);
         if (existing && existing.locked) {
+          const update = contentOnly(row);
+
+          // Change-detection: a shifted deadline on a human-locked row is worth
+          // a signal rather than a silent overwrite (an admin may have chosen
+          // the old value deliberately). Log it so it surfaces in run output.
+          const newDeadline = (row.deadline as string | null) ?? null;
+          if (existing.deadline !== newDeadline) {
+            console.warn(
+              `[pipeline] deadline changed for ${row.slug}: ${existing.deadline ?? 'none'} → ${newDeadline ?? 'none'} (row is locked; not auto-transitioning)`,
+            );
+          }
+
+          // Lifecycle hook: if this locked settlement is now past its deadline
+          // but still shows an active status, advance status ONLY (never touches
+          // the human-owned review_status). A settlement should not stay "open"
+          // forever. closing_soon → closed is handled the same way. Anything a
+          // human explicitly set to draft/closed is left alone.
+          const derived = deriveStatus(newDeadline);
+          if (
+            derived &&
+            derived !== existing.status &&
+            (existing.status === 'open' || existing.status === 'closing_soon') &&
+            (derived === 'closing_soon' || derived === 'closed')
+          ) {
+            update.status = derived;
+          }
+
           const { error } = await supabase
             .from('lawsuits')
-            .update(contentOnly(row))
+            .update(update)
             .eq('id', existing.id);
           if (error) {
             console.error(`[pipeline] content update failed for ${row.slug}:`, error);
@@ -202,7 +250,9 @@ async function buildRow(
     raw_source_text: rawText.slice(0, RAW_TEXT_LIMIT),
     extraction_confidence: confidence,
     review_status,
-    status: 'open',
+    // Lifecycle follows the deadline (open / closing_soon / closed) instead of a
+    // hardcoded 'open'; fall back to 'open' when the deadline is unparseable.
+    status: deriveStatus(deadline) ?? 'open',
   };
 }
 
@@ -230,9 +280,16 @@ async function findExisting(
   supabase: ReturnType<typeof createServiceClient>,
   sourceId: string | null,
   row: LawsuitRow,
-): Promise<{ id: string; locked: boolean } | null> {
+): Promise<{
+  id: string;
+  locked: boolean;
+  deadline: string | null;
+  status: string | null;
+} | null> {
   try {
-    let q = supabase.from('lawsuits').select('id, review_status, reviewed_at');
+    let q = supabase
+      .from('lawsuits')
+      .select('id, review_status, reviewed_at, deadline, status');
     if (sourceId && row.external_id) {
       q = q.eq('source_id', sourceId).eq('external_id', row.external_id);
     } else {
@@ -240,10 +297,23 @@ async function findExisting(
     }
     const { data } = await q.maybeSingle();
     if (!data) return null;
-    const rs = (data as { review_status?: string }).review_status;
-    const reviewedAt = (data as { reviewed_at?: string | null }).reviewed_at;
-    const locked = rs === 'published' || rs === 'rejected' || !!reviewedAt;
-    return { id: (data as { id: string }).id, locked };
+    const d = data as {
+      id: string;
+      review_status?: string;
+      reviewed_at?: string | null;
+      deadline?: string | null;
+      status?: string | null;
+    };
+    const locked =
+      d.review_status === 'published' ||
+      d.review_status === 'rejected' ||
+      !!d.reviewed_at;
+    return {
+      id: d.id,
+      locked,
+      deadline: d.deadline ?? null,
+      status: d.status ?? null,
+    };
   } catch {
     return null;
   }

@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { SAMPLE_LAWSUITS } from './sample-data';
+import { log } from './log';
+
+const TAG = 'lawsuits';
 
 /**
  * Data access for the public lawsuit catalog. Every function degrades
@@ -41,8 +44,17 @@ export async function getLawsuits(opts?: {
       // empty filtered result should show an empty state, not fake samples).
       // Only fall through to samples on genuine unavailability (error/throw).
       if (!error && data) return data as Lawsuit[];
-    } catch {
-      // fall through to sample data
+      // Configured but the query errored: do NOT stay silent — a prod outage
+      // must be visible, otherwise we serve fabricated samples over a live DB.
+      log.error(TAG, 'getLawsuits query failed on configured DB — serving sample data', {
+        message: error?.message ?? 'no data returned',
+        opts,
+      });
+    } catch (err) {
+      log.error(TAG, 'getLawsuits threw on configured DB — serving sample data', {
+        message: err instanceof Error ? err.message : String(err),
+        opts,
+      });
     }
   }
 
@@ -62,14 +74,25 @@ export async function getLawsuitBySlug(slug: string): Promise<Lawsuit | null> {
   if (supabaseConfigured()) {
     try {
       const supabase = await createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('lawsuits')
         .select('*')
         .eq('slug', slug)
         .maybeSingle();
       if (data) return data as Lawsuit;
-    } catch {
-      // fall through
+      // data === null with no error is a legitimate "not found" — stay quiet.
+      // A real error, though, means the DB is unavailable: make it loud.
+      if (error) {
+        log.error(TAG, 'getLawsuitBySlug query failed on configured DB — serving sample data', {
+          message: error.message,
+          slug,
+        });
+      }
+    } catch (err) {
+      log.error(TAG, 'getLawsuitBySlug threw on configured DB — serving sample data', {
+        message: err instanceof Error ? err.message : String(err),
+        slug,
+      });
     }
   }
   return SAMPLE_LAWSUITS.find((l) => l.slug === slug) ?? null;

@@ -5,7 +5,6 @@ import {
   Bell, Wallet, Lock,
 } from 'lucide-react';
 import { getLawsuits } from '@/lib/lawsuits';
-import { FEE_PCT } from '@/lib/recovery';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { EmailCapture } from '@/components/EmailCapture';
 
@@ -15,8 +14,6 @@ import { EmailCapture } from '@/components/EmailCapture';
  */
 const NOISE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-
-const FEE_LABEL = `${Math.round(FEE_PCT * 100)}%`;
 
 export default async function HomePage() {
   const featured = await getLawsuits({ featured: true, limit: 3 });
@@ -43,7 +40,7 @@ export default async function HomePage() {
                 style={{ '--i': 0 } as CSSProperties}
                 className="badge-brand mx-auto gap-1.5 ring-1 ring-inset ring-brand-200/70 lg:mx-0"
               >
-                <Sparkles className="h-3.5 w-3.5" /> Free to check · No win, no fee
+                <Sparkles className="h-3.5 w-3.5" /> Always free · We never take a cut
               </span>
 
               <h1
@@ -61,8 +58,9 @@ export default async function HomePage() {
                 className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-muted lg:mx-0"
               >
                 Billions in class-action settlements go unclaimed every year. ClaimMatch
-                finds the ones you qualify for, files the claim for you, and only takes a
-                fee when the money actually lands.
+                finds the ones you qualify for, pre-fills your claim, and links you
+                straight to the official site to submit — always free, and we never take a
+                cut of what you get back.
               </p>
 
               <div
@@ -85,7 +83,7 @@ export default async function HomePage() {
                   <ShieldCheck className="h-4 w-4 text-brand-500" /> Takes 2 minutes to check
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-success-500" /> You only pay if you get paid
+                  <CheckCircle2 className="h-4 w-4 text-success-500" /> Always free — you keep 100%
                 </span>
               </p>
             </div>
@@ -156,13 +154,14 @@ export default async function HomePage() {
           How ClaimMatch works
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-ink-muted">
-          We do the hunting and the filing. You just say yes.
+          We do the hunting and pre-fill the paperwork. You review and submit — on the
+          official site, in a couple of taps.
         </p>
         <div className="stagger mt-12 grid gap-6 md:grid-cols-3">
           {[
             { icon: Search, title: 'We scan the settlements', body: 'Our system continuously pulls open class-action settlements and lawsuits from official sources into one place.' },
             { icon: ShieldCheck, title: 'We match you', body: 'Answer a few quick questions once. We compare your profile to every case and surface the ones you actually qualify for.' },
-            { icon: FileText, title: 'We file for you', body: 'We prepare and submit the right claim, then track it to payout — and only take our fee when you actually get paid.' },
+            { icon: FileText, title: 'You file in one tap', body: 'We pre-fill the official claim with your details and deep-link you straight to the administrator’s site to submit. You stay in control — and we track it to payout.' },
           ].map((s, i) => (
             <div
               key={i}
@@ -237,13 +236,14 @@ export default async function HomePage() {
               </h2>
               <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
                 When your claim is approved, the settlement pays out — straight to you.
-                There’s nothing to chase and no forms to decode. We already filed it, and
-                we only take our {FEE_LABEL} fee once you’ve been paid. Never a cent before.
+                There’s nothing to chase and no forms to decode. You filed it in a couple
+                of taps, and ClaimMatch never takes a cent of it. The money is entirely
+                yours.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
-                  { icon: Lock, text: 'Nothing upfront — free to find and file your matches.' },
-                  { icon: CheckCircle2, text: `No win, no fee. Our ${FEE_LABEL} only applies to money you receive.` },
+                  { icon: Lock, text: 'Nothing upfront — finding and pre-filling your matches is always free.' },
+                  { icon: CheckCircle2, text: 'We never take a cut — 100% of your settlement is yours.' },
                   { icon: Mail, text: 'Paid the way the settlement pays — to your mailbox or bank.' },
                 ].map(({ icon: Icon, text }) => (
                   <li key={text} className="flex items-start gap-3">

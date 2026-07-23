@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 export const runtime = 'nodejs';
 
 /**
- * GET /api/recoveries — the current user's recoveries (money recovered + our
- * fee + their net), newest first. RLS restricts rows to the signed-in user.
+ * GET /api/recoveries — the current user's recoveries (money they've recovered),
+ * newest first. ClaimMatch takes no cut, so net always equals gross. RLS
+ * restricts rows to the signed-in user.
  */
 export async function GET() {
   const supabase = await createClient();

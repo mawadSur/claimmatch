@@ -31,10 +31,15 @@ async function handle(req: Request) {
     const supabase = createServiceClient();
 
     // Candidate lawsuits (published only). Build a lookup for email content.
+    // The service client bypasses RLS, so this filter is the only gate keeping
+    // pending_review / rejected settlements out of user match emails. Because
+    // lawsuitById is built exclusively from published rows, the email-content
+    // map below also silently drops any pre-existing match whose lawsuit was
+    // later unpublished — those users are not emailed about it.
     const { data: lawsuitData } = await supabase
       .from('lawsuits')
       .select('*')
-      .neq('status', 'draft');
+      .eq('review_status', 'published');
     const lawsuits = (lawsuitData ?? []) as Lawsuit[];
     if (lawsuits.length === 0) {
       return NextResponse.json({ users: 0, newMatches: 0, emailed: 0 });

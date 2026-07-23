@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -20,6 +21,15 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+  }
+
+  // Rate limit per user when we have one, else per client IP.
+  const limit = rateLimit(`settings:${user?.id ?? ipKey(req)}`);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
   }
 
   let body: unknown;

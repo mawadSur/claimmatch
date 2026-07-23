@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
@@ -16,6 +17,15 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+  }
+
+  // Sending invites is a spammy surface — cap it per user (else per IP).
+  const limit = rateLimit(`referrals:${user?.id ?? ipKey(req)}`);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
   }
 
   let body: unknown;
@@ -61,13 +71,21 @@ export async function POST(req: Request) {
 }
 
 /** GET /api/referrals — the current user's referral records. */
-export async function GET() {
+export async function GET(req: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+  }
+
+  const limit = rateLimit(`referrals:get:${user?.id ?? ipKey(req)}`, { limit: 30 });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
   }
   const { data } = await supabase
     .from('referrals')

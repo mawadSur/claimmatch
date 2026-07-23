@@ -144,8 +144,14 @@ export interface Recovery {
   user_id: string;
   claim_id: string;
   gross_amount: number;
+  /** Referral model: ClaimMatch takes no cut, so this is always 0. */
   fee_pct: number;
-  fee_amount: number;
+  /**
+   * Removed from the DB under the referral model (see migration 0004). Kept
+   * optional only for back-compat with any pre-migration reads.
+   */
+  fee_amount?: number;
+  /** What the member keeps — equals gross_amount (generated column, no fee). */
   net_amount: number;
   status: RecoveryStatus;
   received_at: string | null;
@@ -189,6 +195,79 @@ export interface Referral {
   referred_user: string | null;
   status: 'pending' | 'signed_up' | 'rewarded' | string;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Referral revenue — partner services we route qualified members to for a
+// lead/referral fee. ClaimMatch stays free; the fee is paid by the partner,
+// never deducted from a member's recovery. (migration 0005_partner_revenue)
+// ---------------------------------------------------------------------------
+
+/** How a partner pays us. per_lead = per qualified click; per_conversion = CPA. */
+export type PayoutModel = 'per_lead' | 'per_conversion' | 'hybrid';
+
+/** Category of partner service, used to match a partner to a settlement context. */
+export type PartnerCategory =
+  | 'claims_service'
+  | 'law_firm'
+  | 'financial'
+  | 'tax'
+  | 'credit'
+  | 'general';
+
+/** Lifecycle of a single outbound referral (one click → maybe a conversion). */
+export type LeadStatus =
+  | 'clicked'
+  | 'lead'
+  | 'converted'
+  | 'rejected'
+  | 'paid';
+
+export interface Partner {
+  id: string;
+  slug: string;
+  name: string;
+  category: PartnerCategory;
+  tagline: string | null;
+  description: string | null;
+  url: string;
+  logo_url: string | null;
+  payout_model: PayoutModel;
+  /** What we earn per qualified lead/click, in whole cents. */
+  lead_fee_cents: number;
+  /** What we earn per conversion (CPA), in whole cents. */
+  conversion_fee_cents: number;
+  /** Custom FTC disclosure; a sensible default is shown when null. */
+  disclosure: string | null;
+  active: boolean;
+  /** Higher shows first within a placement. */
+  priority: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeadEvent {
+  id: string;
+  partner_id: string;
+  /** Null for signed-out clicks. */
+  user_id: string | null;
+  /** Settlement the placement was shown against, if any. */
+  lawsuit_id: string | null;
+  /** Where the click originated: 'dashboard' | 'lawsuit_detail' | 'claim_success'. */
+  placement: string | null;
+  status: LeadStatus;
+  /** lead_fee snapshot at click time, in cents. */
+  lead_fee_cents: number;
+  /** Total revenue attributed to this event, in cents. */
+  revenue_cents: number;
+  /** Partner's own conversion/transaction id, from the postback. */
+  external_ref: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  converted_at: string | null;
+  created_at: string;
+  /** joined partner, when selected with a relation */
+  partner?: Partner;
 }
 
 /** Structured settlement extracted from unstructured text by the LLM pipeline. */
@@ -240,6 +319,15 @@ export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
   approved: 'Approved',
   rejected: 'Not Eligible',
   paid: 'Paid',
+};
+
+export const PARTNER_CATEGORY_LABELS: Record<PartnerCategory, string> = {
+  claims_service: 'Claim-filing service',
+  law_firm: 'Law firm',
+  financial: 'Financial services',
+  tax: 'Tax help',
+  credit: 'Credit & debt',
+  general: 'General',
 };
 
 export const LAWSUIT_CATEGORIES = [

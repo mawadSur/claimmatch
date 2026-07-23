@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { FEE_PCT, estimateLawsuitValue } from '@/lib/recovery';
+import { estimateLawsuitValue } from '@/lib/recovery';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
 
 /**
- * Ensure a recovery row exists for a claim (accounting). Writes to `recoveries`
- * are service-role only (no RLS insert policy). Idempotent — a duplicate
- * (claim_id unique) is a no-op, so this is safe to call on every success path
- * and self-heals a previously-missing recovery.
+ * Ensure a recovery row exists for a claim (money tracker). Writes to
+ * `recoveries` are service-role only (no RLS insert policy). Idempotent — a
+ * duplicate (claim_id unique) is a no-op, so this is safe to call on every
+ * success path and self-heals a previously-missing recovery. ClaimMatch takes no
+ * cut, so fee_pct is always 0 and the tracked net equals the gross recovered.
  */
 async function ensureRecovery(userId: string, claimId: string): Promise<void> {
   try {
@@ -18,7 +20,7 @@ async function ensureRecovery(userId: string, claimId: string): Promise<void> {
       user_id: userId,
       claim_id: claimId,
       gross_amount: 0,
-      fee_pct: FEE_PCT,
+      fee_pct: 0,
       status: 'pending',
     });
     if (error && error.code !== '23505') {
@@ -29,17 +31,34 @@ async function ensureRecovery(userId: string, claimId: string): Promise<void> {
   }
 }
 
+// Allowlist the real PII fields the pre-fill form sends and cap each length, so
+// an arbitrary or oversized blob can't be persisted. Unknown keys are stripped
+// rather than stored. Mirrors the fields collected in ClaimForm.
+const FormDataSchema = z
+  .object({
+    full_name: z.string().max(200).optional(),
+    email: z.string().max(320).optional(),
+    phone: z.string().max(40).optional(),
+    address: z.string().max(300).optional(),
+    city: z.string().max(120).optional(),
+    state: z.string().max(60).optional(),
+    zip: z.string().max(20).optional(),
+    proof_note: z.string().max(2000).optional(),
+    confirmed_eligibility: z.boolean().optional(),
+  })
+  .strip();
+
 const ClaimSchema = z.object({
   // Must be a real DB lawsuit id. Sample-catalog ids aren't UUIDs and have no
   // durable row to reference, so filing isn't available until the DB is seeded.
   lawsuit_id: z
     .string()
     .uuid('This settlement isn’t available to file yet — please check back soon.'),
-  form_data: z.record(z.unknown()).optional(),
+  form_data: FormDataSchema.optional(),
   signature_name: z
     .string()
     .trim()
-    .min(2, 'Please type your full legal name to authorize filing.'),
+    .min(2, 'Please type your full legal name to confirm your details.'),
 });
 
 /** Read the originating client IP (first hop of x-forwarded-for). */
@@ -53,13 +72,23 @@ function clientIp(req: Request): string | null {
 }
 
 /**
- * POST /api/claims — the user e-signs a services authorization and we file (or
- * fetch) their claim for one lawsuit, then open a recovery row for accounting.
+ * POST /api/claims — save the user's pre-filled answers for one lawsuit (their
+ * confirmation + typed name), then open a $0-fee recovery row so the claim shows
+ * up in their money tracker. The user submits the actual claim themselves on the
+ * official administrator site (deep-linked from the UI) — we never file for them.
  *
  * Idempotent: claims are UNIQUE(user_id, lawsuit_id), so an existing claim is
  * returned rather than duplicated.
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(ipKey(req));
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limited.retryAfter) } },
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -102,7 +131,9 @@ export async function POST(req: Request) {
   // result means this is not a published settlement the user may file against.
   const { data: lawsuitRow } = await supabase
     .from('lawsuits')
-    .select('id, title, estimated_value_min, estimated_value_max, payout_min, payout_max')
+    .select(
+      'id, title, estimated_value_min, estimated_value_max, payout_min, payout_max, typical_payout',
+    )
     .eq('id', lawsuit_id)
     .maybeSingle();
   if (!lawsuitRow) {

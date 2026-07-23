@@ -1,5 +1,6 @@
 import type { ScrapedLawsuit } from '@/lib/types';
 import { sampleAggregatorAdapter } from './sample-source';
+import { makeHtmlAdapter } from './generic-html';
 
 /**
  * A `SourceAdapter` knows how to pull settlement/lawsuit listings from ONE
@@ -48,9 +49,53 @@ export interface SourceAdapter {
 }
 
 /**
- * The registry the runner iterates. Only offline-safe, deterministic adapters
- * are enabled by default so `runAllSources()` never depends on a live network.
- * Add real `makeHtmlAdapter(...)` instances here once they respect the source's
- * robots.txt / Terms.
+ * Build the list of REAL, network-backed adapters from configuration. Nothing
+ * is hardcoded to a specific third-party site: the operator supplies a listing
+ * URL via the `INGEST_SOURCE_URL` env var (only) AFTER confirming that site's
+ * Terms of Service and robots.txt permit automated access. Optional companions:
+ *   - INGEST_SOURCE_SLUG  stable key for the `sources` row (default: host)
+ *   - INGEST_SOURCE_NAME  human label (default: host)
+ *
+ * The returned {@link makeHtmlAdapter} instance still enforces robots.txt and
+ * rate limiting at fetch time; this only decides whether a real source exists.
+ * When `INGEST_SOURCE_URL` is unset or invalid we register no real source and
+ * fall back to the deterministic sample below.
  */
-export const SOURCE_ADAPTERS: SourceAdapter[] = [sampleAggregatorAdapter];
+function configuredRealAdapters(): SourceAdapter[] {
+  const listUrl = process.env.INGEST_SOURCE_URL?.trim();
+  if (!listUrl) return [];
+
+  let host: string;
+  try {
+    host = new URL(listUrl).host;
+  } catch {
+    // Malformed URL → treat as unconfigured rather than crash the run.
+    return [];
+  }
+
+  const slug = process.env.INGEST_SOURCE_SLUG?.trim() || host;
+  const name = process.env.INGEST_SOURCE_NAME?.trim() || host;
+  const homepage = (() => {
+    try {
+      return new URL(listUrl).origin;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  return [makeHtmlAdapter({ slug, name, listUrl, homepage })];
+}
+
+/**
+ * The registry the runner iterates. A real, operator-configured source (via
+ * `INGEST_SOURCE_URL`) is used when present; otherwise only the offline-safe,
+ * deterministic sample adapter runs, so `runAllSources()` never silently
+ * depends on a live network in dev/CI. The sample is always available so seed
+ * flows keep working even alongside a real source.
+ */
+const REAL_ADAPTERS = configuredRealAdapters();
+
+export const SOURCE_ADAPTERS: SourceAdapter[] =
+  REAL_ADAPTERS.length > 0
+    ? [...REAL_ADAPTERS, sampleAggregatorAdapter]
+    : [sampleAggregatorAdapter];

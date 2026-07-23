@@ -39,10 +39,15 @@ export async function POST() {
       updated_at: new Date().toISOString(),
     } as Profile);
 
-  // Load candidate lawsuits (published only), degrading to sample data.
+  // Load candidate lawsuits (published only), degrading to sample data. Mirrors
+  // the estimate path (.eq('review_status','published')) so the dashboard
+  // persistence and the reveal estimate always draw from the same catalog.
   let lawsuits: Lawsuit[] = [];
   try {
-    const { data } = await supabase.from('lawsuits').select('*').neq('status', 'draft');
+    const { data } = await supabase
+      .from('lawsuits')
+      .select('*')
+      .eq('review_status', 'published');
     if (data && data.length > 0) lawsuits = data as Lawsuit[];
   } catch {
     // fall through to sample data

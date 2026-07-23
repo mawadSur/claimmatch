@@ -13,7 +13,7 @@ const GRAIN =
  * Server-safe: the only client bit is <CountUp>, which animates the headline
  * figure up on mount. Sums the estimated gross across the user's active matches
  * into one big, celebratory number, with supporting stat chips for open
- * matches, active claims, and money already recovered (net, after our fee).
+ * matches, active claims, and money already recovered (paid in full — no fee).
  */
 export function MoneyHero({
   openMatches: openMatchList,
@@ -82,8 +82,8 @@ export function MoneyHero({
 
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85">
         {hasMoney
-          ? 'This is our estimate of what you could recover across the settlements you match. We file on your behalf and only take our fee when you get paid.'
-          : 'Finish your profile and we’ll surface the settlements you qualify for — then file every one of them for you.'}
+          ? 'This is our estimate of what you could recover across the settlements you match. We pre-fill each claim and link you to the official site to submit — always free, and we never take a cut.'
+          : 'Finish your profile and we’ll surface the settlements you qualify for — then pre-fill every one so you can submit in a couple of taps.'}
       </p>
 
       {/* Stat chips — staggered reveal on page load. --------------------------- */}

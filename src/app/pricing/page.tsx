@@ -2,22 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   ArrowRight, Sparkles, HandCoins, CheckCircle2, Search, ShieldCheck,
-  Wallet, FileSignature, TrendingUp, HelpCircle, XCircle, Scale,
+  Wallet, FileSignature, HelpCircle, XCircle, Scale, Handshake,
 } from 'lucide-react';
-import { FEE_PCT, feeAmount, netAmount, formatUSD } from '@/lib/recovery';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
 
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'ClaimMatch is free to check and free to get matched. We only earn a contingency fee — a percentage of what you recover — when you actually get paid. No win, no fee.',
+    'ClaimMatch is free. We never charge you and never take a cut of your settlement — the administrator pays you directly. We earn referral fees from partner services you choose to use.',
 };
-
-const PCT = Math.round(FEE_PCT * 100);
-
-// Worked examples: gross recovered -> our fee -> what you keep.
-const EXAMPLES = [50, 400, 1200];
 
 const STEPS = [
   {
@@ -28,34 +22,34 @@ const STEPS = [
   },
   {
     icon: FileSignature,
-    title: 'We file on your behalf',
-    body: 'Authorize with a single e-signature and we prepare and submit your claims to the official administrators. Still nothing to pay.',
+    title: 'Pre-fill and file yourself',
+    body: 'We pre-fill the official claim form from your profile and link you straight to the administrator’s site, where you review and submit. Still nothing to pay.',
     tag: '$0',
   },
   {
-    icon: TrendingUp,
-    title: 'You get paid, we take our fee',
-    body: `When a settlement actually pays out, we forward you the money and keep a ${PCT}% contingency fee. If you never get paid, you never owe us a cent.`,
-    tag: `${PCT}%`,
+    icon: HandCoins,
+    title: 'The administrator pays you',
+    body: 'When a settlement pays out, the money goes directly from the administrator to you. ClaimMatch never touches it and never takes a percentage.',
+    tag: '$0',
   },
 ];
 
 const FAQ = [
   {
-    q: 'When exactly am I charged?',
-    a: `Only after a settlement administrator pays out on a claim we filed for you. At that point we forward you the money you're owed and keep our ${PCT}% contingency fee. Nothing is charged when you sign up, get matched, or file.`,
+    q: 'How is ClaimMatch free?',
+    a: 'We make money from referral and lead fees paid by partner services — for example, when you choose to use a related product we recommend. Those partners pay us; you never do. Matching you to settlements and pre-filling your claims costs you nothing.',
   },
   {
-    q: 'What if I get nothing?',
-    a: 'Then you owe nothing. Our fee is a percentage of money you actually recover, so if a claim is denied or pays out $0, there is no fee. That is what "no win, no fee" means — the risk is on us, not you.',
+    q: 'Do you take a percentage of what I recover?',
+    a: 'Never. Settlement money is paid directly to you by the official administrator. ClaimMatch does not sit between you and your payout and does not take a cut of any recovery — you keep 100% of what you’re owed.',
   },
   {
-    q: 'Can I just file the claims myself?',
-    a: 'Absolutely. Every settlement we surface links to the official court or administrator page, and you are always free to file directly with them for free. You pay us a fee only when you choose to have us handle the filing and it results in a payout.',
+    q: 'Do you file the claim for me?',
+    a: 'No. We pre-fill the official claim form and deep-link you to the settlement administrator’s own site, where you review the details and submit the claim yourself. That keeps you in control and your money going straight to you.',
   },
   {
     q: 'Are there any hidden or upfront fees?',
-    a: `None. There is no subscription, no per-claim charge, and no setup fee. The only money that ever changes hands is our ${PCT}% share of a real recovery — and you can cancel anytime before a claim is filed.`,
+    a: 'None. There is no subscription, no per-claim charge, and no setup fee. You are never asked for a card to check eligibility or to file. If anyone ever asks you to pay to claim a settlement, that is a red flag — and it is not us.',
   },
 ];
 
@@ -71,14 +65,15 @@ export default function PricingPage() {
               <Sparkles className="h-3.5 w-3.5" /> Pricing
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              Free to check.{' '}
-              <span className="text-brand-600">We only get paid when you do.</span>
+              Free for you.{' '}
+              <span className="text-brand-600">You keep 100% of what you recover.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              Checking your matches and getting matched is completely free. We
-              recover your settlement money for you and take a simple{' '}
-              <strong className="font-semibold text-ink">{PCT}%</strong> of what you
-              actually receive — never a dollar upfront.
+              ClaimMatch never charges you and never takes a cut of your
+              settlement. We match you to claims and pre-fill the forms; the
+              administrator pays you directly. We earn{' '}
+              <strong className="font-semibold text-ink">referral fees</strong> from
+              partner services you choose to use — never from your recovery.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/signup" className="btn-primary w-full sm:w-auto">
@@ -89,7 +84,7 @@ export default function PricingPage() {
               </Link>
             </div>
             <p className="mt-6 text-sm text-ink-soft">
-              No upfront cost · No subscription · No win, no fee
+              No upfront cost · No subscription · No cut of your recovery
             </p>
           </div>
         </div>
@@ -103,20 +98,20 @@ export default function PricingPage() {
               {/* Left: the headline number */}
               <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white sm:p-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                  <HandCoins className="h-3.5 w-3.5" /> Contingency fee
+                  <HandCoins className="h-3.5 w-3.5" /> What you pay
                 </div>
                 <div className="mt-6 flex items-end gap-2">
                   <span className="font-display text-6xl font-extrabold leading-none">
-                    {PCT}%
+                    $0
                   </span>
                   <span className="pb-1 text-sm text-white/80">
-                    of what you recover
+                    to you, always
                   </span>
                 </div>
                 <p className="mt-4 text-sm leading-relaxed text-white/85">
-                  That is the entire price. We only ever take a share of money you
-                  actually get — so our incentive is simply to win you as much as
-                  possible.
+                  That is the entire price. We never charge you and never skim a
+                  percentage of your settlement — you keep every dollar the
+                  administrator pays you.
                 </p>
               </div>
 
@@ -126,10 +121,10 @@ export default function PricingPage() {
                 <ul className="mt-4 space-y-3">
                   {[
                     'Unlimited settlement matching',
-                    'We file every eligible claim for you',
+                    'Pre-filled official claim forms',
                     'Alerts the moment new matches open',
-                    'We chase the payout end to end',
-                    'Cancel anytime before a claim is filed',
+                    'A tracker for every claim you file',
+                    'You keep 100% of every recovery',
                   ].map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
@@ -146,15 +141,15 @@ export default function PricingPage() {
       {/* How the pricing works (3 steps) ------------------------------------- */}
       <section className="container-page py-16">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-extrabold">How the pricing works</h2>
+          <h2 className="text-3xl font-extrabold">Where a dollar changes hands</h2>
           <p className="mt-3 text-ink-muted">
-            You pay nothing until real money lands in your pocket. Here is exactly
-            where a dollar does — and doesn&rsquo;t — change hands.
+            Spoiler: never between you and us. Here is exactly how the money
+            flows.
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-3">
-          {STEPS.map((s, i) => (
+          {STEPS.map((s) => (
             <div
               key={s.title}
               className="relative rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
@@ -163,13 +158,7 @@ export default function PricingPage() {
                 <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
                   <s.icon className="h-5 w-5" />
                 </div>
-                <span
-                  className={
-                    i === 2
-                      ? 'font-display text-2xl font-extrabold text-brand-600'
-                      : 'font-display text-2xl font-extrabold text-success-500'
-                  }
-                >
+                <span className="font-display text-2xl font-extrabold text-success-500">
                   {s.tag}
                 </span>
               </div>
@@ -180,50 +169,47 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Worked example ------------------------------------------------------ */}
+      {/* How we actually make money ------------------------------------------ */}
       <section className="bg-gray-50 py-16">
         <div className="container-narrow">
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="badge-brand mx-auto gap-1.5">
-              <Wallet className="h-3.5 w-3.5" /> A worked example
-            </span>
-            <h2 className="mt-4 text-3xl font-extrabold">Do the math with us</h2>
-            <p className="mt-3 text-ink-muted">
-              Say a settlement pays out {formatUSD(EXAMPLES[1])} on a claim we filed
-              for you. We keep {formatUSD(feeAmount(EXAMPLES[1]))} ({PCT}%) and you
-              keep {formatUSD(netAmount(EXAMPLES[1]))}. Here&rsquo;s how it scales:
-            </p>
+          <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card">
+            <div className="grid gap-0 sm:grid-cols-[1fr_1.1fr]">
+              <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white sm:p-10">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                  <Handshake className="h-3.5 w-3.5" /> How we stay free
+                </div>
+                <h2 className="mt-6 text-2xl font-extrabold">
+                  Partners pay us — you never do.
+                </h2>
+                <p className="mt-4 text-sm leading-relaxed text-white/85">
+                  ClaimMatch earns referral and lead fees when you choose to use a
+                  partner service we recommend. That keeps the settlement finder
+                  free for everyone and our incentives pointed at helping you
+                  actually get paid.
+                </p>
+              </div>
+              <div className="p-8 sm:p-10">
+                <h3 className="text-base font-bold">Our promise on money</h3>
+                <ul className="mt-4 space-y-3">
+                  {[
+                    'We never charge you to find or file a claim',
+                    'We never take a percentage of your settlement',
+                    'The administrator pays your recovery directly to you',
+                    'Partner referrals are always your choice, never required',
+                  ].map((t) => (
+                    <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
-
-          <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs uppercase tracking-wide text-ink-soft">
-                  <th className="px-5 py-3 font-semibold">You recover</th>
-                  <th className="px-5 py-3 font-semibold">Our fee ({PCT}%)</th>
-                  <th className="px-5 py-3 text-right font-semibold">You keep</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EXAMPLES.map((gross) => (
-                  <tr key={gross} className="border-b border-gray-50 last:border-0">
-                    <td className="px-5 py-4 font-semibold text-ink">
-                      {formatUSD(gross)}
-                    </td>
-                    <td className="px-5 py-4 text-ink-muted">
-                      &minus;{formatUSD(feeAmount(gross))}
-                    </td>
-                    <td className="px-5 py-4 text-right font-bold text-success-600">
-                      {formatUSD(netAmount(gross))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mx-auto mt-5 max-w-2xl text-center text-sm text-ink-soft">
-            If a claim pays out {formatUSD(0)}, our fee is {formatUSD(0)}. You only
-            ever share a slice of a real recovery.
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-ink-soft">
+            <Wallet className="mr-1 inline h-4 w-4 align-text-bottom text-brand-600" />
+            If a settlement pays out $400, you keep the full $400. ClaimMatch takes
+            nothing.
           </p>
         </div>
       </section>
@@ -234,7 +220,7 @@ export default function PricingPage() {
           <span className="badge-brand mx-auto gap-1.5">
             <HelpCircle className="h-3.5 w-3.5" /> Pricing FAQ
           </span>
-          <h2 className="mt-4 text-3xl font-extrabold">Questions about the fee</h2>
+          <h2 className="mt-4 text-3xl font-extrabold">Questions about cost</h2>
         </div>
 
         <div className="mx-auto mt-10 max-w-3xl space-y-4">
@@ -264,7 +250,8 @@ export default function PricingPage() {
               start to finish
             </div>
             <p className="mt-2 text-sm text-ink-muted">
-              No upfront charge means we win only when you win.
+              Because we never take a cut, our only job is to help you find and
+              file every claim you&rsquo;re owed.
             </p>
           </div>
           <div className="mt-8 flex items-center justify-center gap-3 text-sm text-ink-muted">
@@ -282,8 +269,8 @@ export default function PricingPage() {
           </div>
           <h2 className="mt-4 text-3xl font-extrabold">See what you&rsquo;re owed</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            It&rsquo;s free to check and free to file. You only pay our {PCT}% when
-            you actually get paid.
+            It&rsquo;s free to check and free to file, and you keep 100% of every
+            recovery. You risk nothing by looking.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/signup" className="btn-primary w-full sm:w-auto">

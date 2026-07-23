@@ -15,11 +15,21 @@ import { SOURCE_ADAPTERS } from './sources';
 export interface RunSummary {
   inserted: number;
   updated: number;
+  /** Rows written with review_status='pending_review' (awaiting human review). */
+  pending_review: number;
+  /** Rows left published (a human already vetted them; preserved on refresh). */
+  published: number;
   bySource: Record<string, number>;
 }
 
 export async function runAllSources(): Promise<RunSummary> {
-  const summary: RunSummary = { inserted: 0, updated: 0, bySource: {} };
+  const summary: RunSummary = {
+    inserted: 0,
+    updated: 0,
+    pending_review: 0,
+    published: 0,
+    bySource: {},
+  };
 
   // No backend configured → nothing to do. (createServiceClient would build a
   // client with an undefined URL and throw on first use.)
@@ -76,6 +86,13 @@ export async function runAllSources(): Promise<RunSummary> {
 
     // 3) Map ScrapedLawsuit → lawsuits row (all rows share the same key set so
     //    PostgREST accepts the bulk upsert).
+    //
+    //    This is the NON-LLM path: rows carry only the adapter's structured
+    //    fields, with no confidence signal. They must NOT auto-publish — the
+    //    `lawsuits.review_status` column defaults to 'published', so we set it
+    //    explicitly to 'pending_review' and record a low/neutral
+    //    extraction_confidence, mirroring pipeline.ts's gating philosophy. A
+    //    human vets each row before it reaches the public catalog.
     const rows = items.map((item) => ({
       slug: slugify(item.title),
       title: item.title,
@@ -92,6 +109,9 @@ export async function runAllSources(): Promise<RunSummary> {
       claim_url: item.claim_url ?? null,
       external_id: item.external_id,
       status: 'open',
+      // Gate: never auto-publish an un-reviewed, un-scored scrape.
+      review_status: 'pending_review',
+      extraction_confidence: 0,
     }));
 
     // 4) Dedupe within the batch by slug (last-wins). A single upsert cannot
@@ -101,16 +121,41 @@ export async function runAllSources(): Promise<RunSummary> {
     for (const r of rows) bySlug.set(r.slug, r);
     const uniqueRows = [...bySlug.values()];
 
-    // 5) Count inserts vs updates by pre-checking which slugs already exist.
+    // 5) Count inserts vs updates by pre-checking which slugs already exist,
+    //    and — mirroring pipeline.ts — never clobber a human decision. If a row
+    //    was already published/rejected or has been reviewed, we preserve its
+    //    review_status + extraction_confidence on this refresh instead of
+    //    resetting it to pending_review.
     const slugs = uniqueRows.map((r) => r.slug);
     const { data: existing } = await supabase
       .from('lawsuits')
-      .select('slug')
+      .select('slug, review_status, extraction_confidence, reviewed_at')
       .in('slug', slugs);
-    const existingSlugs = new Set(
-      (existing ?? []).map((r: { slug: string }) => r.slug),
+    type ExistingRow = {
+      slug: string;
+      review_status?: string | null;
+      extraction_confidence?: number | null;
+      reviewed_at?: string | null;
+    };
+    const existingBySlug = new Map<string, ExistingRow>(
+      (existing ?? []).map((r: ExistingRow) => [r.slug, r] as [string, ExistingRow]),
     );
-    const insertedForSource = slugs.filter((s) => !existingSlugs.has(s)).length;
+    const insertedForSource = slugs.filter((s) => !existingBySlug.has(s)).length;
+
+    for (const row of uniqueRows) {
+      const prior = existingBySlug.get(row.slug);
+      const locked =
+        prior &&
+        (prior.review_status === 'published' ||
+          prior.review_status === 'rejected' ||
+          !!prior.reviewed_at);
+      if (locked && prior) {
+        // Keep the human's disposition; only the content columns refresh.
+        row.review_status = prior.review_status ?? row.review_status;
+        row.extraction_confidence =
+          prior.extraction_confidence ?? row.extraction_confidence;
+      }
+    }
 
     // 6) Upsert. Prefer the provenance key (source_id, external_id); fall back
     //    to slug if the DB lacks that exact conflict target (it is a PARTIAL
@@ -130,6 +175,12 @@ export async function runAllSources(): Promise<RunSummary> {
       summary.inserted += insertedForSource;
       summary.updated += uniqueRows.length - insertedForSource;
       summary.bySource[adapter.slug] = uniqueRows.length;
+      // Review-gate breakdown: new/un-vetted rows are pending_review; only rows
+      // a human already published stay published (see preservation loop above).
+      for (const row of uniqueRows) {
+        if (row.review_status === 'published') summary.published += 1;
+        else summary.pending_review += 1;
+      }
     }
 
     // 6) Record the run.

@@ -27,6 +27,7 @@ function getResend(): { emails: { send: (o: unknown) => Promise<unknown> } } | n
   if (!key) return null;
   try {
     // Imported lazily so the dependency is only touched when actually sending.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Resend } = require('resend');
     return new Resend(key);
   } catch (err) {

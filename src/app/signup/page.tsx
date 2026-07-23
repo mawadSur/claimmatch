@@ -28,7 +28,7 @@ export default function SignupPage() {
         <div className="mx-auto max-w-md">
           <div className="text-center">
             <span className="badge-brand mx-auto gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> Free to check · No win, no fee
+              <Sparkles className="h-3.5 w-3.5" /> Always free · We never take a cut
             </span>
             <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl">
               Find the settlements{' '}

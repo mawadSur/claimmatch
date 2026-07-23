@@ -10,11 +10,13 @@ import {
   ExternalLink,
   UserCheck,
   CheckCircle2,
+  BadgeCheck,
 } from 'lucide-react';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
 import { createClient } from '@/lib/supabase/server';
 import { formatDeadline, daysUntil } from '@/lib/utils';
 import { Disclaimer } from '@/components/Disclaimer';
+import { RecommendedServices } from '@/components/RecommendedServices';
 import type { LawsuitStatus } from '@/lib/types';
 
 export async function generateMetadata({
@@ -97,6 +99,13 @@ export default async function LawsuitDetailPage({
           {lawsuit.summary && (
             <p className="mt-4 max-w-2xl text-lg text-ink-muted">{lawsuit.summary}</p>
           )}
+
+          {lawsuit.administrator && (
+            <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-sm font-medium text-ink-muted ring-1 ring-brand-500/15">
+              <BadgeCheck className="h-4 w-4 text-brand-500" />
+              Officially administered by {lawsuit.administrator}
+            </p>
+          )}
         </div>
       </section>
 
@@ -145,9 +154,16 @@ export default async function LawsuitDetailPage({
           )}
 
           {(lawsuit.claim_url || lawsuit.source_url) && (
-            <div className="mt-8">
-              <h2 className="text-lg font-bold">Official sources</h2>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <div className="mt-8 rounded-2xl border border-brand-500/15 bg-brand-50/40 p-5">
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <BadgeCheck className="h-5 w-5 text-brand-500" /> Official sources
+              </h2>
+              <p className="mt-2 text-sm text-ink-muted">
+                {lawsuit.administrator
+                  ? `These links go straight to the official settlement page run by ${lawsuit.administrator}, the court-approved administrator. ClaimMatch never collects your claim — you file directly with the administrator.`
+                  : 'These links go straight to the official, court-approved settlement page. ClaimMatch never collects your claim — you file directly with the administrator.'}
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 {lawsuit.claim_url && (
                   <a
                     href={lawsuit.claim_url}
@@ -199,7 +215,7 @@ export default async function LawsuitDetailPage({
                 </Link>
                 {!signedIn && (
                   <p className="mt-3 text-center text-xs text-ink-soft">
-                    Free to start · No win, no fee
+                    Always free · You submit on the official site
                   </p>
                 )}
               </>
@@ -221,6 +237,16 @@ export default async function LawsuitDetailPage({
             </ul>
           </div>
         </aside>
+      </section>
+
+      {/* Recommended partner services (sponsored, contextual) --------------- */}
+      <section className="container-page pb-12">
+        <RecommendedServices
+          placement="lawsuit_detail"
+          lawsuitCategory={lawsuit.category}
+          lawsuitId={lawsuit.id}
+          limit={2}
+        />
       </section>
     </>
   );

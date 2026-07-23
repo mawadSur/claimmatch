@@ -11,6 +11,7 @@ import {
   AlertCircle,
   LogIn,
   ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { estimateTotalOwed, formatUSD } from '@/lib/recovery';
@@ -18,11 +19,14 @@ import { SERVICES_AGREEMENT } from '@/lib/services-agreement';
 
 type Match = { lawsuit: Lawsuit; reasons?: string[] };
 type Phase = 'idle' | 'loading' | 'success' | 'error' | 'unauth';
+type Receipt = { slug: string; receipt_number: number; claim_url: string | null };
 
 /**
- * One-click "file everything you're owed" action. Shows the count + estimated
- * total, then a single e-sign modal (typed legal name + authorization checkbox
- * referencing the services agreement) that POSTs /api/claims/file-all.
+ * One-click "prepare everything you're owed" action. Shows the count + estimated
+ * total, then a single confirmation modal (typed legal name + accuracy checkbox
+ * referencing the services agreement) that POSTs /api/claims/file-all. This
+ * pre-fills each eligible claim and returns the official administrator links —
+ * the user reviews and submits each claim themselves on the official site.
  */
 export function FileAllButton({
   matches,
@@ -38,6 +42,7 @@ export function FileAllButton({
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [filedCount, setFiledCount] = useState(0);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
 
   const count = matches.length;
   const total = formatUSD(estimateTotalOwed(matches));
@@ -72,6 +77,7 @@ export function FileAllButton({
       const json = await res.json().catch(() => null);
       if (res.ok && json) {
         setFiledCount(typeof json.filed === 'number' ? json.filed : 0);
+        setReceipts(Array.isArray(json.receipts) ? json.receipts : []);
         setPhase('success');
         router.refresh();
       } else {
@@ -99,7 +105,7 @@ export function FileAllButton({
         className="btn-primary w-full justify-center sm:w-auto"
       >
         <FileSignature className="h-4 w-4" />
-        {count === 0 ? 'No claims to file' : `File all ${count} claim${count === 1 ? '' : 's'}`}
+        {count === 0 ? 'No claims to prepare' : `Prepare all ${count} claim${count === 1 ? '' : 's'}`}
         {count > 0 && (
           <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
             {total}
@@ -112,7 +118,7 @@ export function FileAllButton({
           className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 sm:items-center sm:p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Authorize filing"
+          aria-label="Prepare your claims"
           onClick={closeModal}
         >
           <div
@@ -123,7 +129,7 @@ export function FileAllButton({
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 p-5">
               <div>
                 <h2 className="text-lg font-bold">
-                  Authorize filing {count} claim{count === 1 ? '' : 's'}
+                  Prepare {count} claim{count === 1 ? '' : 's'}
                 </h2>
                 <p className="mt-1 text-sm text-ink-muted">
                   Estimated total you could recover:{' '}
@@ -148,13 +154,32 @@ export function FileAllButton({
                   <CheckCircle2 className="h-7 w-7" />
                 </div>
                 <h3 className="mt-4 text-xl font-extrabold">
-                  Filed {filedCount} claim{filedCount === 1 ? '' : 's'}
+                  Prepared {filedCount} claim{filedCount === 1 ? '' : 's'}
                 </h3>
                 <p className="mt-2 max-w-sm text-sm text-ink-muted">
                   {filedCount > 0
-                    ? 'We’ve filed your claims and opened a recovery for each. Track them from your dashboard.'
-                    : 'Everything eligible was already filed — you’re all caught up.'}
+                    ? 'Your details are pre-filled. Open each official form to review and submit — you file directly with the administrator.'
+                    : 'Everything eligible was already prepared — you’re all caught up.'}
                 </p>
+                {receipts.some((r) => r.claim_url) && (
+                  <ul className="mt-5 w-full space-y-2 text-left">
+                    {receipts
+                      .filter((r) => r.claim_url)
+                      .map((r) => (
+                        <li key={r.slug}>
+                          <a
+                            href={r.claim_url ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                          >
+                            <span className="truncate">Open official form · {r.slug}</span>
+                            <ExternalLink className="h-4 w-4 shrink-0" />
+                          </a>
+                        </li>
+                      ))}
+                  </ul>
+                )}
                 <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
                   <Link href="/dashboard" className="btn-primary justify-center">
                     Go to your dashboard
@@ -178,13 +203,13 @@ export function FileAllButton({
                   <div className="mb-4 flex items-start gap-2 rounded-xl bg-brand-50/70 p-3 text-xs text-ink-muted">
                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                     <span>
-                      It costs nothing to file. ClaimMatch only earns its
-                      published fee as a percentage of money you actually
-                      recover.
+                      It’s free, and ClaimMatch never takes a cut of your
+                      settlement. We pre-fill each claim and link you to the
+                      official site, where you review and submit it yourself.
                     </span>
                   </div>
 
-                  <label className="field-label">Services agreement</label>
+                  <label className="field-label">How ClaimMatch works</label>
                   <div className="mt-1 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-ink-muted">
                     {SERVICES_AGREEMENT}
                   </div>
@@ -213,8 +238,8 @@ export function FileAllButton({
                       className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
                     />
                     <span className="text-sm text-ink-muted">
-                      I authorize ClaimMatch to file these claims and attest the
-                      information is accurate.
+                      I confirm my details are accurate and understand I’ll
+                      review and submit each claim myself on the official site.
                     </span>
                   </label>
 
@@ -246,12 +271,12 @@ export function FileAllButton({
                   >
                     {phase === 'loading' ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Filing your
+                        <Loader2 className="h-4 w-4 animate-spin" /> Preparing your
                         claims…
                       </>
                     ) : (
                       <>
-                        <FileSignature className="h-4 w-4" /> Sign &amp; file all{' '}
+                        <FileSignature className="h-4 w-4" /> Prepare all{' '}
                         {count} claim{count === 1 ? '' : 's'}
                       </>
                     )}

@@ -9,8 +9,8 @@ const BodySchema = z
   .object({
     id: z.string().uuid('A valid recovery id is required.'),
     action: z.enum(['record', 'mark_paid', 'deny']),
-    // Only meaningful for 'record'. fee_amount / net_amount are DB-generated
-    // columns computed from gross_amount — the client never sets them.
+    // Only meaningful for 'record'. net_amount is a DB-generated column equal to
+    // gross_amount (ClaimMatch takes no cut) — the client never sets it.
     gross_amount: z.number().finite().nonnegative().optional(),
   })
   .superRefine((val, ctx) => {
@@ -29,10 +29,10 @@ const BodySchema = z
  *   mark_paid → mark 'paid', stamp paid_out_at
  *   deny      → mark 'denied'
  *
- * fee_amount and net_amount are GENERATED columns in the DB — we never write
- * them; recording the gross recomputes them, and returning '*' echoes the fresh
- * values back for an optimistic UI update. Writes use the service client
- * (bypasses RLS) but are gated behind an admin check first.
+ * net_amount is a GENERATED column equal to gross_amount (ClaimMatch takes no
+ * cut) — we never write it; recording the gross recomputes it, and returning '*'
+ * echoes the fresh value back for an optimistic UI update. Writes use the service
+ * client (bypasses RLS) but are gated behind an admin check first.
  */
 export async function PATCH(req: Request) {
   const admin = await getAdminUser();

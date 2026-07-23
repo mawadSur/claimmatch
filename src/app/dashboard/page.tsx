@@ -13,6 +13,7 @@ import type { Claim, Match, Profile } from '@/lib/types';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { MoneyHero } from '@/components/MoneyHero';
 import { RecoveryTracker } from '@/components/RecoveryTracker';
+import { RecommendedServices } from '@/components/RecommendedServices';
 import { FileAllButton } from '@/components/FileAllButton';
 import { RefreshMatches } from '@/components/RefreshMatches';
 import { Disclaimer } from '@/components/Disclaimer';
@@ -87,7 +88,7 @@ export default async function DashboardPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-ink-muted">
             Here’s what you’re owed, the settlements ready to file, and the money
-            we’re recovering for you.
+            you’re recovering.
           </p>
         </header>
 
@@ -127,8 +128,8 @@ export default async function DashboardPage() {
               </span>
               <h2 className="mt-3 text-2xl font-extrabold">File these now</h2>
               <p className="mt-1 text-sm text-ink-muted">
-                Settlements you match but haven’t filed yet. File them all in one
-                signed action.
+                Settlements you match but haven’t filed yet. Prepare them all in
+                one tap — then submit on each official site.
               </p>
             </div>
             <RefreshMatches />
@@ -195,15 +196,20 @@ export default async function DashboardPage() {
             <span className="badge-gray gap-1">
               <Wallet className="h-3.5 w-3.5" /> Your recoveries
             </span>
-            <h2 className="mt-3 text-2xl font-extrabold">Money we’re recovering</h2>
+            <h2 className="mt-3 text-2xl font-extrabold">Money you’re recovering</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              Every claim we’ve filed for you, tracked from submission to payout.
+              Every claim you’ve filed, tracked from submission to payout.
             </p>
           </div>
 
           <div className="mt-8">
             <RecoveryTracker claims={claims} />
           </div>
+        </section>
+
+        {/* Recommended partner services (sponsored) -------------------------- */}
+        <section className="mt-14">
+          <RecommendedServices placement="dashboard" limit={2} />
         </section>
 
         <div className="mt-14">

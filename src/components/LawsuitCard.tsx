@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Clock, ShieldCheck, Wallet } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Clock, ShieldCheck, Wallet } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { formatDeadline, daysUntil } from '@/lib/utils';
 
@@ -63,6 +63,13 @@ export function LawsuitCard({
         </ul>
       )}
 
+      {lawsuit.administrator && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-ink-soft">
+          <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand-500" />
+          Administered by {lawsuit.administrator}
+        </p>
+      )}
+
       <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-center">
         <Stat icon={<Wallet className="h-3.5 w-3.5" />} label="Typical" value={lawsuit.typical_payout || 'Varies'} accent />
         <Stat icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Proof" value={lawsuit.proof_required ? 'Required' : 'None'} />
@@ -75,6 +82,12 @@ export function LawsuitCard({
       >
         View settlement <ArrowRight className="h-4 w-4" />
       </Link>
+
+      {(lawsuit.claim_url || lawsuit.source_url) && (
+        <p className="mt-2.5 text-center text-[11px] text-ink-soft">
+          Links to the official claim site
+        </p>
+      )}
     </article>
   );
 }

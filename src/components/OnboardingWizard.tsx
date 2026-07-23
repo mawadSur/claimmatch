@@ -213,8 +213,8 @@ export function OnboardingWizard({
               </div>
             )}
             <p className="mx-auto mt-5 max-w-md text-sm text-ink-muted">
-              We’ll file every one of them on your behalf and only take our fee
-              when you actually get paid.
+              We’ll pre-fill every one of them and link you straight to the
+              official site to submit — always free, and we never take a cut.
             </p>
             <button
               type="button"

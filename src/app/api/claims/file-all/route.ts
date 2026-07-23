@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { SAMPLE_LAWSUITS } from '@/lib/sample-data';
-import { FEE_PCT, estimateLawsuitValue } from '@/lib/recovery';
+import { estimateLawsuitValue } from '@/lib/recovery';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
 import type { Lawsuit, Profile } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ const FileAllSchema = z.object({
   signature_name: z
     .string()
     .trim()
-    .min(2, 'Please type your full legal name to authorize filing.'),
+    .min(2, 'Please type your full legal name to confirm your details.'),
 });
 
 /** First hop of x-forwarded-for. */
@@ -28,12 +29,37 @@ function clientIp(req: Request): string | null {
   return req.headers.get('x-real-ip')?.trim() || null;
 }
 
+/** True when a settlement's filing deadline has already passed. */
+function deadlinePassed(deadline: string | null): boolean {
+  if (!deadline) return false;
+  const t = new Date(deadline).getTime();
+  return Number.isFinite(t) && t < Date.now();
+}
+
+/** The official form a user files on: administrator claim URL, else the source. */
+function officialUrl(l: Lawsuit): string | null {
+  return l.claim_url ?? l.source_url ?? null;
+}
+
 /**
- * POST /api/claims/file-all — one signed action files every eligible,
- * not-yet-claimed match for the current user. Recomputes matches from the saved
- * profile, then inserts a claim (+ recovery row) per eligible real-DB lawsuit.
+ * POST /api/claims/file-all — one signed action pre-fills every eligible,
+ * not-yet-saved match for the current user. Recomputes matches from the saved
+ * profile, then saves a claim (+ $0-fee recovery row) per eligible real-DB
+ * lawsuit and returns each official claim URL. The user still submits every
+ * claim themselves on the administrator's site — we never file for them.
+ *
+ * Skips settlements that require proof (the user must attach it on the official
+ * site) and settlements whose filing deadline has already passed.
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(ipKey(req));
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(limited.retryAfter) } },
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -114,7 +140,11 @@ export async function POST(req: Request) {
     service = null;
   }
 
-  const receipts: { slug: string; receipt_number: number }[] = [];
+  const receipts: {
+    slug: string;
+    receipt_number: number;
+    claim_url: string | null;
+  }[] = [];
 
   for (const r of results) {
     // Only real DB lawsuits are fileable; sample ids have no durable row.
@@ -123,6 +153,12 @@ export async function POST(req: Request) {
 
     const lawsuit = byId.get(r.lawsuit_id);
     if (!lawsuit) continue;
+
+    // One-tap can't attach proof — the user must upload it themselves on the
+    // official site — so skip settlements that require documentation.
+    if (lawsuit.proof_required) continue;
+    // Skip settlements whose filing deadline has already passed.
+    if (deadlinePassed(lawsuit.deadline)) continue;
 
     const estimated_value = estimateLawsuitValue(lawsuit);
 
@@ -152,11 +188,12 @@ export async function POST(req: Request) {
       alreadyClaimed.add(r.lawsuit_id);
 
       if (service) {
+        // $0-fee money tracker: ClaimMatch takes no cut, so net == gross.
         const { error: recErr } = await service.from('recoveries').insert({
           user_id: user.id,
           claim_id: claim.id,
           gross_amount: 0,
-          fee_pct: FEE_PCT,
+          fee_pct: 0,
           status: 'pending',
         });
         if (recErr && recErr.code !== '23505') {
@@ -164,7 +201,11 @@ export async function POST(req: Request) {
         }
       }
 
-      receipts.push({ slug: lawsuit.slug, receipt_number: claim.receipt_number });
+      receipts.push({
+        slug: lawsuit.slug,
+        receipt_number: claim.receipt_number,
+        claim_url: officialUrl(lawsuit),
+      });
     } catch (err) {
       console.error('[file-all] per-item error:', err);
       // continue with the next match

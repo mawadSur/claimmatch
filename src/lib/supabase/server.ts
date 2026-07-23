@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { log } from '@/lib/log';
 
 // Harmless, syntactically-valid placeholders used when Supabase isn't
 // configured (local/sample-data/first deploy). With no auth cookie present,
@@ -51,12 +52,24 @@ export async function createClient() {
  * key if no service role is configured so builds don't crash.
  */
 export function createServiceClient() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // If the app is otherwise configured but the service-role key is absent, we
+  // fall back to the anon key. That silently breaks trusted server jobs (RLS
+  // blocks their writes), so make the degradation LOUD instead of invisible.
+  if (isSupabaseConfigured() && !serviceRoleKey) {
+    log.warn(
+      'supabase',
+      'SUPABASE_SERVICE_ROLE_KEY is missing — service client is degrading to the anon key. ' +
+        'RLS will block privileged writes (scraping, matching, cron). Set the service-role key in prod.',
+    );
+  }
+
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      FALLBACK_KEY,
+    serviceRoleKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 }

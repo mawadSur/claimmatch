@@ -258,4 +258,38 @@ values
   )
 on conflict (slug) do nothing;
 
+-- ---------------------------------------------------------------------------
+-- Partners (referral-revenue catalog)
+-- Sample partner services we route members to for a lead/referral fee. Fees are
+-- in whole cents. These are placeholders (example.com) — replace with real,
+-- contracted partners and payout terms before launch.
+-- ---------------------------------------------------------------------------
+insert into public.partners
+  (slug, name, category, tagline, description, url, payout_model, lead_fee_cents, conversion_fee_cents, priority) values
+  (
+    'claimpros', 'ClaimPros', 'claims_service',
+    'Full-service help for complex or high-value claims',
+    'A licensed claims-filing service that handles the paperwork end-to-end for settlements that require proof or documentation you''d rather not chase yourself.',
+    'https://partners.example.com/claimpros', 'hybrid', 300, 4000, 30
+  ),
+  (
+    'settlement-counsel', 'Settlement Counsel LLP', 'law_firm',
+    'Talk to an attorney about opting out or a larger claim',
+    'A consumer-rights law firm for members who may have a larger individual claim or want legal advice before joining or opting out of a class.',
+    'https://partners.example.com/settlement-counsel', 'per_lead', 800, 0, 20
+  ),
+  (
+    'taxrelief-partners', 'TaxRelief Partners', 'tax',
+    'Figure out if your settlement payout is taxable',
+    'Settlement income can be taxable. These specialists review your payout and help you report it correctly — often a quick, free consultation.',
+    'https://partners.example.com/taxrelief', 'per_conversion', 0, 2500, 10
+  ),
+  (
+    'creditguard', 'CreditGuard', 'credit',
+    'Monitor your credit after a data-breach settlement',
+    'If you were part of a data-breach settlement, ongoing credit monitoring helps you catch misuse early. Free tier available.',
+    'https://partners.example.com/creditguard', 'per_lead', 150, 0, 5
+  )
+on conflict (slug) do nothing;
+
 commit;

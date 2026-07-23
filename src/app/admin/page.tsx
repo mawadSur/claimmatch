@@ -16,11 +16,16 @@ import {
   ListChecks,
   Loader2,
   Activity,
+  Handshake,
+  MousePointerClick,
+  TrendingUp,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
-import { FEE_PCT, formatUSD } from '@/lib/recovery';
+import { formatUSD } from '@/lib/recovery';
+import { summarizeLeadEvents, centsToUSD } from '@/lib/partners';
+import type { LeadEvent } from '@/lib/types';
 import { StatCard } from '@/components/admin/StatCard';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -55,13 +60,27 @@ export default async function AdminOverviewPage() {
     try {
       const { data } = await svc
         .from('recoveries')
-        .select('gross_amount, fee_amount');
+        .select('gross_amount');
       return (data ?? []) as {
         gross_amount: number | null;
-        fee_amount: number | null;
       }[];
     } catch {
-      return [] as { gross_amount: number | null; fee_amount: number | null }[];
+      return [] as { gross_amount: number | null }[];
+    }
+  })();
+
+  // Referral-revenue ledger — pull the lead events and summarize in JS.
+  const leadEventsPromise = (async () => {
+    try {
+      const { data } = await svc
+        .from('lead_events')
+        .select('partner_id, status, revenue_cents');
+      return (data ?? []) as Pick<
+        LeadEvent,
+        'partner_id' | 'status' | 'revenue_cents'
+      >[];
+    } catch {
+      return [] as Pick<LeadEvent, 'partner_id' | 'status' | 'revenue_cents'>[];
     }
   })();
 
@@ -86,6 +105,8 @@ export default async function AdminOverviewPage() {
     jobsDone,
     jobsFailed,
     recoveries,
+    partnersActive,
+    leadEvents,
   ] = await Promise.all([
     count('profiles'),
     count('profiles', (q) => q.eq('onboarded', true)),
@@ -107,15 +128,18 @@ export default async function AdminOverviewPage() {
     count('jobs', (q) => q.eq('status', 'done')),
     count('jobs', (q) => q.eq('status', 'failed')),
     recoveriesPromise,
+    count('partners', (q) => q.eq('active', true)),
+    leadEventsPromise,
   ]);
+
+  const revenue = summarizeLeadEvents(leadEvents);
 
   const recoveriesCount = recoveries.length;
   const grossSum = recoveries.reduce((s, r) => s + Number(r.gross_amount ?? 0), 0);
-  const feeSum = recoveries.reduce((s, r) => s + Number(r.fee_amount ?? 0), 0);
+  const avgRecovery = recoveriesCount > 0 ? grossSum / recoveriesCount : 0;
 
   const pctOf = (n: number, d: number) =>
     d > 0 ? `${Math.round((n / d) * 100)}% of ${d.toLocaleString()}` : 'No members yet';
-  const feePctLabel = `${Math.round(FEE_PCT * 100)}% contingency`;
 
   return (
     <div className="space-y-10">
@@ -127,9 +151,9 @@ export default async function AdminOverviewPage() {
           Business at a glance
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Growth, catalog health, claims, and the money we&rsquo;re recovering —
-          recomputed on every load. ClaimMatch takes {feePctLabel.toLowerCase()} of
-          what members recover.
+          Growth, catalog health, claims, and the money members are recovering —
+          recomputed on every load. ClaimMatch is free and never takes a cut of a
+          member&rsquo;s recovery.
         </p>
       </header>
 
@@ -213,10 +237,42 @@ export default async function AdminOverviewPage() {
           icon={<CircleDollarSign className="h-4 w-4" />}
         />
         <StatCard
-          label="Our fees"
-          value={formatUSD(feeSum)}
-          sub={feePctLabel}
+          label="Avg per recovery"
+          value={formatUSD(avgRecovery)}
+          sub="mean member payout"
           icon={<Percent className="h-4 w-4" />}
+        />
+      </Section>
+
+      <Section title="Referral revenue" subtitle="Partner leads, conversions & fees earned">
+        <StatCard
+          label="Active partners"
+          value={partnersActive.toLocaleString()}
+          icon={<Handshake className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Referral clicks"
+          value={revenue.clicks.toLocaleString()}
+          sub={`${revenue.leads.toLocaleString()} qualified leads`}
+          icon={<MousePointerClick className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Conversions"
+          value={revenue.conversions.toLocaleString()}
+          sub={`${Math.round(revenue.conversionRate * 100)}% of clicks`}
+          icon={<TrendingUp className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Revenue earned"
+          value={centsToUSD(revenue.revenueCents)}
+          sub="lead + conversion fees"
+          icon={<CircleDollarSign className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Revenue paid"
+          value={centsToUSD(revenue.paidCents)}
+          sub="settled by partners"
+          icon={<Wallet className="h-4 w-4" />}
         />
       </Section>
 

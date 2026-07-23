@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import {
   Wallet,
   CircleDollarSign,
-  Percent,
   HandCoins,
   Clock,
   BadgeCheck,
@@ -11,7 +10,7 @@ import {
 } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
-import { FEE_PCT, formatUSD } from '@/lib/recovery';
+import { formatUSD } from '@/lib/recovery';
 import type { RecoveryStatus } from '@/lib/types';
 import { StatCard } from '@/components/admin/StatCard';
 import {
@@ -25,8 +24,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Money desk: the ledger of every recovery. Admins record the gross a member
- * recovered (the DB recomputes our fee + their net), advance the payout, or deny
- * it. Summary tiles roll up gross recovered, our revenue, and net paid to members.
+ * recovered, advance the payout, or deny it. ClaimMatch takes no cut, so net
+ * always equals gross — these tiles track recovered totals for analytics, not
+ * revenue owed to us.
  */
 export default async function AdminRecoveriesPage() {
   if (!(await getAdminUser())) redirect('/login?next=/admin/recoveries');
@@ -44,12 +44,15 @@ export default async function AdminRecoveriesPage() {
     rows = [];
   }
 
-  // Roll-ups. Gross + fee count every recovery with money recorded; net "paid
-  // out" only counts recoveries we've actually paid to the member.
+  // Roll-ups. Gross counts every recovery with money recorded; "paid out" only
+  // counts recoveries actually paid to the member (net == gross, no fee).
   const grossSum = rows.reduce((s, r) => s + Number(r.gross_amount ?? 0), 0);
-  const feeSum = rows.reduce((s, r) => s + Number(r.fee_amount ?? 0), 0);
   const netPaidSum = rows.reduce(
     (s, r) => s + (r.status === 'paid' ? Number(r.net_amount ?? 0) : 0),
+    0,
+  );
+  const awaitingSum = rows.reduce(
+    (s, r) => s + (r.status === 'awaiting_payout' ? Number(r.gross_amount ?? 0) : 0),
     0,
   );
 
@@ -63,8 +66,6 @@ export default async function AdminRecoveriesPage() {
     if (r.status in counts) counts[r.status] += 1;
   }
 
-  const feePctLabel = `${Math.round(FEE_PCT * 100)}% contingency`;
-
   return (
     <div className="space-y-8">
       <header>
@@ -75,35 +76,35 @@ export default async function AdminRecoveriesPage() {
           Recoveries
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Record the money members recover, take our {feePctLabel.toLowerCase()},
-          and advance each payout. Recording a gross recomputes the fee and the
-          member&rsquo;s net automatically.
+          Record the money members recover and advance each payout. ClaimMatch
+          takes no cut — the member keeps the full amount, and this ledger tracks
+          recovered totals for analytics.
         </p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard
-          label="Gross recovered"
+          label="Total recovered"
           value={<span className="tabular-nums">{formatUSD(grossSum)}</span>}
-          sub="total settlements recorded"
+          sub="gross across all members"
           icon={<CircleDollarSign className="h-4 w-4" />}
         />
         <StatCard
-          label="Our fees"
-          value={<span className="tabular-nums">{formatUSD(feeSum)}</span>}
-          sub={feePctLabel}
-          icon={<Percent className="h-4 w-4" />}
-        />
-        <StatCard
-          label="Net paid to members"
+          label="Paid out to members"
           value={<span className="tabular-nums">{formatUSD(netPaidSum)}</span>}
           sub={`${counts.paid.toLocaleString()} paid out`}
           icon={<HandCoins className="h-4 w-4" />}
         />
         <StatCard
+          label="Awaiting payout"
+          value={<span className="tabular-nums">{formatUSD(awaitingSum)}</span>}
+          sub={`${counts.awaiting_payout.toLocaleString()} in flight`}
+          icon={<Clock className="h-4 w-4" />}
+        />
+        <StatCard
           label="Recoveries"
           value={<span className="tabular-nums">{rows.length.toLocaleString()}</span>}
-          sub={`${counts.awaiting_payout.toLocaleString()} awaiting payout`}
+          sub={`${counts.pending.toLocaleString()} pending`}
           icon={<Wallet className="h-4 w-4" />}
         />
       </section>

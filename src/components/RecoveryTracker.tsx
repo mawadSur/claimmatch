@@ -13,10 +13,11 @@ import { CLAIM_STATUS_LABELS } from '@/lib/types';
 import { formatUSD } from '@/lib/recovery';
 
 /**
- * The recovery pipeline — an honest, receipt-style tracker for every claim
- * ClaimMatch has filed on the user's behalf. Server-safe (no hooks). Shows the
- * Submitted → Under review → Approved → Paid pipeline, receipt #, estimated
- * value, and (once a recovery is opened) the gross / our fee / net-to-you math.
+ * The recovery pipeline — an honest, receipt-style tracker for every claim the
+ * user is filing through ClaimMatch. Server-safe (no hooks). Shows the
+ * Submitted → Under review → Approved → Paid pipeline, tracking reference,
+ * estimated value, and (once a recovery is opened) how much the user recovered.
+ * ClaimMatch is free and takes no cut, so the amount recovered is theirs to keep.
  */
 const PIPELINE = ['Submitted', 'Under review', 'Approved', 'Paid'] as const;
 
@@ -47,7 +48,7 @@ export function RecoveryTracker({ claims }: { claims: Claim[] }) {
           Once you file a claim it shows up here, and we&rsquo;ll track it all the
           way to payout. Settlements move slowly — most take{' '}
           <span className="font-semibold text-ink">6 to 18 months</span> to pay
-          out after filing. We&rsquo;ll handle the paperwork and email you at
+          out after filing. We&rsquo;ll pre-fill your claims and email you at
           every step.
         </p>
         <Link href="/lawsuits" className="btn-primary mt-6">
@@ -64,8 +65,9 @@ export function RecoveryTracker({ claims }: { claims: Claim[] }) {
       ))}
       <p className="pt-1 text-center text-xs text-ink-soft">
         Settlements typically take{' '}
-        <span className="tabular-nums">6&ndash;18</span> months to pay out. We
-        only take our fee once money actually lands in your pocket.
+        <span className="tabular-nums">6&ndash;18</span> months to pay out. When
+        yours does, the administrator pays you directly — ClaimMatch never takes a
+        cut.
       </p>
     </div>
   );
@@ -126,7 +128,7 @@ function RecoveryRow({ claim }: { claim: Claim }) {
       {rejected ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700">
           <XCircle className="h-4 w-4 shrink-0" />
-          This claim wasn&rsquo;t eligible. No fee, no cost to you — we&rsquo;ll
+          This claim wasn&rsquo;t eligible. ClaimMatch is always free — we&rsquo;ll
           keep watching for others you qualify for.
         </div>
       ) : (
@@ -194,17 +196,13 @@ function RecoveryRow({ claim }: { claim: Claim }) {
 }
 
 function MoneyBreakdown({ recovery }: { recovery: Recovery }) {
-  const feePct = Math.round((recovery.fee_pct ?? 0) * 100);
+  // ClaimMatch takes no cut, so what you keep equals what the settlement paid.
+  const net = recovery.net_amount ?? recovery.gross_amount;
   return (
-    <div className="mt-5 grid gap-3 rounded-xl bg-success-50 p-4 sm:grid-cols-3">
+    <div className="mt-5 grid gap-3 rounded-xl bg-success-50 p-4 sm:grid-cols-2">
       <Money label="Settlement paid" value={formatUSD(recovery.gross_amount)} />
-      <Money
-        label="Our fee"
-        value={`${formatUSD(recovery.fee_amount)} (${feePct}%)`}
-        muted
-      />
-      <Money label="Net to you" value={formatUSD(recovery.net_amount)} accent />
-      <div className="sm:col-span-3">
+      <Money label="Yours to keep" value={formatUSD(net)} accent />
+      <div className="sm:col-span-2">
         <span className={recoveryBadgeClass(recovery.status)}>
           {RECOVERY_STATUS_LABELS[recovery.status] ?? recovery.status}
         </span>

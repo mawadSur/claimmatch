@@ -10,8 +10,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { Claim, Recovery, RecoveryStatus } from '@/lib/types';
-import { FEE_PCT, formatUSD, round2 } from '@/lib/recovery';
-import { cn } from '@/lib/utils';
+import { formatUSD, round2 } from '@/lib/recovery';
 
 /** A recovery joined with its claim + the claim's lawsuit (title/slug only). */
 export type RecoveryRow = Recovery & {
@@ -55,10 +54,11 @@ function lawsuitTitle(r: RecoveryRow): string {
 }
 
 /**
- * Admin recovery ledger. Each row records the gross a member recovered (which
- * recomputes our fee + their net server-side), advances the payout, or denies
- * the recovery. Actions PATCH /api/admin/recoveries and optimistically fold the
- * returned row back in. Money uses tabular-nums so figures never jitter.
+ * Admin recovery ledger. Each row records the gross a member recovered, advances
+ * the payout, or denies the recovery. ClaimMatch takes no cut, so the member's
+ * net always equals the gross. Actions PATCH /api/admin/recoveries and
+ * optimistically fold the returned row back in. Money uses tabular-nums so
+ * figures never jitter.
  */
 export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
   const [rows, setRows] = useState<Row[]>(() =>
@@ -99,8 +99,8 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
         update(id, { busy: null, error: json?.error || 'Action failed.' });
         return;
       }
-      // Merge the fresh recovery (server recomputes fee_amount / net_amount /
-      // status / timestamps) while keeping the joined claim we already have.
+      // Merge the fresh recovery (server recomputes net_amount = gross / status /
+      // timestamps) while keeping the joined claim we already have.
       const returned = json.recovery as Recovery | undefined;
       const merged: RecoveryRow = returned
         ? { ...row.recovery, ...returned, claim: row.recovery.claim }
@@ -140,20 +140,20 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
             <th className="px-4 py-3 font-semibold">Settlement</th>
             <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3 text-right font-semibold">Gross</th>
-            <th className="px-4 py-3 text-right font-semibold">Fee</th>
-            <th className="px-4 py-3 text-right font-semibold">Net</th>
+            <th className="px-4 py-3 text-right font-semibold">Net to member</th>
             <th className="px-4 py-3 text-right font-semibold">Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => {
             const r = row.recovery;
-            const pct = r.fee_pct && r.fee_pct > 0 ? r.fee_pct : FEE_PCT;
             const grossNum = Number(row.gross.replace(/[^0-9.]/g, '')) || 0;
-            // Live preview from the input; falls back to the persisted values.
-            const feeNum = grossNum > 0 ? round2(grossNum * pct) : Number(r.fee_amount ?? 0);
+            // No fee — the member keeps the full gross. Live preview from the
+            // input, falling back to the persisted value.
             const netNum =
-              grossNum > 0 ? round2(grossNum - feeNum) : Number(r.net_amount ?? 0);
+              grossNum > 0
+                ? round2(grossNum)
+                : Number(r.net_amount ?? r.gross_amount ?? 0);
             const paid = r.status === 'paid';
             const denied = r.status === 'denied';
             const busy = row.busy !== null;
@@ -208,12 +208,6 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
                         className="field-input py-2 pl-6 pr-2 text-right tabular-nums disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-muted">
-                  {formatUSD(feeNum)}
-                  <div className="text-[11px] text-ink-soft">
-                    {Math.round(pct * 100)}%
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold text-success-700">

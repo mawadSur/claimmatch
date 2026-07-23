@@ -2,20 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   ArrowRight, ShieldCheck, Link2, Landmark, HandCoins, Lock, Scale,
-  CheckCircle2, XCircle, Search, Eye, Database, ServerCog, FileSignature,
+  CheckCircle2, XCircle, Search, Eye, Database, ServerCog, ExternalLink,
   BadgeCheck,
 } from 'lucide-react';
-import { FEE_PCT } from '@/lib/recovery';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
 
 export const metadata: Metadata = {
   title: 'Is ClaimMatch legit?',
   description:
-    'Is ClaimMatch a scam? No. We link to the official court or administrator page for every settlement, we name who runs it, we never ask for money upfront, and we protect your data with bank-level security. Here is exactly why you can trust us.',
+    'Is ClaimMatch a scam? No. We link to the official court or administrator page for every settlement, we name who runs it, we never ask for money and never take a cut of your recovery, and you submit every claim yourself on the official site. Here is exactly why you can trust us.',
 };
-
-const PCT = Math.round(FEE_PCT * 100);
 
 // The specific, verifiable reasons ClaimMatch is trustworthy.
 const REASONS = [
@@ -27,27 +24,27 @@ const REASONS = [
   {
     icon: Landmark,
     title: 'We name the administrator',
-    body: 'We show you who is actually running each settlement — the court-appointed claims administrator — so you can verify it independently. We are not the administrator, and we never pretend to be.',
+    body: 'We show you who is actually running each settlement — the court-appointed claims administrator — right on the card, so you can verify it independently. We are not the administrator, and we never pretend to be.',
   },
   {
     icon: HandCoins,
-    title: 'We never ask for money upfront',
-    body: `Checking, matching, and filing are free. We are paid only through a ${PCT}% contingency fee on money you actually recover. If you are ever asked to pay upfront, it is not us — and it is a red flag.`,
+    title: 'Free — and we never take a cut',
+    body: 'Checking, matching, and pre-filling are free. We never charge you and never take a percentage of your settlement — the administrator pays you directly. If you are ever asked to pay to claim a settlement, it is not us, and it is a red flag.',
+  },
+  {
+    icon: ExternalLink,
+    title: 'You submit on the official site',
+    body: 'We pre-fill the claim and deep-link you to the administrator’s own website, where you review and submit it yourself. Your claim goes straight to the official source — no one stands between you and your payout.',
   },
   {
     icon: Lock,
     title: 'Your data is protected, never sold',
-    body: 'Your information is stored on Supabase with encryption at rest and access controls, and used only to match and file your claims. We do not sell your data, and we do not send you spam.',
-  },
-  {
-    icon: Scale,
-    title: 'A claims service, not a law firm',
-    body: 'ClaimMatch is an information and claims-filing service. We help you find settlements and file with the official administrators. We are not a law firm and do not provide legal advice.',
+    body: 'Your information is stored on Supabase with encryption at rest and access controls, and used only to match you and pre-fill your claims. We do not sell your data, and we do not send you spam.',
   },
   {
     icon: Eye,
     title: 'You can see exactly why you matched',
-    body: 'Every match comes with the plain-English reasons it surfaced, based on the answers you gave. No black boxes, no pressure — you decide what to authorize.',
+    body: 'Every match comes with the plain-English reasons it surfaced, based on the answers you gave. No black boxes, no pressure — you decide what to file.',
   },
 ];
 
@@ -60,8 +57,8 @@ const DATA_POINTS = [
   },
   {
     icon: ServerCog,
-    title: 'Used only to file your claims',
-    body: 'We use what you tell us for one thing: matching you to settlements and preparing the claims you ask us to file. Nothing more.',
+    title: 'Used only to match and pre-fill',
+    body: 'We use what you tell us for one thing: matching you to settlements and pre-filling the claims you choose to file. Nothing more.',
   },
   {
     icon: XCircle,
@@ -74,7 +71,7 @@ const DATA_POINTS = [
 const VERIFY_STEPS = [
   'Open any settlement and click through to the official court or administrator page.',
   'Confirm the deadline, eligibility, and payout on that official notice.',
-  'Check that you are never asked for payment or card details to file a claim.',
+  'Check that you are never asked for payment or card details, and that you submit on the administrator’s own site.',
 ];
 
 export default function TrustPage() {
@@ -95,8 +92,8 @@ export default function TrustPage() {
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               &ldquo;Free money from a lawsuit&rdquo; sounds like a scam — so we
               built ClaimMatch to be checkable at every step. We link to the
-              official source for every case, name who runs it, and never ask you
-              for a dollar upfront.
+              official source for every case, name who runs it, never ask you for a
+              dollar, and send you to the administrator&rsquo;s own site to file.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/signup" className="btn-primary w-full sm:w-auto">
@@ -119,7 +116,7 @@ export default function TrustPage() {
           <h2 className="text-3xl font-extrabold">Why you can trust us</h2>
           <p className="mt-3 text-ink-muted">
             Not vibes — specifics. Every one of these is something you can verify
-            yourself before you ever authorize a claim.
+            yourself before you ever file a claim.
           </p>
         </div>
 
@@ -139,22 +136,23 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* No money upfront callout -------------------------------------------- */}
+      {/* No money callout ---------------------------------------------------- */}
       <section className="bg-gray-50 py-16">
         <div className="container-narrow">
           <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card">
             <div className="grid gap-0 sm:grid-cols-[1fr_1.1fr]">
               <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white sm:p-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                  <HandCoins className="h-3.5 w-3.5" /> No upfront cost
+                  <HandCoins className="h-3.5 w-3.5" /> Free, no cut
                 </div>
                 <h2 className="mt-6 text-2xl font-extrabold">
-                  We only get paid when you do.
+                  We never touch your money.
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-white/85">
                   There is no signup fee, no subscription, and no charge to file.
-                  We take a {PCT}% contingency fee only out of money you actually
-                  recover. No recovery, no fee.
+                  We never take a percentage of your settlement — the administrator
+                  pays your recovery directly to you. We earn referral fees from
+                  partner services you choose, never from you.
                 </p>
               </div>
               <div className="p-8 sm:p-10">
@@ -162,8 +160,8 @@ export default function TrustPage() {
                 <ul className="mt-4 space-y-3">
                   {[
                     'We never ask for a card to check or file a claim',
-                    'We never charge before you are actually paid',
-                    'You can cancel anytime before a claim is filed',
+                    'We never take a cut of your recovery',
+                    'You submit on the administrator’s official site',
                     'Filing directly with the administrator is always free',
                   ].map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
@@ -186,8 +184,8 @@ export default function TrustPage() {
           </span>
           <h2 className="mt-4 text-3xl font-extrabold">How we protect your data</h2>
           <p className="mt-3 text-ink-muted">
-            You share a little about yourself so we can match and file for you. We
-            treat that with bank-level care.
+            You share a little about yourself so we can match you and pre-fill your
+            claims. We treat that with bank-level care.
           </p>
         </div>
 
@@ -242,24 +240,25 @@ export default function TrustPage() {
         <div className="mx-auto max-w-3xl rounded-2xl border border-gray-100 bg-white p-8 shadow-card sm:p-10">
           <div className="flex flex-col items-start gap-5 sm:flex-row">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-              <FileSignature className="h-6 w-6" />
+              <Scale className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-2xl font-extrabold">
                 What we are — and what we&rsquo;re not
               </h2>
               <p className="mt-3 text-ink-muted">
-                ClaimMatch is an information and claims-filing service. We scan open
-                settlements, match you to the ones you may qualify for, and — with
-                your per-claim e-signature — file on your behalf with the official
-                administrators.
+                ClaimMatch is an information and matching service. We scan open
+                settlements, match you to the ones you may qualify for, and pre-fill
+                the official claim form so filing is quick — then link you to the
+                administrator&rsquo;s own site, where you review and submit it
+                yourself.
               </p>
               <p className="mt-3 text-ink-muted">
                 We are <strong className="font-semibold text-ink">not a law firm</strong>,
                 we do not provide legal advice, and we are not affiliated with the
-                courts or the settlement administrators. Filing a claim through us
-                is your choice, and you can always file directly with the
-                administrator yourself for free.
+                courts or the settlement administrators. We never file on your
+                behalf and never take a cut of your recovery — you can always file
+                directly with the administrator yourself, for free.
               </p>
             </div>
           </div>
