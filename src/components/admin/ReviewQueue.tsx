@@ -11,11 +11,15 @@ import {
   CalendarClock,
   Tag,
   Inbox,
+  CheckSquare,
+  Square,
+  ListChecks,
 } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { cn, formatDeadline } from '@/lib/utils';
 
 type Action = 'publish' | 'reject' | 'update';
+type BulkAction = 'bulk_publish' | 'bulk_reject';
 
 interface Row {
   lawsuit: Lawsuit;
@@ -23,6 +27,7 @@ interface Row {
   eligibilityJson: string;
   busy: Action | null;
   message: { tone: 'success' | 'error'; text: string } | null;
+  selected: boolean;
 }
 
 function toJson(value: unknown): string {
@@ -40,6 +45,7 @@ function makeRow(l: Lawsuit): Row {
     eligibilityJson: toJson(l.eligibility),
     busy: null,
     message: null,
+    selected: false,
   };
 }
 
@@ -47,12 +53,71 @@ function makeRow(l: Lawsuit): Row {
  * Review-and-moderate UI for pending settlements. Each card lets an admin edit
  * the eligibility copy + rules, then Publish / Save / Reject. Every action hits
  * PATCH /api/admin/lawsuits; publish and reject drop the row from the queue.
+ * Supports bulk publish/reject for efficient queue clearing.
  */
 export function ReviewQueue({ items }: { items: Lawsuit[] }) {
   const [rows, setRows] = useState<Row[]>(() => items.map(makeRow));
+  const [bulkBusy, setBulkBusy] = useState<BulkAction | null>(null);
+  const [bulkMessage, setBulkMessage] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   function patchRow(id: string, patch: Partial<Row>) {
     setRows((rs) => rs.map((r) => (r.lawsuit.id === id ? { ...r, ...patch } : r)));
+  }
+
+  function toggleSelect(id: string) {
+    setRows((rs) =>
+      rs.map((r) =>
+        r.lawsuit.id === id ? { ...r, selected: !r.selected } : r,
+      ),
+    );
+    setBulkMessage(null);
+  }
+
+  function toggleSelectAll() {
+    const allSelected = rows.every((r) => r.selected);
+    setRows((rs) => rs.map((r) => ({ ...r, selected: !allSelected })));
+    setBulkMessage(null);
+  }
+
+  const selectedIds = rows.filter((r) => r.selected).map((r) => r.lawsuit.id);
+  const selectedCount = selectedIds.length;
+
+  async function bulkAct(action: BulkAction) {
+    if (selectedIds.length === 0) return;
+    setBulkBusy(action);
+    setBulkMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/lawsuits', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds, action }),
+      });
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json?.ok) {
+        setBulkBusy(null);
+        setBulkMessage({
+          tone: 'error',
+          text: json?.error || 'Bulk action failed — please try again.',
+        });
+        return;
+      }
+
+      const updatedIds = new Set<string>(json.ids ?? []);
+      setRows((rs) => rs.filter((r) => !updatedIds.has(r.lawsuit.id)));
+      setBulkBusy(null);
+      setBulkMessage({
+        tone: 'success',
+        text: `${action === 'bulk_publish' ? 'Published' : 'Rejected'} ${json.updated} settlement${json.updated === 1 ? '' : 's'}.`,
+      });
+    } catch {
+      setBulkBusy(null);
+      setBulkMessage({ tone: 'error', text: 'Network error — please try again.' });
+    }
   }
 
   async function act(row: Row, action: Action) {
@@ -132,15 +197,91 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         </div>
         <h3 className="mt-4 text-lg font-bold">Queue cleared</h3>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          Nothing is waiting for review. New extractions land here for a human
-          check before they publish.
+          Nothing is waiting for review. New SettleSignal extractions land here
+          for a human check before they go live.
         </p>
       </div>
     );
   }
 
+  const allSelected = rows.length > 0 && rows.every((r) => r.selected);
+
   return (
     <div className="space-y-6">
+      {/* Bulk actions toolbar */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
+        <button
+          type="button"
+          onClick={toggleSelectAll}
+          className="btn-ghost px-3 py-1.5 text-sm"
+        >
+          {allSelected ? (
+            <CheckSquare className="h-4 w-4 text-brand-600" />
+          ) : (
+            <Square className="h-4 w-4" />
+          )}
+          {allSelected ? 'Deselect all' : 'Select all'}
+        </button>
+
+        <span className="text-sm text-ink-muted">
+          {selectedCount > 0 ? (
+            <>
+              <span className="font-semibold text-ink">{selectedCount}</span> selected
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-ink">{rows.length}</span> pending
+            </>
+          )}
+        </span>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            disabled={selectedCount === 0 || bulkBusy !== null}
+            onClick={() => bulkAct('bulk_publish')}
+            className="btn-success px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {bulkBusy === 'bulk_publish' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ListChecks className="h-4 w-4" />
+            )}
+            Publish selected
+          </button>
+          <button
+            type="button"
+            disabled={selectedCount === 0 || bulkBusy !== null}
+            onClick={() => bulkAct('bulk_reject')}
+            className="btn-ghost px-3 py-1.5 text-sm text-danger-700 hover:bg-danger-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {bulkBusy === 'bulk_reject' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <XCircle className="h-4 w-4" />
+            )}
+            Reject selected
+          </button>
+        </div>
+      </div>
+
+      {bulkMessage && (
+        <div
+          className={cn(
+            'flex items-center gap-2 rounded-xl p-3 text-sm',
+            bulkMessage.tone === 'success'
+              ? 'bg-success-50 text-success-700'
+              : 'bg-danger-50 text-danger-700',
+          )}
+        >
+          {bulkMessage.tone === 'success' ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+          )}
+          {bulkMessage.text}
+        </div>
+      )}
       {rows.map((row) => {
         const l = row.lawsuit;
         const conf = l.extraction_confidence;
@@ -157,9 +298,26 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         return (
           <article
             key={l.id}
-            className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6"
+            className={cn(
+              'rounded-2xl border bg-white p-5 shadow-card sm:p-6 transition-colors',
+              row.selected
+                ? 'border-brand-300 ring-2 ring-brand-100'
+                : 'border-gray-100',
+            )}
           >
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => toggleSelect(l.id)}
+                className="mr-1 rounded p-1 hover:bg-gray-100"
+                aria-label={row.selected ? 'Deselect' : 'Select'}
+              >
+                {row.selected ? (
+                  <CheckSquare className="h-5 w-5 text-brand-600" />
+                ) : (
+                  <Square className="h-5 w-5 text-ink-muted" />
+                )}
+              </button>
               <span className="badge-gray gap-1">
                 <Tag className="h-3 w-3" /> {l.category}
               </span>

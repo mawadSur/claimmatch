@@ -40,8 +40,10 @@ export default async function AdminCatalogPage() {
           Settlement catalog
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          The 100 newest settlements across every review state. Feature the
-          winners; unpublish anything that shouldn&rsquo;t be live.
+          The 100 newest settlements across every review state. Feature the best
+          ones for the homepage; unpublish anything that shouldn&rsquo;t be live.
+          Account holders see published settlements and we file claims on their
+          behalf.
         </p>
       </header>
 

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { getAdminUser } from '@/lib/admin';
-import { AdminNav } from '@/components/admin/AdminNav';
+import { createServiceClient } from '@/lib/supabase/server';
+import { AdminNav, type AdminNavCounts } from '@/components/admin/AdminNav';
 
 /**
  * Admin area shell. Server-guards every /admin route: only signed-in admins get
@@ -14,6 +15,9 @@ export default async function AdminLayout({
 }) {
   const admin = await getAdminUser();
   if (!admin) redirect('/login?next=/admin');
+
+  // Fetch counts for nav badges
+  const counts = await getNavCounts();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,11 +34,33 @@ export default async function AdminLayout({
               <p className="text-xs text-ink-soft">{admin.email ?? 'Signed in'}</p>
             </div>
           </div>
-          <AdminNav />
+          <AdminNav counts={counts} />
         </div>
       </div>
 
       <div className="container-page py-8 sm:py-10">{children}</div>
     </div>
   );
+}
+
+async function getNavCounts(): Promise<AdminNavCounts> {
+  try {
+    const svc = createServiceClient();
+    const [pendingRes, payoutRes] = await Promise.all([
+      svc
+        .from('lawsuits')
+        .select('*', { count: 'exact', head: true })
+        .eq('review_status', 'pending_review'),
+      svc
+        .from('recoveries')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'awaiting_payout'),
+    ]);
+    return {
+      pendingReview: pendingRes.count ?? 0,
+      awaitingPayout: payoutRes.count ?? 0,
+    };
+  } catch {
+    return { pendingReview: 0, awaitingPayout: 0 };
+  }
 }

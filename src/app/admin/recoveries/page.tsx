@@ -75,9 +75,10 @@ export default async function AdminRecoveriesPage() {
           Recoveries
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Record the money members recover, take our {feePctLabel.toLowerCase()},
-          and advance each payout. Recording a gross recomputes the fee and the
-          member&rsquo;s net automatically.
+          When settlement administrators pay out on claims we filed, record the
+          gross here. We take our {feePctLabel.toLowerCase()}, then advance the
+          net to the account holder. Recording a gross recomputes the fee and net
+          automatically.
         </p>
       </header>
 
