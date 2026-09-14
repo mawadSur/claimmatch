@@ -22,10 +22,15 @@ const ALLOWED_KEYS = new Set([
   'review_status',
 ]);
 
-const BodySchema = z.object({
+const SingleBodySchema = z.object({
   id: z.string().uuid('A valid settlement id is required.'),
   action: z.enum(['publish', 'reject', 'update']),
   patch: z.record(z.unknown()).optional(),
+});
+
+const BulkBodySchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'At least one settlement id is required.'),
+  action: z.enum(['bulk_publish', 'bulk_reject']),
 });
 
 /**
@@ -33,6 +38,8 @@ const BodySchema = z.object({
  *   publish → review_status='published' (+ reviewer stamp)
  *   reject  → review_status='rejected'  (+ reviewer stamp)
  *   update  → apply a whitelisted patch
+ *   bulk_publish → publish multiple settlements at once
+ *   bulk_reject  → reject multiple settlements at once
  * Writes go through the service client (bypasses RLS) but are gated by an admin
  * check first.
  */
@@ -49,7 +56,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const parsed = BodySchema.safeParse(body);
+  // Check if this is a bulk action
+  const bulkParsed = BulkBodySchema.safeParse(body);
+  if (bulkParsed.success) {
+    return handleBulkAction(bulkParsed.data, admin);
+  }
+
+  const parsed = SingleBodySchema.safeParse(body);
   if (!parsed.success) {
     const error = parsed.error.issues[0]?.message || 'Invalid input.';
     return NextResponse.json({ error }, { status: 400 });
@@ -95,4 +108,40 @@ export async function PATCH(req: Request) {
   }
 
   return NextResponse.json({ ok: true, lawsuit: data });
+}
+
+async function handleBulkAction(
+  data: z.infer<typeof BulkBodySchema>,
+  admin: { id: string; email: string | null },
+) {
+  const { ids, action } = data;
+  const now = new Date().toISOString();
+  const svc = createServiceClient();
+
+  const reviewStatus = action === 'bulk_publish' ? 'published' : 'rejected';
+  const updates = {
+    review_status: reviewStatus,
+    reviewed_by: admin.id,
+    reviewed_at: now,
+  };
+
+  const { data: updated, error } = await svc
+    .from('lawsuits')
+    .update(updates)
+    .in('id', ids)
+    .select('id');
+
+  if (error) {
+    console.error('[admin/lawsuits] bulk update failed:', error);
+    return NextResponse.json(
+      { error: 'Could not update the settlements.' },
+      { status: 400 },
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    updated: updated?.length ?? 0,
+    ids: updated?.map((l: { id: string }) => l.id) ?? [],
+  });
 }

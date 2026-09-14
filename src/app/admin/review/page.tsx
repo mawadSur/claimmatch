@@ -40,9 +40,10 @@ export default async function AdminReviewPage() {
         </span>
         <h2 className="mt-3 text-2xl font-extrabold sm:text-3xl">Review queue</h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          LLM-extracted settlements waiting for a human check before they go live.
-          Lowest-confidence first — verify the details, fix the eligibility rules,
-          then publish or reject.
+          SettleSignal extractions awaiting human review before going live.
+          Lowest-confidence first — verify the details, fix the eligibility rules
+          if needed, then publish or reject. Use bulk actions to clear the queue
+          efficiently.
         </p>
       </header>
 
