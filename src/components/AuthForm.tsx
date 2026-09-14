@@ -12,6 +12,7 @@ import {
   AlertCircle,
   MailCheck,
 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 
 type Mode = 'login' | 'signup';
@@ -25,6 +26,7 @@ type Mode = 'login' | 'signup';
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const posthog = usePostHog();
   const rawNext = searchParams.get('next');
   // Only allow same-origin relative paths — never a protocol-relative ("//host")
   // or absolute URL — to prevent an open redirect after authentication.
@@ -79,6 +81,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
+          posthog?.identify(data.session.user.id, {
+            email: data.session.user.email,
+            name: fullName,
+          });
+          posthog?.capture('signup_completed');
           router.push('/onboarding');
           router.refresh();
           return;
@@ -99,6 +106,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
         setError(signInError.message);
         setStatus('idle');
         return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        posthog?.identify(userData.user.id, {
+          email: userData.user.email,
+        });
+        posthog?.capture('login_completed');
       }
 
       router.push(next || '/dashboard');

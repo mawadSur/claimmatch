@@ -5,6 +5,7 @@ import './globals.css';
 import { SITE } from '@/lib/utils';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
+import { PostHogProvider } from '@/components/PostHogProvider';
 
 // Distinctive display face (headings, the big "you're owed" numbers) paired with
 // a clean, trustworthy body sans — deliberately not the generic Inter default.
@@ -46,9 +47,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="flex min-h-screen flex-col">
-        <Nav />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <PostHogProvider>
+          <Nav />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </PostHogProvider>
         <Analytics />
       </body>
     </html>

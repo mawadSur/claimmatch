@@ -5,6 +5,7 @@ import { ArrowLeft, FileText, ShieldCheck, ListChecks } from 'lucide-react';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
 import { createClient } from '@/lib/supabase/server';
 import { ClaimForm } from '@/components/ClaimForm';
+import { MatchViewTracker } from '@/components/MatchViewTracker';
 import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'File your claim' };
@@ -43,6 +44,11 @@ export default async function ClaimPage({
 
   return (
     <section className="container-narrow py-12">
+      <MatchViewTracker
+        lawsuitId={lawsuit.id}
+        lawsuitTitle={lawsuit.title}
+        lawsuitSlug={lawsuit.slug}
+      />
       <Link
         href={`/lawsuits/${lawsuit.slug}`}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-brand-700"
