@@ -6,13 +6,22 @@ import {
 } from 'lucide-react';
 import { FEE_PCT } from '@/lib/recovery';
 import { Disclaimer } from '@/components/Disclaimer';
+import { SITE } from '@/lib/utils';
 
 const PCT = Math.round(FEE_PCT * 100);
 
 export const metadata: Metadata = {
-  title: 'About',
+  title: 'About ClaimMatch',
   description:
     'ClaimMatch helps everyday people claim their share of the billions in class-action settlements that go unclaimed each year — free to check, honest about how we make money.',
+  openGraph: {
+    title: "About ClaimMatch — Claim What's Already Yours",
+    description:
+      'Billions in settlements go unclaimed every year. ClaimMatch matches you to settlements you qualify for and files claims on your behalf.',
+    url: `${SITE.url}/about`,
+    siteName: SITE.name,
+    type: 'website',
+  },
 };
 
 const VALUES = [

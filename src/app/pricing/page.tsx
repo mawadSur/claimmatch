@@ -7,14 +7,23 @@ import {
 import { FEE_PCT, feeAmount, netAmount, formatUSD } from '@/lib/recovery';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
+import { SITE } from '@/lib/utils';
+
+const PCT = Math.round(FEE_PCT * 100);
 
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'ClaimMatch is free to check and free to get matched. We only earn a contingency fee — a percentage of what you recover — when you actually get paid. No win, no fee.',
+    `ClaimMatch is free to check and free to get matched. We only earn a ${PCT}% contingency fee — a percentage of what you recover — when you actually get paid. No win, no fee.`,
+  openGraph: {
+    title: `ClaimMatch Pricing — ${PCT}% Only When You Get Paid`,
+    description:
+      `Free to check, free to file. We only take a ${PCT}% fee when you actually recover money. No upfront costs, no win no fee.`,
+    url: `${SITE.url}/pricing`,
+    siteName: SITE.name,
+    type: 'website',
+  },
 };
-
-const PCT = Math.round(FEE_PCT * 100);
 
 // Worked examples: gross recovered -> our fee -> what you keep.
 const EXAMPLES = [50, 400, 1200];
@@ -253,6 +262,25 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+
+        {/* FAQ JSON-LD for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: FAQ.map((f) => ({
+                '@type': 'Question',
+                name: f.q,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: f.a,
+                },
+              })),
+            }),
+          }}
+        />
       </section>
 
       {/* Trust reinforcement ------------------------------------------------- */}

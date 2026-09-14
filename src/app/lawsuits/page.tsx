@@ -5,8 +5,21 @@ import { Sparkles, SearchX } from 'lucide-react';
 import { getLawsuits, getCategories } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
+import { SITE } from '@/lib/utils';
 
-export const metadata: Metadata = { title: 'Browse settlements' };
+export const metadata: Metadata = {
+  title: 'Open Class Action Settlements',
+  description:
+    'Browse every open class action settlement we track — data breaches, consumer products, privacy violations, and more. Search by keyword or filter by category to find settlements you may qualify for.',
+  openGraph: {
+    title: 'Open Class Action Settlements — ClaimMatch',
+    description:
+      'Find open class action settlements you may qualify for. Data breaches, consumer products, privacy, and more — all in one place.',
+    url: `${SITE.url}/lawsuits`,
+    siteName: SITE.name,
+    type: 'website',
+  },
+};
 
 export default async function LawsuitsPage({
   searchParams,
