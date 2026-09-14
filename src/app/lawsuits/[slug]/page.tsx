@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
 import { createClient } from '@/lib/supabase/server';
-import { formatDeadline, daysUntil, getValidClaimUrl } from '@/lib/utils';
+import { formatDeadline, daysUntil, getValidClaimUrl, SITE } from '@/lib/utils';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { LawsuitStatus } from '@/lib/types';
 
@@ -26,9 +26,27 @@ export async function generateMetadata({
   const { slug } = await params;
   const lawsuit = await getLawsuitBySlug(slug);
   if (!lawsuit) return { title: 'Settlement not found' };
+
+  const deadlineText = lawsuit.deadline
+    ? ` Deadline: ${formatDeadline(lawsuit.deadline)}.`
+    : '';
+  const payoutText = lawsuit.typical_payout
+    ? ` Typical payout: ${lawsuit.typical_payout}.`
+    : '';
+  const description =
+    lawsuit.summary ??
+    `${lawsuit.title} class action settlement.${deadlineText}${payoutText} Check if you qualify.`;
+
   return {
-    title: lawsuit.title,
-    description: lawsuit.summary ?? undefined,
+    title: `${lawsuit.title} Settlement`,
+    description,
+    openGraph: {
+      title: `${lawsuit.title} — Class Action Settlement`,
+      description,
+      url: `${SITE.url}/lawsuits/${lawsuit.slug}`,
+      siteName: SITE.name,
+      type: 'article',
+    },
   };
 }
 

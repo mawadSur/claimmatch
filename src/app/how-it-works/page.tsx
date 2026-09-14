@@ -9,11 +9,20 @@ import {
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { FEE_PCT } from '@/lib/recovery';
 import { Disclaimer } from '@/components/Disclaimer';
+import { SITE } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'How it works',
+  title: 'How ClaimMatch Works',
   description:
     'How ClaimMatch works: we scan and structure every settlement, match you by eligibility, file on your behalf with one e-signature, and take our fee only when you get paid.',
+  openGraph: {
+    title: 'How ClaimMatch Works — Find & File Settlement Claims',
+    description:
+      'We scan settlements, match you by eligibility, file on your behalf, and only charge when you get paid. See the full process.',
+    url: `${SITE.url}/how-it-works`,
+    siteName: SITE.name,
+    type: 'website',
+  },
 };
 
 const PCT = Math.round(FEE_PCT * 100);

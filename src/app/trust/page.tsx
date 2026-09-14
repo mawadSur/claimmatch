@@ -3,19 +3,50 @@ import Link from 'next/link';
 import {
   ArrowRight, ShieldCheck, Link2, Landmark, HandCoins, Lock, Scale,
   CheckCircle2, XCircle, Search, Eye, Database, ServerCog, FileSignature,
-  BadgeCheck,
+  BadgeCheck, Building2, ExternalLink, HelpCircle,
 } from 'lucide-react';
 import { FEE_PCT } from '@/lib/recovery';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
+import { SITE } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Is ClaimMatch legit?',
   description:
     'Is ClaimMatch a scam? No. We link to the official court or administrator page for every settlement, we name who runs it, we never ask for money upfront, and we protect your data with bank-level security. Here is exactly why you can trust us.',
+  openGraph: {
+    title: "Is ClaimMatch legit? Here's the proof.",
+    description:
+      'We link to official court pages, name who runs each settlement, and never charge upfront. Verify us in 60 seconds.',
+    url: `${SITE.url}/trust`,
+    siteName: SITE.name,
+    type: 'website',
+  },
 };
 
 const PCT = Math.round(FEE_PCT * 100);
+
+const KNOWN_ADMINISTRATORS = [
+  { name: 'JND Legal Administration', url: 'https://www.jndla.com' },
+  { name: 'Angeion Group', url: 'https://www.angeiongroup.com' },
+  { name: 'Epiq', url: 'https://www.epiqglobal.com' },
+  { name: 'Kroll Settlement Administration', url: 'https://www.krollsettlementadministration.com' },
+];
+
+const TRUST_FAQ = [
+  {
+    q: 'How does ClaimMatch matching work?',
+    a: 'You answer a few quick questions about your state, past purchases, and data breaches you may have been part of. We compare your answers against the published eligibility rules for every open settlement and surface only the ones you actually qualify for — with clear reasons for each match.',
+  },
+  {
+    q: 'What does ClaimMatch cost?',
+    a: `Checking your matches is always free. If you choose to have us file on your behalf, we take a ${PCT}% contingency fee only out of money you actually recover. No recovery, no fee — ever.`,
+  },
+  {
+    q: 'Is ClaimMatch a law firm?',
+    a: 'No. ClaimMatch is an information and claims-filing service. We help you discover settlements and file with the official administrators, but we are not attorneys and do not provide legal advice.',
+  },
+];
 
 // The specific, verifiable reasons ClaimMatch is trustworthy.
 const REASONS = [
@@ -139,8 +170,65 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* No money upfront callout -------------------------------------------- */}
+      {/* We are NOT the administrator ---------------------------------------- */}
       <section className="bg-gray-50 py-16">
+        <div className="container-page">
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 sm:p-8">
+              <div className="flex items-start gap-4">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-amber-900">
+                    ClaimMatch is not the court or settlement administrator
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-amber-800">
+                    Class-action settlements are administered by court-appointed
+                    companies — not ClaimMatch. We are a discovery and filing service
+                    that helps you find settlements you qualify for and submit claims
+                    on your behalf. The official administrator processes all claims
+                    and distributes payments.
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-amber-800">
+                    <strong className="font-semibold">The official source is always authoritative.</strong>{' '}
+                    Every settlement we surface links to the official court or
+                    administrator page. If you ever have questions about a settlement,
+                    check the official notice — that&rsquo;s the final word.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-3xl">
+            <h3 className="text-center text-lg font-bold">
+              Common settlement administrators
+            </h3>
+            <p className="mt-2 text-center text-sm text-ink-muted">
+              These are some of the largest court-appointed administrators. We are
+              not affiliated with any of them — we just help you file.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {KNOWN_ADMINISTRATORS.map((admin) => (
+                <a
+                  key={admin.name}
+                  href={admin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm font-medium text-ink transition hover:border-brand-200 hover:bg-brand-50"
+                >
+                  {admin.name}
+                  <ExternalLink className="h-4 w-4 shrink-0 text-ink-soft" />
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* No money upfront callout -------------------------------------------- */}
+      <section className="py-16">
         <div className="container-narrow">
           <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card">
             <div className="grid gap-0 sm:grid-cols-[1fr_1.1fr]">
@@ -264,6 +352,54 @@ export default function TrustPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* FAQ ----------------------------------------------------------------- */}
+      <section className="bg-gray-50 py-16">
+        <div className="container-page">
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="badge-brand mx-auto gap-1.5">
+              <HelpCircle className="h-3.5 w-3.5" /> Common questions
+            </span>
+            <h2 className="mt-4 text-3xl font-extrabold">FAQ</h2>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-3xl space-y-4">
+            {TRUST_FAQ.map((f) => (
+              <div
+                key={f.q}
+                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
+              >
+                <h3 className="flex items-start gap-2 text-base font-bold">
+                  <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+                  {f.q}
+                </h3>
+                <p className="mt-2 pl-7 text-sm leading-relaxed text-ink-muted">
+                  {f.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ JSON-LD for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: TRUST_FAQ.map((f) => ({
+                '@type': 'Question',
+                name: f.q,
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: f.a,
+                },
+              })),
+            }),
+          }}
+        />
       </section>
 
       {/* CTA ----------------------------------------------------------------- */}
