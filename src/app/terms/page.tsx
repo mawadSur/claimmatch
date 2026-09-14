@@ -114,16 +114,14 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-ink">5. Third-party claim sites and links</h2>
             <p>
               The Service links to third-party websites, including official settlement
-              administrators and independent claim-filing services. Those sites are
-              operated by others and are governed by their own terms and privacy
-              policies. We provide links for your convenience only, and a link does not
-              imply endorsement. We are not responsible for the content, accuracy, or
-              practices of any third-party site, and we may earn a referral fee if you
-              choose to use certain partner claim services (see our{' '}
-              <Link href="/about" className="font-semibold text-brand-700 hover:text-brand-800">
-                About page
+              administrators. Those sites are operated by others and are governed by
+              their own terms and privacy policies. We provide links for your convenience
+              only, and a link does not imply endorsement. We are not responsible for
+              the content, accuracy, or practices of any third-party site. See our{' '}
+              <Link href="/pricing" className="font-semibold text-brand-700 hover:text-brand-800">
+                Pricing page
               </Link>{' '}
-              for how we make money).
+              for how we make money.
             </p>
           </section>
 

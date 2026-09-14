@@ -4,7 +4,10 @@ import {
   ArrowRight, Sparkles, Scale, TrendingDown, Target, CheckCircle2,
   HandCoins, Eye, ShieldCheck, HeartHandshake, Search,
 } from 'lucide-react';
+import { FEE_PCT } from '@/lib/recovery';
 import { Disclaimer } from '@/components/Disclaimer';
+
+const PCT = Math.round(FEE_PCT * 100);
 
 export const metadata: Metadata = {
   title: 'About',
@@ -26,12 +29,12 @@ const VALUES = [
   {
     icon: HandCoins,
     title: 'Free to check, always',
-    body: 'Finding your matches costs you nothing. You’ll never pay us to see what you may qualify for.',
+    body: "Finding your matches costs you nothing. You'll never pay us to see what you may qualify for.",
   },
   {
     icon: HeartHandshake,
     title: 'On your side',
-    body: 'We’re here to help you claim money that’s already yours — not to sell you a lawsuit or pressure you into anything.',
+    body: "We're here to help you claim money that's already yours — not to sell you a lawsuit or pressure you into anything.",
   },
 ];
 
@@ -48,12 +51,12 @@ export default function AboutPage() {
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
               Money is owed. People just{' '}
-              <span className="text-brand-600">don’t know it.</span>
+              <span className="text-brand-600">don't know it.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               ClaimMatch exists to close the gap between the settlements people
               qualify for and the claims they actually file. We do the hunting and
-              matching so ordinary people can collect what’s already theirs.
+              matching so ordinary people can collect what's already theirs.
             </p>
           </div>
         </div>
@@ -114,7 +117,7 @@ export default function AboutPage() {
             Make claiming settlement money as easy as checking your email. We
             continuously scan open cases, match each one against your profile using
             simple, transparent rules, and hand you the right claim — so the money
-            that’s meant for you actually reaches you.
+            that's meant for you actually reaches you.
           </p>
           <div className="mt-8">
             <Link href="/how-it-works" className="btn-secondary">
@@ -136,22 +139,23 @@ export default function AboutPage() {
             </div>
             <p className="mt-5 text-ink-muted">
               Checking your matches and browsing settlements on ClaimMatch is free,
-              and always will be. We don’t charge you to find out what you qualify
-              for, and we never take a cut of the money you claim.
+              and always will be. We don't charge you to find out what you qualify
+              for — and we never ask for money upfront.
             </p>
             <p className="mt-4 text-ink-muted">
-              When it helps, we point you toward trusted third-party claim-filing
-              services that can handle the paperwork for you. If you choose to use
-              one of those partners, we may earn a referral fee from that service —
-              at no extra cost to you. That’s it. We keep this honest and simple:
-              our recommendations are about what’s genuinely useful, not who pays us.
+              When you authorize us to help you file a claim, we prepare and submit it
+              to the official settlement administrator on your behalf. We take a{' '}
+              <strong className="font-semibold text-ink">{PCT}%</strong> contingency
+              fee only when a claim actually pays out. If you never get paid, you never
+              owe us a cent. That's it — our only incentive is to win you as much
+              as possible.
             </p>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {[
                 'Free to check your matches',
                 'We never sell your data',
-                'No cut of your settlement money',
-                'Referral fees disclosed, never hidden',
+                `${PCT}% fee only on money you recover`,
+                'No win, no fee — ever',
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
@@ -199,7 +203,7 @@ export default function AboutPage() {
           <h2 className="mt-4 text-3xl font-extrabold">Ready to see your matches?</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
             Set up your eligibility profile in about two minutes. Free to check —
-            we’ll email you when new settlements line up with your answers.
+            we'll email you when new settlements line up with your answers.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/signup" className="btn-primary w-full sm:w-auto">

@@ -82,8 +82,8 @@ export function MoneyHero({
 
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85">
         {hasMoney
-          ? 'This is our estimate of what you could recover across the settlements you match. We file on your behalf and only take our fee when you get paid.'
-          : 'Finish your profile and we’ll surface the settlements you qualify for — then file every one of them for you.'}
+          ? 'This is our estimate of what you could recover across the settlements you match. Authorize with one e-signature and we file with the official administrators — you only pay our fee when you get paid.'
+          : "Finish your profile and we'll surface the settlements you qualify for — then help you file with the official administrators."}
       </p>
 
       {/* Stat chips — staggered reveal on page load. --------------------------- */}

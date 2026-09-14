@@ -162,7 +162,7 @@ export default async function HomePage() {
           {[
             { icon: Search, title: 'We scan the settlements', body: 'Our system continuously pulls open class-action settlements and lawsuits from official sources into one place.' },
             { icon: ShieldCheck, title: 'We match you', body: 'Answer a few quick questions once. We compare your profile to every case and surface the ones you actually qualify for.' },
-            { icon: FileText, title: 'We file for you', body: 'We prepare and submit the right claim, then track it to payout — and only take our fee when you actually get paid.' },
+            { icon: FileText, title: 'You sign, we file', body: 'Authorize with one e-signature and we prepare and submit your claims to the official administrators — then track them to payout.' },
           ].map((s, i) => (
             <div
               key={i}

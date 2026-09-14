@@ -213,8 +213,8 @@ export function OnboardingWizard({
               </div>
             )}
             <p className="mx-auto mt-5 max-w-md text-sm text-ink-muted">
-              We’ll file every one of them on your behalf and only take our fee
-              when you actually get paid.
+              Authorize with one e-signature and we’ll help you file with the
+              official administrators — you only pay our fee when you get paid.
             </p>
             <button
               type="button"
