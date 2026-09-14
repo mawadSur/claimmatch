@@ -10,10 +10,11 @@ import {
   ExternalLink,
   UserCheck,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
 import { createClient } from '@/lib/supabase/server';
-import { formatDeadline, daysUntil } from '@/lib/utils';
+import { formatDeadline, daysUntil, getValidClaimUrl } from '@/lib/utils';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { LawsuitStatus } from '@/lib/types';
 
@@ -68,6 +69,10 @@ export default async function LawsuitDetailPage({
     : `/signup?next=/claim/${lawsuit.slug}`;
   const claimLabel = signedIn ? 'Start your claim' : 'Sign up to file';
 
+  const officialClaimUrl = getValidClaimUrl(lawsuit.claim_url);
+  const officialSourceUrl = getValidClaimUrl(lawsuit.source_url);
+  const hasOfficialLink = !!officialClaimUrl || !!officialSourceUrl;
+
   return (
     <>
       {/* Header ------------------------------------------------------------- */}
@@ -97,6 +102,38 @@ export default async function LawsuitDetailPage({
           {lawsuit.summary && (
             <p className="mt-4 max-w-2xl text-lg text-ink-muted">{lawsuit.summary}</p>
           )}
+        </div>
+      </section>
+
+      {/* Administrator disclaimer ------------------------------------------- */}
+      <section className="container-page -mt-2 pb-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">
+                ClaimMatch is not the settlement administrator
+              </p>
+              <p className="mt-1 text-sm text-amber-700">
+                We help you discover and file claims, but the official settlement administrator
+                processes all claims and payments.
+                {officialClaimUrl && (
+                  <>
+                    {' '}To file directly with the administrator, visit the{' '}
+                    <a
+                      href={officialClaimUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold underline hover:text-amber-900"
+                    >
+                      official claim site
+                    </a>
+                    .
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -144,13 +181,13 @@ export default async function LawsuitDetailPage({
             </div>
           )}
 
-          {(lawsuit.claim_url || lawsuit.source_url) && (
+          {hasOfficialLink && (
             <div className="mt-8">
               <h2 className="text-lg font-bold">Official sources</h2>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                {lawsuit.claim_url && (
+                {officialClaimUrl && (
                   <a
-                    href={lawsuit.claim_url}
+                    href={officialClaimUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-secondary"
@@ -158,9 +195,9 @@ export default async function LawsuitDetailPage({
                     <ExternalLink className="h-4 w-4" /> Official claim site
                   </a>
                 )}
-                {lawsuit.source_url && (
+                {officialSourceUrl && (
                   <a
-                    href={lawsuit.source_url}
+                    href={officialSourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-ghost"
@@ -208,7 +245,7 @@ export default async function LawsuitDetailPage({
               {[
                 'Guided, pre-filled claim form',
                 'A receipt number saved to your dashboard',
-                'A link straight to the official claim site',
+                ...(officialClaimUrl ? ['A link straight to the official claim site'] : []),
               ].map((t) => (
                 <li
                   key={t}
