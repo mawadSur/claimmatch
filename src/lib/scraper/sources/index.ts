@@ -1,5 +1,6 @@
 import type { ScrapedLawsuit } from '@/lib/types';
 import { sampleAggregatorAdapter } from './sample-source';
+import { settleSignalAdapter } from './settlesignal';
 
 /**
  * A `SourceAdapter` knows how to pull settlement/lawsuit listings from ONE
@@ -48,9 +49,16 @@ export interface SourceAdapter {
 }
 
 /**
- * The registry the runner iterates. Only offline-safe, deterministic adapters
- * are enabled by default so `runAllSources()` never depends on a live network.
- * Add real `makeHtmlAdapter(...)` instances here once they respect the source's
- * robots.txt / Terms.
+ * The registry the runner iterates.
+ *
+ * Production adapters:
+ * - settleSignalAdapter: pulls ~800+ verified settlements from SettleSignal's
+ *   public CC-BY JSON feed (https://settlesignal.com/data/).
+ *
+ * Offline/test adapters:
+ * - sampleAggregatorAdapter: deterministic sample data for tests/seeding.
  */
-export const SOURCE_ADAPTERS: SourceAdapter[] = [sampleAggregatorAdapter];
+export const SOURCE_ADAPTERS: SourceAdapter[] = [
+  settleSignalAdapter,
+  sampleAggregatorAdapter,
+];
