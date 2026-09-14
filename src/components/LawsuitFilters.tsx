@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Search, X, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -14,6 +15,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const posthog = usePostHog();
 
   const activeCategory = searchParams.get('category') ?? '';
   const activeQ = searchParams.get('q') ?? '';
@@ -49,9 +51,14 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
   // Debounce the text input (~300ms) and keep the URL in sync.
   useEffect(() => {
     if (q === activeQ) return;
-    const t = setTimeout(() => commit({ q }), 300);
+    const t = setTimeout(() => {
+      commit({ q });
+      if (q.trim()) {
+        posthog?.capture('claim_search_submitted', { query: q.trim() });
+      }
+    }, 300);
     return () => clearTimeout(t);
-  }, [q, activeQ, commit]);
+  }, [q, activeQ, commit, posthog]);
 
   const hasFilters = Boolean(activeQ || activeCategory);
 

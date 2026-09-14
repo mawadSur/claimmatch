@@ -13,6 +13,7 @@ import {
   FileSignature,
   ShieldCheck,
 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { US_STATES } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { CLAIM_STATUS_LABELS } from '@/lib/types';
@@ -54,6 +55,7 @@ export function ClaimForm({
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result | null>(null);
+  const posthog = usePostHog();
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -67,6 +69,13 @@ export function ClaimForm({
     if (!canSubmit) return;
     setPhase('loading');
     setError('');
+
+    posthog?.capture('filing_started', {
+      lawsuit_id: lawsuit.id,
+      lawsuit_title: lawsuit.title,
+      lawsuit_slug: lawsuit.slug,
+    });
+
     try {
       const res = await fetch('/api/claims', {
         method: 'POST',
@@ -85,8 +94,15 @@ export function ClaimForm({
 
       const json = await res.json().catch(() => null);
       if (res.ok && json) {
-        setResult(json as Result);
+        const resultData = json as Result;
+        setResult(resultData);
         setPhase('success');
+        posthog?.capture('filing_completed', {
+          lawsuit_id: lawsuit.id,
+          lawsuit_title: lawsuit.title,
+          claim_id: resultData.id,
+          estimated_value: resultData.estimated_value,
+        });
       } else if (res.status === 404) {
         setError(
           json?.error || 'That settlement could not be found. It may have closed.',
