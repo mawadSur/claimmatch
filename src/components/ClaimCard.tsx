@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Clock, ExternalLink, Hash, Wallet } from 'lucide-react';
 import type { Claim, ClaimStatus } from '@/lib/types';
 import { CLAIM_STATUS_LABELS } from '@/lib/types';
-import { formatDeadline } from '@/lib/utils';
+import { formatDeadline, getValidClaimUrl } from '@/lib/utils';
 
 /**
  * The "receipt" settlement card shown on the dashboard for a filed claim.
@@ -63,9 +63,9 @@ export function ClaimCard({ claim }: { claim: Claim }) {
             View settlement <ArrowRight className="h-4 w-4" />
           </Link>
         )}
-        {lawsuit?.claim_url && (
+        {getValidClaimUrl(lawsuit?.claim_url) && (
           <a
-            href={lawsuit.claim_url}
+            href={getValidClaimUrl(lawsuit?.claim_url)!}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-ghost shrink-0 text-brand-700 hover:bg-brand-50"

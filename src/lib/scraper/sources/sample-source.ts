@@ -34,8 +34,6 @@ const RECORDS: ScrapedLawsuit[] = [
     deadline: daysOut(90),
     eligibility: { requires: ['took_medication'], notes: 'Purchased or prescribed during the class period.' },
     eligibility_text: 'Anyone who purchased or was prescribed the recalled heartburn medication.',
-    source_url: 'https://sample-aggregator.example/settlements/heartburn-rx-recall',
-    claim_url: 'https://sample-aggregator.example/settlements/heartburn-rx-recall/file',
   },
   {
     external_id: 'sample-aggregator:hourly-overtime-ca-2025',
@@ -50,8 +48,6 @@ const RECORDS: ScrapedLawsuit[] = [
     deadline: daysOut(60),
     eligibility: { requires: ['employed_hourly'], states: ['CA'] },
     eligibility_text: 'California hourly (non-exempt) employees who worked during the class period.',
-    source_url: 'https://sample-aggregator.example/settlements/hourly-overtime-ca',
-    claim_url: 'https://sample-aggregator.example/settlements/hourly-overtime-ca/file',
   },
   {
     external_id: 'sample-aggregator:olive-oil-mislabel-2025',
@@ -69,8 +65,6 @@ const RECORDS: ScrapedLawsuit[] = [
       dateRange: { from: '2019-01-01', to: '2024-12-31' },
     },
     eligibility_text: 'Anyone who bought the labeled olive oil during the class period.',
-    source_url: 'https://sample-aggregator.example/settlements/olive-oil-mislabel',
-    claim_url: 'https://sample-aggregator.example/settlements/olive-oil-mislabel/file',
   },
   {
     external_id: 'sample-aggregator:telecom-admin-fee-2025',
@@ -85,8 +79,6 @@ const RECORDS: ScrapedLawsuit[] = [
     deadline: daysOut(45),
     eligibility: { requires: ['used_streaming'], notes: 'Paid a monthly wireless/telecom subscription.' },
     eligibility_text: 'Wireless subscribers charged the monthly administrative fee during the class period.',
-    source_url: 'https://sample-aggregator.example/settlements/telecom-admin-fee',
-    claim_url: 'https://sample-aggregator.example/settlements/telecom-admin-fee/file',
   },
   {
     external_id: 'sample-aggregator:photo-face-scan-privacy-2025',
@@ -101,8 +93,6 @@ const RECORDS: ScrapedLawsuit[] = [
     deadline: daysOut(35),
     eligibility: { requires: ['uses_social_media'], states: ['IL', 'TX', 'WA', 'CA'] },
     eligibility_text: 'Residents of IL, TX, WA, or CA who used the app’s photo-tagging feature.',
-    source_url: 'https://sample-aggregator.example/settlements/photo-face-scan-privacy',
-    claim_url: 'https://sample-aggregator.example/settlements/photo-face-scan-privacy/file',
   },
   {
     external_id: 'sample-aggregator:dishwasher-defect-2025',
@@ -117,8 +107,6 @@ const RECORDS: ScrapedLawsuit[] = [
     deadline: daysOut(110),
     eligibility: { requires: ['bought_consumer_goods'], notes: 'Owned a covered model purchased during the class period.' },
     eligibility_text: 'Owners of covered dishwasher models who paid for a control-board repair.',
-    source_url: 'https://sample-aggregator.example/settlements/dishwasher-defect',
-    claim_url: 'https://sample-aggregator.example/settlements/dishwasher-defect/file',
   },
 ];
 

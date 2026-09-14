@@ -87,3 +87,34 @@ export const SITE = {
     'ClaimMatch scans class-action settlements and lawsuits, matches you to the ones you qualify for, and helps you file your claim in minutes.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://claimmatch.vercel.app',
 };
+
+/**
+ * Check if a URL is a placeholder (example.com, .example TLD, localhost, etc.).
+ * Returns true if the URL should not be shown to users as a working link.
+ */
+export function isPlaceholderUrl(url: string | null | undefined): boolean {
+  if (!url) return true;
+  try {
+    const { hostname } = new URL(url);
+    const lower = hostname.toLowerCase();
+    return (
+      lower === 'example.com' ||
+      lower.endsWith('.example.com') ||
+      lower.endsWith('.example') ||
+      lower === 'localhost' ||
+      lower.startsWith('127.') ||
+      lower === '0.0.0.0'
+    );
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Returns the URL only if it is a real, non-placeholder URL.
+ * Returns null otherwise.
+ */
+export function getValidClaimUrl(url: string | null | undefined): string | null {
+  if (!url || isPlaceholderUrl(url)) return null;
+  return url;
+}

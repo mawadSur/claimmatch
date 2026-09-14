@@ -14,7 +14,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
-import { US_STATES } from '@/lib/utils';
+import { US_STATES, getValidClaimUrl } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { CLAIM_STATUS_LABELS } from '@/lib/types';
 import type { Lawsuit, Profile, ClaimStatus } from '@/lib/types';
@@ -156,9 +156,9 @@ export function ClaimForm({
             <Link href="/dashboard" className="btn-primary justify-center">
               <LayoutDashboard className="h-4 w-4" /> Go to your dashboard
             </Link>
-            {lawsuit.claim_url && (
+            {getValidClaimUrl(lawsuit.claim_url) && (
               <a
-                href={lawsuit.claim_url}
+                href={getValidClaimUrl(lawsuit.claim_url)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-secondary justify-center"
