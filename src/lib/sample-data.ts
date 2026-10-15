@@ -150,6 +150,27 @@ export const SAMPLE_LAWSUITS: Lawsuit[] = [
     claim_url: null,
     is_featured: false,
   },
+  {
+    ...base,
+    id: 'sample-closed',
+    slug: 'expired-demo-settlement',
+    title: 'Expired Demo Settlement',
+    summary:
+      'DEV ONLY closed example so the closed-settlement banner can be reviewed locally.',
+    description:
+      'This sample row is past its deadline. It should show a Closed badge, hide the pre-fill CTA, and list similar open settlements.',
+    category: 'Consumer Protection',
+    typical_payout: '$20–$80',
+    proof_required: false,
+    deadline: iso(-20),
+    status: 'closed',
+    closed_at: iso(-20),
+    eligibility: { requires: ['purchased_product'] },
+    eligibility_text: 'Purchasers during the class period.',
+    source_url: null,
+    claim_url: null,
+    is_featured: false,
+  },
 ];
 
 export function getSampleFeatured(): Lawsuit[] {
