@@ -203,6 +203,7 @@ async function buildRow(
     extraction_confidence: confidence,
     review_status,
     status: 'open',
+    last_verified_at: item.last_verified_at ?? new Date().toISOString(),
   };
 }
 
@@ -215,6 +216,7 @@ function contentOnly(row: LawsuitRow): Record<string, unknown> {
     'typical_payout', 'estimated_value_min', 'estimated_value_max',
     'proof_required', 'deadline', 'eligibility', 'eligibility_text',
     'source_url', 'claim_url', 'raw_source_text', 'extraction_confidence',
+    'last_verified_at',
   ];
   const out: Record<string, unknown> = {};
   for (const k of keep) if (k in row) out[k] = row[k];

@@ -6,6 +6,7 @@
  * the SERVICE ROLE key so it can write past RLS. Combines the static sample
  * catalog with the sample scraper adapter's records and upserts them by slug.
  *
+ * DEV ONLY. Do not run against production. Uses the in-repo sample catalog.
  * Run: `npm run seed`  (requires NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
  *
  * NOTE: tsx executes this file directly, so imports use relative paths

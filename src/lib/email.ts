@@ -1,7 +1,7 @@
 // Transactional email via Resend. This module never throws on a missing API
 // key — it logs and no-ops so local/preview environments work without email
 // configured. Only server code should import this (it reads server env vars).
-import { SITE, formatDeadline } from '@/lib/utils';
+import { SITE, formatDeadline, POSTAL_ADDRESS } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 
 const BRAND = '#7526d1';
@@ -65,6 +65,7 @@ function footerNote(reason: string, to?: string): string {
   return `
         <tr><td style="padding:22px 8px 0 8px;">
           <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
+          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(POSTAL_ADDRESS)}</p>
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(reason)}${unsub}</p>
         </td></tr>`;
 }
@@ -88,7 +89,7 @@ export function renderMatchEmail(opts: MatchEmailOpts): string {
             <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(m.title)}</div>
             <div style="font-size:13px;color:#6b6480;margin-top:8px;">${meta.join(' &nbsp;•&nbsp; ')}</div>
             <div style="margin-top:16px;">
-              <a href="${lawsuitUrl(m.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">View &amp; file your claim →</a>
+              <a href="${lawsuitUrl(m.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">Review this settlement →</a>
             </div>
           </td>
         </tr>
@@ -108,7 +109,7 @@ export function renderMatchEmail(opts: MatchEmailOpts): string {
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">You have ${esc(countLabel)} to review</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${count === 1 ? 'a settlement' : 'settlements'} that match the profile you shared. Review the details and file a claim while the window is open.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${count === 1 ? 'a settlement' : 'settlements'} that match the profile you shared. Review the details, pre-fill a packet, and submit on the official site while the window is open.</p>
           ${cards}
           <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">See everything you may qualify for on your <a href="${SITE.url.replace(/\/$/, '')}/dashboard" style="color:${BRAND};text-decoration:underline;">ClaimMatch dashboard</a>.</p>
         </td></tr>

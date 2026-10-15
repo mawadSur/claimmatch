@@ -27,6 +27,9 @@ export interface EligibilityQuestion {
   help?: string;
 }
 
+/** Tri-state (plus unknown) proof rule from SettleSignal and similar feeds. */
+export type ProofRequired = 'yes' | 'no' | 'optional' | 'unknown';
+
 /** Structured eligibility criteria stored on a lawsuit (lawsuits.eligibility). */
 export interface EligibilityCriteria {
   /** US state codes; empty/undefined = nationwide */
@@ -39,6 +42,8 @@ export interface EligibilityCriteria {
   dateRange?: { from?: string; to?: string };
   /** free notes for the matcher / UI */
   notes?: string;
+  /** Proof-of-purchase rule from the source feed. Unknown must not display as "None". */
+  proof?: ProofRequired;
 }
 
 export interface Source {
@@ -82,6 +87,10 @@ export interface Lawsuit {
   estimated_value_max: number | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  /** Set by the daily close job when a deadline passes or the feed drops the row. */
+  closed_at: string | null;
+  /** Last time we verified this row against the source feed. */
+  last_verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -100,6 +109,10 @@ export interface Profile {
   sms_opt_in: boolean;
   referral_code: string | null;
   referred_by: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  prefill_consent_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -125,12 +138,15 @@ export interface Claim {
   lawsuit_title: string;
   status: ClaimStatus;
   form_data: Record<string, unknown>;
-  // Dream-state: e-sign authorization + filing lifecycle
+  // Authorization columns retained for historical rows; new packets do not set them.
   authorized_at: string | null;
   signature_name: string | null;
   authorization_ip: string | null;
   filed_at: string | null;
   estimated_value: number | null;
+  /** When the user reported submitting the official form themselves. */
+  user_submitted_at: string | null;
+  confirmation_number: string | null;
   created_at: string;
   updated_at: string;
   /** joined lawsuit, when selected with a relation */
@@ -232,11 +248,13 @@ export interface ScrapedLawsuit {
   eligibility_text?: string;
   source_url?: string;
   claim_url?: string;
+  last_verified_at?: string | null;
+  proof?: ProofRequired;
 }
 
 export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
-  processing: 'Processing',
-  submitted: 'Submitted',
+  processing: 'Ready to submit',
+  submitted: 'You submitted',
   approved: 'Approved',
   rejected: 'Not Eligible',
   paid: 'Paid',

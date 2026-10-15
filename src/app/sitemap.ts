@@ -1,9 +1,12 @@
 import type { MetadataRoute } from 'next';
-import { SITE } from '@/lib/utils';
+import { SITE, canonicalUrl } from '@/lib/utils';
 import { getLawsuits } from '@/lib/lawsuits';
 
-// Public, indexable routes only. Authenticated/admin areas (dashboard, settings,
-// admin) and API routes are intentionally excluded and blocked in robots.ts.
+/**
+ * Public, indexable routes only. Auth pages, closed rows, and fictional
+ * listings are excluded. Static lastmod is a build-time constant — not
+ * `new Date()` per request. Google ignores priority/changeFrequency.
+ */
 const PUBLIC_ROUTES = [
   '/',
   '/lawsuits',
@@ -13,27 +16,21 @@ const PUBLIC_ROUTES = [
   '/about',
   '/privacy',
   '/terms',
-  '/login',
-  '/signup',
+  '/how-we-make-money',
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = SITE.url.replace(/\/$/, '');
-  const lastModified = new Date();
+const STATIC_LASTMOD = new Date('2026-10-15T00:00:00.000Z');
 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = PUBLIC_ROUTES.map((path) => ({
-    url: `${base}${path === '/' ? '' : path}`,
-    lastModified,
-    changeFrequency: path === '/lawsuits' ? 'daily' : 'weekly',
-    priority: path === '/' ? 1 : path === '/lawsuits' ? 0.9 : 0.6,
+    url: canonicalUrl(path),
+    lastModified: STATIC_LASTMOD,
   }));
 
   const lawsuits = await getLawsuits();
   const lawsuitPages: MetadataRoute.Sitemap = lawsuits.map((lawsuit) => ({
-    url: `${base}/lawsuits/${lawsuit.slug}`,
-    lastModified: new Date(lawsuit.updated_at),
-    changeFrequency: 'weekly',
-    priority: 0.7,
+    url: canonicalUrl(`/lawsuits/${lawsuit.slug}`),
+    lastModified: new Date(lawsuit.last_verified_at ?? lawsuit.updated_at ?? STATIC_LASTMOD),
   }));
 
   return [...staticPages, ...lawsuitPages];

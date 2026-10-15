@@ -14,11 +14,15 @@ interface Props {
   counts?: AdminNavCounts;
 }
 
+const SHOW_RECOVERIES = process.env.NEXT_PUBLIC_ADMIN_RECOVERIES === '1';
+
 const LINKS = [
   { href: '/admin', label: 'Overview', Icon: LayoutDashboard, exact: true, countKey: null },
   { href: '/admin/review', label: 'Review', Icon: ClipboardCheck, exact: false, countKey: 'pendingReview' as const },
   { href: '/admin/catalog', label: 'Catalog', Icon: Library, exact: false, countKey: null },
-  { href: '/admin/recoveries', label: 'Recoveries', Icon: Wallet, exact: false, countKey: 'awaitingPayout' as const },
+  ...(SHOW_RECOVERIES
+    ? [{ href: '/admin/recoveries', label: 'Recoveries', Icon: Wallet, exact: false, countKey: 'awaitingPayout' as const }]
+    : []),
 ];
 
 /**

@@ -24,8 +24,14 @@ yarn-error.log*
 
 # env files
 .env
+.env*
 .env*.local
 .env.local
+!.env.example
+
+# local secrets dumps and scratch seed files
+.secrets-vercel-env.json
+.tmp-seed*
 
 # vercel
 .vercel

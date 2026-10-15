@@ -2,13 +2,11 @@ import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Lato } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
-import { SITE } from '@/lib/utils';
+import { SITE, canonicalUrl } from '@/lib/utils';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-// Distinctive display face (headings, the big "you're owed" numbers) paired with
-// a clean, trustworthy body sans — deliberately not the generic Inter default.
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
   variable: '--font-display',
@@ -28,6 +26,7 @@ export const metadata: Metadata = {
     template: `%s · ${SITE.name}`,
   },
   description: SITE.description,
+  alternates: { canonical: canonicalUrl('/') },
   openGraph: {
     title: `${SITE.name} — ${SITE.tagline}`,
     description: SITE.description,
@@ -39,6 +38,26 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.svg' },
 };
 
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      name: SITE.name,
+      url: SITE.url,
+      logo: `${SITE.url.replace(/\/$/, '')}/favicon.svg`,
+      sameAs: [],
+      description: SITE.description,
+    },
+    {
+      '@type': 'WebSite',
+      name: SITE.name,
+      url: SITE.url,
+      description: SITE.description,
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -47,6 +66,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="flex min-h-screen flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
         <PostHogProvider>
           <Nav />
           <main className="flex-1">{children}</main>

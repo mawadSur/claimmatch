@@ -1,31 +1,31 @@
 import type { CSSProperties } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   ArrowRight, Search, ShieldCheck, Mail, FileText, Sparkles, CheckCircle2,
   Bell, Wallet, Lock,
 } from 'lucide-react';
 import { getLawsuits } from '@/lib/lawsuits';
-import { FEE_PCT } from '@/lib/recovery';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { EmailCapture } from '@/components/EmailCapture';
+import { FeeDisclosure } from '@/components/FeeDisclosure';
+import { SITE, canonicalUrl } from '@/lib/utils';
 
-/**
- * Very subtle film-grain noise as an inline SVG data URI — layered over the hero
- * so the brand glow reads as depth, not a flat purple gradient.
- */
+export const metadata: Metadata = {
+  title: { absolute: `${SITE.name} — ${SITE.tagline}` },
+  description: SITE.description,
+  alternates: { canonical: canonicalUrl('/') },
+};
+
 const NOISE =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
-const FEE_LABEL = `${Math.round(FEE_PCT * 100)}%`;
-
 export default async function HomePage() {
-  const featured = await getLawsuits({ featured: true, limit: 3 });
+  const closingSoon = await getLawsuits({ closingSoon: true, limit: 3 });
 
   return (
     <>
-      {/* Hero ---------------------------------------------------------------- */}
       <section className="relative isolate overflow-hidden bg-white">
-        {/* Layered background: base wash + two soft radial glows + faint grain */}
         <div className="pointer-events-none absolute inset-0 -z-20 bg-gradient-to-b from-brand-50 via-white to-white" />
         <div className="pointer-events-none absolute -right-32 -top-40 -z-20 h-[36rem] w-[36rem] rounded-full bg-brand-300/40 blur-[100px]" />
         <div className="pointer-events-none absolute -left-40 top-1/3 -z-20 h-[30rem] w-[30rem] rounded-full bg-brand-200/50 blur-[110px]" />
@@ -37,22 +37,21 @@ export default async function HomePage() {
 
         <div className="container-page relative py-20 sm:py-24 lg:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
-            {/* Left: copy ---------------------------------------------------- */}
             <div className="stagger max-w-xl text-center lg:text-left">
               <span
                 style={{ '--i': 0 } as CSSProperties}
                 className="badge-brand mx-auto gap-1.5 ring-1 ring-inset ring-brand-200/70 lg:mx-0"
               >
-                <Sparkles className="h-3.5 w-3.5" /> Free to check · No win, no fee
+                <Sparkles className="h-3.5 w-3.5" /> Free to check · You submit on the official site
               </span>
 
               <h1
                 style={{ '--i': 1 } as CSSProperties}
                 className="mt-5 font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.1rem]"
               >
-                Find the settlement money{' '}
+                Find settlements you{' '}
                 <span className="bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
-                  you’re owed.
+                  qualify for.
                 </span>
               </h1>
 
@@ -60,9 +59,8 @@ export default async function HomePage() {
                 style={{ '--i': 2 } as CSSProperties}
                 className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-muted lg:mx-0"
               >
-                Billions in class-action settlements go unclaimed every year. ClaimMatch
-                finds the ones you qualify for, files the claim for you, and only takes a
-                fee when the money actually lands.
+                Find settlements you qualify for. We pre-fill the claim — you submit
+                it free on the official site.
               </p>
 
               <div
@@ -85,29 +83,24 @@ export default async function HomePage() {
                   <ShieldCheck className="h-4 w-4 text-brand-500" /> Takes 2 minutes to check
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-success-500" /> You only pay if you get paid
+                  <CheckCircle2 className="h-4 w-4 text-success-500" /> Official filing is always free
                 </span>
               </p>
             </div>
 
-            {/* Right: product video in a device frame + notification flourish */}
             <div className="stagger">
               <div
                 style={{ '--i': 5 } as CSSProperties}
                 className="relative mx-auto w-full max-w-lg"
               >
-                {/* soft glow bloom behind the frame */}
                 <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2.5rem] bg-brand-400/25 blur-2xl" />
-
-                {/* floating browser-style frame */}
                 <div className="animate-float overflow-hidden rounded-3xl border border-white/70 bg-white/60 p-2 shadow-card-hover ring-1 ring-black/5 backdrop-blur-sm">
-                  {/* faux browser chrome */}
                   <div className="flex items-center gap-1.5 px-2.5 py-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-danger-500/70" />
                     <span className="h-2.5 w-2.5 rounded-full bg-brand-300" />
                     <span className="h-2.5 w-2.5 rounded-full bg-success-500/70" />
                     <div className="ml-3 hidden h-6 flex-1 items-center rounded-full bg-gray-100/80 px-3 text-[11px] font-medium text-ink-soft sm:flex">
-                      claimmatch.com
+                      Example
                     </div>
                   </div>
 
@@ -118,13 +111,11 @@ export default async function HomePage() {
                       loop
                       playsInline
                       poster="/video/notification-walk-poster.jpg"
-                      aria-label="A phone push notification arriving the moment you are owed settlement money"
+                      aria-label="Example: a notification that a matching settlement is open"
                       className="aspect-[4/3] w-full max-w-full object-cover"
                     >
                       <source src="/video/notification-walk.mp4" type="video/mp4" />
                     </video>
-
-                    {/* pure-CSS phone notification flourish */}
                     <div className="absolute inset-x-3 top-3">
                       <div className="animate-notif flex items-center gap-3 rounded-2xl border border-white/60 bg-white/95 px-3.5 py-2.5 shadow-card ring-1 ring-black/5 backdrop-blur">
                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
@@ -132,12 +123,10 @@ export default async function HomePage() {
                         </span>
                         <div className="min-w-0 leading-tight">
                           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                            ClaimMatch <span className="text-ink-soft/60">· now</span>
+                            Example <span className="text-ink-soft/60">· preview</span>
                           </div>
                           <div className="truncate text-sm font-bold text-ink">
-                            You’re owed{' '}
-                            <span className="tabular-nums text-success-600">~$180</span>{' '}
-                            — tap to file
+                            A matching settlement is open — review and submit
                           </div>
                         </div>
                       </div>
@@ -150,19 +139,18 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* How it works -------------------------------------------------------- */}
       <section className="container-page py-16 sm:py-20" id="how">
         <h2 className="text-center font-display text-3xl font-extrabold sm:text-4xl">
           How ClaimMatch works
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-ink-muted">
-          We do the hunting and the filing. You just say yes.
+          We find and pre-fill. You review and submit on the official site.
         </p>
         <div className="stagger mt-12 grid gap-6 md:grid-cols-3">
           {[
-            { icon: Search, title: 'We scan the settlements', body: 'Our system continuously pulls open class-action settlements and lawsuits from official sources into one place.' },
-            { icon: ShieldCheck, title: 'We match you', body: 'Answer a few quick questions once. We compare your profile to every case and surface the ones you actually qualify for.' },
-            { icon: FileText, title: 'You sign, we file', body: 'Authorize with one e-signature and we prepare and submit your claims to the official administrators — then track them to payout.' },
+            { icon: Search, title: 'We scan the settlements', body: 'Our system continuously pulls open class-action settlements from official sources into one place.' },
+            { icon: ShieldCheck, title: 'We match you', body: 'Answer a few questions once. We compare your profile to every case and surface the ones you may qualify for.' },
+            { icon: FileText, title: 'We pre-fill, you submit', body: 'We pre-fill your claim details. You review them and submit free on the official administrator site.' },
           ].map((s, i) => (
             <div
               key={i}
@@ -179,36 +167,40 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured settlements ------------------------------------------------ */}
       <section className="bg-gray-50 py-16 sm:py-20">
         <div className="container-page">
           <div className="flex items-end justify-between">
             <div>
-              <span className="badge-brand gap-1"><Sparkles className="h-3.5 w-3.5" /> AI Matched</span>
+              <span className="badge-brand gap-1"><Sparkles className="h-3.5 w-3.5" /> Closing soon</span>
               <h2 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">
-                Open settlements right now
+                Open settlements with the nearest deadlines
               </h2>
             </div>
             <Link href="/lawsuits" className="hidden text-sm font-semibold text-brand-700 hover:text-brand-800 sm:inline-flex sm:items-center sm:gap-1">
               See all <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="stagger mt-8 grid gap-6 md:grid-cols-3">
-            {featured.map((l, i) => (
-              <div key={l.id} style={{ '--i': i } as CSSProperties}>
-                <LawsuitCard lawsuit={l} badge={{ label: 'AI Matched', tone: 'brand' }} />
-              </div>
-            ))}
-          </div>
+          {closingSoon.length > 0 ? (
+            <div className="stagger mt-8 grid gap-6 md:grid-cols-3">
+              {closingSoon.map((l, i) => (
+                <div key={l.id} style={{ '--i': i } as CSSProperties}>
+                  <LawsuitCard lawsuit={l} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-8 text-sm text-ink-muted">
+              No open settlements to show right now. Check back soon or{' '}
+              <Link href="/lawsuits" className="font-semibold text-brand-700">browse the catalog</Link>.
+            </p>
+          )}
         </div>
       </section>
 
-      {/* The day you get paid ------------------------------------------------ */}
       <section className="relative isolate overflow-hidden bg-white py-16 sm:py-24">
         <div className="pointer-events-none absolute -left-32 bottom-0 -z-10 h-[28rem] w-[28rem] rounded-full bg-success-100/60 blur-[100px]" />
         <div className="container-page">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            {/* Video: settlement check pulled from the mailbox */}
             <div className="reveal relative order-last lg:order-first">
               <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2.5rem] bg-success-500/15 blur-2xl" />
               <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/60 p-2 shadow-card-hover ring-1 ring-black/5 backdrop-blur-sm">
@@ -225,25 +217,22 @@ export default async function HomePage() {
                 </video>
               </div>
             </div>
-
-            {/* Copy */}
             <div>
               <span className="badge-green gap-1.5">
                 <Wallet className="h-3.5 w-3.5" /> The day you get paid
               </span>
               <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight sm:text-4xl">
-                A real check, in your{' '}
-                <span className="text-success-600">actual mailbox.</span>
+                Payouts come from the{' '}
+                <span className="text-success-600">administrator — not us.</span>
               </h2>
               <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
-                When your claim is approved, the settlement pays out — straight to you.
-                There’s nothing to chase and no forms to decode. We already filed it, and
-                we only take our {FEE_LABEL} fee once you’ve been paid. Never a cent before.
+                When a claim is approved, the settlement administrator pays you
+                directly. ClaimMatch pre-fills your details so you can submit faster.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
-                  { icon: Lock, text: 'Nothing upfront — free to find and file your matches.' },
-                  { icon: CheckCircle2, text: `No win, no fee. Our ${FEE_LABEL} only applies to money you receive.` },
+                  { icon: Lock, text: 'Nothing upfront — free to find your matches and pre-fill a packet.' },
+                  { icon: CheckCircle2, text: 'You submit on the official site. Filing there is always free.' },
                   { icon: Mail, text: 'Paid the way the settlement pays — to your mailbox or bank.' },
                 ].map(({ icon: Icon, text }) => (
                   <li key={text} className="flex items-start gap-3">
@@ -254,9 +243,12 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-6">
+                <FeeDisclosure compact />
+              </div>
               <div className="mt-8">
                 <Link href="/signup" className="btn-primary w-full sm:w-auto">
-                  See what you’re owed <ArrowRight className="h-4 w-4" />
+                  See your matches <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -264,11 +256,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trust bar ----------------------------------------------------------- */}
       <section className="container-page py-16">
         <div className="stagger grid gap-6 sm:grid-cols-3">
           {[
-            ['$50B+', 'left unclaimed in settlements each year'],
+            ['Official links', 'every settlement points at the administrator'],
             ['2 min', 'to set up your eligibility profile'],
             ['$0', 'to check — always free to find your matches'],
           ].map(([big, small], i) => (
@@ -284,7 +275,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Email capture ------------------------------------------------------- */}
       <section className="bg-gradient-to-b from-white to-brand-50 py-16 sm:py-20">
         <div className="container-narrow text-center">
           <Mail className="mx-auto h-10 w-10 text-brand-600" />
@@ -299,7 +289,7 @@ export default async function HomePage() {
             <EmailCapture />
           </div>
           <ul className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-muted">
-            {['No spam, ever', 'Unsubscribe anytime', 'Free forever'].map((t) => (
+            {['No spam', 'Unsubscribe anytime', 'Free during beta'].map((t) => (
               <li key={t} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-success-500" /> {t}
               </li>

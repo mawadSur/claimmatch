@@ -82,11 +82,41 @@ export const US_STATES: { code: string; name: string }[] = [
 
 export const SITE = {
   name: 'ClaimMatch',
-  tagline: 'Find the settlement money you’re owed.',
+  tagline: 'Find settlements you qualify for.',
   description:
-    'ClaimMatch scans class-action settlements and lawsuits, matches you to the ones you qualify for, and helps you file your claim in minutes.',
+    'Find open class-action settlements you may qualify for, with official claim links and pre-filled claim details.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://claimmatch.vercel.app',
 };
+
+/**
+ * Public contact placeholders. A working inbox and postal address have not been
+ * chosen yet — set NEXT_PUBLIC_CONTACT_EMAIL / NEXT_PUBLIC_POSTAL_ADDRESS to
+ * replace the brace placeholders. Never invent a real address.
+ */
+export const CONTACT_EMAIL =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || '{CONTACT_EMAIL}';
+export const POSTAL_ADDRESS =
+  process.env.NEXT_PUBLIC_POSTAL_ADDRESS?.trim() || '{POSTAL_ADDRESS}';
+
+export function isPlaceholderValue(value: string): boolean {
+  return /^\{[A-Z0-9_]+\}$/.test(value);
+}
+
+/** Absolute canonical URL for a site path (`/` → origin, `/foo` → origin/foo). */
+export function canonicalUrl(path = '/'): string {
+  const base = SITE.url.replace(/\/$/, '');
+  if (!path || path === '/') return base;
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+/**
+ * Catalog dates are compared as UTC calendar days (YYYY-MM-DD). Deadline
+ * filtering, the daily close job, and "days left" all use this timezone so a
+ * settlement does not flip open/closed depending on the viewer's locale.
+ */
+export function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /**
  * Check if a URL is a placeholder (example.com, .example TLD, localhost, etc.).

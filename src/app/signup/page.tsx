@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Sign up',
   description:
     'Create a free ClaimMatch account and get matched to class-action settlements you qualify for.',
+  robots: { index: false, follow: false },
 };
 
 const TRUST_BULLETS = [
@@ -28,15 +29,16 @@ export default function SignupPage() {
         <div className="mx-auto max-w-md">
           <div className="text-center">
             <span className="badge-brand mx-auto gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> Free to check · No win, no fee
+              <Sparkles className="h-3.5 w-3.5" /> Free to check · You submit
             </span>
             <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl">
               Find the settlements{' '}
-              <span className="text-brand-600">you’re owed.</span>
+              <span className="text-brand-600">you may qualify for.</span>
             </h1>
             <p className="mt-3 text-ink-muted">
               Create your free account and answer a few quick questions. We’ll
-              match you to open class-action settlements and help you file.
+              match you to open class-action settlements and pre-fill your claim
+              details — you submit on the official site.
             </p>
           </div>
 

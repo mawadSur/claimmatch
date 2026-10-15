@@ -3,8 +3,10 @@ import type { Lawsuit } from './types';
 /**
  * A small set of realistic sample settlements used as a graceful fallback when
  * Supabase is not configured or the `lawsuits` table is empty. This keeps the
- * deployed site looking alive before the DB is seeded. The full seed lives in
- * supabase/seed.sql. These are illustrative examples, not legal solicitations.
+ * deployed site looking alive before the DB is seeded. Used only when
+ * NODE_ENV !== 'production'. The full fictional seed lives in
+ * supabase/seed.dev.sql (DEV ONLY). These are illustrative examples, not
+ * legal solicitations.
  */
 function iso(daysFromNow: number): string {
   const d = new Date();
@@ -27,6 +29,8 @@ const base = {
   estimated_value_max: null,
   reviewed_by: null,
   reviewed_at: null,
+  closed_at: null,
+  last_verified_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

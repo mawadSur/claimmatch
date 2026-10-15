@@ -6,6 +6,7 @@ import { AuthForm } from '@/components/AuthForm';
 export const metadata: Metadata = {
   title: 'Log in',
   description: 'Log in to your ClaimMatch account to see your settlement matches.',
+  robots: { index: false, follow: false },
 };
 
 function AuthFormFallback() {

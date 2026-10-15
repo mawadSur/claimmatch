@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Scale } from 'lucide-react';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { POSTAL_ADDRESS, isPlaceholderValue } from '@/lib/utils';
 
 export function Footer() {
   return (
@@ -15,9 +16,27 @@ export function Footer() {
               Claim<span className="-ml-1 text-brand-600">Match</span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-ink-soft">
-              We scan class-action settlements and lawsuits, match you to the ones
-              you qualify for, and help you file — free to check.
+              We scan class-action settlements, match you to the ones you may
+              qualify for, and pre-fill your claim details — you submit on the
+              official site.
             </p>
+            <p className="mt-3 max-w-sm text-xs text-ink-soft">
+              Data:{' '}
+              <a
+                href="https://settlesignal.com/data/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-brand-700"
+              >
+                SettleSignal (settlesignal.com), CC-BY 4.0
+              </a>
+            </p>
+            {!isPlaceholderValue(POSTAL_ADDRESS) && (
+              <p className="mt-3 text-xs text-ink-soft">{POSTAL_ADDRESS}</p>
+            )}
+            {isPlaceholderValue(POSTAL_ADDRESS) && (
+              <p className="mt-3 text-xs text-ink-soft">{POSTAL_ADDRESS}</p>
+            )}
           </div>
 
           <div>
@@ -26,6 +45,7 @@ export function Footer() {
               <li><Link href="/lawsuits" className="hover:text-brand-700">Browse settlements</Link></li>
               <li><Link href="/how-it-works" className="hover:text-brand-700">How it works</Link></li>
               <li><Link href="/pricing" className="hover:text-brand-700">Pricing</Link></li>
+              <li><Link href="/how-we-make-money" className="hover:text-brand-700">How we make money</Link></li>
               <li><Link href="/signup" className="hover:text-brand-700">Get matched</Link></li>
             </ul>
           </div>

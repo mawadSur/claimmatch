@@ -10,7 +10,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { Claim, Recovery, RecoveryStatus } from '@/lib/types';
-import { FEE_PCT, formatUSD, round2 } from '@/lib/recovery';
+import { formatUSD, round2 } from '@/lib/recovery';
 import { cn } from '@/lib/utils';
 
 /** A recovery joined with its claim + the claim's lawsuit (title/slug only). */
@@ -148,7 +148,7 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
         <tbody>
           {rows.map((row) => {
             const r = row.recovery;
-            const pct = r.fee_pct && r.fee_pct > 0 ? r.fee_pct : FEE_PCT;
+            const pct = r.fee_pct && r.fee_pct > 0 ? r.fee_pct : 0;
             const grossNum = Number(row.gross.replace(/[^0-9.]/g, '')) || 0;
             // Live preview from the input; falls back to the persisted values.
             const feeNum = grossNum > 0 ? round2(grossNum * pct) : Number(r.fee_amount ?? 0);

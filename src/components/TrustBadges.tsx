@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils';
  */
 const BADGES = [
   { icon: BadgeCheck, label: 'Free to check' },
-  { icon: HandCoins, label: 'No win, no fee' },
+  { icon: HandCoins, label: 'Free during beta' },
   { icon: Link2, label: 'Official sources linked' },
-  { icon: Lock, label: 'Bank-level security' },
+  { icon: Lock, label: 'You submit the claim' },
   { icon: XCircle, label: 'Cancel anytime' },
 ] as const;
 
