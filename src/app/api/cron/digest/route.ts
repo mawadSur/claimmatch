@@ -3,6 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
 import type { Lawsuit, Profile } from '@/lib/types';
+import { todayISO } from '@/lib/utils';
+import { isFictionalSlug } from '@/lib/fictional-slugs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +52,12 @@ async function handle(req: Request) {
       const rows = (matchRows ?? []) as { lawsuit?: Lawsuit }[];
       const items: MatchNotifyItem[] = rows
         .map((m) => m.lawsuit)
-        .filter((l): l is Lawsuit => !!l && l.review_status === 'published')
+        .filter((l): l is Lawsuit => {
+          if (!l || l.review_status !== 'published') return false;
+          if (l.status === 'closed' || isFictionalSlug(l.slug)) return false;
+          if (l.deadline && l.deadline < todayISO()) return false;
+          return true;
+        })
         .map((l) => ({
           title: l.title,
           slug: l.slug,

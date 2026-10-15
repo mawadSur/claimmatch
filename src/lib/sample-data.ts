@@ -3,8 +3,10 @@ import type { Lawsuit } from './types';
 /**
  * A small set of realistic sample settlements used as a graceful fallback when
  * Supabase is not configured or the `lawsuits` table is empty. This keeps the
- * deployed site looking alive before the DB is seeded. The full seed lives in
- * supabase/seed.sql. These are illustrative examples, not legal solicitations.
+ * deployed site looking alive before the DB is seeded. Used only when
+ * NODE_ENV !== 'production'. The full fictional seed lives in
+ * supabase/seed.dev.sql (DEV ONLY). These are illustrative examples, not
+ * legal solicitations.
  */
 function iso(daysFromNow: number): string {
   const d = new Date();
@@ -27,6 +29,8 @@ const base = {
   estimated_value_max: null,
   reviewed_by: null,
   reviewed_at: null,
+  closed_at: null,
+  last_verified_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
@@ -142,6 +146,27 @@ export const SAMPLE_LAWSUITS: Lawsuit[] = [
     deadline: iso(35),
     eligibility: { requires: ['used_streaming'] },
     eligibility_text: 'Anyone billed for an auto-renewed subscription during the class period.',
+    source_url: null,
+    claim_url: null,
+    is_featured: false,
+  },
+  {
+    ...base,
+    id: 'sample-closed',
+    slug: 'expired-demo-settlement',
+    title: 'Expired Demo Settlement',
+    summary:
+      'DEV ONLY closed example so the closed-settlement banner can be reviewed locally.',
+    description:
+      'This sample row is past its deadline. It should show a Closed badge, hide the pre-fill CTA, and list similar open settlements.',
+    category: 'Consumer Protection',
+    typical_payout: '$20–$80',
+    proof_required: false,
+    deadline: iso(-20),
+    status: 'closed',
+    closed_at: iso(-20),
+    eligibility: { requires: ['purchased_product'] },
+    eligibility_text: 'Purchasers during the class period.',
     source_url: null,
     claim_url: null,
     is_featured: false,

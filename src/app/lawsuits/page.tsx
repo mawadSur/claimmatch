@@ -5,17 +5,18 @@ import { Sparkles, SearchX } from 'lucide-react';
 import { getLawsuits, getCategories } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
-import { SITE } from '@/lib/utils';
+import { SITE, canonicalUrl } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Open Class Action Settlements',
   description:
     'Browse every open class action settlement we track — data breaches, consumer products, privacy violations, and more. Search by keyword or filter by category to find settlements you may qualify for.',
+  alternates: { canonical: canonicalUrl('/lawsuits') },
   openGraph: {
     title: 'Open Class Action Settlements — ClaimMatch',
     description:
       'Find open class action settlements you may qualify for. Data breaches, consumer products, privacy, and more — all in one place.',
-    url: `${SITE.url}/lawsuits`,
+    url: canonicalUrl('/lawsuits'),
     siteName: SITE.name,
     type: 'website',
   },
@@ -50,7 +51,7 @@ export default async function LawsuitsPage({
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
             Every open class-action settlement we track, in one place. Search by
             keyword or filter by category to find the ones worth your time — then
-            file your claim in minutes.
+            pre-fill a packet and submit on the official site.
           </p>
         </div>
       </section>

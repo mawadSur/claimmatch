@@ -213,8 +213,8 @@ export function OnboardingWizard({
               </div>
             )}
             <p className="mx-auto mt-5 max-w-md text-sm text-ink-muted">
-              Authorize with one e-signature and we’ll help you file with the
-              official administrators — you only pay our fee when you get paid.
+              We’ll pre-fill your claim details so you can review them and submit
+              on the official administrator site.
             </p>
             <button
               type="button"

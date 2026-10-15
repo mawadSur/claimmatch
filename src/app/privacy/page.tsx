@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck, Mail } from 'lucide-react';
+import { CONTACT_EMAIL, POSTAL_ADDRESS, canonicalUrl, isPlaceholderValue } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'How ClaimMatch collects, uses, and protects your information: your email and eligibility answers, why we need them, how they’re stored, and how to opt out.',
+    'How ClaimMatch collects, uses, and protects your information: your email, phone, address, and eligibility answers, why we need them, how they’re stored, and how to opt out.',
+  alternates: { canonical: canonicalUrl('/privacy') },
 };
 
-const LAST_UPDATED = 'January 2026';
-const CONTACT_EMAIL = 'privacy@claimmatch.app';
+const LAST_UPDATED = 'October 15, 2026';
 
 export default function PrivacyPage() {
   return (
@@ -50,6 +51,12 @@ export default function PrivacyPage() {
                 your profile.
               </li>
               <li>
+                <span className="font-semibold text-ink">Phone and mailing address</span> —
+                if you choose to save them so we can pre-fill official claim details.
+                The first time you save an address we ask you to consent to reuse it
+                on future packets.
+              </li>
+              <li>
                 <span className="font-semibold text-ink">Eligibility answers</span> —
                 the responses you give in our questionnaire (for example, your state,
                 whether you’ve received a data-breach notice, or the kinds of products
@@ -78,7 +85,7 @@ export default function PrivacyPage() {
             <ul className="ml-5 list-disc space-y-2">
               <li>To match you to settlements and lawsuits you may qualify for.</li>
               <li>To notify you by email when new matches open up.</li>
-              <li>To help you file and keep track of your claims.</li>
+              <li>To pre-fill claim packets you open and keep track of claims you report submitting.</li>
               <li>To operate, secure, and improve the Service.</li>
             </ul>
             <p>
@@ -93,7 +100,9 @@ export default function PrivacyPage() {
               Your account, profile, and claim data are stored in our database, hosted
               on <span className="font-semibold text-ink">Supabase</span> (a managed
               Postgres platform). Access is protected by row-level security, so you can
-              only read and write your own records. We rely on our infrastructure
+              only read and write your own records. Processors that help us run the
+              Service include Supabase, Vercel, PostHog, Resend, and Anthropic when
+              the extraction pipeline is enabled. We rely on our infrastructure
               providers’ industry-standard safeguards to encrypt data in transit and at
               rest. No system is perfectly secure, but we work to protect your
               information and limit access to it.
@@ -165,13 +174,20 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-ink">11. Contact us</h2>
             <p>
               Questions about your privacy or this policy? Reach us at{' '}
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="font-semibold text-brand-700 hover:text-brand-800"
-              >
-                {CONTACT_EMAIL}
-              </a>
-              .
+              {isPlaceholderValue(CONTACT_EMAIL) ? (
+                <span className="font-semibold text-ink">{CONTACT_EMAIL}</span>
+              ) : (
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="font-semibold text-brand-700 hover:text-brand-800"
+                >
+                  {CONTACT_EMAIL}
+                </a>
+              )}
+              . Postal address: {POSTAL_ADDRESS}.
+            </p>
+            <p className="text-xs text-ink-soft">
+              Interim draft — pending counsel review.
             </p>
           </section>
         </div>

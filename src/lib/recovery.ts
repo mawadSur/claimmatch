@@ -6,9 +6,9 @@ interface MatchLike {
 }
 
 /**
- * ClaimMatch business model: "we recover it for you and take a %".
- * Central place for the contingency fee rate + all money math so the UI and the
- * accounting agree. Fee defaults to 15% and is overridable via env.
+ * Accounting helpers for recoveries (admin / later fee work).
+ * Public pages must not display this rate — use FeeDisclosure / FEE_DISPLAY.
+ * The default is kept for stored recovery rows only.
  */
 export const FEE_PCT = (() => {
   const v = Number(process.env.NEXT_PUBLIC_CLAIMMATCH_FEE_PCT);

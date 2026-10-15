@@ -24,7 +24,7 @@ import {
 import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
-import { FEE_PCT, formatUSD } from '@/lib/recovery';
+import { formatUSD } from '@/lib/recovery';
 import { StatCard } from '@/components/admin/StatCard';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -40,7 +40,7 @@ export default async function AdminOverviewPage() {
   // Degrades to 0 if Supabase isn't configured so the page still renders.
   async function count(
     table: string,
-    modify?: (q: any) => any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    modify?: (q: any) => any,
   ): Promise<number> {
     try {
       let q = svc.from(table).select('*', { count: 'exact', head: true });
@@ -120,8 +120,6 @@ export default async function AdminOverviewPage() {
 
   const pctOf = (n: number, d: number) =>
     d > 0 ? `${Math.round((n / d) * 100)}% of ${d.toLocaleString()}` : 'No members yet';
-  const feePctLabel = `${Math.round(FEE_PCT * 100)}% contingency`;
-
   const awaitingPayoutRecoveries = recoveries.filter(
     (r) => r.status === 'awaiting_payout',
   ).length;
@@ -136,7 +134,7 @@ export default async function AdminOverviewPage() {
           Operations dashboard
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          We complete claim filings for account holders — track progress, review
+          Users pre-fill packets and submit on official sites — track progress, review
           new settlements, and manage payouts. All counts refresh on each load.
         </p>
       </header>
@@ -253,7 +251,7 @@ export default async function AdminOverviewPage() {
         <StatCard
           label="Our fees"
           value={formatUSD(feeSum)}
-          sub={feePctLabel}
+          sub="from stored recovery rates"
           icon={<Percent className="h-4 w-4" />}
         />
       </Section>

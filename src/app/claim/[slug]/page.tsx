@@ -1,14 +1,28 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, FileText, ShieldCheck, ListChecks } from 'lucide-react';
-import { getLawsuitBySlug } from '@/lib/lawsuits';
+import { ArrowLeft, Clock } from 'lucide-react';
+import { lookupLawsuitBySlug, computedLawsuitStatus, isClaimWindowClosed } from '@/lib/lawsuits';
 import { createClient } from '@/lib/supabase/server';
-import { ClaimForm } from '@/components/ClaimForm';
+import { ClaimPacket } from '@/components/ClaimPacket';
 import { MatchViewTracker } from '@/components/MatchViewTracker';
-import type { Profile } from '@/lib/types';
+import { formatDeadline, daysUntil, canonicalUrl } from '@/lib/utils';
+import type { Claim, Profile } from '@/lib/types';
 
-export const metadata: Metadata = { title: 'File your claim' };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const result = await lookupLawsuitBySlug(slug);
+  if (result.status !== 'ok') return { title: 'Claim packet', robots: { index: false, follow: false } };
+  return {
+    title: `Claim packet · ${result.lawsuit.title}`,
+    alternates: { canonical: canonicalUrl(`/claim/${slug}`) },
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function ClaimPage({
   params,
@@ -19,6 +33,7 @@ export default async function ClaimPage({
 
   let userId: string | null = null;
   let profile: Profile | null = null;
+  let claim: Claim | null = null;
   try {
     const supabase = await createClient();
     const {
@@ -26,12 +41,20 @@ export default async function ClaimPage({
     } = await supabase.auth.getUser();
     if (user) {
       userId = user.id;
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      profile = (data as Profile | null) ?? null;
+      const [{ data: profileData }, lookup] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        lookupLawsuitBySlug(slug),
+      ]);
+      profile = (profileData as Profile | null) ?? null;
+      if (lookup.status === 'ok') {
+        const { data: claimData } = await supabase
+          .from('claims')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('lawsuit_id', lookup.lawsuit.id)
+          .maybeSingle();
+        claim = (claimData as Claim | null) ?? null;
+      }
     }
   } catch {
     userId = null;
@@ -39,8 +62,15 @@ export default async function ClaimPage({
 
   if (!userId) redirect(`/login?next=/claim/${slug}`);
 
-  const lawsuit = await getLawsuitBySlug(slug);
-  if (!lawsuit) notFound();
+  const result = await lookupLawsuitBySlug(slug);
+  if (result.status === 'gone' || result.status === 'missing') notFound();
+  const lawsuit = result.lawsuit;
+  if (isClaimWindowClosed(lawsuit)) {
+    redirect(`/lawsuits/${lawsuit.slug}`);
+  }
+
+  const status = computedLawsuitStatus(lawsuit);
+  const days = daysUntil(lawsuit.deadline);
 
   return (
     <section className="container-narrow py-12">
@@ -56,33 +86,25 @@ export default async function ClaimPage({
         <ArrowLeft className="h-4 w-4" /> Back to settlement
       </Link>
 
-      <span className="badge-brand mt-5">{lawsuit.category}</span>
-      <h1 className="mt-3 text-3xl font-extrabold leading-tight">File your claim</h1>
-      <p className="mt-2 text-lg font-semibold text-brand-700">{lawsuit.title}</p>
-
-      <div className="mt-6 rounded-2xl border border-gray-100 bg-gray-50 p-5">
-        <h2 className="text-sm font-bold">What happens when you file</h2>
-        <ul className="mt-3 space-y-2 text-sm text-ink-muted">
-          <li className="flex items-start gap-2">
-            <ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            We record your claim and give you a receipt number to track it from
-            your dashboard.
-          </li>
-          <li className="flex items-start gap-2">
-            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            We pre-fill the details the official claim form asks for, using your
-            profile.
-          </li>
-          <li className="flex items-start gap-2">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-            You finish and submit on the settlement administrator’s official site.
-            ClaimMatch is not a law firm.
-          </li>
-        </ul>
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <span className="badge-brand">{lawsuit.category}</span>
+        <span className={status === 'closing_soon' ? 'badge-red' : 'badge-green'}>
+          {status === 'closing_soon' ? 'Closing soon' : 'Open for claims'}
+        </span>
+        {days !== null && days >= 0 && days <= 30 && (
+          <span className="badge-red gap-1">
+            <Clock className="h-3 w-3" /> {days} day{days === 1 ? '' : 's'} left
+          </span>
+        )}
       </div>
+      <h1 className="mt-3 text-3xl font-extrabold leading-tight">{lawsuit.title}</h1>
+      <p className="mt-2 text-ink-muted">
+        Deadline {formatDeadline(lawsuit.deadline)}. ClaimMatch is not the
+        administrator. Filing is free on the official site.
+      </p>
 
       <div className="mt-8">
-        <ClaimForm lawsuit={lawsuit} profile={profile} />
+        <ClaimPacket lawsuit={lawsuit} profile={profile} initialClaim={claim} />
       </div>
     </section>
   );

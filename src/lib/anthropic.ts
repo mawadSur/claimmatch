@@ -95,10 +95,8 @@ export async function extractLawsuit(rawText: string): Promise<ExtractedLawsuit 
         },
       ],
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res: any = await (client().messages.create as any)(params);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const textBlock = (res.content as any[]).find((b) => b?.type === 'text');
     if (!textBlock?.text) return null;
     const parsed = JSON.parse(textBlock.text) as ExtractedLawsuit;
