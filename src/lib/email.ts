@@ -1,7 +1,7 @@
 // Transactional email via Resend. This module never throws on a missing API
 // key — it logs and no-ops so local/preview environments work without email
 // configured. Only server code should import this (it reads server env vars).
-import { SITE, formatDeadline, POSTAL_ADDRESS } from '@/lib/utils';
+import { SITE, formatDeadline, POSTAL_ADDRESS, isPlaceholderValue } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 
 const BRAND = '#7526d1';
@@ -65,7 +65,7 @@ function footerNote(reason: string, to?: string): string {
   return `
         <tr><td style="padding:22px 8px 0 8px;">
           <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
-          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(POSTAL_ADDRESS)}</p>
+          ${isPlaceholderValue(POSTAL_ADDRESS) ? '' : `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(POSTAL_ADDRESS)}</p>`}
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(reason)}${unsub}</p>
         </td></tr>`;
 }

@@ -34,9 +34,6 @@ export function Footer() {
             {!isPlaceholderValue(POSTAL_ADDRESS) && (
               <p className="mt-3 text-xs text-ink-soft">{POSTAL_ADDRESS}</p>
             )}
-            {isPlaceholderValue(POSTAL_ADDRESS) && (
-              <p className="mt-3 text-xs text-ink-soft">{POSTAL_ADDRESS}</p>
-            )}
           </div>
 
           <div>
