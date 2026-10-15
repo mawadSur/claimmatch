@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
-  ArrowRight, Sparkles, CheckCircle2, Search, ShieldCheck,
+  ArrowRight, Sparkles, Search, ShieldCheck,
   HelpCircle, Scale,
 } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';

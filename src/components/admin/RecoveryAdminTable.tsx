@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import type { Claim, Recovery, RecoveryStatus } from '@/lib/types';
 import { formatUSD, round2 } from '@/lib/recovery';
-import { cn } from '@/lib/utils';
 
 /** A recovery joined with its claim + the claim's lawsuit (title/slug only). */
 export type RecoveryRow = Recovery & {

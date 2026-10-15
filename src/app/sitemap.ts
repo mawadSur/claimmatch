@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITE, canonicalUrl } from '@/lib/utils';
+import { canonicalUrl } from '@/lib/utils';
 import { getLawsuits } from '@/lib/lawsuits';
 
 /**

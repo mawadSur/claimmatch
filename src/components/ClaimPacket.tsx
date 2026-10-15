@@ -141,11 +141,11 @@ export function ClaimPacket({
     await copyValue('all', formatPacketBlock(fields));
   }
 
-  async function savePacket() {
+  async function savePacket(): Promise<Claim | null> {
     if (hasAddress && needsConsent) {
       setSaveError('Check the box to save these details for future claims.');
       setSaveState('error');
-      return;
+      return null;
     }
     setSaveState('saving');
     setSaveError('');
@@ -177,11 +177,14 @@ export function ClaimPacket({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Could not save.');
-      setClaim((prev) => ({ ...(prev ?? {}), ...json } as Claim));
+      const next = { ...(claim ?? {}), ...json } as Claim;
+      setClaim(next);
       setSaveState('saved');
+      return next;
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Could not save.');
       setSaveState('error');
+      return null;
     }
   }
 
@@ -204,10 +207,8 @@ export function ClaimPacket({
 
   async function reportSubmitted(e: React.FormEvent) {
     e.preventDefault();
-    if (!claim?.id) {
-      await savePacket();
-    }
-    const id = claim?.id;
+    const packet = claim?.id ? claim : await savePacket();
+    const id = packet?.id;
     if (!id) {
       setReportState('error');
       return;

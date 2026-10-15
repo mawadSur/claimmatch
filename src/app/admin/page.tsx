@@ -40,7 +40,7 @@ export default async function AdminOverviewPage() {
   // Degrades to 0 if Supabase isn't configured so the page still renders.
   async function count(
     table: string,
-    modify?: (q: any) => any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    modify?: (q: any) => any,
   ): Promise<number> {
     try {
       let q = svc.from(table).select('*', { count: 'exact', head: true });
