@@ -96,9 +96,9 @@ describe('/api/cron/daily', () => {
     expect(body).toMatchObject({
       job: 'daily',
       ok: true,
-      ran: ['ingest'],
-      skipped: ['matchSweep'],
-      failed: [],
+      ranSteps: ['ingest'],
+      skippedSteps: ['matchSweep'],
+      failedSteps: [],
       steps: {
         ingest: { status: 'ran', result: INGEST },
         matchSweep: { status: 'skipped', reason: 'paused (D50)' },
@@ -117,14 +117,14 @@ describe('/api/cron/daily', () => {
     const { status, body } = await call(daily.GET, '/api/cron/daily');
     expect(status).toBe(200);
     expect(m.runMatchSweep).toHaveBeenCalledOnce();
-    expect(body.ran).toEqual(['ingest', 'matchSweep']);
+    expect(body.ranSteps).toEqual(['ingest', 'matchSweep']);
   });
 
   it('answers 500 and names the step when ingest fails', async () => {
     m.ingestAndExtract.mockRejectedValue(new Error('feed timed out'));
     const { status, body } = await call(daily.GET, '/api/cron/daily');
     expect(status).toBe(500);
-    expect(body.failed).toEqual(['ingest']);
+    expect(body.failedSteps).toEqual(['ingest']);
     expect(body.steps.ingest).toEqual({ status: 'failed', error: 'feed timed out' });
     expect(body.steps.matchSweep.reason).toBe('paused (D50)');
     expect(m.runMatchSweep).not.toHaveBeenCalled();
@@ -164,6 +164,7 @@ describe('/api/cron/digest', () => {
     const { status, body } = await call(digest.GET, '/api/cron/digest');
     expect(status).toBe(200);
     expect(body.skipped).toBe('paused (D50)');
+    expect(body.skippedSteps).toEqual(['digest']);
     expect(body.steps.digest).toMatchObject({ status: 'skipped', reason: 'paused (D50)' });
     expect(m.createServiceClient).not.toHaveBeenCalled();
     expect(m.notifyNewMatches).not.toHaveBeenCalled();
@@ -196,7 +197,7 @@ describe('/api/cron/digest', () => {
     m.tables.profiles = { data: null, error: { code: '57014', message: 'timeout' } };
     const { status, body } = await call(digest.GET, '/api/cron/digest');
     expect(status).toBe(500);
-    expect(body.failed).toEqual(['digest']);
+    expect(body.failedSteps).toEqual(['digest']);
     expect(m.notifyNewMatches).not.toHaveBeenCalled();
   });
 
@@ -210,6 +211,7 @@ describe('/api/cron/match', () => {
     const { status, body } = await call(match.GET, '/api/cron/match');
     expect(status).toBe(200);
     expect(body.skipped).toBe('paused (D50)');
+    expect(body.skippedSteps).toEqual(['matchSweep']);
     expect(m.runMatchSweep).not.toHaveBeenCalled();
   });
 
@@ -252,9 +254,9 @@ describe('/api/cron/jobs', () => {
     expect(body).toMatchObject({
       job: 'jobs',
       claimed: 3,
-      ran: ['pipeline:b'],
-      skipped: ['match:a'],
-      failed: ['notify:c'],
+      ranSteps: ['pipeline:b'],
+      skippedSteps: ['match:a'],
+      failedSteps: ['notify:c'],
     });
   });
 
@@ -264,13 +266,13 @@ describe('/api/cron/jobs', () => {
     const { status, body } = await call(jobs.GET, '/api/cron/jobs');
     expect(status).toBe(500);
     expect(m.failJob).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }), 'adapter down');
-    expect(body.skipped).toEqual(['match:b']);
+    expect(body.skippedSteps).toEqual(['match:b']);
   });
 
   it('answers 200 with nothing to do', async () => {
     const { status, body } = await call(jobs.GET, '/api/cron/jobs');
     expect(status).toBe(200);
-    expect(body).toMatchObject({ ok: true, claimed: 0, ran: [], failed: [] });
+    expect(body).toMatchObject({ ok: true, claimed: 0, ranSteps: [], failedSteps: [] });
   });
 });
 
@@ -278,10 +280,10 @@ describe('/api/cron/pipeline and /api/cron/scrape', () => {
   it('ingest without matching or emailing', async () => {
     const p = await call(pipeline.GET, '/api/cron/pipeline');
     expect(p.status).toBe(200);
-    expect(p.body).toMatchObject({ job: 'pipeline', ran: ['ingest'] });
+    expect(p.body).toMatchObject({ job: 'pipeline', ranSteps: ['ingest'] });
     const s = await call(scrape.GET, '/api/cron/scrape');
     expect(s.status).toBe(200);
-    expect(s.body).toMatchObject({ job: 'scrape', ran: ['scrape'] });
+    expect(s.body).toMatchObject({ job: 'scrape', ranSteps: ['scrape'] });
     expect(m.runMatchSweep).not.toHaveBeenCalled();
     expect(m.notifyNewMatches).not.toHaveBeenCalled();
   });

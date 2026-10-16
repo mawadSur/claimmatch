@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   encodeUnsubscribeToken,
+  hasTokenParam,
   pageLocationForGet,
   resolveUnsubscribeView,
   unsubscribeBackendProblem,
@@ -68,6 +69,20 @@ describe('resolveUnsubscribeView', () => {
   it('uses the first value of a repeated parameter', () => {
     expect(resolveUnsubscribeView({ e: [TOKEN, 'junk'] })).toMatchObject({ kind: 'confirm' });
     expect(resolveUnsubscribeView({ done: ['1', '0'] })).toEqual({ kind: 'done' });
+  });
+});
+
+describe('hasTokenParam', () => {
+  it('is true for any token, valid or garbled, so the page clears it from the URL', () => {
+    expect(hasTokenParam({ e: TOKEN })).toBe(true);
+    expect(hasTokenParam({ e: 'garbled!!' })).toBe(true);
+    expect(hasTokenParam({ e: [TOKEN] })).toBe(true);
+  });
+
+  it('is false without one', () => {
+    expect(hasTokenParam({})).toBe(false);
+    expect(hasTokenParam({ e: '' })).toBe(false);
+    expect(hasTokenParam({ done: '1' })).toBe(false);
   });
 });
 

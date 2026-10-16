@@ -61,9 +61,9 @@ describe('buildReport and reportHttpStatus', () => {
     expect(report).toEqual({
       job: 'daily',
       ok: true,
-      ran: ['ingest'],
-      skipped: ['matchSweep'],
-      failed: [],
+      ranSteps: ['ingest'],
+      skippedSteps: ['matchSweep'],
+      failedSteps: [],
       steps: {
         ingest: { status: 'ran', result: { ingested: 3 } },
         matchSweep: { status: 'skipped', reason: D50_PAUSED },
@@ -78,15 +78,15 @@ describe('buildReport and reportHttpStatus', () => {
       matchSweep: { status: 'skipped', reason: D50_PAUSED },
     });
     expect(report.ok).toBe(false);
-    expect(report.failed).toEqual(['ingest']);
+    expect(report.failedSteps).toEqual(['ingest']);
     expect(reportHttpStatus(report)).toBe(500);
   });
 
   it('treats an all-skipped run as a 200 that says so', () => {
     const report = buildReport('digest', { digest: { status: 'skipped', reason: D50_PAUSED } });
     expect(reportHttpStatus(report)).toBe(200);
-    expect(report.skipped).toEqual(['digest']);
-    expect(report.ran).toEqual([]);
+    expect(report.skippedSteps).toEqual(['digest']);
+    expect(report.ranSteps).toEqual([]);
   });
 });
 

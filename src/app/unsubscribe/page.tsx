@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Home, MailX, Settings2 } from 
 import {
   TOKEN_PARAM,
   UNSUBSCRIBE_API_PATH,
+  hasTokenParam,
   resolveUnsubscribeView,
   type UnsubscribeNotice,
   type UnsubscribeView,
@@ -37,9 +38,9 @@ export async function generateMetadata({
 
 /**
  * The link's token is an encoded email address. This runs while the page is
- * still loading, before analytics starts, and removes the token from the
- * address bar so page views and clicks never record it. The form below still
- * carries the token.
+ * still loading, before analytics starts, and removes the query string from
+ * the address bar so page views and clicks never record it. The confirm form
+ * still carries the token.
  */
 const CLEAR_TOKEN_FROM_URL =
   "try{history.replaceState(history.state,'',location.pathname)}catch(e){}";
@@ -49,15 +50,13 @@ const NOTICES: Record<UnsubscribeNotice, string> = {
   busy: 'There were too many tries from your network. Wait a minute, then try again.',
 };
 
-const textLink =
-  'rounded font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2';
-
 export default async function UnsubscribePage({ searchParams }: { searchParams: SearchParams }) {
-  const view = resolveUnsubscribeView(await searchParams);
+  const params = await searchParams;
+  const view = resolveUnsubscribeView(params);
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-      {view.kind === 'confirm' && (
+      {hasTokenParam(params) && (
         <script dangerouslySetInnerHTML={{ __html: CLEAR_TOKEN_FROM_URL }} />
       )}
       <div
@@ -163,11 +162,7 @@ function DoneView() {
         your account or a claim you track.
       </p>
       <p className="mx-auto mt-3 max-w-sm text-ink-muted">
-        Changed your mind? Sign in and turn emails back on in{' '}
-        <Link href="/settings" className={textLink}>
-          Settings
-        </Link>
-        .
+        Changed your mind? Sign in and turn emails back on in Settings.
       </p>
       <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link href="/" className="btn-primary w-full sm:w-auto">

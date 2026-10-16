@@ -20,9 +20,9 @@ export interface CronReport {
   job: string;
   /** False when any step failed. */
   ok: boolean;
-  ran: string[];
-  skipped: string[];
-  failed: string[];
+  ranSteps: string[];
+  skippedSteps: string[];
+  failedSteps: string[];
   steps: Record<string, StepResult>;
 }
 
@@ -90,18 +90,18 @@ export async function runStep(
 
 export function buildReport(job: string, steps: Record<string, StepResult>): CronReport {
   const names = Object.keys(steps);
-  const failed = names.filter((n) => steps[n].status === 'failed');
+  const failedSteps = names.filter((n) => steps[n].status === 'failed');
   return {
     job,
-    ok: failed.length === 0,
-    ran: names.filter((n) => steps[n].status === 'ran'),
-    skipped: names.filter((n) => steps[n].status === 'skipped'),
-    failed,
+    ok: failedSteps.length === 0,
+    ranSteps: names.filter((n) => steps[n].status === 'ran'),
+    skippedSteps: names.filter((n) => steps[n].status === 'skipped'),
+    failedSteps,
     steps,
   };
 }
 
 /** 500 when any step failed, so the scheduler and monitors see it. */
-export function reportHttpStatus(report: Pick<CronReport, 'failed'>): 200 | 500 {
-  return report.failed.length > 0 ? 500 : 200;
+export function reportHttpStatus(report: Pick<CronReport, 'failedSteps'>): 200 | 500 {
+  return report.failedSteps.length > 0 ? 500 : 200;
 }

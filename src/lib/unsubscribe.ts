@@ -209,6 +209,15 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * True when the query string carries a token, valid or not. Even a garbled
+ * token can hold most of an address, so the page then clears it from the
+ * address bar before analytics loads.
+ */
+export function hasTokenParam(params: SearchParams): boolean {
+  return !!firstParam(params[TOKEN_PARAM]);
+}
+
 /** Decide which /unsubscribe view to render from its query string. */
 export function resolveUnsubscribeView(params: SearchParams): UnsubscribeView {
   const done = firstParam(params.done);
