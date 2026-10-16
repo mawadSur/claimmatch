@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    // Every test file runs, wherever it sits; a .tsx test or one next to the
+    // code it covers must not be skipped while CI stays green.
+    include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
   },
 });

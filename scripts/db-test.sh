@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Apply every migration from scratch on a disposable PostgreSQL database, then
-# run the SQL tests in supabase/tests/ (files 10_*.sql and up). Stops at the
-# first error or failed assertion and exits non-zero.
+# run every SQL test in supabase/tests/ in name order (all files except the
+# 00_auth_stub.sql setup). Stops at the first error or failed assertion and
+# exits non-zero.
 #
 #   DATABASE_URL=postgres://postgres@localhost:5432/postgres scripts/db-test.sh
 #
@@ -33,8 +34,9 @@ for f in supabase/migrations/*.sql; do
   echo "migrate  $f"
   run --single-transaction -f "$f"
 done
-for f in supabase/tests/[1-9]*.sql; do
+for f in supabase/tests/*.sql; do
   [ -e "$f" ] || continue
+  [ "$(basename "$f")" = 00_auth_stub.sql ] && continue
   echo "test     $f"
   run -f "$f"
 done
