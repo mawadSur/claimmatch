@@ -31,7 +31,7 @@ async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promi
     return { ok: true, claim: json.claim, changed: json.changed ?? json.created ?? true };
   }
   if (res.status === 401) {
-    return { ok: false, status: 401, error: 'You were logged out. Log in again, then come back to this page.' };
+    return { ok: false, status: 401, error: 'You were logged out.' };
   }
   return { ok: false, status: res.status, error: json?.error || 'Something went wrong. Please try again.' };
 }

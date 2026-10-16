@@ -43,8 +43,7 @@ export function ClaimList({ rows }: { rows: DashboardRow[] }) {
           <section key={group} aria-labelledby={headingId}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 id={headingId} className="text-base font-bold">
-                {CLAIM_GROUP_LABELS[group]}{' '}
-                <span className="font-semibold text-ink-muted">({items.length})</span>
+                {`${CLAIM_GROUP_LABELS[group]} (${items.length})`}
               </h3>
               <p className="text-sm text-ink-muted">{GROUP_HINT[group]}</p>
             </div>

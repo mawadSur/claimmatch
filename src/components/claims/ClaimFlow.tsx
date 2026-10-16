@@ -138,7 +138,12 @@ export function ClaimFlow({
 
   return (
     <div className="space-y-6">
-      <StatusPanel display={display} deadline={settlement.deadline} now={now} />
+      <StatusPanel
+        display={display}
+        deadline={settlement.deadline}
+        now={now}
+        fictional={context.fictional}
+      />
       <div role="status" aria-live="polite">
         {announcement && (
           <p className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
@@ -152,7 +157,28 @@ export function ClaimFlow({
   );
 }
 
-function StatusPanel({ display, deadline, now }: { display: ClaimDisplay | null; deadline: string | null; now: Date }) {
+function StatusPanel({
+  display,
+  deadline,
+  now,
+  fictional,
+}: {
+  display: ClaimDisplay | null;
+  deadline: string | null;
+  now: Date;
+  fictional: boolean;
+}) {
+  if (fictional) {
+    // No deadline or filing note: there is nothing to file.
+    return (
+      <section aria-label="Your claim" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-wide text-ink-muted">Your claim</p>
+        <div className="mt-2">
+          {display && <ClaimStatusBadge label={display.label} tone={display.tone} />}
+        </div>
+      </section>
+    );
+  }
   const countdown = deadlineCountdown(deadline, now);
   const days = daysUntilDeadline(deadline, now);
   const countdownClass =
@@ -301,7 +327,10 @@ function FilingSteps({
             <ExternalTextLink href={settlement.officialUrl}>Read the rules on the official site</ExternalTextLink>
           </p>
         ) : (
-          <NoOfficialLink settlement={settlement} />
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            We don&rsquo;t have a link to the official notice. Use the notice you got by
+            mail or email, or see step 2.
+          </p>
         )}
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <UnverifiedLabel className="self-start" />
@@ -390,7 +419,14 @@ function DeadlinePassed({
           : ''}
       </p>
       <div className="mt-4">
-        <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+        <ReportFiled
+          lawsuitId={settlement.id}
+          claim={claim}
+          context={context}
+          allowSave={false}
+          defaultFiledToday={false}
+          onChange={onChange}
+        />
       </div>
       {settlement.officialUrl && (
         <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">

@@ -56,7 +56,8 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
           Earlier, ClaimMatch showed &ldquo;Claim filed&rdquo; for{' '}
           {legacyCount === 1 ? 'the settlement below' : 'the settlements below'}. That
           was wrong. We never sent anything to a settlement administrator, and we
-          never file claims for anyone. For each one, tell us where things stand.
+          never file claims for anyone.{' '}
+          {legacyCount === 1 ? 'Tell us where things stand.' : 'For each one, tell us where things stand.'}
         </p>
       )}
 

@@ -49,7 +49,7 @@ export function ConfirmationNumberField({
         autoCapitalize="none"
         spellCheck={false}
         maxLength={64}
-        className="field-input"
+        className="field-input sm:max-w-md"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={error ? `${helpId} ${errorId}` : helpId}

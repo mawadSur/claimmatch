@@ -6,6 +6,7 @@ import { usePostHog } from 'posthog-js/react';
 import type { ClaimView } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
 import { updateClaim } from './claim-api';
+import { ClaimError, type ClaimErrorState } from './ClaimError';
 
 type Answered = (claim: ClaimView, message: string) => void;
 
@@ -17,7 +18,7 @@ type Answered = (claim: ClaimView, message: string) => void;
 export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; onAnswered: Answered }) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState<null | 'filed' | 'not_yet'>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
 
   async function answer(kind: 'filed' | 'not_yet') {
     setBusy(kind);
@@ -27,7 +28,7 @@ export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; on
     });
     setBusy(null);
     if (!result.ok) {
-      setError(result.error);
+      setError({ message: result.error, status: result.status });
       return;
     }
     posthog?.capture('corrective_notice_answered', {
@@ -53,11 +54,7 @@ export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; on
           I haven&rsquo;t filed yet
         </button>
       </div>
-      {error && (
-        <p role="alert" className="mt-2 text-sm font-medium text-danger-700">
-          {error}
-        </p>
-      )}
+      <ClaimError error={error} className="mt-2" />
     </div>
   );
 }
@@ -153,7 +150,7 @@ export const FICTIONAL_TEXT =
 export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: string; onDone: Answered }) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
 
   async function acknowledge() {
     setBusy(true);
@@ -161,7 +158,7 @@ export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: strin
     const result = await updateClaim(claimId, { action: 'acknowledge_notice' });
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError({ message: result.error, status: result.status });
       return;
     }
     posthog?.capture('corrective_notice_answered', { answer: 'not_a_real_settlement' });
@@ -174,11 +171,7 @@ export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: strin
         {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
         Got it
       </button>
-      {error && (
-        <p role="alert" className="mt-2 text-sm font-medium text-danger-700">
-          {error}
-        </p>
-      )}
+      <ClaimError error={error} className="mt-2" />
     </div>
   );
 }

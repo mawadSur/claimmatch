@@ -7,6 +7,7 @@ import {
   FILED_ON_EARLIEST,
   claimActionAvailability,
   displayClaimStatus,
+  isKnownClaimStatus,
   validateFiledOn,
   type ClaimView,
   type SettlementContext,
@@ -14,6 +15,7 @@ import {
 import { formatDeadline } from '@/lib/utils';
 import { localISODate, startTracking, updateClaim } from './claim-api';
 import { AddConfirmationForm } from './AddConfirmationForm';
+import { ClaimError, type ClaimErrorState } from './ClaimError';
 import { ConfirmationNumberField, checkConfirmationNumber } from './ConfirmationNumberField';
 
 type OnChange = (claim: ClaimView, message: string) => void;
@@ -27,6 +29,7 @@ export function ReportFiled({
   claim,
   context,
   allowSave,
+  defaultFiledToday = true,
   onChange,
 }: {
   lawsuitId: string;
@@ -34,6 +37,8 @@ export function ReportFiled({
   context: SettlementContext;
   /** Offer "Save to my claims" (before tracking starts, while the settlement is open). */
   allowSave: boolean;
+  /** Pre-fill today's date. Off for late reports, which are about an earlier day. */
+  defaultFiledToday?: boolean;
   onChange: OnChange;
 }) {
   if (claim?.status === 'reported_filed') return <ReportedCard claim={claim} onChange={onChange} />;
@@ -43,26 +48,36 @@ export function ReportFiled({
   }
   const canReport = claim ? claimActionAvailability(claim, context).reportFiled : context.openForClaims;
   if (!canReport) {
-    return (
-      <p className="rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-ink-muted">
-        {claim?.status === 'withdrawn'
-          ? 'You stopped tracking this claim.'
-          : 'It has been more than 30 days since the deadline, so this claim can no longer be updated here. If you filed, keep the confirmation the settlement administrator sent you.'}
-      </p>
-    );
+    let text =
+      'It has been more than 30 days since the deadline, so this claim can no longer be updated here. If you filed, keep the confirmation the settlement administrator sent you.';
+    if (claim?.status === 'withdrawn') text = 'You stopped tracking this claim.';
+    else if (claim && !isKnownClaimStatus(claim.status)) {
+      text = "We can't update this claim here right now. Check the official site for its status.";
+    }
+    return <p className="rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-ink-muted">{text}</p>;
   }
-  return <ReportForm lawsuitId={lawsuitId} claim={claim} allowSave={allowSave && !claim} onChange={onChange} />;
+  return (
+    <ReportForm
+      lawsuitId={lawsuitId}
+      claim={claim}
+      allowSave={allowSave && !claim}
+      defaultFiledToday={defaultFiledToday}
+      onChange={onChange}
+    />
+  );
 }
 
 function ReportForm({
   lawsuitId,
   claim,
   allowSave,
+  defaultFiledToday,
   onChange,
 }: {
   lawsuitId: string;
   claim: ClaimView | null;
   allowSave: boolean;
+  defaultFiledToday: boolean;
   onChange: OnChange;
 }) {
   const posthog = usePostHog();
@@ -72,21 +87,21 @@ function ReportForm({
   const [today, setToday] = useState('');
   const [numberError, setNumberError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
   const [busy, setBusy] = useState<null | 'report' | 'save'>(null);
 
   // The user's own "today", set after mount so server and client markup match.
   useEffect(() => {
     const t = localISODate();
     setToday(t);
-    setFiledOn((v) => v || t);
-  }, []);
+    if (defaultFiledToday) setFiledOn((v) => v || t);
+  }, [defaultFiledToday]);
 
   async function ensureClaim(): Promise<ClaimView | null> {
     if (claim) return claim;
     const started = await startTracking(lawsuitId);
     if (!started.ok) {
-      setError(started.error);
+      setError({ message: started.error, status: started.status });
       return null;
     }
     posthog?.capture('claim_tracking_started');
@@ -100,7 +115,11 @@ function ReportForm({
     const dateCheck = filedOn ? validateFiledOn(filedOn, new Date()) : null;
     setNumberError(numberCheck.ok ? null : numberCheck.error);
     setDateError(dateCheck && !dateCheck.ok ? dateCheck.message : null);
-    if (!numberCheck.ok || (dateCheck && !dateCheck.ok)) return;
+    if (!numberCheck.ok || (dateCheck && !dateCheck.ok)) {
+      // Take keyboard and screen-reader users to the first field to fix.
+      document.getElementById(numberCheck.ok ? `${id}-date` : `${id}-number`)?.focus();
+      return;
+    }
 
     setError(null);
     setBusy('report');
@@ -116,7 +135,7 @@ function ReportForm({
     });
     setBusy(null);
     if (!result.ok) {
-      setError(result.error);
+      setError({ message: result.error, status: result.status });
       return;
     }
     posthog?.capture('claim_reported_filed', { with_confirmation_number: Boolean(numberCheck.value) });
@@ -134,7 +153,7 @@ function ReportForm({
     const started = await startTracking(lawsuitId);
     setBusy(null);
     if (!started.ok) {
-      setError(started.error);
+      setError({ message: started.error, status: started.status });
       return;
     }
     posthog?.capture('claim_tracking_started');
@@ -185,11 +204,7 @@ function ReportForm({
       <p className="text-xs leading-relaxed text-ink-muted">
         No confirmation number yet? That&rsquo;s fine. Tell us now and add it later.
       </p>
-      {error && (
-        <p role="alert" className="text-sm font-medium text-danger-700">
-          {error}
-        </p>
-      )}
+      <ClaimError error={error} />
     </form>
   );
 }
@@ -197,7 +212,7 @@ function ReportForm({
 function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChange }) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
 
   async function undo() {
     setBusy(true);
@@ -205,7 +220,7 @@ function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChang
     const result = await updateClaim(claim.id, { action: 'undo_report' });
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError({ message: result.error, status: result.status });
       return;
     }
     posthog?.capture('claim_report_undone');
@@ -234,11 +249,7 @@ function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChang
           {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Undo2 className="h-4 w-4" aria-hidden />}
           Undo: I haven&rsquo;t filed yet
         </button>
-        {error && (
-          <p role="alert" className="mt-1 text-sm font-medium text-danger-700">
-            {error}
-          </p>
-        )}
+        <ClaimError error={error} className="mt-1" />
       </div>
     </div>
   );

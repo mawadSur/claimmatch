@@ -165,11 +165,7 @@ export function OnboardingWizard({
         </p>
       )}
 
-      <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button type="button" onClick={() => void run('skip')} disabled={busy} className="btn-ghost">
-          {action === 'skip' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          Skip for now
-        </button>
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
         <button type="submit" disabled={busy} className="btn-primary">
           {action === 'save' ? (
             <>
@@ -180,6 +176,10 @@ export function OnboardingWizard({
               Save and continue <ArrowRight className="h-4 w-4" aria-hidden />
             </>
           )}
+        </button>
+        <button type="button" onClick={() => void run('skip')} disabled={busy} className="btn-ghost">
+          {action === 'skip' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+          Skip for now
         </button>
       </div>
     </form>

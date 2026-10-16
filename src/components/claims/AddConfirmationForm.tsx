@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import type { ClaimView } from '@/lib/claims';
 import { updateClaim } from './claim-api';
+import { ClaimError, type ClaimErrorState } from './ClaimError';
 import { ConfirmationNumberField, checkConfirmationNumber } from './ConfirmationNumberField';
 
 /**
@@ -28,7 +29,7 @@ export function AddConfirmationForm({
   const id = useId();
   const [value, setValue] = useState(initialValue);
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -36,6 +37,7 @@ export function AddConfirmationForm({
     const check = checkConfirmationNumber(value, true);
     if (!check.ok) {
       setFieldError(check.error);
+      document.getElementById(`${id}-confirmation`)?.focus();
       return;
     }
     setFieldError(null);
@@ -47,7 +49,7 @@ export function AddConfirmationForm({
     });
     setBusy(false);
     if (!result.ok) {
-      setError(result.error);
+      setError({ message: result.error, status: result.status });
       return;
     }
     posthog?.capture('claim_confirmation_added');
@@ -79,11 +81,7 @@ export function AddConfirmationForm({
           </button>
         )}
       </div>
-      {error && (
-        <p role="alert" className="text-sm font-medium text-danger-700">
-          {error}
-        </p>
-      )}
+      <ClaimError error={error} />
     </form>
   );
 }
