@@ -57,6 +57,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   if (!UUID_RE.test(id)) return reply({ error: "We couldn't find that claim." }, 404);
 
+  // JSON only: a cross-site form or text/plain post cannot reach this route
+  // without a CORS preflight (defense in depth on top of SameSite cookies).
+  if (!req.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+    return reply({ error: 'Send the request as JSON.' }, 415);
+  }
   let body: unknown;
   try {
     body = await req.json();
