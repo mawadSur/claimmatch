@@ -373,7 +373,10 @@ function FilingSteps({
         <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted">
           <li>Your name, mailing address and email</li>
           <li>{PROOF_TEXT[settlement.proof]}</li>
-          <li>Any claim ID or notice ID from a letter or email about this settlement, if you got one</li>
+          <li>
+            The Notice ID or Claim ID from a letter or email you got about this settlement,
+            if you have one (the form may ask for it)
+          </li>
         </ul>
         <p className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm leading-relaxed text-ink-muted">
           Filing is free. If a site asks you to pay to file a claim, stop. That is not

@@ -57,9 +57,10 @@ export function ConfirmationNumberField({
         required={required}
       />
       <p id={helpId} className="mt-1.5 text-xs leading-relaxed text-ink-muted">
-        You&rsquo;ll find it on the last page after you submit, or in the email from
-        the settlement administrator. It may be called a claim ID, claim number or
-        confirmation code.
+        Use the number the official site showed you, or emailed you, after you
+        submitted your claim. It may be called a confirmation number, claim number or
+        claim ID. Don&rsquo;t use a Claim ID, Notice ID or code from a letter, postcard
+        or email you got before you filed.
       </p>
       {error && (
         <p id={errorId} className="mt-1.5 text-sm font-medium text-danger-700">
