@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { CLAIMS_UNAVAILABLE_MESSAGE, parseStartTracking, toClaimView } from '@/lib/claims';
+import {
+  CLAIMS_UNAVAILABLE_MESSAGE,
+  SETTLEMENT_UNAVAILABLE_MESSAGE,
+  parseStartTracking,
+  toClaimView,
+} from '@/lib/claims';
 import {
   claimContext,
   loadSettlementById,
@@ -93,7 +98,11 @@ export async function POST(req: Request) {
     return reply({ error: CLAIMS_UNAVAILABLE_MESSAGE, code: 'claims_unavailable' }, 503);
   }
 
-  const settlement = await loadSettlementById(lawsuitId);
+  const lookup = await loadSettlementById(lawsuitId);
+  if (!lookup.ok) {
+    return reply({ error: SETTLEMENT_UNAVAILABLE_MESSAGE, code: 'settlement_unavailable' }, 503);
+  }
+  const settlement = lookup.settlement;
   const context = claimContext(settlement);
   if (!settlement || !context.published || context.fictional) {
     return reply({ error: "We couldn't find that settlement." }, 404);

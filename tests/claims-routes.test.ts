@@ -6,6 +6,7 @@ const h = vi.hoisted(() => ({
   claimRow: null as Record<string, unknown> | null,
   claimError: null as { code: string; message: string } | null,
   settlement: null as Record<string, unknown> | null,
+  settlementReadFails: false,
   serviceRole: true,
   rateOk: true,
   applied: [] as Record<string, unknown>[],
@@ -40,7 +41,8 @@ vi.mock('@/lib/claims-server', async (importOriginal) => {
   return {
     ...actual,
     serviceRoleConfigured: () => h.serviceRole,
-    loadSettlementById: async () => h.settlement,
+    loadSettlementById: async () =>
+      h.settlementReadFails ? { ok: false } : { ok: true, settlement: h.settlement },
     logClaimsError: () => undefined,
     applyClaimPlan: async (args: Record<string, unknown>) => {
       h.applied.push(args);
@@ -110,6 +112,7 @@ beforeEach(() => {
   h.claimRow = row();
   h.claimError = null;
   h.settlement = settlement();
+  h.settlementReadFails = false;
   h.serviceRole = true;
   h.rateOk = true;
   h.applied = [];
@@ -200,6 +203,20 @@ describe('PATCH /api/claims/[id]', () => {
     expect((h.applied[0] as { plan: { toStatus: string } }).plan.toStatus).toBe('reported_filed');
   });
 
+  it('fails closed with 503 when the settlement cannot be read, never planning against an unknown one', async () => {
+    // A legacy claim on a fictional settlement: with an unknown settlement the
+    // plan would have accepted "I filed" as if it were real.
+    h.claimRow = row({ status: 'submitted', confirmation_number: null });
+    h.settlementReadFails = true;
+    const failed = await patch({ action: 'report_filed', confirmation_number: 'ABC123' });
+    expect(failed.status).toBe(503);
+    expect((await failed.json()).code).toBe('settlement_unavailable');
+    h.settlementReadFails = false;
+    h.settlement = null; // the row is missing although the claim exists
+    expect((await patch({ action: 'report_filed' })).status).toBe(503);
+    expect(h.applied).toHaveLength(0);
+  });
+
   it('passes database refusals through with the right status', async () => {
     h.writeResult = { ok: false, status: 409, code: 'claim_changed', error: 'This claim just changed.' };
     const res = await patch({ action: 'report_filed' });
@@ -239,6 +256,15 @@ describe('POST /api/claims', () => {
     expect((await post({ lawsuit_id: LAWSUIT_ID })).status).toBe(404);
     h.settlement = null;
     expect((await post({ lawsuit_id: LAWSUIT_ID })).status).toBe(404);
+    expect(h.started).toHaveLength(0);
+  });
+
+  it('answers 503, not 404, when the settlement cannot be read', async () => {
+    h.claimRow = null;
+    h.settlementReadFails = true;
+    const res = await post({ lawsuit_id: LAWSUIT_ID });
+    expect(res.status).toBe(503);
+    expect((await res.json()).code).toBe('settlement_unavailable');
     expect(h.started).toHaveLength(0);
   });
 

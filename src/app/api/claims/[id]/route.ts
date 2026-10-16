@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import {
   CLAIMS_UNAVAILABLE_MESSAGE,
+  SETTLEMENT_UNAVAILABLE_MESSAGE,
   hasSelfFileColumns,
   parseClaimPatch,
   planClaimTransition,
@@ -90,8 +91,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const claim = toClaimView(row as Record<string, unknown>);
-  const settlement = await loadSettlementById(claim.lawsuit_id);
-  const plan = planClaimTransition(claim, parsed.value, claimContext(settlement, now), now);
+  const lookup = await loadSettlementById(claim.lawsuit_id);
+  // claims.lawsuit_id is a NOT NULL foreign key (on delete cascade), so an
+  // existing claim always has its settlement: no row means the read failed.
+  // Never plan against an unknown settlement (a fictional one would pass).
+  if (!lookup.ok || !lookup.settlement) {
+    return reply({ error: SETTLEMENT_UNAVAILABLE_MESSAGE, code: 'settlement_unavailable' }, 503);
+  }
+  const plan = planClaimTransition(claim, parsed.value, claimContext(lookup.settlement, now), now);
   if (!plan.ok) return reply({ error: plan.message, code: plan.refusal }, 409);
   if (plan.noop) return reply({ claim, changed: false });
 

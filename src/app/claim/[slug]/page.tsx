@@ -37,7 +37,11 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/claim/${slug}`)}`);
 
-  const settlement = await loadSettlementBySlug(slug);
+  const lookup = await loadSettlementBySlug(slug);
+  // A failed read is not "taken down": someone coming back from the official
+  // site to report filing gets a retry, never a 404.
+  if (!lookup.ok) return <LoadError slug={slug} what="this settlement" />;
+  const settlement = lookup.settlement;
   if (!settlement || !UUID_RE.test(settlement.id)) notFound();
 
   const now = new Date();
@@ -51,7 +55,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   if (claimError) logClaimsError('claim page lookup failed', claimError);
   const claim = claimRow ? toClaimView(claimRow as Record<string, unknown>) : null;
 
-  if (claimError) return <LoadError slug={slug} />;
+  if (claimError) return <LoadError slug={slug} what="your claim" />;
   if (!claim && (!context.published || context.fictional)) notFound();
 
   const header = (
@@ -119,13 +123,13 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   );
 }
 
-function LoadError({ slug }: { slug: string }) {
+function LoadError({ slug, what }: { slug: string; what: string }) {
   return (
     <section className="container-narrow py-16">
       <div role="alert" className="rounded-2xl border border-danger-50 bg-white p-6 shadow-card">
         <h1 className="flex items-center gap-2 text-xl font-bold">
           <AlertCircle className="h-5 w-5 text-danger-700" aria-hidden />
-          We couldn&rsquo;t load your claim
+          We couldn&rsquo;t load {what}
         </h1>
         <p className="mt-2 text-sm text-ink-muted">Please refresh the page. If it keeps happening, try again in a few minutes.</p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">

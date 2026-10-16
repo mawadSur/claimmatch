@@ -135,9 +135,14 @@ describe('buildDashboard', () => {
     expect(tooLate).toMatchObject({ group: 'closed', action: null, deadlineText: 'Deadline was Aug 1, 2026' });
   });
 
-  it('keeps a claim readable when its settlement row is gone', () => {
+  it('keeps a claim readable when its settlement row could not be read, without guessing', () => {
     const { rows } = row(claim({ status: 'reported_filed' }), null);
-    expect(rows[0]).toMatchObject({ title: 'Stored title', action: null, deadlineText: 'No deadline listed' });
+    expect(rows[0]).toMatchObject({ title: 'Stored title', action: null, deadlineText: 'Details unavailable' });
+    // A legacy claim might be on a fictional settlement: no notice, no "file on the official site".
+    const legacy = row(claim({ status: 'submitted' }), null);
+    expect(legacy.notices).toEqual([]);
+    expect(legacy.rows[0].nextStep).toBe("We couldn't load this settlement's details. Refresh the page in a minute.");
+    expect(legacy.rows[0].action).toBeNull();
   });
 
   it('never shows money, percentages or "Matched"', () => {

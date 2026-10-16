@@ -217,6 +217,9 @@ export function isMissingSchemaError(error: DbError): boolean {
 export const CLAIMS_UNAVAILABLE_MESSAGE =
   "Claim tracking is being updated, so we couldn't save this. Please try again in a few minutes.";
 
+export const SETTLEMENT_UNAVAILABLE_MESSAGE =
+  "We couldn't check this settlement right now, so nothing was saved. Please try again in a minute.";
+
 export interface ClaimWriteFailure {
   status: 404 | 409 | 500 | 503;
   code: string;

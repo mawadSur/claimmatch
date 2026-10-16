@@ -1,11 +1,13 @@
 /**
- * Server-only data access for the claim flow. Claims are read with the signed-in
- * user's session (RLS: own rows). Every claim write goes through the 0006
- * functions with the service-role client, after the route has checked that the
- * user owns the claim, so each change and its claim_events row land together.
+ * Server-only data access for the claim flow. The claim page and routes read a
+ * claim with the signed-in user's session (RLS: own rows); the dashboard list
+ * is read with the service role, filtered by the verified user id. Every claim
+ * write goes through the 0006 functions with the service-role client, after
+ * the route has checked that the user owns the claim, so each change and its
+ * claim_events row land together. Settlement reads fail closed (ok: false).
  * Never import this from a client component.
  */
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
 import {
   claimWriteFailure,
@@ -74,26 +76,46 @@ function writeFailure(where: string, error: DbError): ClaimWriteResult {
   return { ok: false, status: failure.status, code: failure.code, error: failure.error };
 }
 
+/**
+ * A settlement lookup: the row (null when there is no such settlement), or
+ * ok: false when it could not be read. Callers fail closed on ok: false and
+ * never treat it as "not found" or as an unknown, real settlement: that would
+ * tell people to file a fictional settlement, or 404 a claim that exists.
+ */
+export type SettlementLookup = { ok: true; settlement: SettlementRecord | null } | { ok: false };
+
+const UNREADABLE: SettlementLookup = { ok: false };
+
 /** A settlement by slug, published or not. Callers decide what to show. */
-export async function loadSettlementBySlug(slug: string): Promise<SettlementRecord | null> {
+export async function loadSettlementBySlug(slug: string): Promise<SettlementLookup> {
+  // Without the service role the read falls back to the anon key, and RLS
+  // hides every unpublished row, including all fictional ones.
+  if (!serviceRoleConfigured()) return UNREADABLE;
   const { data, error } = await createServiceClient()
     .from('lawsuits')
     .select(SETTLEMENT_COLUMNS)
     .eq('slug', slug)
     .maybeSingle();
-  if (error) logClaimsError('settlement lookup by slug failed', error);
-  return (data as SettlementRecord | null) ?? null;
+  if (error) {
+    logClaimsError('settlement lookup by slug failed', error);
+    return UNREADABLE;
+  }
+  return { ok: true, settlement: (data as SettlementRecord | null) ?? null };
 }
 
-export async function loadSettlementById(id: string): Promise<SettlementRecord | null> {
-  if (!UUID_RE.test(id)) return null;
+export async function loadSettlementById(id: string): Promise<SettlementLookup> {
+  if (!UUID_RE.test(id)) return { ok: true, settlement: null };
+  if (!serviceRoleConfigured()) return UNREADABLE;
   const { data, error } = await createServiceClient()
     .from('lawsuits')
     .select(SETTLEMENT_COLUMNS)
     .eq('id', id)
     .maybeSingle();
-  if (error) logClaimsError('settlement lookup by id failed', error);
-  return (data as SettlementRecord | null) ?? null;
+  if (error) {
+    logClaimsError('settlement lookup by id failed', error);
+    return UNREADABLE;
+  }
+  return { ok: true, settlement: (data as SettlementRecord | null) ?? null };
 }
 
 export interface ClaimWithSettlement {
@@ -102,38 +124,43 @@ export interface ClaimWithSettlement {
 }
 
 /**
- * The user's claims, newest first, each with its settlement. Settlements are
- * read with the service role so a claim on a settlement that is no longer
- * listed still shows its deadline and official link (account-only view).
+ * The user's claims, newest first, each with its settlement, in one
+ * service-role query filtered by the signed-in user's id (the caller verified
+ * it with auth.getUser()). The service role lets a claim on a settlement that
+ * is no longer listed still show its deadline and official link
+ * (account-only view), and one embedded read has no URL-length limit however
+ * many claims a File-all account has.
+ *
+ * Fails closed: claims.lawsuit_id is a NOT NULL foreign key (on delete
+ * cascade), so every claim has a settlement row, and a missing one means the
+ * read went wrong. The dashboard then shows its error, never a claim with
+ * guessed filing guidance.
  */
 export async function loadUserClaims(
   userId: string,
 ): Promise<{ items: ClaimWithSettlement[]; failed: boolean }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  if (!serviceRoleConfigured()) {
+    console.error('[claims] SUPABASE_SERVICE_ROLE_KEY is not set; claims cannot be read');
+    return { items: [], failed: true };
+  }
+  const { data, error } = await createServiceClient()
     .from('claims')
-    .select('*')
+    .select(`*, settlement:lawsuits(${SETTLEMENT_COLUMNS})`)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) {
     logClaimsError('claims list failed', error);
     return { items: [], failed: true };
   }
-  const claims = ((data ?? []) as Record<string, unknown>[]).map(toClaimView);
-  const ids = Array.from(new Set(claims.map((c) => c.lawsuit_id).filter((id) => UUID_RE.test(id))));
-  const settlements = new Map<string, SettlementRecord>();
-  if (ids.length > 0) {
-    const { data: rows, error: lawsuitError } = await createServiceClient()
-      .from('lawsuits')
-      .select(SETTLEMENT_COLUMNS)
-      .in('id', ids);
-    if (lawsuitError) logClaimsError('claim settlements lookup failed', lawsuitError);
-    for (const row of (rows ?? []) as SettlementRecord[]) settlements.set(row.id, row);
+  const items = ((data ?? []) as Record<string, unknown>[]).map((row) => ({
+    claim: toClaimView(row),
+    settlement: (row.settlement as SettlementRecord | null) ?? null,
+  }));
+  if (items.some((i) => !i.settlement)) {
+    console.error('[claims] a claim came back without its settlement; showing the error state');
+    return { items: [], failed: true };
   }
-  return {
-    items: claims.map((claim) => ({ claim, settlement: settlements.get(claim.lawsuit_id) ?? null })),
-    failed: false,
-  };
+  return { items, failed: false };
 }
 
 /** Creates the user's claim in self_file (or returns the existing one) and logs it. */

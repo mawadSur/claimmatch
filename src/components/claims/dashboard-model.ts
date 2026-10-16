@@ -74,6 +74,22 @@ export function buildDashboard(
   for (const { claim, settlement } of inputs) {
     const context = settlementContext(settlement, now, isFictional);
     const display = displayClaimStatus(claim, context);
+    if (!settlement) {
+      // The settlement could not be read (loadUserClaims fails closed, so this
+      // is a backstop). Never guess: no filing guidance and no notice, since
+      // the settlement might be one of the fictional ones.
+      rows.push({
+        claimId: claim.id,
+        title: claim.lawsuit_title,
+        label: display.label,
+        tone: display.tone,
+        group: display.group,
+        deadlineText: 'Details unavailable',
+        nextStep: "We couldn't load this settlement's details. Refresh the page in a minute.",
+        action: null,
+      });
+      continue;
+    }
     const can = claimActionAvailability(claim, context);
     const title = settlement?.title ?? claim.lawsuit_title;
     const href = settlement ? `/claim/${settlement.slug}` : null;
