@@ -45,6 +45,7 @@ import { getLawsuitBySlug, lookupLawsuitBySlug, lookupLawsuits } from '@/lib/law
 import { LawsuitCard } from '@/components/LawsuitCard';
 import LawsuitDetailPage, { generateMetadata } from '@/app/lawsuits/[slug]/page';
 import LawsuitsPage from '@/app/lawsuits/page';
+import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
 
 function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   return {
@@ -277,6 +278,14 @@ describe('settlement page', () => {
     expect(html).toContain('Anyone who returned an item to Amazon in 2023.');
     expect(html).toContain('This is a short summary, not the official rules.');
     expect(html).not.toMatch(/bg-success-50/);
+  });
+
+  it('tells people from an old email about a fictional listing that there is nothing to file', () => {
+    const html = renderToStaticMarkup(createElement(SettlementNotFound));
+    expect(html).toContain('We couldn’t find this settlement');
+    expect(html).toContain('test data, not real settlements');
+    expect(html).toContain('there is nothing to file');
+    expect(html).toContain('href="/lawsuits"');
   });
 
   it('credits SettleSignal only on SettleSignal records', async () => {
