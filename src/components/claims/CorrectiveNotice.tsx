@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, ExternalLink, Info, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
-import type { ClaimView, LegacyFilingState } from '@/lib/claims';
+import { legacyAnswerCopy, type ClaimView, type LegacyFilingState } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
 import { updateClaim } from './claim-api';
 import { ClaimError, type ClaimErrorState } from './ClaimError';
@@ -13,12 +13,24 @@ type Answered = (claim: ClaimView, message: string) => void;
 /**
  * The one-tap answers on the corrective notice (D42) for a legacy claim:
  * "I already filed" records it at once (the confirmation number can be added
- * next), and "I haven't filed yet" marks it Not filed yet.
+ * next), and "I haven't filed yet" (after the deadline, "I didn't file")
+ * records that. Both stay reversible: "I filed" remains available.
  */
-export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; onAnswered: Answered }) {
+export function LegacyClaimAnswer({
+  claimId,
+  filing,
+  hasDeadline,
+  onAnswered,
+}: {
+  claimId: string;
+  filing: LegacyFilingState;
+  hasDeadline: boolean;
+  onAnswered: Answered;
+}) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState<null | 'filed' | 'not_yet'>(null);
   const [error, setError] = useState<ClaimErrorState | null>(null);
+  const copy = legacyAnswerCopy(filing, hasDeadline);
 
   async function answer(kind: 'filed' | 'not_yet') {
     setBusy(kind);
@@ -34,12 +46,7 @@ export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; on
     posthog?.capture('corrective_notice_answered', {
       answer: kind === 'filed' ? 'already_filed' : 'not_filed_yet',
     });
-    onAnswered(
-      result.claim,
-      kind === 'filed'
-        ? 'Thanks. We saved that you already filed. Add your confirmation number if you have it.'
-        : 'Thanks. This claim now shows Not filed yet. File on the official site before the deadline.',
-    );
+    onAnswered(result.claim, kind === 'filed' ? copy.filedMessage : copy.notYetMessage);
   }
 
   return (
@@ -51,7 +58,7 @@ export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; on
         </button>
         <button type="button" className="btn-secondary" onClick={() => answer('not_yet')} disabled={busy !== null}>
           {busy === 'not_yet' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          I haven&rsquo;t filed yet
+          {copy.notYetLabel}
         </button>
       </div>
       <ClaimError error={error} className="mt-2" />
@@ -122,6 +129,13 @@ export function LegacyClaimGuidance({
             )}
           </>
         )}
+        {!officialUrl && filing !== 'deadline_passed' && (
+          <>
+            {' '}
+            We don&rsquo;t have the official link. Use the link in the notice you got by
+            mail or email, and only file on the site that notice names.
+          </>
+        )}
       </li>
       <li>
         <strong>Already filed there yourself?</strong> Don&rsquo;t file again. Just tell
@@ -161,7 +175,7 @@ export function CorrectiveNotice({
       </p>
       <LegacyClaimGuidance deadline={deadline} filing={filing} officialUrl={officialUrl} />
       <div className="mt-4">
-        <LegacyClaimAnswer claimId={claimId} onAnswered={onAnswered} />
+        <LegacyClaimAnswer claimId={claimId} filing={filing} hasDeadline={Boolean(deadline)} onAnswered={onAnswered} />
       </div>
     </section>
   );

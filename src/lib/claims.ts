@@ -305,6 +305,43 @@ export function legacyNextStep(state: LegacyFilingState): string {
 }
 
 /**
+ * The corrective notice's one-tap answers, worded for where the settlement
+ * stands, so the confirmation never tells people to file before a deadline
+ * that has passed.
+ */
+export function legacyAnswerCopy(
+  filing: LegacyFilingState,
+  hasDeadline: boolean,
+): { notYetLabel: string; notYetMessage: string; filedMessage: string } {
+  const filedMessage = 'Thanks. We saved that you already filed. Add your confirmation number if you have it.';
+  switch (filing) {
+    case 'deadline_passed':
+      return {
+        notYetLabel: 'I didn’t file',
+        notYetMessage:
+          "Thanks. We noted that you didn't file. The deadline has passed, so there's nothing more to do. If you did file before it, you can still tell us here.",
+        filedMessage,
+      };
+    case 'closed_on_list':
+    case 'unlisted':
+      return {
+        notYetLabel: 'I haven’t filed yet',
+        notYetMessage:
+          'Thanks. This claim now shows Not filed yet. Check the official site to see if it still takes claims, and tell us if you file.',
+        filedMessage,
+      };
+    case 'open':
+      return {
+        notYetLabel: 'I haven’t filed yet',
+        notYetMessage: hasDeadline
+          ? 'Thanks. This claim now shows Not filed yet. File on the official site before the deadline, then tell us.'
+          : 'Thanks. This claim now shows Not filed yet. File on the official site, then tell us.',
+        filedMessage,
+      };
+  }
+}
+
+/**
  * The last day a late "I filed it" is accepted, or null when there is no
  * limit: no deadline, or a claim the old flow showed as filed (D42).
  */

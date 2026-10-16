@@ -85,6 +85,8 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
                   <div className="mt-4">
                     <LegacyClaimAnswer
                       claimId={item.claimId}
+                      filing={item.filing}
+                      hasDeadline={Boolean(item.deadline)}
                       onAnswered={(claim, message) => answered(item.claimId, claim, message)}
                     />
                   </div>

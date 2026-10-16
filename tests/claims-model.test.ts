@@ -12,6 +12,7 @@ import {
   isLegacyClaim,
   isOpenForClaims,
   lateReportLastDay,
+  legacyAnswerCopy,
   legacyFilingState,
   needsCorrectiveNotice,
   planClaimTransition,
@@ -475,5 +476,24 @@ describe('undo after the late-report window', () => {
       claimActionAvailability({ status: 'self_file', corrective_notice_required: true, corrective_notice_answered_at: NOW.toISOString() }, PAST_60_DAYS)
         .reportFiled,
     ).toBe(true);
+  });
+});
+
+describe('legacyAnswerCopy', () => {
+  it('never tells people to file before a deadline that has passed', () => {
+    const passed = legacyAnswerCopy('deadline_passed', true);
+    expect(passed.notYetLabel).toBe('I didn’t file');
+    expect(passed.notYetMessage).toMatch(/deadline has passed/);
+    expect(passed.notYetMessage).not.toMatch(/before the deadline|File on the official site/);
+    expect(passed.notYetMessage).toMatch(/you can still tell us/);
+  });
+
+  it('says "before the deadline" only when there is one, and sends closed or unlisted ones to the official site', () => {
+    expect(legacyAnswerCopy('open', true).notYetMessage).toMatch(/before the deadline, then tell us/);
+    expect(legacyAnswerCopy('open', false).notYetMessage).not.toMatch(/deadline/);
+    expect(legacyAnswerCopy('open', true).notYetLabel).toBe('I haven’t filed yet');
+    for (const state of ['closed_on_list', 'unlisted'] as const) {
+      expect(legacyAnswerCopy(state, true).notYetMessage).toMatch(/Check the official site to see if it still takes claims/);
+    }
   });
 });
