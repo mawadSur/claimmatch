@@ -111,6 +111,22 @@ export function officialLinkFor(lawsuit: Pick<Lawsuit, 'claim_url' | 'source_url
   return { href: source.href, kind: 'source', label: 'Source page', host: displayHost(source) };
 }
 
+/**
+ * The summary worth showing, or null when it only repeats the title and the
+ * payout (the SettleSignal adapter builds "<title>. Estimated payout: <payout>").
+ */
+export function displaySummary(
+  lawsuit: Pick<Lawsuit, 'title' | 'summary' | 'typical_payout'>,
+): string | null {
+  const summary = lawsuit.summary?.trim();
+  if (!summary) return null;
+  const title = lawsuit.title.trim();
+  if (summary === title) return null;
+  const payout = lawsuit.typical_payout?.trim();
+  if (payout && summary === `${title}. Estimated payout: ${payout}`) return null;
+  return summary;
+}
+
 /** The SettleSignal listing page for a record, when there is one. */
 export function settleSignalPageFor(lawsuit: Pick<Lawsuit, 'source_url'>): string | null {
   const source = webUrl(lawsuit.source_url);

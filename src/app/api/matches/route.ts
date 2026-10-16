@@ -9,8 +9,8 @@ import type { Lawsuit, Match, Profile } from '@/lib/types';
  * Returns the number of eligible matches found.
  *
  * Only settlements open for claims are considered (isOpenForClaims). There is
- * no sample-data fallback: if the catalog cannot be read, this fails with 503
- * and stores nothing.
+ * no fallback to made-up settlements: if the catalog cannot be read, this
+ * fails with 503 and stores nothing.
  */
 export async function POST() {
   const supabase = await createClient();

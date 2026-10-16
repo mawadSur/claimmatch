@@ -5,6 +5,8 @@ export default defineConfig({
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
+  // tsconfig keeps JSX for Next ("preserve"); tests need it compiled to render components.
+  oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],

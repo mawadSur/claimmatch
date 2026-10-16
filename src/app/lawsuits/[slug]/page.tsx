@@ -11,6 +11,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import {
+  displaySummary,
   isOpenForClaims,
   isSettleSignalRecord,
   lookupLawsuitBySlug,
@@ -79,10 +80,11 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const fromSettleSignal = isSettleSignalRecord(lawsuit);
   const settleSignalPage = settleSignalPageFor(lawsuit);
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
+  const summary = displaySummary(lawsuit);
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
-    lawsuit.description.trim() !== lawsuit.summary?.trim();
+    lawsuit.description.trim() !== summary;
 
   return (
     <>
@@ -114,9 +116,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
           <h1 className="mt-4 max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl">
             {lawsuit.title}
           </h1>
-          {lawsuit.summary && lawsuit.summary !== lawsuit.title && (
-            <p className="mt-4 max-w-2xl text-lg text-ink-muted">{lawsuit.summary}</p>
-          )}
+          {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
         </div>
       </section>
 
@@ -130,9 +130,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 Unverified: check the official site
               </h2>
               <p className="mt-1 text-sm text-amber-900">
-                We haven’t checked this listing against the official settlement notice yet.
-                Before you file, confirm the deadline, who qualifies and what proof you need
-                on the official site.
+                {open
+                  ? 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.'
+                  : 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.'}
               </p>
               <OfficialLink link={official} />
             </div>
@@ -148,9 +148,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
               <dd className="mt-1 text-base font-bold text-ink">{deadlineText(lawsuit)}</dd>
               <dd className="mt-1 text-sm text-ink-muted">
-                {lawsuit.deadline
-                  ? 'Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.'
-                  : 'This listing has no deadline. Check the official site.'}
+                {!open
+                  ? deadlinePassed
+                    ? 'This deadline has passed.'
+                    : 'Not taking claims.'
+                  : lawsuit.deadline
+                    ? 'Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.'
+                    : 'This listing has no deadline. Check the official site.'}
               </dd>
             </div>
             <div>

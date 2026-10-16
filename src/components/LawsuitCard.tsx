@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
-import { isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
+import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
 import { proofLabel } from '@/lib/proof';
 
 /**
@@ -34,6 +34,7 @@ export function LawsuitCard({
   const detailsHref = `/lawsuits/${lawsuit.slug}`;
   const titleHref = href ?? detailsHref;
   const official = officialLinkFor(lawsuit);
+  const summary = displaySummary(lawsuit);
   const shownBadge = badge && isAllowedBadge(badge.label) ? badge : undefined;
 
   const tone = shownBadge?.tone ?? 'brand';
@@ -63,9 +64,7 @@ export function LawsuitCard({
         </Link>
       </h3>
 
-      {lawsuit.summary && lawsuit.summary !== lawsuit.title && (
-        <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{lawsuit.summary}</p>
-      )}
+      {summary && <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{summary}</p>}
 
       {reasons && reasons.length > 0 && (
         <ul className="mt-3 space-y-1">
