@@ -47,3 +47,24 @@ describe('CorrectiveNoticeList markup', () => {
     expect(open).toContain('Use the link in the notice you got by');
   });
 });
+
+describe('long notice lists (File-all accounts)', () => {
+  let next = 100;
+  const many = (n: number, kind: NoticeItem['kind'] = 'legacy') =>
+    Array.from({ length: n }, () => {
+      const i = next++;
+      return item({ claimId: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, title: `Settlement ${i}`, kind });
+    });
+
+  it('shows the first 5 rows and a "Show all" button', () => {
+    const html = render(many(12));
+    expect(html.match(/<li /g)).toHaveLength(5);
+    expect(html).toContain('Show all 12');
+    expect(render(many(5))).not.toContain('Show all');
+  });
+
+  it('offers one "Got it for all" for several fictional rows', () => {
+    expect(render([...many(2), ...many(3, 'fictional')])).toContain('Got it for all 3 that were not real');
+    expect(render([...many(2), ...many(1, 'fictional')])).not.toContain('Got it for all');
+  });
+});

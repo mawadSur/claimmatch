@@ -162,6 +162,21 @@ describe('buildDashboard', () => {
   });
 });
 
+describe('notice order', () => {
+  it('lists claims people can still file first, soonest deadline first, and fictional ones last', () => {
+    const inputs = [
+      { claim: claim({ status: 'submitted', lawsuit_title: 'fictional' }), settlement: settlement({ slug: 'fake-a', title: 'fictional' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'passed', deadline: '2026-09-01' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'later', deadline: '2026-12-20' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'no deadline', deadline: null }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'closed on list', status: 'closed', deadline: null }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'soon', deadline: '2026-10-25' }) },
+    ];
+    const { notices } = buildDashboard(inputs, NOW, isFictional);
+    expect(notices.map((n) => n.title)).toEqual(['soon', 'later', 'no deadline', 'closed on list', 'passed', 'fictional']);
+  });
+});
+
 describe('buildClosingSoon', () => {
   it('lists only open, real, untracked settlements by nearest deadline', () => {
     const tracked = settlement({ slug: 'tracked', deadline: '2026-10-20' });

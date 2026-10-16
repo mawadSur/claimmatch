@@ -2,16 +2,26 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import type { ClaimView } from '@/lib/claims';
 import type { NoticeItem } from './dashboard-model';
 import { AddConfirmationForm } from './AddConfirmationForm';
+import { acknowledgeAllFictional } from './claim-api';
+import { ClaimError, type ClaimErrorState } from './ClaimError';
 import {
   AcknowledgeFictionalButton,
   FICTIONAL_TEXT,
   LegacyClaimAnswer,
   LegacyClaimGuidance,
 } from './CorrectiveNotice';
+
+/** Rows shown before "Show all": an account the old File-all flow filled can have hundreds. */
+export const NOTICE_PREVIEW = 5;
+// One refresh after a burst of answers, not one per tap (each re-reads the
+// claims and the catalog).
+const REFRESH_DELAY_MS = 1500;
+const FICTIONAL_DONE = 'Thanks. We closed this out. There is nothing more to do.';
 
 interface Answer {
   claim: ClaimView;
@@ -21,26 +31,78 @@ interface Answer {
 /**
  * The dashboard's corrective notice (D42): one row per legacy claim the old
  * flow called "filed", each with one-tap answers, and a "not real" note for
- * claims on fictional settlements. Answered rows stay visible with a
- * confirmation until the page is left; the claim list below refreshes.
+ * claims on fictional settlements. Rows come soonest open deadline first
+ * (sortNotices); the first few show until "Show all". Answered rows stay
+ * visible with a confirmation until the page is left; the claim list below
+ * refreshes once the answers settle.
  */
 export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
   const router = useRouter();
+  const posthog = usePostHog();
   // Keep the first list: after a refresh the server drops answered rows.
   const [rows] = useState(items);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [showAll, setShowAll] = useState(false);
   // One live region, present from the first render, so every answer is
   // announced (a region created together with its text often is not).
   const [announcement, setAnnouncement] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState<ClaimErrorState | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    [],
+  );
+
+  // "Show all" disappears once used: move focus to the first row it revealed.
+  useEffect(() => {
+    if (showAll) document.getElementById(`notice-row-${rows[NOTICE_PREVIEW]?.claimId}`)?.focus();
+  }, [showAll, rows]);
+
+  function scheduleRefresh() {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => router.refresh(), REFRESH_DELAY_MS);
+  }
 
   function answered(claimId: string, claim: ClaimView, message: string) {
     setAnswers((prev) => ({ ...prev, [claimId]: { claim, message } }));
     setAnnouncement(message);
-    router.refresh();
+    scheduleRefresh();
+  }
+
+  const openFictional = rows.filter((r) => r.kind === 'fictional' && !answers[r.claimId]);
+
+  async function acknowledgeAll() {
+    if (bulkBusy) return;
+    setBulkBusy(true);
+    setBulkError(null);
+    const result = await acknowledgeAllFictional();
+    setBulkBusy(false);
+    // Rows saved before an error still count as answered.
+    if (result.claims.length > 0) {
+      setAnswers((prev) => {
+        const next = { ...prev };
+        for (const claim of result.claims) next[claim.id] = { claim, message: FICTIONAL_DONE };
+        return next;
+      });
+      posthog?.capture('corrective_notice_answered', { answer: 'not_a_real_settlement', bulk: true });
+      setAnnouncement(
+        result.claims.length === 1
+          ? 'Thanks. We closed out the settlement that was not real.'
+          : `Thanks. We closed out ${result.claims.length} settlements that were not real.`,
+      );
+      scheduleRefresh();
+    }
+    if (!result.ok) setBulkError({ message: result.error, status: result.status });
   }
 
   const legacyCount = rows.filter((r) => r.kind === 'legacy').length;
   if (rows.length === 0) return null;
+  const visible = showAll ? rows : rows.slice(0, NOTICE_PREVIEW);
+  const hidden = rows.length - visible.length;
 
   return (
     <section
@@ -69,12 +131,33 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
         {announcement}
       </p>
 
-      <ul className="mt-5 space-y-3">
-        {rows.map((item) => {
+      {openFictional.length > 1 && (
+        <div className="mt-4">
+          <button
+            type="button"
+            className="btn-secondary aria-disabled:cursor-wait aria-disabled:opacity-60"
+            onClick={acknowledgeAll}
+            aria-disabled={bulkBusy}
+          >
+            {bulkBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+            Got it for all {openFictional.length} that were not real
+          </button>
+          <ClaimError error={bulkError} className="mt-2" />
+        </div>
+      )}
+
+      <ul id="corrective-notice-rows" className="mt-5 space-y-3">
+        {visible.map((item) => {
           const answer = answers[item.claimId];
           return (
             <li key={item.claimId} className="rounded-xl bg-white p-4 ring-1 ring-amber-200 sm:p-5">
-              <p className="font-semibold text-ink">{item.title}</p>
+              <p
+                id={`notice-row-${item.claimId}`}
+                tabIndex={-1}
+                className="rounded font-semibold text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              >
+                {item.title}
+              </p>
               {answer ? (
                 <AnsweredRow claimId={item.claimId} answer={answer} onSaved={answered} />
               ) : item.kind === 'fictional' ? (
@@ -104,6 +187,17 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
           );
         })}
       </ul>
+      {hidden > 0 && (
+        <button
+          type="button"
+          className="btn-ghost mt-3"
+          aria-expanded={false}
+          aria-controls="corrective-notice-rows"
+          onClick={() => setShowAll(true)}
+        >
+          Show all {rows.length}
+        </button>
+      )}
     </section>
   );
 }

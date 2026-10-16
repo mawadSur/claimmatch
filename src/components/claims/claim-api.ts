@@ -45,6 +45,34 @@ export function updateClaim(claimId: string, body: Record<string, unknown>): Pro
   return send(`/api/claims/${encodeURIComponent(claimId)}`, 'PATCH', body);
 }
 
+export type AcknowledgeAllResult =
+  | { ok: true; claims: ClaimView[] }
+  | { ok: false; status: number; error: string; claims: ClaimView[] };
+
+/** "Got it" for every claim on a fictional settlement, in one request. */
+export async function acknowledgeAllFictional(): Promise<AcknowledgeAllResult> {
+  let res: Response;
+  try {
+    res = await fetch('/api/claims/acknowledge-fictional', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      error: "We couldn't reach ClaimMatch. Check your internet connection and try again.",
+      claims: [],
+    };
+  }
+  const json = (await res.json().catch(() => null)) as { claims?: ClaimView[]; error?: string } | null;
+  const claims = Array.isArray(json?.claims) ? json.claims : [];
+  if (res.ok) return { ok: true, claims };
+  if (res.status === 401) return { ok: false, status: 401, error: 'You were logged out.', claims };
+  return { ok: false, status: res.status, error: json?.error || 'Something went wrong. Please try again.', claims };
+}
+
 /** The user's local calendar date as YYYY-MM-DD. */
 export function localISODate(d: Date = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');

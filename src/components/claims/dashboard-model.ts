@@ -55,6 +55,30 @@ export interface NoticeItem {
 
 export const GROUP_ORDER: ClaimGroup[] = ['needs_filing', 'reported', 'submitted', 'closed', 'other'];
 
+const FILING_ORDER: Record<LegacyFilingState, number> = {
+  open: 0,
+  closed_on_list: 1,
+  unlisted: 2,
+  deadline_passed: 3,
+};
+
+/**
+ * Notices in the order people should answer them: claims they can still file,
+ * soonest deadline first (no deadline after those), then settlements being
+ * re-checked, then past deadlines, and the fictional ones last.
+ */
+export function sortNotices(notices: NoticeItem[]): NoticeItem[] {
+  const key = (n: NoticeItem): [number, number, string] => [
+    n.kind === 'fictional' ? 1 : 0,
+    n.kind === 'fictional' ? 0 : FILING_ORDER[n.filing],
+    n.filing === 'open' && n.deadline ? n.deadline : '9999-12-31',
+  ];
+  return notices
+    .map((n, i) => ({ n, i, k: key(n) }))
+    .sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2].localeCompare(b.k[2]) || a.i - b.i)
+    .map((x) => x.n);
+}
+
 export function deadlineText(deadline: string | null, now: Date): string {
   if (!deadline) return 'No deadline listed';
   const countdown = deadlineCountdown(deadline, now);
@@ -174,7 +198,7 @@ export function buildDashboard(
       });
     }
   }
-  return { rows, notices };
+  return { rows, notices: sortNotices(notices) };
 }
 
 export interface ClosingSoonItem {
