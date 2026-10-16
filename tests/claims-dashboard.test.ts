@@ -33,6 +33,7 @@ function claim(overrides: Partial<ClaimView> = {}): ClaimView {
     reported_filed_at: null,
     user_filed_on: null,
     corrective_notice_answered_at: null,
+    corrective_notice_required: false,
     created_at: null,
     ...overrides,
   };
@@ -59,6 +60,28 @@ describe('buildDashboard', () => {
         officialUrl: 'https://www.realsettlement-admin.com/file',
       }),
     ]);
+  });
+
+  it('keeps the corrective notice after the D38 correction moves the claim to self_file', () => {
+    const s = settlement();
+    const corrected = claim({ status: 'self_file', corrective_notice_required: true });
+    const { rows, notices } = row(corrected, s);
+    expect(notices).toEqual([expect.objectContaining({ claimId: corrected.id, kind: 'legacy' })]);
+    expect(rows[0]).toMatchObject({
+      label: 'Not filed yet',
+      nextStep: 'ClaimMatch did not file this. File on the official site, or tell us if you already did.',
+      action: { label: 'Tell us', href: '/claim/real-one' },
+    });
+    const late = row(corrected, settlement({ deadline: '2026-08-01' }));
+    expect(late.notices).toHaveLength(1);
+    expect(late.rows[0]).toMatchObject({ label: 'Not reported filed', action: { label: 'Tell us' } });
+    // Answered: no notice, and no "tell us by" limit on a claim the old flow showed as filed.
+    const answered = row(
+      claim({ status: 'self_file', corrective_notice_required: true, corrective_notice_answered_at: '2026-10-01T00:00:00Z' }),
+      settlement({ deadline: '2026-08-01' }),
+    );
+    expect(answered.notices).toEqual([]);
+    expect(answered.rows[0]).toMatchObject({ nextStep: 'Filed before the deadline? Tell us.', action: { label: 'Tell us' } });
   });
 
   it('says a fictional settlement was not real and needs nothing', () => {

@@ -169,6 +169,8 @@ export interface ClaimView {
   reported_filed_at: string | null;
   user_filed_on: string | null;
   corrective_notice_answered_at: string | null;
+  /** The old flow recorded this claim as filed (ClaimFields.corrective_notice_required). */
+  corrective_notice_required: boolean;
   created_at: string | null;
 }
 
@@ -184,6 +186,11 @@ export function toClaimView(row: Record<string, unknown>): ClaimView {
     reported_filed_at: str(row.reported_filed_at),
     user_filed_on: str(row.user_filed_on),
     corrective_notice_answered_at: str(row.corrective_notice_answered_at),
+    // 0008's marker, or the stamps only the retired e-sign and File-all flows
+    // wrote (so it also holds before 0008 is applied). Only this boolean
+    // reaches the browser, never the stamps.
+    corrective_notice_required:
+      row.corrective_notice_required === true || row.filed_at != null || row.authorized_at != null,
     created_at: str(row.created_at),
   };
 }

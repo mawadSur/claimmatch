@@ -11,7 +11,7 @@
  * ./claim-input; both are re-exported here, so import from '@/lib/claims'.
  */
 import type { ClaimStatus } from './types';
-import { UNKNOWN_SETTLEMENT, type SettlementContext } from './claim-deadlines';
+import { UNKNOWN_SETTLEMENT, lateReportLastDay, type SettlementContext } from './claim-deadlines';
 
 export * from './claim-deadlines';
 export * from './claim-input';
@@ -40,13 +40,20 @@ export function isKnownClaimStatus(value: string): value is ClaimStatus {
   return KNOWN.has(value);
 }
 
-/** The claim fields this model reads. Every column added by 0006 is optional. */
+/** The claim fields this model reads. Every column added by 0006 or 0008 is optional. */
 export interface ClaimFields {
   status: string;
   confirmation_number?: string | null;
   reported_filed_at?: string | null;
   user_filed_on?: string | null;
   corrective_notice_answered_at?: string | null;
+  /**
+   * The retired e-sign or File-all flow recorded this claim as filed: 0008's
+   * marker, or its filed_at / authorized_at stamps (see toClaimView). Unlike a
+   * legacy status, it survives the D38 correction that moves the claim to
+   * self_file, so the corrective notice does too.
+   */
+  corrective_notice_required?: boolean | null;
 }
 
 export function hasConfirmationNumber(claim: Pick<ClaimFields, 'confirmation_number'>): boolean {
@@ -61,6 +68,28 @@ export function hasConfirmationNumber(claim: Pick<ClaimFields, 'confirmation_num
 export function isLegacyClaim(claim: ClaimFields): boolean {
   if (LEGACY_ONLY.has(claim.status)) return true;
   return claim.status === 'submitted' && !hasConfirmationNumber(claim);
+}
+
+/** States in which the user still has to file, or tell us they did. */
+const UNFILED = new Set<string>(['self_file', 'not_reported_filed']);
+
+/**
+ * True for every claim the old flow showed as filed: one still in a legacy
+ * status, or one the D38 correction (or the user's answer) has since moved,
+ * which keeps the marker.
+ */
+export function wasShownAsFiled(claim: ClaimFields): boolean {
+  return isLegacyClaim(claim) || claim.corrective_notice_required === true;
+}
+
+/**
+ * The D42 corrective notice applies until the user answers it: on a claim in
+ * a legacy status, or on a marked claim that is still waiting to be filed.
+ */
+export function needsCorrectiveNotice(claim: ClaimFields): boolean {
+  if (claim.corrective_notice_answered_at) return false;
+  if (isLegacyClaim(claim)) return true;
+  return claim.corrective_notice_required === true && UNFILED.has(claim.status);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -109,7 +138,8 @@ export function displayClaimStatus(
   settlement?: SettlementContext | null,
 ): ClaimDisplay {
   const number = hasConfirmationNumber(claim) ? (claim.confirmation_number as string).trim() : null;
-  const legacy = isLegacyClaim(claim);
+  const legacy = wasShownAsFiled(claim);
+  const notice = needsCorrectiveNotice(claim);
   const passed = settlement?.deadlinePassed ?? false;
   const base = { legacy, confirmationNumber: number, showNotice: false };
   const unfiled = (kind: ClaimKind, label: string, tone: ClaimTone): ClaimDisplay => ({
@@ -118,7 +148,7 @@ export function displayClaimStatus(
     label,
     tone: passed ? 'gray' : tone,
     group: passed ? 'closed' : 'needs_filing',
-    showNotice: legacy && !claim.corrective_notice_answered_at,
+    showNotice: notice,
   });
 
   if (settlement?.fictional) {
@@ -134,8 +164,8 @@ export function displayClaimStatus(
   switch (claim.status) {
     case 'self_file':
       return passed
-        ? { ...base, kind: 'self_file', label: 'Not reported filed', tone: 'gray', group: 'closed' }
-        : { ...base, kind: 'self_file', label: 'Not filed yet', tone: 'amber', group: 'needs_filing' };
+        ? { ...base, kind: 'self_file', label: 'Not reported filed', tone: 'gray', group: 'closed', showNotice: notice }
+        : { ...base, kind: 'self_file', label: 'Not filed yet', tone: 'amber', group: 'needs_filing', showNotice: notice };
     case 'reported_filed':
       return { ...base, kind: 'reported_filed', label: 'Reported filed by you', tone: 'brand', group: 'reported' };
     case 'submitted':
@@ -156,7 +186,14 @@ export function displayClaimStatus(
     case 'paid':
       return unfiled('legacy_unconfirmed', 'Status not confirmed', 'amber');
     case 'not_reported_filed':
-      return { ...base, kind: 'not_reported_filed', label: 'Not reported filed', tone: 'gray', group: 'closed' };
+      return {
+        ...base,
+        kind: 'not_reported_filed',
+        label: 'Not reported filed',
+        tone: 'gray',
+        group: 'closed',
+        showNotice: notice,
+      };
     case 'withdrawn':
       return { ...base, kind: 'withdrawn', label: 'Withdrawn by you', tone: 'gray', group: 'closed' };
     default:
@@ -220,16 +257,26 @@ export function claimActionAvailability(
     return { ...NOTHING_AVAILABLE, acknowledgeFictional: !done };
   }
   const legacy = isLegacyClaim(claim);
-  const unreported = claim.status === 'self_file' || claim.status === 'not_reported_filed';
+  const unreported = UNFILED.has(claim.status);
   return {
-    // Legacy claims can always be answered (D42); others within the late window.
-    reportFiled: legacy || (unreported && ctx.lateReportOpen),
+    // A claim the old flow showed as filed can always be answered (D42), also
+    // after the D38 correction moved it to self_file; others within the late
+    // window.
+    reportFiled: legacy || (unreported && (claim.corrective_notice_required === true || ctx.lateReportOpen)),
     addConfirmation: claim.status === 'reported_filed',
     correctConfirmation: claim.status === 'submitted' && !legacy,
     undoReport: claim.status === 'reported_filed',
-    answerCorrectiveNotice: legacy,
+    answerCorrectiveNotice: legacy || needsCorrectiveNotice(claim),
     acknowledgeFictional: false,
   };
+}
+
+/**
+ * The last day a late "I filed it" is accepted, or null when there is no
+ * limit: no deadline, or a claim the old flow showed as filed (D42).
+ */
+export function reportByDay(claim: ClaimFields, deadline: string | null | undefined): string | null {
+  return wasShownAsFiled(claim) ? null : lateReportLastDay(deadline);
 }
 
 export type ClaimAction =
@@ -295,6 +342,8 @@ export function planClaimTransition(
   const at = now.toISOString();
   const can = claimActionAvailability(claim, ctx);
   const legacy = isLegacyClaim(claim);
+  // Any answer to an open corrective notice records that it was answered.
+  const answersNotice = needsCorrectiveNotice(claim);
   const plan = (changes: ClaimChanges, detail: Record<string, unknown>): TransitionResult => ({
     ok: true,
     noop: false,
@@ -342,12 +391,12 @@ export function planClaimTransition(
         reported_filed_at: at,
         user_filed_on: filedOn,
       };
-      if (legacy && !claim.corrective_notice_answered_at) changes.corrective_notice_answered_at = at;
+      if (answersNotice) changes.corrective_notice_answered_at = at;
       return plan(changes, {
         action: 'report_filed',
         with_confirmation_number: Boolean(number),
         filed_on: filedOn,
-        legacy,
+        legacy: wasShownAsFiled(claim),
       });
     }
     case 'add_confirmation': {
@@ -382,10 +431,11 @@ export function planClaimTransition(
     }
     case 'acknowledge_notice': {
       if (!can.answerCorrectiveNotice) return NOOP;
-      return plan(
-        { status: 'self_file', corrective_notice_answered_at: claim.corrective_notice_answered_at ?? at },
-        { action: 'acknowledge_notice', answer: 'not_filed_yet' },
-      );
+      const changes: ClaimChanges = { corrective_notice_answered_at: claim.corrective_notice_answered_at ?? at };
+      // A legacy status must be left (the 0006 CHECK); a claim the D38
+      // correction already moved keeps its status.
+      if (legacy) changes.status = 'self_file';
+      return plan(changes, { action: 'acknowledge_notice', answer: 'not_filed_yet' });
     }
     case 'withdraw': {
       if (from === 'withdrawn') return NOOP;
@@ -393,7 +443,7 @@ export function planClaimTransition(
         return refuse('not_allowed', "A claim you've reported filed can't be withdrawn here.");
       }
       const changes: ClaimChanges = { status: 'withdrawn' };
-      if (legacy && !claim.corrective_notice_answered_at) changes.corrective_notice_answered_at = at;
+      if (answersNotice) changes.corrective_notice_answered_at = at;
       return plan(changes, { action: 'withdraw' });
     }
   }

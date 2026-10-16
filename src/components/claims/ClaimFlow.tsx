@@ -10,6 +10,7 @@ import {
   deadlineCountdown,
   displayClaimStatus,
   lateReportLastDay,
+  reportByDay,
   type ClaimDisplay,
   type ClaimView,
   type ProofNeed,
@@ -418,14 +419,16 @@ function DeadlinePassed({
   onChange: (claim: ClaimView, message: string) => void;
 }) {
   const canReport = claim ? claimActionAvailability(claim, context).reportFiled : false;
-  const lastDay = lateReportLastDay(settlement.deadline);
+  const lastDay = claim ? reportByDay(claim, settlement.deadline) : lateReportLastDay(settlement.deadline);
   return (
     <section aria-labelledby="deadline-passed" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
       <h2 id="deadline-passed" className="text-lg font-bold">The deadline has passed</h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-muted">
         The deadline for this settlement was {formatDeadline(settlement.deadline)}.
-        {canReport && lastDay
-          ? ` Did you file before then? Tell us by ${formatDeadline(lastDay)}.`
+        {canReport
+          ? lastDay
+            ? ` Did you file before then? Tell us by ${formatDeadline(lastDay)}.`
+            : ' Did you file before then? Tell us below.'
           : ''}
       </p>
       <div className="mt-4">

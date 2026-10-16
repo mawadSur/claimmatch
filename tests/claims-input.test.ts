@@ -128,6 +128,7 @@ describe('content helpers', () => {
       [
         'confirmation_number',
         'corrective_notice_answered_at',
+        'corrective_notice_required',
         'created_at',
         'id',
         'lawsuit_id',
@@ -137,6 +138,18 @@ describe('content helpers', () => {
         'user_filed_on',
       ].sort(),
     );
+    // Only a boolean says the old flow recorded it as filed; no stamp leaks.
+    expect(view.corrective_notice_required).toBe(true);
+    expect(JSON.stringify(view)).not.toContain('2026-07-01');
+  });
+
+  it('keeps the corrective-notice marker however the old flow left its trace', () => {
+    const base = { id: 'c1', lawsuit_id: 'l1', status: 'self_file' };
+    expect(toClaimView({ ...base, corrective_notice_required: true }).corrective_notice_required).toBe(true);
+    expect(toClaimView({ ...base, authorized_at: '2026-07-01T00:00:00Z' }).corrective_notice_required).toBe(true);
+    expect(toClaimView({ ...base, filed_at: '2026-07-01T00:00:00Z' }).corrective_notice_required).toBe(true);
+    expect(toClaimView({ ...base, corrective_notice_required: null, filed_at: null }).corrective_notice_required).toBe(false);
+    expect(toClaimView(base).corrective_notice_required).toBe(false);
   });
 
   it('detects rows from before migration 0006', () => {

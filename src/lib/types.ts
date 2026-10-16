@@ -170,6 +170,8 @@ export interface Claim {
   user_filed_on?: string | null;
   /** When the user answered the Phase 0 corrective notice on a legacy claim. */
   corrective_notice_answered_at?: string | null;
+  /** 0008: the retired flow recorded this claim as filed, so the notice applies. */
+  corrective_notice_required?: boolean | null;
   created_at: string;
   updated_at: string;
   /** joined lawsuit, when selected with a relation */

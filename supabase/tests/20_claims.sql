@@ -1,6 +1,7 @@
--- Part A claims (0006 + 0007): the CHECK on 'submitted', re-running 0006 over
--- legacy rows, the server-only claim functions, the append-only claim_events
--- log, and no direct client writes to claims. Runs after every migration.
+-- Part A claims (0006, 0007 and 0008): the CHECK on 'submitted', re-running
+-- 0006 over legacy rows, the server-only claim functions, the append-only
+-- claim_events log, no direct client writes to claims, and the corrective-
+-- notice marker. Runs after every migration.
 -- Each check raises 'FAIL: ...' on a regression; everything rolls back.
 
 begin;
@@ -282,6 +283,95 @@ begin
   if exists (select 1 from public.claim_events e
              where not exists (select 1 from public.claims c where c.id = e.claim_id)) then
     raise exception 'FAIL: events outlived their claim';
+  end if;
+end $$;
+
+rollback;
+
+-- 9. 0008: the corrective-notice marker survives the D38 correction. Rows as
+--    the retired flows left them, then 0006 and 0008 applied over them (the
+--    production order), then the correction that moves them to self_file.
+begin;
+
+insert into auth.users (id, email) values
+  ('00000000-0000-4000-8000-0000000000e1', 'claims-marker@example.test');
+insert into public.lawsuits (id, slug, title) values
+  ('00000000-0000-4000-8000-00000000e001', 'claims-marker-one', 'Marker one'),
+  ('00000000-0000-4000-8000-00000000e002', 'claims-marker-two', 'Marker two'),
+  ('00000000-0000-4000-8000-00000000e003', 'claims-marker-three', 'Marker three'),
+  ('00000000-0000-4000-8000-00000000e004', 'claims-marker-four', 'Marker four');
+
+alter table public.claims drop constraint claims_submitted_needs_confirmation;
+insert into public.claims (id, user_id, lawsuit_id, lawsuit_title, status, filed_at, authorized_at) values
+  -- the e-sign "Claim filed" row
+  ('00000000-0000-4000-8000-0000000000f1', '00000000-0000-4000-8000-0000000000e1',
+   '00000000-0000-4000-8000-00000000e001', 'One', 'submitted', now(), now()),
+  -- a legacy status without the e-sign stamps
+  ('00000000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-0000000000e1',
+   '00000000-0000-4000-8000-00000000e002', 'Two', 'processing', null, null),
+  -- moved out of 'submitted' before 0008, stamps kept
+  ('00000000-0000-4000-8000-0000000000f3', '00000000-0000-4000-8000-0000000000e1',
+   '00000000-0000-4000-8000-00000000e003', 'Three', 'self_file', now(), null),
+  -- an ordinary Part A claim
+  ('00000000-0000-4000-8000-0000000000f4', '00000000-0000-4000-8000-0000000000e1',
+   '00000000-0000-4000-8000-00000000e004', 'Four', 'self_file', null, null);
+\i supabase/migrations/0006_claim_states.sql
+\i supabase/migrations/0008_corrective_notice_marker.sql
+
+do $$
+declare
+  marked uuid[];
+begin
+  -- The backfill marks every row with evidence it may update today ('submitted'
+  -- rows wait for the trigger: the CHECK refuses updating them in place).
+  select array_agg(id order by id) into marked from public.claims
+   where user_id = '00000000-0000-4000-8000-0000000000e1' and corrective_notice_required;
+  if marked is distinct from array['00000000-0000-4000-8000-0000000000f2',
+                                   '00000000-0000-4000-8000-0000000000f3']::uuid[] then
+    raise exception 'FAIL: 0008 backfill marked %', marked;
+  end if;
+
+  -- The D38 correction: legacy rows to self_file. The trigger marks them all.
+  update public.claims set status = 'self_file'
+   where user_id = '00000000-0000-4000-8000-0000000000e1'
+     and ((status = 'submitted' and coalesce(btrim(confirmation_number), '') = '')
+          or status in ('processing', 'approved', 'rejected', 'paid'));
+  select array_agg(id order by id) into marked from public.claims
+   where user_id = '00000000-0000-4000-8000-0000000000e1' and corrective_notice_required;
+  if marked is distinct from array['00000000-0000-4000-8000-0000000000f1',
+                                   '00000000-0000-4000-8000-0000000000f2',
+                                   '00000000-0000-4000-8000-0000000000f3']::uuid[] then
+    raise exception 'FAIL: after the correction the marked claims are %', marked;
+  end if;
+  if exists (select 1 from public.claims
+             where user_id = '00000000-0000-4000-8000-0000000000e1'
+               and corrective_notice_answered_at is not null) then
+    raise exception 'FAIL: the correction answered the corrective notice';
+  end if;
+
+  -- An ordinary claim never gets the marker, and the stamped row keeps it.
+  update public.claims set status = 'reported_filed' where id = '00000000-0000-4000-8000-0000000000f4';
+  update public.claims set corrective_notice_required = false where id = '00000000-0000-4000-8000-0000000000f1';
+  if (select corrective_notice_required from public.claims where id = '00000000-0000-4000-8000-0000000000f4') is not null
+     or (select corrective_notice_required from public.claims where id = '00000000-0000-4000-8000-0000000000f1') is not true then
+    raise exception 'FAIL: the marker was set on an ordinary claim or cleared on an e-sign row';
+  end if;
+
+  -- The user's answer through the server function keeps the marker.
+  perform public.claim_apply_change('00000000-0000-4000-8000-0000000000f2', '00000000-0000-4000-8000-0000000000e1',
+    'self_file', jsonb_build_object('corrective_notice_answered_at', now()), 'user', '{"action":"acknowledge_notice"}');
+  if (select corrective_notice_required from public.claims where id = '00000000-0000-4000-8000-0000000000f2') is not true then
+    raise exception 'FAIL: answering the notice cleared the marker';
+  end if;
+end $$;
+
+-- Re-running 0008 changes nothing.
+\i supabase/migrations/0008_corrective_notice_marker.sql
+do $$
+begin
+  if (select count(*) from public.claims
+      where user_id = '00000000-0000-4000-8000-0000000000e1' and corrective_notice_required) <> 3 then
+    raise exception 'FAIL: re-running 0008 changed the marker';
   end if;
 end $$;
 

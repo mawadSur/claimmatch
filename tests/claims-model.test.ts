@@ -12,7 +12,9 @@ import {
   isLegacyClaim,
   isOpenForClaims,
   lateReportLastDay,
+  needsCorrectiveNotice,
   planClaimTransition,
+  reportByDay,
   settlementContext,
   type ClaimAction,
   type ClaimFields,
@@ -359,5 +361,76 @@ describe('claimActionAvailability', () => {
     expect(isLegacyClaim({ status: 'submitted' })).toBe(true);
     expect(isLegacyClaim({ status: 'submitted', confirmation_number: 'A-1' })).toBe(false);
     expect(isLegacyClaim({ status: 'self_file' })).toBe(false);
+  });
+});
+
+describe('corrective notice after the D38 correction (0008 marker)', () => {
+  // The correction moves legacy rows to self_file; the marker stays.
+  const corrected: ClaimFields = { status: 'self_file', corrective_notice_required: true };
+  const answered: ClaimFields = { ...corrected, corrective_notice_answered_at: '2026-10-01T00:00:00Z' };
+
+  it('still shows the notice on a corrected claim nobody has answered', () => {
+    expect(displayClaimStatus(corrected, OPEN)).toMatchObject({
+      label: 'Not filed yet',
+      legacy: true,
+      showNotice: true,
+    });
+    expect(displayClaimStatus(corrected, PAST_60_DAYS)).toMatchObject({
+      label: 'Not reported filed',
+      showNotice: true,
+    });
+    expect(displayClaimStatus({ status: 'not_reported_filed', corrective_notice_required: true }, PAST_10_DAYS).showNotice).toBe(true);
+    expect(needsCorrectiveNotice(corrected)).toBe(true);
+  });
+
+  it('keeps "I already filed" open long after the 30-day window', () => {
+    expect(claimActionAvailability(corrected, PAST_60_DAYS)).toMatchObject({
+      reportFiled: true,
+      answerCorrectiveNotice: true,
+    });
+    const p = planClaimTransition(corrected, { action: 'report_filed' }, PAST_60_DAYS, NOW);
+    expect(p).toMatchObject({ ok: true, noop: false });
+    if (p.ok && !p.noop) {
+      expect(p.plan.changes).toMatchObject({
+        status: 'reported_filed',
+        corrective_notice_answered_at: NOW.toISOString(),
+      });
+    }
+    // Answered "not yet" earlier: no notice, and a report still goes through.
+    expect(displayClaimStatus(answered, PAST_60_DAYS).showNotice).toBe(false);
+    expect(claimActionAvailability(answered, PAST_60_DAYS).reportFiled).toBe(true);
+    expect(planClaimTransition(answered, { action: 'report_filed' }, PAST_60_DAYS, NOW)).toMatchObject({ ok: true });
+    // An unmarked claim still closes 30 days after the deadline.
+    expect(claimActionAvailability({ status: 'self_file' }, PAST_60_DAYS).reportFiled).toBe(false);
+  });
+
+  it('records "I haven\'t filed yet" without moving a corrected claim', () => {
+    const p = planClaimTransition(corrected, { action: 'acknowledge_notice' }, OPEN, NOW);
+    if (!p.ok || p.noop) throw new Error(`expected a change, got ${JSON.stringify(p)}`);
+    expect(p.plan.changes).toEqual({ corrective_notice_answered_at: NOW.toISOString() });
+    expect(p.plan.toStatus).toBe('self_file');
+    const late = planClaimTransition(
+      { status: 'not_reported_filed', corrective_notice_required: true },
+      { action: 'acknowledge_notice' },
+      PAST_60_DAYS,
+      NOW,
+    );
+    if (!late.ok || late.noop) throw new Error('expected a change');
+    expect(late.plan.changes).toEqual({ corrective_notice_answered_at: NOW.toISOString() });
+    expect(planClaimTransition(answered, { action: 'acknowledge_notice' }, OPEN, NOW)).toEqual({ ok: true, noop: true });
+  });
+
+  it('shows no notice once the user has reported filing', () => {
+    expect(displayClaimStatus({ status: 'reported_filed', corrective_notice_required: true }, OPEN).showNotice).toBe(false);
+    expect(
+      displayClaimStatus({ status: 'submitted', confirmation_number: 'K-1', corrective_notice_required: true }, OPEN),
+    ).toMatchObject({ label: 'Submitted · #K-1', showNotice: false });
+    expect(claimActionAvailability({ status: 'submitted', confirmation_number: 'K-1', corrective_notice_required: true }, OPEN).correctConfirmation).toBe(true);
+  });
+
+  it('gives no "tell us by" date to a claim the old flow showed as filed', () => {
+    expect(reportByDay(corrected, '2026-08-17')).toBeNull();
+    expect(reportByDay({ status: 'submitted' }, '2026-08-17')).toBeNull();
+    expect(reportByDay({ status: 'self_file' }, '2026-08-17')).toBe('2026-09-16');
   });
 });

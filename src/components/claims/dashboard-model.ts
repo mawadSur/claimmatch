@@ -8,7 +8,7 @@ import {
   deadlineCountdown,
   displayClaimStatus,
   isOpenForClaims,
-  lateReportLastDay,
+  reportByDay,
   safeExternalUrl,
   settlementContext,
   type ClaimGroup,
@@ -73,8 +73,11 @@ export function buildDashboard(
     const title = settlement?.title ?? claim.lawsuit_title;
     const href = settlement ? `/claim/${settlement.slug}` : null;
     const deadline = settlement?.deadline ?? null;
-    const lastDay = lateReportLastDay(deadline);
+    const lastDay = reportByDay(claim, deadline);
     const tellUs = href ? { label: 'Tell us', href } : null;
+    const legacyStep = context.deadlinePassed
+      ? 'ClaimMatch did not file this. If you filed before the deadline, tell us.'
+      : 'ClaimMatch did not file this. File on the official site, or tell us if you already did.';
 
     let nextStep: string;
     let action: DashboardRow['action'] = null;
@@ -84,14 +87,16 @@ export function buildDashboard(
         break;
       case 'legacy_not_filed':
       case 'legacy_unconfirmed':
-        nextStep = context.deadlinePassed
-          ? 'ClaimMatch did not file this. If you filed before the deadline, tell us.'
-          : 'ClaimMatch did not file this. File on the official site, or tell us if you already did.';
+        nextStep = legacyStep;
         action = tellUs;
         break;
       case 'self_file':
       case 'not_reported_filed':
-        if (context.deadlinePassed || claim.status === 'not_reported_filed') {
+        if (display.showNotice) {
+          // The old flow showed it as filed and the D38 correction moved it.
+          nextStep = legacyStep;
+          action = tellUs;
+        } else if (context.deadlinePassed || claim.status === 'not_reported_filed') {
           if (can.reportFiled) {
             nextStep = lastDay
               ? `Filed before the deadline? Tell us by ${formatDeadline(lastDay)}.`
