@@ -263,6 +263,22 @@ describe('settlement page', () => {
     expect(meta.robots).toMatchObject({ index: false });
   });
 
+  it('never shows the feed placeholder as who qualifies, and frames real text as an unverified summary', async () => {
+    db.single = { data: lawsuit({ eligibility_text: 'Open to eligible US residents.' }), error: null };
+    let html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(html).toContain('Who may qualify');
+    expect(html).not.toContain('Open to eligible US residents');
+    expect(html).toContain('We don’t have the rules for who qualifies. Read the official notice before');
+    expect(html).toContain('Read the rules on the official site');
+
+    db.single = { data: lawsuit({ eligibility_text: 'Anyone who returned an item to Amazon in 2023.' }), error: null };
+    html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(html).toContain('What our listing says:');
+    expect(html).toContain('Anyone who returned an item to Amazon in 2023.');
+    expect(html).toContain('This is a short summary, not the official rules.');
+    expect(html).not.toMatch(/bg-success-50/);
+  });
+
   it('credits SettleSignal only on SettleSignal records', async () => {
     db.single = {
       data: lawsuit({ external_id: null, source_url: null, claim_url: 'https://www.court.gov/notice' }),

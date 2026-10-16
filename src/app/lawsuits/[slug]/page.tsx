@@ -8,8 +8,8 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
-  UserCheck,
 } from 'lucide-react';
+import { eligibilitySummary } from '@/lib/claim-input';
 import {
   displaySummary,
   isOpenForClaims,
@@ -81,6 +81,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const settleSignalPage = settleSignalPageFor(lawsuit);
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
   const summary = displaySummary(lawsuit);
+  // The feed's placeholder ("Open to eligible US residents.") is not a rule.
+  const eligibility = eligibilitySummary(lawsuit.eligibility_text);
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
@@ -195,17 +197,37 @@ export default async function LawsuitDetailPage({ params }: Params) {
             </div>
           )}
 
-          {lawsuit.eligibility_text && (
-            <div className="mt-8 rounded-2xl border border-success-500/20 bg-success-50/60 p-5">
-              <h2 className="flex items-center gap-2 text-lg font-bold">
-                <UserCheck className="h-5 w-5 text-success-600" aria-hidden="true" /> Who may qualify
-              </h2>
-              <p className="mt-2 leading-relaxed text-ink-muted">{lawsuit.eligibility_text}</p>
-              <p className="mt-2 text-sm text-ink-muted">
-                The official notice has the exact rules.
+          {/* Neutral, not a success box: the text is unverified, like the claim page's Step 1. */}
+          <div className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+            <h2 className="text-lg font-bold">Who may qualify</h2>
+            {eligibility ? (
+              <>
+                <p className="mt-2 text-sm text-ink-muted">What our listing says:</p>
+                <p className="mt-1 leading-relaxed text-ink">{eligibility}</p>
+                <p className="mt-2 text-sm text-ink-muted">
+                  This is a short summary, not the official rules. The official notice has
+                  the exact rules.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 leading-relaxed text-ink-muted">
+                We don’t have the rules for who qualifies. Read the official notice before
+                you file.
               </p>
-            </div>
-          )}
+            )}
+            {official?.kind === 'official' && (
+              <a
+                href={official.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 rounded text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+              >
+                Read the rules on the official site
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            )}
+          </div>
 
           {open && (
             <div className="mt-8">
