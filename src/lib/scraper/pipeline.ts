@@ -1,271 +1,232 @@
-import { slugify } from '@/lib/utils';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
-import { anthropicConfigured, extractLawsuit } from '@/lib/anthropic';
-import { SOURCE_ADAPTERS } from './sources';
+import { isOpenForClaims } from '@/lib/lawsuits';
 import type { ScrapedLawsuit } from '@/lib/types';
+import { getSourceAdapters, type SourceAdapter } from './sources';
+import {
+  applyCloseBreaker,
+  EXISTING_ROW_COLUMNS,
+  maxCloseShareFromEnv,
+  planIngest,
+  type ExistingRow,
+} from './plan';
 
 /**
- * LLM extraction pipeline. Walks every registered source adapter, fetches its
- * raw listings, and (when Claude is configured) runs each item through
- * {@link extractLawsuit} to produce a clean, structured settlement record with a
- * confidence score.
+ * Nightly ingest. For each registered source adapter: fetch its records,
+ * decide the changes with planIngest (see plan.ts for the rules) and apply
+ * them with the service-role client.
  *
- * Review gating: high-confidence extractions (>= 0.8) publish straight to the
- * public catalog; everything else — no LLM, a failed call, or a low-confidence
- * result — lands in `pending_review` so a human vets it before it goes live.
+ * The fence (Phase 0, S1-1):
+ * - Nothing is ever published here. New records wait in 'pending_review'.
+ * - No model calls: setting ANTHROPIC_API_KEY changes nothing in this run.
+ * - Published rows only take deadline and open/closed status changes from the
+ *   source; other differences are logged for a person to check.
+ * - An empty or failed fetch changes nothing, and a record missing from the
+ *   feed is never closed.
+ * - Closures above INGEST_MAX_CLOSE_SHARE (default 20%) of a source's open rows
+ *   are held and logged instead of applied.
  *
- * Fully degradable: with no Supabase configured it returns zeros, adapters that
- * throw are treated as empty, and a failure on any single item is swallowed so
- * the rest of the batch still ingests.
+ * Logs name settlements by slug only; nothing here touches personal data.
  */
 
-// A `type` (not `interface`) so it carries an implicit index signature and is
-// assignable to `Record<string, unknown>` for completeJob(job.id, summary).
 export type IngestSummary = {
+  /** Feed records read across all sources. */
   ingested: number;
+  /** Always 0: the ingest never publishes. Kept for the cron response shape. */
   published: number;
+  /** New rows added to the review queue. */
   pending_review: number;
+  inserted: number;
+  updated: number;
+  /** Public rows that stopped being open for claims. */
+  closed: number;
+  /** Closed rows the source lists as open again. */
+  reopened: number;
+  deadlineChanges: number;
+  /** Published rows whose title or claim link differ from the feed (not changed). */
+  flagged: number;
+  /** Closures held by the circuit breaker, for a person to review. */
+  held: number;
+  heldSlugs: string[];
+  /** Sources that returned nothing (outage, error or empty feed). */
+  emptySources: string[];
+  /** Writes or reads that failed. */
+  failed: number;
   bySource: Record<string, number>;
 };
 
-/** How much of the raw source text we retain for auditing/human review. */
-const RAW_TEXT_LIMIT = 4000;
-/** Confidence at or above which an extraction auto-publishes. */
-const PUBLISH_THRESHOLD = 0.8;
+const IN_CHUNK = 100;
+const LOG_LIST_LIMIT = 50;
 
-/**
- * A candidate row destined for the `lawsuits` table. Loosely typed because it
- * carries the dream-state provenance columns (review_status, administrator, …)
- * on top of the base scraped fields.
- */
-type LawsuitRow = Record<string, unknown> & {
-  slug: string;
-  external_id: string | null;
-  review_status: 'published' | 'pending_review';
-};
-
-export async function ingestAndExtract(): Promise<IngestSummary> {
-  const summary: IngestSummary = {
+function emptySummary(): IngestSummary {
+  return {
     ingested: 0,
     published: 0,
     pending_review: 0,
+    inserted: 0,
+    updated: 0,
+    closed: 0,
+    reopened: 0,
+    deadlineChanges: 0,
+    flagged: 0,
+    held: 0,
+    heldSlugs: [],
+    emptySources: [],
+    failed: 0,
     bySource: {},
   };
+}
 
-  // No backend → nothing to persist. (createServiceClient would build a client
-  // against a placeholder URL and fail on first write.)
+type Db = ReturnType<typeof createServiceClient>;
+
+export async function ingestAndExtract(): Promise<IngestSummary> {
+  const summary = emptySummary();
+
+  // No backend → nothing to persist.
   if (!isSupabaseConfigured()) return summary;
 
   const supabase = createServiceClient();
-  const llmOn = anthropicConfigured();
+  const maxShare = maxCloseShareFromEnv(process.env.INGEST_MAX_CLOSE_SHARE);
+  const now = new Date();
 
-  for (const adapter of SOURCE_ADAPTERS) {
+  for (const adapter of getSourceAdapters()) {
     summary.bySource[adapter.slug] ??= 0;
 
-    // Resolve the provenance `sources` row so upserts can key on
-    // (source_id, external_id). Failure is non-fatal: we fall back to slug.
-    const sourceId = await resolveSourceId(supabase, adapter);
+    const source = await resolveSource(supabase, adapter);
+    if (!source) {
+      console.error(`[pipeline] ${adapter.slug}: cannot read or create its sources row; skipped.`);
+      summary.failed += 1;
+      continue;
+    }
+    if (!source.enabled) {
+      console.log(`[pipeline] ${adapter.slug}: disabled in sources; skipped.`);
+      continue;
+    }
 
-    // Adapters must not throw, but guard defensively.
     let items: ScrapedLawsuit[] = [];
     try {
       items = await adapter.fetch();
     } catch {
       items = [];
     }
+    if (items.length === 0) {
+      console.warn(`[pipeline] ${adapter.slug}: no records returned; nothing changed.`);
+      summary.emptySources.push(adapter.slug);
+      continue;
+    }
+    summary.ingested += items.length;
+    summary.bySource[adapter.slug] = items.length;
 
-    for (const item of items) {
-      try {
-        const row = await buildRow(item, sourceId, llmOn);
+    const existing = await loadExisting(supabase, items.map((i) => i.external_id));
+    if (!existing) {
+      console.error(`[pipeline] ${adapter.slug}: cannot read existing rows; nothing changed.`);
+      summary.failed += 1;
+      continue;
+    }
 
-        // Never clobber a human decision: if a row for this item already exists
-        // and an admin has vetted it (published/rejected, or reviewed_at set),
-        // refresh only content columns and leave review_status/status/reviewed_*
-        // untouched. Otherwise upsert the full row (new or still-pending).
-        const existing = await findExisting(supabase, sourceId, row);
-        if (existing && existing.locked) {
-          const { error } = await supabase
-            .from('lawsuits')
-            .update(contentOnly(row))
-            .eq('id', existing.id);
-          if (error) {
-            console.error(`[pipeline] content update failed for ${row.slug}:`, error);
-            continue;
-          }
-          summary.ingested += 1;
-          summary.bySource[adapter.slug] += 1;
-          continue; // its published/pending disposition is unchanged
-        }
+    const planned = planIngest({ items, existing, sourceId: source.id, now });
+    const openCount = existing.filter((row) => isOpenForClaims(row, now)).length;
+    const { plan, held, allowed } = applyCloseBreaker(planned, { openCount, maxShare });
 
-        // Prefer the provenance key; fall back to slug when the DB can't
-        // arbiter the partial (source_id, external_id) unique index.
-        let { error } = await supabase
-          .from('lawsuits')
-          .upsert(row, { onConflict: 'source_id,external_id' });
-        if (error) {
-          ({ error } = await supabase
-            .from('lawsuits')
-            .upsert(row, { onConflict: 'slug' }));
-        }
-        if (error) {
-          console.error(`[pipeline] upsert failed for ${row.slug}:`, error);
-          continue;
-        }
+    if (held.length > 0) {
+      summary.held += held.length;
+      summary.heldSlugs.push(...held.map((h) => h.slug));
+      console.warn(
+        `[pipeline] ${adapter.slug}: HELD ${held.length} closures (limit ${allowed} of ${openCount} open rows). ` +
+          'Nothing was closed. Review the list, then set INGEST_MAX_CLOSE_SHARE=1 for one run to apply it. ' +
+          `Held: ${held
+            .slice(0, LOG_LIST_LIMIT)
+            .map((h) => `${h.slug} (${h.changes.join('; ')})`)
+            .join(', ')}`,
+      );
+    }
+    if (plan.flagged.length > 0) {
+      summary.flagged += plan.flagged.length;
+      console.log(
+        `[pipeline] ${adapter.slug}: ${plan.flagged.length} published rows differ from the feed and were left as they are: ${plan.flagged
+          .slice(0, LOG_LIST_LIMIT)
+          .map((f) => `${f.slug} (${f.fields.join(', ')})`)
+          .join(', ')}`,
+      );
+    }
 
-        summary.ingested += 1;
-        summary.bySource[adapter.slug] += 1;
-        if (row.review_status === 'published') summary.published += 1;
-        else summary.pending_review += 1;
-      } catch (err) {
-        console.error(`[pipeline] item failed for ${adapter.slug}:`, err);
+    for (const row of plan.inserts) {
+      const { error } = await supabase.from('lawsuits').insert(row);
+      if (error) {
+        console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
+        summary.failed += 1;
+        continue;
+      }
+      summary.inserted += 1;
+      summary.pending_review += 1;
+    }
+
+    for (const update of plan.updates) {
+      const { error } = await supabase.from('lawsuits').update(update.patch).eq('id', update.id);
+      if (error) {
+        console.error(`[pipeline] update failed for ${update.slug}: ${error.message}`);
+        summary.failed += 1;
+        continue;
+      }
+      summary.updated += 1;
+      if (update.deadlineChange) {
+        summary.deadlineChanges += 1;
+        console.log(
+          `[pipeline] deadline changed for ${update.slug}: ${update.deadlineChange.from ?? 'none'} -> ${update.deadlineChange.to}`,
+        );
+      }
+      if (update.closes) {
+        summary.closed += 1;
+        console.log(`[pipeline] closed ${update.slug}: ${update.changes.join('; ')}`);
+      }
+      if (update.reopens) {
+        summary.reopened += 1;
+        console.log(`[pipeline] reopened ${update.slug}: ${update.changes.join('; ')}`);
       }
     }
+
+    await touchSource(supabase, source.id);
   }
 
   return summary;
 }
 
-/**
- * Build a single `lawsuits` row from a scraped item, overlaying the LLM
- * extraction when it succeeds.
- */
-async function buildRow(
-  item: ScrapedLawsuit,
-  sourceId: string | null,
-  llmOn: boolean,
-): Promise<LawsuitRow> {
-  // Base record from the adapter's structured fields.
-  let title = item.title;
-  let summary: string | null = item.summary ?? null;
-  let description: string | null = item.description ?? null;
-  let category = item.category ?? 'General';
-  let administrator: string | null = null;
-  let typical_payout: string | null = item.typical_payout ?? 'Varies';
-  let estimated_value_min: number | null = null;
-  let estimated_value_max: number | null = null;
-  let proof_required: boolean = item.proof_required ?? false;
-  let deadline: string | null = item.deadline ?? null;
-  let eligibility: unknown = item.eligibility ?? {};
-  let eligibility_text: string | null = item.eligibility_text ?? null;
-  let claim_url: string | null = item.claim_url ?? null;
-  let confidence: number | null = null;
-
-  // Text handed to the LLM (and retained for human review).
-  const rawText = item.description || item.summary || item.title || '';
-
-  if (llmOn && rawText) {
-    const extracted = await extractLawsuit(rawText);
-    if (extracted) {
-      // Overlay extracted fields, keeping the adapter's value as a fallback so
-      // a sparse extraction never blanks out good scraped data.
-      title = extracted.title || title;
-      summary = extracted.summary ?? summary;
-      description = extracted.description ?? description;
-      category = extracted.category || category;
-      administrator = extracted.administrator ?? administrator;
-      typical_payout = extracted.typical_payout ?? typical_payout;
-      estimated_value_min = extracted.estimated_value_min ?? estimated_value_min;
-      estimated_value_max = extracted.estimated_value_max ?? estimated_value_max;
-      proof_required = extracted.proof_required ?? proof_required;
-      deadline = extracted.deadline ?? deadline;
-      eligibility = extracted.eligibility ?? eligibility;
-      eligibility_text = extracted.eligibility_text ?? eligibility_text;
-      claim_url = extracted.claim_url ?? claim_url;
-      confidence = extracted.confidence;
+/** Existing rows that share an external_id with the feed, or null if they cannot be read. */
+async function loadExisting(supabase: Db, externalIds: string[]): Promise<ExistingRow[] | null> {
+  const ids = Array.from(new Set(externalIds.filter(Boolean)));
+  const rows: ExistingRow[] = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const chunk = ids.slice(i, i + IN_CHUNK);
+    const { data, error } = await supabase
+      .from('lawsuits')
+      .select(EXISTING_ROW_COLUMNS)
+      .in('external_id', chunk);
+    if (error) {
+      console.error('[pipeline] reading existing rows failed:', error.message);
+      return null;
     }
+    rows.push(...((data ?? []) as ExistingRow[]));
   }
-
-  // No LLM / failed call / low confidence → route to human review.
-  const review_status: LawsuitRow['review_status'] =
-    confidence !== null && confidence >= PUBLISH_THRESHOLD
-      ? 'published'
-      : 'pending_review';
-
-  return {
-    slug: slugify(title),
-    title,
-    summary,
-    description,
-    category,
-    administrator,
-    typical_payout,
-    estimated_value_min,
-    estimated_value_max,
-    proof_required,
-    deadline,
-    eligibility,
-    eligibility_text,
-    source_id: sourceId,
-    source_url: item.source_url ?? null,
-    claim_url,
-    external_id: item.external_id ?? null,
-    raw_source_text: rawText.slice(0, RAW_TEXT_LIMIT),
-    extraction_confidence: confidence,
-    review_status,
-    status: 'open',
-  };
-}
-
-/** Content columns safe to refresh on re-scrape (never the review/lifecycle
- * columns a human owns: review_status, status, reviewed_by, reviewed_at, slug,
- * source_id, external_id). */
-function contentOnly(row: LawsuitRow): Record<string, unknown> {
-  const keep = [
-    'title', 'summary', 'description', 'category', 'administrator',
-    'typical_payout', 'estimated_value_min', 'estimated_value_max',
-    'proof_required', 'deadline', 'eligibility', 'eligibility_text',
-    'source_url', 'claim_url', 'raw_source_text', 'extraction_confidence',
-  ];
-  const out: Record<string, unknown> = {};
-  for (const k of keep) if (k in row) out[k] = row[k];
-  return out;
+  return rows;
 }
 
 /**
- * Find an existing lawsuit for this scraped item and report whether it is
- * "locked" (a human has vetted it, so review columns must not be overwritten).
- * Matches on (source_id, external_id) when available, else on slug.
+ * The adapter's `sources` row ({ id, enabled }), created when missing. Never
+ * re-enables a source an operator disabled. Null when it cannot be read.
  */
-async function findExisting(
-  supabase: ReturnType<typeof createServiceClient>,
-  sourceId: string | null,
-  row: LawsuitRow,
-): Promise<{ id: string; locked: boolean } | null> {
-  try {
-    let q = supabase.from('lawsuits').select('id, review_status, reviewed_at');
-    if (sourceId && row.external_id) {
-      q = q.eq('source_id', sourceId).eq('external_id', row.external_id);
-    } else {
-      q = q.eq('slug', row.slug);
-    }
-    const { data } = await q.maybeSingle();
-    if (!data) return null;
-    const rs = (data as { review_status?: string }).review_status;
-    const reviewedAt = (data as { reviewed_at?: string | null }).reviewed_at;
-    const locked = rs === 'published' || rs === 'rejected' || !!reviewedAt;
-    return { id: (data as { id: string }).id, locked };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Ensure a `sources` row exists for an adapter and return its id. Never
- * re-enables an operator-disabled source; returns null when the table can't be
- * read/written (RLS / anon key) so the caller falls back to slug-keyed upserts.
- */
-async function resolveSourceId(
-  supabase: ReturnType<typeof createServiceClient>,
-  adapter: { slug: string; name: string; homepage?: string },
-): Promise<string | null> {
+async function resolveSource(
+  supabase: Db,
+  adapter: Pick<SourceAdapter, 'slug' | 'name' | 'homepage'>,
+): Promise<{ id: string; enabled: boolean } | null> {
   try {
     const { data: existing, error } = await supabase
       .from('sources')
-      .select('id')
+      .select('id, enabled')
       .eq('slug', adapter.slug)
       .maybeSingle();
     if (error) return null;
-    if (existing?.id) return existing.id as string;
+    if (existing?.id) {
+      return { id: existing.id as string, enabled: existing.enabled !== false };
+    }
 
     const { data: inserted } = await supabase
       .from('sources')
@@ -276,10 +237,20 @@ async function resolveSourceId(
         adapter: adapter.slug,
         enabled: true,
       })
-      .select('id')
+      .select('id, enabled')
       .maybeSingle();
-    return (inserted?.id as string) ?? null;
+    return inserted?.id
+      ? { id: inserted.id as string, enabled: inserted.enabled !== false }
+      : null;
   } catch {
     return null;
   }
+}
+
+/** Stamp `sources.last_run_at = now()` after a run that read records. */
+async function touchSource(supabase: Db, sourceId: string): Promise<void> {
+  await supabase
+    .from('sources')
+    .update({ last_run_at: new Date().toISOString() })
+    .eq('id', sourceId);
 }

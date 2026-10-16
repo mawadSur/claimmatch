@@ -27,6 +27,12 @@ export interface EligibilityQuestion {
   help?: string;
 }
 
+/**
+ * Whether a claim needs proof (receipts, records), as the source states it.
+ * 'unknown' means the source does not say; it must never display as "none".
+ */
+export type ProofRequired = 'yes' | 'no' | 'optional' | 'unknown';
+
 /** Structured eligibility criteria stored on a lawsuit (lawsuits.eligibility). */
 export interface EligibilityCriteria {
   /** US state codes; empty/undefined = nationwide */
@@ -39,6 +45,8 @@ export interface EligibilityCriteria {
   dateRange?: { from?: string; to?: string };
   /** free notes for the matcher / UI */
   notes?: string;
+  /** Proof rule from the source feed (see src/lib/proof.ts). */
+  proof?: ProofRequired;
 }
 
 export interface Source {
@@ -218,6 +226,12 @@ export interface Subscriber {
   created_at: string;
 }
 
+/**
+ * A source's own claim status, mapped by its adapter: 'open' (taking claims),
+ * 'closed' (not taking claims) or 'unknown' (the source's status does not say).
+ */
+export type FeedStatus = 'open' | 'closed' | 'unknown';
+
 /** Normalized record produced by a scraper source adapter. */
 export interface ScrapedLawsuit {
   external_id: string;
@@ -232,6 +246,11 @@ export interface ScrapedLawsuit {
   eligibility_text?: string;
   source_url?: string;
   claim_url?: string;
+  /**
+   * The source's claim status. Adapters that cannot tell leave it undefined,
+   * which counts as open for new rows and never changes an existing row.
+   */
+  status?: FeedStatus;
 }
 
 export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {

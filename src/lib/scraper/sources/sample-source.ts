@@ -2,15 +2,17 @@ import type { ScrapedLawsuit } from '@/lib/types';
 import type { SourceAdapter } from './index';
 
 /**
- * A worked example adapter. It returns a small, realistic set of settlements
- * WITHOUT any network access, so `runAllSources()` and the seed script are fully
- * deterministic in every environment. Real adapters replace `fetch()` with an
- * HTTP request + parser (see `./generic-html` and the doc comment in `./index`).
+ * MADE-UP settlements for local development and tests. None of these exist.
  *
- * These records are intentionally distinct from `@/lib/sample-data` so seeding
- * both produces a fuller catalog. They reference the eligibility attribute keys
- * defined in `@/lib/eligibility` (took_medication, employed_hourly,
- * bought_consumer_goods, used_streaming, uses_social_media, …).
+ * This adapter returns invented records without any network access. It runs
+ * only when flags.sampleSource() is on (ENABLE_SAMPLE_SOURCE=1, never in
+ * production; see ./index getSourceAdapters). It once ran in production and
+ * published all six, so their slugs are on the fictional denylist
+ * (src/lib/fictional-slugs.ts) and migration 0005 unpublishes them; the app
+ * hides them even where this adapter runs. Real adapters replace `fetch()`
+ * with an HTTP request + parser (see `./generic-html` and `./index`).
+ *
+ * Do not rename these titles or external ids: the denylist and 0005 match them.
  */
 
 /** ISO date (YYYY-MM-DD) `days` from today. */
