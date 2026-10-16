@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeLegalContact } from '@/lib/legal-contact';
+import { productionContactProblem } from '@/lib/contact-email.mjs';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { parseSettingsInput } from '@/lib/settings-input';
 
@@ -37,6 +38,24 @@ describe('normalizeLegalContact', () => {
     for (const email of ['not-an-email', 'a@b', 'you@example.com', 'ops@mail.example.org', 'x@localhost', 'a b@c.com']) {
       expect(normalizeLegalContact({ email }).email).toBeNull();
     }
+  });
+});
+
+describe('production build guard for the contact inbox', () => {
+  it('stops a production build without a working inbox for data requests', () => {
+    expect(productionContactProblem({ VERCEL_ENV: 'production' })).toMatch(/NEXT_PUBLIC_CONTACT_EMAIL must be set/);
+    for (const email of ['', '{CONTACT_EMAIL}', 'TBD', 'privacy@example.com', 'not-an-email']) {
+      expect(productionContactProblem({ VERCEL_ENV: 'production', NEXT_PUBLIC_CONTACT_EMAIL: email }), email).not.toBeNull();
+    }
+    expect(
+      productionContactProblem({ VERCEL_ENV: 'production', NEXT_PUBLIC_CONTACT_EMAIL: 'privacy@claimmatch-test.org' }),
+    ).toBeNull();
+  });
+
+  it('leaves CI, local and preview builds alone', () => {
+    expect(productionContactProblem({})).toBeNull();
+    expect(productionContactProblem({ VERCEL_ENV: 'preview' })).toBeNull();
+    expect(productionContactProblem({ VERCEL_ENV: 'development' })).toBeNull();
   });
 });
 

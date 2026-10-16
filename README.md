@@ -76,7 +76,7 @@ See [`.env.example`](./.env.example). Summary:
 | `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access |
 | `CRON_SECRET` | Protects `/api/cron/*` (Vercel Cron sends it automatically) |
 | `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Product analytics |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail. **Required in Production:** a production build (`VERCEL_ENV=production`) stops without a working address |
 | `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
 | `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
 | `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
