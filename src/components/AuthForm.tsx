@@ -19,6 +19,9 @@ import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } 
 
 type Mode = 'login' | 'signup';
 
+/** D44: new passwords are at least 10 characters (set the same in Supabase Auth). */
+const MIN_PASSWORD_LENGTH = 10;
+
 /**
  * Shared email/password authentication card used by /login and /signup.
  * Uses the browser Supabase client. Reads ?next to send users back where they
@@ -61,6 +64,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    // The form has noValidate, so check the new password's length here.
+    if (isSignup && password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`);
+      return;
+    }
     setStatus('loading');
 
     const supabase = createClient();
@@ -258,10 +266,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
               type="password"
               autoComplete={isSignup ? 'new-password' : 'current-password'}
               required
-              minLength={isSignup ? 6 : undefined}
+              minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+              placeholder={isSignup ? `At least ${MIN_PASSWORD_LENGTH} characters` : 'Your password'}
               className="field-input pl-10"
             />
           </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 
 export function NavAuthLinks({
@@ -12,10 +13,14 @@ export function NavAuthLinks({
   isAdmin?: boolean;
 }) {
   const router = useRouter();
+  const posthog = usePostHog();
 
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Start a new anonymous analytics identity, so on a shared device the next
+    // person's activity is never joined to this account (D44).
+    posthog?.reset();
     router.push('/');
     router.refresh();
   }
