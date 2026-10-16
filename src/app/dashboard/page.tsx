@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AlertCircle, ArrowRight, CheckCircle2, LayoutDashboard, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getLawsuits } from '@/lib/lawsuits';
+import { lookupLawsuits } from '@/lib/lawsuits';
 import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
 import { ClaimList } from '@/components/claims/ClaimList';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
@@ -40,14 +40,15 @@ export default async function DashboardPage({
   const [{ data: profile }, claims, catalog] = await Promise.all([
     supabase.from('profiles').select('full_name, onboarded').eq('id', user.id).maybeSingle(),
     loadUserClaims(user.id),
-    // getLawsuits returns only settlements open for claims (the shared rule);
-    // buildClosingSoon applies the same rule again and drops tracked ones.
-    getLawsuits().catch(() => []),
+    // Only settlements open for claims (the shared rule); buildClosingSoon
+    // applies the same rule again and drops tracked ones. A failed query is
+    // shown as an error, never as "no deadlines coming up".
+    lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
   ]);
 
   const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
   const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
-  const closingSoon = buildClosingSoon(catalog, tracked, now, isFictionalSettlementSlug);
+  const closingSoon = buildClosingSoon(catalog.lawsuits, tracked, now, isFictionalSettlementSlug);
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
 
@@ -116,7 +117,7 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        <ClosingSoon items={closingSoon} />
+        <ClosingSoon items={closingSoon} failed={catalog.error} />
 
         <Disclaimer compact />
       </div>

@@ -46,6 +46,8 @@ import { LawsuitCard } from '@/components/LawsuitCard';
 import LawsuitDetailPage, { generateMetadata } from '@/app/lawsuits/[slug]/page';
 import LawsuitsPage from '@/app/lawsuits/page';
 import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
+import HomePage from '@/app/page';
+import { ClosingSoon } from '@/components/claims/ClosingSoon';
 
 function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   return {
@@ -335,5 +337,23 @@ describe('catalog page', () => {
     const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
     expect(html).toContain('We couldn’t load settlements right now');
     expect(html).not.toContain('Nationwide Data Breach');
+  });
+});
+
+describe('"Closing soon" when the catalog cannot be read', () => {
+  it('home shows an error, not "No deadlines coming up"', async () => {
+    db.list = { data: null, error: { message: 'timeout' } };
+    const html = renderToStaticMarkup(await HomePage());
+    expect(html).toContain('We couldn’t load settlements right now.');
+    expect(html).not.toContain('No deadlines coming up right now.');
+    db.list = { data: [], error: null };
+    expect(renderToStaticMarkup(await HomePage())).toContain('No deadlines coming up right now.');
+  });
+
+  it('the dashboard module says so too', () => {
+    const failed = renderToStaticMarkup(createElement(ClosingSoon, { items: [], failed: true }));
+    expect(failed).toContain('couldn&rsquo;t load settlements right now'.replace('&rsquo;', '’'));
+    expect(failed).not.toContain('No deadlines are coming up');
+    expect(renderToStaticMarkup(createElement(ClosingSoon, { items: [] }))).toContain('No deadlines are coming up');
   });
 });

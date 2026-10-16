@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, Info, AlertCircle, HandCoins, Scale,
 } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
-import { getLawsuits } from '@/lib/lawsuits';
+import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { LawsuitCard } from '@/components/LawsuitCard';
 
@@ -48,9 +48,12 @@ const WE_DO_NOT = [
 
 async function loadClosingSoon(): Promise<{ rows: Lawsuit[]; failed: boolean }> {
   try {
-    // getLawsuits() applies the shared open-for-claims rule; we only order.
-    const rows = await getLawsuits();
-    return { rows: pickClosingSoon(rows, 3), failed: false };
+    // lookupLawsuits() applies the shared open-for-claims rule and reports a
+    // failed query (getLawsuits() would turn it into "no settlements"); we
+    // only order.
+    const result = await lookupLawsuits();
+    if (result.error) return { rows: [], failed: true };
+    return { rows: pickClosingSoon(result.lawsuits, 3), failed: false };
   } catch {
     return { rows: [], failed: true };
   }
