@@ -231,9 +231,10 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">9. Your choices and rights</h2>
             <p>
-              You can update your details and answers, and turn alert emails on or off, in
-              Settings. You can request a copy of the personal information we have about
-              you, and you can ask us to correct it or to delete your account and data.
+              You can update your name, state and phone number, and turn alert emails on or
+              off, in Settings. You can request a copy of the personal information we have
+              about you, including any answers you gave to our earlier questions, and you
+              can ask us to correct it or to delete your account and data.
               Depending on where you live, you may have other rights under state law.
             </p>
             {contact.email && (

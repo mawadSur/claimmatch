@@ -36,7 +36,7 @@ export default async function OnboardingPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, state, zip')
+    .select('full_name, state')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -74,7 +74,6 @@ export default async function OnboardingPage({
               initial={{
                 fullName: profile?.full_name ?? '',
                 state: profile?.state ?? '',
-                zip: profile?.zip ?? '',
               }}
               email={user.email ?? null}
               next={destination}

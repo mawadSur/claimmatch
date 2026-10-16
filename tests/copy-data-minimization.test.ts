@@ -20,6 +20,13 @@ describe('onboarding questions', () => {
     }
   });
 
+  it('collect no ZIP code, which nothing uses yet (D50)', () => {
+    for (const file of ['src/components/OnboardingWizard.tsx', 'src/app/onboarding/actions.ts', 'src/app/onboarding/page.tsx']) {
+      expect(read(file), file).not.toMatch(/setZip|onboarding-zip|postal-code|\bzip\s*:|['"]zip['"]|\.zip\b|zip\s*,/);
+    }
+    expect(read('src/app/dashboard/page.tsx')).not.toMatch(/ZIP code/);
+  });
+
   it('keep unique keys', () => {
     const keys = ELIGIBILITY_QUESTIONS.map((q) => q.key);
     expect(new Set(keys).size).toBe(keys.length);

@@ -14,11 +14,10 @@ import {
 export interface OnboardingInitial {
   fullName: string;
   state: string;
-  zip: string;
 }
 
 /**
- * Onboarding: a short profile form (name, state, ZIP; all optional). No
+ * Onboarding: a short profile form (name and state; both optional). No
  * eligibility quiz, no health questions, no match count and no dollar
  * estimate. Saving or skipping ends on the dashboard (or the page the person
  * came from), where a welcome note explains how ClaimMatch works.
@@ -35,7 +34,6 @@ export function OnboardingWizard({
   const router = useRouter();
   const [fullName, setFullName] = useState(initial.fullName);
   const [state, setState] = useState(initial.state);
-  const [zip, setZip] = useState(initial.zip);
   const [error, setError] = useState<{ message: string; field?: OnboardingField } | null>(null);
   const [action, setAction] = useState<null | 'save' | 'skip'>(null);
   const [, startTransition] = useTransition();
@@ -63,7 +61,7 @@ export function OnboardingWizard({
     try {
       finish(
         kind === 'save'
-          ? await saveOnboardingProfile({ full_name: fullName, state, zip })
+          ? await saveOnboardingProfile({ full_name: fullName, state })
           : await skipOnboarding(),
       );
     } catch {
@@ -128,24 +126,6 @@ export function OnboardingWizard({
           <p id="onboarding-state-help" className="mt-1.5 text-xs text-ink-muted">
             Some settlements are only for people in certain states.
           </p>
-        </div>
-
-        <div>
-          <label htmlFor="onboarding-zip" className="field-label">
-            ZIP code
-          </label>
-          <input
-            id="onboarding-zip"
-            type="text"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            maxLength={10}
-            className="field-input sm:max-w-[10rem]"
-            value={zip}
-            onChange={(e) => setZip(e.target.value)}
-            aria-invalid={error?.field === 'zip' ? true : undefined}
-            aria-describedby={describedBy('zip')}
-          />
         </div>
 
         {email && (

@@ -82,8 +82,8 @@ export default async function DashboardPage({
               <div>
                 <h2 className="text-base font-bold text-ink">Finish your profile</h2>
                 <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink-muted">
-                  Add your name, state and ZIP code. It takes a minute. Some
-                  settlements are only for people in certain states.
+                  Add your name and state. It takes a minute. Some settlements
+                  are only for people in certain states.
                 </p>
               </div>
             </div>

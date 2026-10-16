@@ -12,26 +12,22 @@ const ProfileSchema = z.object({
     .string()
     .trim()
     .refine((v) => v === '' || STATE_CODES.has(v), 'Pick your state from the list.'),
-  zip: z
-    .string()
-    .trim()
-    .refine((v) => v === '' || /^\d{5}(-\d{4})?$/.test(v), 'Enter a 5-digit ZIP code, like 94110.'),
 });
 
-export type OnboardingField = 'full_name' | 'state' | 'zip';
+export type OnboardingField = 'full_name' | 'state';
 export type OnboardingResult =
   | { ok: true }
   | { ok: false; error: string; field?: OnboardingField; signedOut?: boolean };
 
 /**
- * Saves the onboarding profile: name, state and ZIP only. It never touches
+ * Saves the onboarding profile: name and state only. No ZIP code: nothing
+ * uses one yet (D50), so it isn't collected. It never touches
  * profiles.attributes (older answers there are kept until the counsel-gated
  * cleanup) and asks no health questions.
  */
 export async function saveOnboardingProfile(input: {
   full_name: string;
   state: string;
-  zip: string;
 }): Promise<OnboardingResult> {
   const parsed = ProfileSchema.safeParse(input);
   if (!parsed.success) {
@@ -40,13 +36,12 @@ export async function saveOnboardingProfile(input: {
     return {
       ok: false,
       error: issue?.message ?? 'Please check your details.',
-      field: field === 'full_name' || field === 'state' || field === 'zip' ? field : undefined,
+      field: field === 'full_name' || field === 'state' ? field : undefined,
     };
   }
   return writeProfile({
     full_name: parsed.data.full_name,
     state: parsed.data.state || null,
-    zip: parsed.data.zip || null,
     onboarded: true,
   });
 }
