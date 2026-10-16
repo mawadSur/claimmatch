@@ -452,7 +452,6 @@ function DeadlinePassed({
           claim={claim}
           context={context}
           allowSave={false}
-          defaultFiledToday={false}
           onChange={onChange}
         />
       </div>

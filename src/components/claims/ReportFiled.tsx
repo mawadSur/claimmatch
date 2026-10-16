@@ -30,7 +30,6 @@ export function ReportFiled({
   claim,
   context,
   allowSave,
-  defaultFiledToday = true,
   onChange,
 }: {
   lawsuitId: string;
@@ -38,8 +37,6 @@ export function ReportFiled({
   context: SettlementContext;
   /** Offer "Save to my claims" (before tracking starts, while the settlement is open). */
   allowSave: boolean;
-  /** Pre-fill today's date. Off for late reports, which are about an earlier day. */
-  defaultFiledToday?: boolean;
   onChange: OnChange;
 }) {
   if (claim?.status === 'reported_filed') return <ReportedCard claim={claim} context={context} onChange={onChange} />;
@@ -62,7 +59,6 @@ export function ReportFiled({
       lawsuitId={lawsuitId}
       claim={claim}
       allowSave={allowSave && !claim}
-      defaultFiledToday={defaultFiledToday}
       onChange={onChange}
     />
   );
@@ -72,13 +68,11 @@ function ReportForm({
   lawsuitId,
   claim,
   allowSave,
-  defaultFiledToday,
   onChange,
 }: {
   lawsuitId: string;
   claim: ClaimView | null;
   allowSave: boolean;
-  defaultFiledToday: boolean;
   onChange: OnChange;
 }) {
   const posthog = usePostHog();
@@ -92,11 +86,11 @@ function ReportForm({
   const [busy, setBusy] = useState<null | 'report' | 'save'>(null);
 
   // The user's own "today", set after mount so server and client markup match.
+  // The date is never filled in for them: an unnoticed default would record
+  // today for a claim filed earlier, and it is shown back as fact.
   useEffect(() => {
-    const t = localISODate();
-    setToday(t);
-    if (defaultFiledToday) setFiledOn((v) => v || t);
-  }, [defaultFiledToday]);
+    setToday(localISODate());
+  }, []);
 
   async function ensureClaim(): Promise<ClaimView | null> {
     if (claim) return claim;
@@ -168,17 +162,27 @@ function ReportForm({
         <label htmlFor={`${id}-date`} className="field-label">
           Date you filed <span className="font-normal text-ink-muted">(optional)</span>
         </label>
-        <input
-          id={`${id}-date`}
-          type="date"
-          className="field-input sm:max-w-xs"
-          min={FILED_ON_EARLIEST}
-          max={today || undefined}
-          value={filedOn}
-          onChange={(e) => setFiledOn(e.target.value)}
-          aria-describedby={dateError ? `${id}-date-error` : undefined}
-          aria-invalid={dateError ? true : undefined}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            id={`${id}-date`}
+            type="date"
+            className="field-input sm:max-w-xs"
+            min={FILED_ON_EARLIEST}
+            max={today || undefined}
+            value={filedOn}
+            onChange={(e) => setFiledOn(e.target.value)}
+            aria-describedby={dateError ? `${id}-date-help ${id}-date-error` : `${id}-date-help`}
+            aria-invalid={dateError ? true : undefined}
+          />
+          {today && filedOn !== today && (
+            <button type="button" className="btn-ghost self-start sm:self-auto" onClick={() => setFiledOn(today)}>
+              I filed today
+            </button>
+          )}
+        </div>
+        <p id={`${id}-date-help`} className="mt-1.5 text-xs text-ink-muted">
+          Leave it blank if you&rsquo;re not sure.
+        </p>
         {dateError && (
           <p id={`${id}-date-error`} className="mt-1.5 text-sm font-medium text-danger-700">
             {dateError}
