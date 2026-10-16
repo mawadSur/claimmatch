@@ -28,7 +28,8 @@
 -- All matches and the claims ...00a and ...00b are on lawsuit ...001; ...002
 -- has none. Every lawsuit has an official claim_url and the source a
 -- homepage_url, so a test can prove that no API role can point people at
--- another site. Users A and B each have a recovery and a notification.
+-- another site. Users A and B each have a recovery, a notification and an
+-- event on their claim ...00a or ...00b in claim_events (added by 0006).
 
 -- ---------------------------------------------------------------------------
 -- Helpers (in pg_temp, so they disappear when this psql session ends)
@@ -77,7 +78,7 @@ language sql immutable as $$ select array['profiles', 'claims', 'matches'] $$;
 create function pg_temp.protected_tables() returns text[]
 language sql immutable as $$
   select array['lawsuits', 'sources', 'jobs', 'notifications', 'recoveries',
-               'referrals', 'subscribers']
+               'referrals', 'subscribers', 'claim_events']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -179,6 +180,10 @@ begin
     ('a0000000-0000-4000-8000-00000000000a', 'c0000000-0000-4000-8000-00000000000a'),
     ('b0000000-0000-4000-8000-00000000000b', 'c0000000-0000-4000-8000-00000000000b');
   insert into public.jobs (type) values ('match');
+  -- The claim_events_set_user trigger copies the claim's user onto the event.
+  insert into public.claim_events (claim_id, user_id, to_status, actor) values
+    ('c0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a', 'self_file', 'user'),
+    ('c0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b', 'self_file', 'user');
 
   -- Fixtures must exist, or "sees 0 rows" would only mean "the table is empty".
   if (select count(*) from public.profiles
@@ -187,7 +192,8 @@ begin
     raise exception 'fixtures: the signup trigger did not create both profiles';
   end if;
   foreach t in array array['claims', 'matches', 'subscribers', 'notifications',
-                           'referrals', 'recoveries', 'jobs', 'sources'] loop
+                           'referrals', 'recoveries', 'jobs', 'sources',
+                           'claim_events'] loop
     if pg_temp.visible_rows(format('select 1 from public.%I', t)) = 0 then
       raise exception 'fixtures: public.% has no rows', t;
     end if;
@@ -275,7 +281,8 @@ declare
   n bigint;
 begin
   foreach t in array array['claims', 'profiles', 'subscribers', 'matches',
-                           'notifications', 'referrals', 'recoveries', 'jobs'] loop
+                           'notifications', 'referrals', 'recoveries', 'jobs',
+                           'claim_events'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'anon can read % row(s) of public.%', n, t;
@@ -325,7 +332,12 @@ begin
     $q$insert into public.referrals (referrer_id, code)
        values ('b0000000-0000-4000-8000-00000000000b', 'x')$q$,
     $q$update public.referrals set code = 'changed by anon'$q$,
-    $q$delete from public.referrals$q$
+    $q$delete from public.referrals$q$,
+    $q$insert into public.claim_events (claim_id, user_id, to_status, actor)
+       values ('c0000000-0000-4000-8000-00000000000a',
+               'a0000000-0000-4000-8000-00000000000a', 'submitted', 'user')$q$,
+    $q$update public.claim_events set to_status = 'submitted'$q$,
+    $q$delete from public.claim_events$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -377,7 +389,8 @@ begin
       ('matches', 'user_id'),
       ('notifications', 'user_id'),
       ('referrals', 'referrer_id'),
-      ('recoveries', 'user_id')
+      ('recoveries', 'user_id'),
+      ('claim_events', 'user_id')
     ) v(tbl, owner_col)
   loop
     n := pg_temp.visible_rows(format(
@@ -463,7 +476,12 @@ begin
     $q$update public.recoveries set gross_amount = 1000$q$,
     $q$delete from public.recoveries$q$,
     $q$update public.referrals set code = 'changed by A'$q$,
-    $q$delete from public.referrals$q$
+    $q$delete from public.referrals$q$,
+    $q$insert into public.claim_events (claim_id, user_id, to_status, actor)
+       values ('c0000000-0000-4000-8000-00000000000a',
+               'a0000000-0000-4000-8000-00000000000a', 'submitted', 'user')$q$,
+    $q$update public.claim_events set to_status = 'submitted'$q$,
+    $q$delete from public.claim_events$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
