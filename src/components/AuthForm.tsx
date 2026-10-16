@@ -81,12 +81,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
-          posthog?.identify(data.session.user.id, {
-            email: data.session.user.email,
-            name: fullName,
-          });
+          // The account id only: no email, name or other PII in analytics.
+          posthog?.identify(data.session.user.id);
           posthog?.capture('signup_completed');
-          router.push('/onboarding');
+          // Onboarding returns people to where they started (for example the
+          // claim page they were on) when given ?next.
+          router.push(next ? `/onboarding?next=${encodeURIComponent(next)}` : '/onboarding');
           router.refresh();
           return;
         }
@@ -110,9 +110,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
-        posthog?.identify(userData.user.id, {
-          email: userData.user.email,
-        });
+        posthog?.identify(userData.user.id);
         posthog?.capture('login_completed');
       }
 
