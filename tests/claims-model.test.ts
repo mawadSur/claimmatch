@@ -27,7 +27,11 @@ const fictionalSlugs = (slug: string) => slug === 'fake-olive-oil';
 function settlement(overrides: Partial<SettlementFacts> = {}): SettlementFacts {
   return { slug: 'real-settlement', status: 'open', review_status: 'published', deadline: '2026-11-30', ...overrides };
 }
-function ctx(overrides: Partial<SettlementFacts> = {}, isFictional = notFictional, now = NOW): SettlementContext {
+function ctx(
+  overrides: Partial<SettlementFacts> = {},
+  isFictional: (slug: string) => boolean = notFictional,
+  now: Date = NOW,
+): SettlementContext {
   return settlementContext(settlement(overrides), now, isFictional);
 }
 const OPEN = ctx();

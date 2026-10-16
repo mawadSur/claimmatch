@@ -1,249 +1,153 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  ArrowRight,
-  Search,
-  Sparkles,
-  Target,
-  UserCog,
-  Wallet,
-} from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, LayoutDashboard, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import type { Claim, Match, Profile } from '@/lib/types';
-import { LawsuitCard } from '@/components/LawsuitCard';
-import { MoneyHero } from '@/components/MoneyHero';
-import { RecoveryTracker } from '@/components/RecoveryTracker';
-import { FileAllButton } from '@/components/FileAllButton';
-import { RefreshMatches } from '@/components/RefreshMatches';
+import { getLawsuits } from '@/lib/lawsuits';
+import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
+import { ClaimList } from '@/components/claims/ClaimList';
+import { ClosingSoon } from '@/components/claims/ClosingSoon';
+import { CorrectiveNoticeList } from '@/components/claims/CorrectiveNoticeList';
+import { buildClosingSoon, buildDashboard } from '@/components/claims/dashboard-model';
 import { Disclaimer } from '@/components/Disclaimer';
 
-export const metadata = { title: 'Dashboard' };
+export const metadata: Metadata = {
+  title: 'Your claims',
+  robots: { index: false, follow: false },
+};
 
-export default async function DashboardPage() {
+export const dynamic = 'force-dynamic';
+
+/**
+ * The dashboard (D50 interim): the user's claims grouped by next step, the
+ * corrective notice for claims the old flow wrongly called filed, and a
+ * "Closing soon" catalog module. No match list, no scores, no dollar totals.
+ */
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect('/login?next=/dashboard');
 
-  if (!user) {
-    redirect('/login?next=/dashboard');
-  }
+  const { welcome } = await searchParams;
+  const now = new Date();
 
-  // Profile — a DB trigger creates this on signup, but degrade gracefully.
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-  const profile = (profileData as Profile | null) ?? null;
-
-  // Matches (active) + claims (with recovery), each with their joined lawsuit.
-  const [{ data: matchesData }, { data: claimsData }] = await Promise.all([
-    supabase
-      .from('matches')
-      .select('*, lawsuit:lawsuits(*)')
-      .eq('user_id', user.id)
-      .eq('dismissed', false)
-      .order('score', { ascending: false }),
-    supabase
-      .from('claims')
-      .select('*, lawsuit:lawsuits(*), recovery:recoveries(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }),
+  const [{ data: profile }, claims, catalog] = await Promise.all([
+    supabase.from('profiles').select('full_name, onboarded').eq('id', user.id).maybeSingle(),
+    loadUserClaims(user.id),
+    // INTEGRATION: getLawsuits applies the catalog's shared open-for-claims rule
+    // once that branch lands; buildClosingSoon filters again with the claim
+    // flow's own rule in the meantime.
+    getLawsuits().catch(() => []),
   ]);
 
-  const matches = ((matchesData ?? []) as unknown as Match[]).filter(
-    (m): m is Match & { lawsuit: NonNullable<Match['lawsuit']> } =>
-      Boolean(m.lawsuit),
-  );
+  const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
+  const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
+  const closingSoon = buildClosingSoon(catalog, tracked, now, isFictionalSettlementSlug);
 
-  // PostgREST returns the (unique) recovery relation as an object, but normalize
-  // defensively in case it arrives as a one-element array.
-  const claims = ((claimsData ?? []) as unknown as (Claim & {
-    recovery?: Claim['recovery'] | Claim['recovery'][];
-  })[]).map((c) => ({
-    ...c,
-    recovery: Array.isArray(c.recovery) ? c.recovery[0] : c.recovery,
-  })) as Claim[];
-
-  const displayName =
-    profile?.full_name?.trim() || user.email?.split('@')[0] || 'there';
-
-  // Matches the user hasn't filed a claim on yet → the "file these now" queue.
-  const claimedIds = new Set(claims.map((c) => c.lawsuit_id));
-  const freshMatches = matches.filter((m) => !claimedIds.has(m.lawsuit_id));
+  const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
 
   return (
     <div className="bg-gray-50">
-      <div className="container-page py-10 sm:py-14">
-        {/* Greeting ---------------------------------------------------------- */}
-        <header className="mb-8">
+      <div className="container-page space-y-10 py-10 sm:py-14">
+        <header>
           <span className="badge-brand gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" /> Your dashboard
+            <LayoutDashboard className="h-3.5 w-3.5" aria-hidden /> Your dashboard
           </span>
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
-            Welcome back, {displayName}.
+            {firstName ? `Hi, ${firstName}.` : 'Your claims'}
           </h1>
-          <p className="mt-2 max-w-2xl text-ink-muted">
-            Here’s what you’re owed, the settlements ready to file, and the money
-            we’re recovering for you.
+          <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
+            Track the claims you file on official settlement sites. ClaimMatch is
+            free. It doesn&rsquo;t file for you and never takes a cut of your payment.
           </p>
         </header>
 
-        {/* Onboarding nudge -------------------------------------------------- */}
+        {welcome === '1' && <WelcomeCard />}
+
+        {notices.length > 0 && <CorrectiveNoticeList items={notices} />}
+
         {!profile?.onboarded && (
-          <div className="mb-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-6 shadow-card sm:flex-row sm:items-center">
-            <div className="flex items-start gap-4">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-                <UserCog className="h-5 w-5" />
+          <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
+                <UserCog className="h-5 w-5" aria-hidden />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-ink">
-                  Finish setting up your profile
-                </h2>
-                <p className="mt-1 max-w-xl text-sm text-ink-muted">
-                  Answer a few quick questions so we can find every settlement
-                  you qualify for — and show you exactly what you’re owed. Takes
-                  about 2 minutes.
+                <h2 className="text-base font-bold text-ink">Finish your profile</h2>
+                <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink-muted">
+                  Add your name, state and ZIP code. It takes a minute. Some
+                  settlements are only for people in certain states.
                 </p>
               </div>
             </div>
             <Link href="/onboarding" className="btn-primary shrink-0">
-              Finish setup <ArrowRight className="h-4 w-4" />
+              Finish profile <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
         )}
 
-        {/* You're owed $X ---------------------------------------------------- */}
-        <MoneyHero openMatches={freshMatches} claims={claims} />
-
-        {/* File these now ---------------------------------------------------- */}
-        <section className="mt-12">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <span className="badge-brand gap-1">
-                <Sparkles className="h-3.5 w-3.5" /> Matched to you
-              </span>
-              <h2 className="mt-3 text-2xl font-extrabold">File these now</h2>
-              <p className="mt-1 text-sm text-ink-muted">
-                Settlements you match but haven’t filed yet. File them all in one
-                signed action.
-              </p>
-            </div>
-            <RefreshMatches />
-          </div>
-
-          {freshMatches.length > 0 ? (
-            <>
-              <div className="mt-6">
-                <FileAllButton
-                  matches={freshMatches.map((m) => ({
-                    lawsuit: m.lawsuit,
-                    reasons: m.reasons,
-                  }))}
-                  defaultName={profile?.full_name || ''}
-                />
+        <section aria-labelledby="your-claims-title">
+          <h2 id="your-claims-title" className="text-2xl font-extrabold">
+            Your claims
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+            Grouped by what to do next. Check each official site for the exact
+            deadline time.
+          </p>
+          <div className="mt-6">
+            {claims.failed ? (
+              <div role="alert" className="flex items-start gap-3 rounded-2xl border border-danger-50 bg-white p-5 shadow-card">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger-700" aria-hidden />
+                <div>
+                  <p className="font-semibold text-ink">We couldn&rsquo;t load your claims right now.</p>
+                  <p className="mt-1 text-sm text-ink-muted">Please refresh the page in a minute.</p>
+                </div>
               </div>
-              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {freshMatches.map((m) => (
-                  <LawsuitCard
-                    key={m.id}
-                    lawsuit={m.lawsuit}
-                    badge={{
-                      label: `Matched ${Math.round(m.score * 100)}%`,
-                      tone: 'brand',
-                    }}
-                    reasons={m.reasons}
-                    href={`/claim/${m.lawsuit.slug}`}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            <EmptyState
-              icon={<Target className="h-6 w-6" />}
-              title={
-                matches.length > 0
-                  ? 'You’ve filed all your matches'
-                  : 'No matches yet'
-              }
-              body={
-                matches.length > 0
-                  ? 'Nice work — every settlement we matched you to is filed and tracked below. We’ll surface new ones the moment they open.'
-                  : profile?.onboarded
-                    ? 'We haven’t found a settlement that fits your profile yet. Refresh your matches or browse all open settlements.'
-                    : 'Finish setting up your profile so we can find the settlements you qualify for and show you what you’re owed.'
-              }
-              primary={
-                profile?.onboarded
-                  ? { href: '/lawsuits', label: 'Browse settlements' }
-                  : { href: '/onboarding', label: 'Finish setup' }
-              }
-              secondary={
-                profile?.onboarded
-                  ? undefined
-                  : { href: '/lawsuits', label: 'Browse settlements' }
-              }
-            />
-          )}
-        </section>
-
-        {/* Recovery tracker -------------------------------------------------- */}
-        <section className="mt-14">
-          <div>
-            <span className="badge-gray gap-1">
-              <Wallet className="h-3.5 w-3.5" /> Your recoveries
-            </span>
-            <h2 className="mt-3 text-2xl font-extrabold">Money we’re recovering</h2>
-            <p className="mt-1 text-sm text-ink-muted">
-              Every claim we’ve filed for you, tracked from submission to payout.
-            </p>
-          </div>
-
-          <div className="mt-8">
-            <RecoveryTracker claims={claims} />
+            ) : (
+              <ClaimList rows={rows} />
+            )}
           </div>
         </section>
 
-        <div className="mt-14">
-          <Disclaimer compact />
-        </div>
+        <ClosingSoon items={closingSoon} />
+
+        <Disclaimer compact />
       </div>
     </div>
   );
 }
 
-function EmptyState({
-  icon,
-  title,
-  body,
-  primary,
-  secondary,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  primary: { href: string; label: string };
-  secondary?: { href: string; label: string };
-}) {
+function WelcomeCard() {
+  const steps = [
+    'Find an open settlement in our list.',
+    'Read the official notice to see if you qualify.',
+    'File on the official site. It’s free, and you do it yourself.',
+    'Come back and tell us you filed. We keep your deadline and confirmation number in one place.',
+  ];
   return (
-    <div className="mt-8 rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center shadow-card">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-brand-700">
-        {icon}
-      </div>
-      <h3 className="mt-4 text-lg font-bold">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{body}</p>
-      <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <Link href={primary.href} className="btn-primary">
-          {primary.label} <ArrowRight className="h-4 w-4" />
-        </Link>
-        {secondary && (
-          <Link href={secondary.href} className="btn-secondary">
-            <Search className="h-4 w-4" /> {secondary.label}
-          </Link>
-        )}
-      </div>
-    </div>
+    <section
+      aria-labelledby="welcome-title"
+      className="rounded-2xl border border-success-100 bg-white p-5 shadow-card sm:p-6"
+    >
+      <h2 id="welcome-title" className="flex items-center gap-2 text-lg font-bold">
+        <CheckCircle2 className="h-5 w-5 text-success-600" aria-hidden />
+        You&rsquo;re all set
+      </h2>
+      <p className="mt-1 text-sm text-ink-muted">Here&rsquo;s how ClaimMatch works:</p>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink">
+        {steps.map((s) => (
+          <li key={s}>{s}</li>
+        ))}
+      </ol>
+      <Link href="/lawsuits" className="btn-primary mt-5">
+        Browse open settlements <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
+    </section>
   );
 }

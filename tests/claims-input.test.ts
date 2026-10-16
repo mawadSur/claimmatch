@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  claimWriteFailure,
   eligibilitySummary,
   hasSelfFileColumns,
+  isMissingSchemaError,
   latestFiledOnDate,
   parseClaimPatch,
   parseStartTracking,
@@ -142,5 +144,42 @@ describe('content helpers', () => {
     expect(
       hasSelfFileColumns({ confirmation_number: null, reported_filed_at: null, corrective_notice_answered_at: null }),
     ).toBe(true);
+  });
+});
+
+describe('claim write errors', () => {
+  it('fails loudly with a 503 when migration 0006 is missing, never silently', () => {
+    for (const error of [
+      { code: 'PGRST202', message: 'Could not find the function public.claim_apply_change' },
+      { code: 'PGRST204', message: "Could not find the 'confirmation_number' column" },
+      { code: '42703', message: 'column claims.confirmation_number does not exist' },
+      { code: '22P02', message: 'invalid input value for enum claim_status: "self_file"' },
+    ]) {
+      expect(isMissingSchemaError(error)).toBe(true);
+      expect(claimWriteFailure(error)).toMatchObject({ status: 503, code: 'claims_unavailable', log: true });
+    }
+    expect(isMissingSchemaError({ code: '22P02', message: 'invalid input syntax for type uuid' })).toBe(false);
+    expect(isMissingSchemaError(null)).toBe(false);
+  });
+
+  it('maps conflicts and missing rows to 409 and 404', () => {
+    expect(claimWriteFailure({ code: '40001' })).toMatchObject({ status: 409, code: 'claim_changed' });
+    expect(claimWriteFailure({ code: '23514' })).toMatchObject({ status: 409, code: 'not_allowed' });
+    expect(claimWriteFailure({ code: 'P0002' })).toMatchObject({ status: 404 });
+    expect(claimWriteFailure({ code: '23503' })).toMatchObject({ status: 404 });
+    expect(claimWriteFailure({ code: 'XX000', message: 'boom' })).toMatchObject({ status: 500, log: true });
+  });
+});
+
+describe('safeExternalUrl', () => {
+  it('only allows real http(s) links', async () => {
+    const { safeExternalUrl, linkHost } = await import('@/lib/claims');
+    expect(safeExternalUrl('https://www.examplesettlement.com/claim')).toBe('https://www.examplesettlement.com/claim');
+    expect(linkHost('https://www.examplesettlement.com/claim')).toBe('examplesettlement.com');
+    expect(safeExternalUrl('javascript:alert(1)')).toBeNull();
+    expect(safeExternalUrl('data:text/html,hi')).toBeNull();
+    expect(safeExternalUrl('https://example.com/claim')).toBeNull();
+    expect(safeExternalUrl('not a url')).toBeNull();
+    expect(safeExternalUrl(null)).toBeNull();
   });
 });
