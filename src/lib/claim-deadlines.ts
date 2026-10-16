@@ -2,6 +2,8 @@
  * Claim deadlines and the settlement facts the claim flow depends on. Pure
  * functions (no Supabase, no network); re-exported from '@/lib/claims'.
  */
+import { isOpenForClaims } from './open-for-claims';
+import { daysLeftToFile, isDeadlinePassed } from './utils';
 
 /* -------------------------------------------------------------------------- */
 /* Deadlines                                                                  */
@@ -9,7 +11,14 @@
 /* deadline stays open through 23:59:59 on that date in Pacific/Honolulu      */
 /* (UTC-10, no daylight saving), the latest US time zone. People are told to  */
 /* check the official site for the exact cutoff.                              */
+/*                                                                            */
+/* The cutoff and the open-for-claims rule are shared with the catalog        */
+/* (src/lib/utils.ts and src/lib/open-for-claims.ts) and re-exported here, so  */
+/* every surface agrees.                                                      */
 /* -------------------------------------------------------------------------- */
+
+export { deadlineCutoff, isDeadlinePassed } from './utils';
+export { isOpenForClaims } from './open-for-claims';
 
 const DAY_MS = 86_400_000;
 const HONOLULU_OFFSET_MS = 10 * 3_600_000;
@@ -35,25 +44,20 @@ export function parseCalendarDate(value: string | null | undefined): CalendarDat
   return { y, m, d };
 }
 
-/** The last moment a date-only deadline is open: 23:59:59.999 in Honolulu. */
-export function deadlineCutoff(deadline: string | null | undefined): Date | null {
-  const p = parseCalendarDate(deadline);
-  if (!p) return null;
-  return new Date(Date.UTC(p.y, p.m - 1, p.d + 1) + HONOLULU_OFFSET_MS - 1);
-}
-
-export function isDeadlinePassed(deadline: string | null | undefined, now: Date): boolean {
-  const cutoff = deadlineCutoff(deadline);
-  return cutoff !== null && now.getTime() > cutoff.getTime();
-}
-
-/** Calendar days left, counted in Honolulu: 0 on the last day, negative after. */
+/**
+ * Calendar days left to file: 0 on the last day, negative once the deadline
+ * has passed. While the deadline is open this is the catalog's count
+ * (daysLeftToFile, in UTC days), which never overstates the time left for
+ * anyone in the US, so the claim page and the settlement page show the same
+ * number. After the cutoff it counts days since the deadline, in Honolulu.
+ */
 export function daysUntilDeadline(deadline: string | null | undefined, now: Date): number | null {
   const p = parseCalendarDate(deadline);
   if (!p) return null;
+  if (!isDeadlinePassed(deadline, now)) return daysLeftToFile(deadline, now);
   const local = new Date(now.getTime() - HONOLULU_OFFSET_MS);
   const today = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
-  return Math.round((Date.UTC(p.y, p.m - 1, p.d) - today) / DAY_MS);
+  return Math.min(-1, Math.round((Date.UTC(p.y, p.m - 1, p.d) - today) / DAY_MS));
 }
 
 export function addCalendarDays(date: string | null | undefined, days: number): string | null {
@@ -106,7 +110,7 @@ export interface SettlementContext {
   closedByStatus: boolean;
   deadline: string | null;
   deadlinePassed: boolean;
-  /** Published, real, not closed or draft, and the deadline has not passed. */
+  /** The shared rule: published, real, open or closing soon, deadline not passed. */
   openForClaims: boolean;
   /** A late "I filed it" is still accepted (until 30 days after the deadline). */
   lateReportOpen: boolean;
@@ -124,20 +128,10 @@ export const UNKNOWN_SETTLEMENT: SettlementContext = {
 };
 
 /**
- * The claim flow's open-for-claims rule: published, not fictional, status not
- * closed or draft, deadline not passed. INTEGRATION: the catalog workstream
- * exports the shared rule; replace this with it when the branches merge.
+ * The claim flow's view of a settlement. openForClaims is the shared rule
+ * (isOpenForClaims: published, not fictional, status open or closing soon,
+ * deadline not passed); `isFictional` adds the caller's own fictional check.
  */
-export function isOpenForClaims(s: SettlementFacts, now: Date, isFictional: IsFictional): boolean {
-  return (
-    s.review_status === 'published' &&
-    !isFictional(s.slug) &&
-    s.status !== 'closed' &&
-    s.status !== 'draft' &&
-    !isDeadlinePassed(s.deadline, now)
-  );
-}
-
 export function settlementContext(
   s: SettlementFacts | null | undefined,
   now: Date,
@@ -152,7 +146,7 @@ export function settlementContext(
     closedByStatus: s.status === 'closed' || s.status === 'draft',
     deadline: s.deadline ?? null,
     deadlinePassed: isDeadlinePassed(s.deadline, now),
-    openForClaims: isOpenForClaims(s, now, isFictional),
+    openForClaims: !fictional && isOpenForClaims(s, now),
     lateReportOpen: !fictional && isLateReportWindowOpen(s.deadline, now),
   };
 }

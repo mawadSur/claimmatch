@@ -6,6 +6,7 @@
  * Never import this from a client component.
  */
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isFictionalSlug } from '@/lib/fictional-slugs';
 import {
   claimWriteFailure,
   isMissingSchemaError,
@@ -36,13 +37,12 @@ export interface SettlementRecord extends SettlementFacts {
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Fictional-settlement check for the claim flow.
- * INTEGRATION: the catalog workstream owns the denylist of the 22 fictional
- * settlements (isFictionalSlug). Replace this body with a call to it when the
- * branches merge. Until then fictional rows are kept out of the flow only by
- * being unpublished, and claims on them show the legacy corrective notice.
+ * Fictional-settlement check for the claim flow: the catalog's denylist of the
+ * 22 fictional settlements (src/lib/fictional-slugs.ts). Claims on them show
+ * "This settlement was not real" instead of the legacy corrective notice, and
+ * people without a claim get a 404.
  */
-export const isFictionalSettlementSlug: (slug: string) => boolean = () => false;
+export const isFictionalSettlementSlug: (slug: string) => boolean = (slug) => isFictionalSlug(slug);
 
 export function claimContext(settlement: SettlementFacts | null, now: Date = new Date()): SettlementContext {
   return settlementContext(settlement, now, isFictionalSettlementSlug);

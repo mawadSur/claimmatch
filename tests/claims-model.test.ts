@@ -19,6 +19,7 @@ import {
   type SettlementContext,
   type SettlementFacts,
 } from '@/lib/claims';
+import { isFictionalSettlementSlug } from '@/lib/claims-server';
 
 const NOW = new Date('2026-10-16T18:00:00Z');
 const notFictional = () => false;
@@ -40,18 +41,24 @@ const PAST_60_DAYS = ctx({ deadline: '2026-08-17' });
 const FICTIONAL = ctx({ slug: 'fake-olive-oil', review_status: 'rejected' }, fictionalSlugs);
 
 describe('deadlines (open through 23:59:59 Pacific/Honolulu)', () => {
-  it('cuts off at the end of the day in Honolulu', () => {
-    expect(deadlineCutoff('2026-11-30')?.toISOString()).toBe('2026-12-01T09:59:59.999Z');
+  it('cuts off at the end of the day in Honolulu (the shared catalog cutoff)', () => {
+    // deadlineCutoff is the catalog's: the first instant the deadline has passed.
+    expect(deadlineCutoff('2026-11-30')?.toISOString()).toBe('2026-12-01T10:00:00.000Z');
     expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T09:59:59.999Z'))).toBe(false);
     expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T10:00:00.000Z'))).toBe(true);
   });
 
-  it('counts days in Honolulu, with 0 on the last day', () => {
+  it('never overstates the days left, with 0 on the last day', () => {
     expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe(0);
-    expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe(1);
+    // 04:00 on Nov 30 in New York (still Nov 29 in Honolulu): already the last day for most people.
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe(0);
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-11-29T20:00:00Z'))).toBe(1);
+    // Still open late on Nov 30 in Honolulu.
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T09:59:00Z'))).toBe(0);
     expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T10:00:00Z'))).toBe(-1);
     expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe('Last day is today');
-    expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe('1 day left');
+    expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe('Last day is today');
+    expect(deadlineCountdown('2026-11-30', new Date('2026-11-29T20:00:00Z'))).toBe('1 day left');
     expect(deadlineCountdown('2026-11-30', NOW)).toBe('45 days left');
     expect(deadlineCountdown('2026-10-01', NOW)).toBe('Deadline passed');
   });
@@ -73,16 +80,23 @@ describe('deadlines (open through 23:59:59 Pacific/Honolulu)', () => {
 });
 
 describe('open-for-claims rule', () => {
-  it('needs published, real, not closed or draft, deadline not passed', () => {
-    expect(isOpenForClaims(settlement(), NOW, notFictional)).toBe(true);
-    expect(isOpenForClaims(settlement({ status: 'closing_soon' }), NOW, notFictional)).toBe(true);
-    expect(isOpenForClaims(settlement({ deadline: null }), NOW, notFictional)).toBe(true);
-    expect(isOpenForClaims(settlement({ review_status: 'pending_review' }), NOW, notFictional)).toBe(false);
-    expect(isOpenForClaims(settlement({ review_status: 'rejected' }), NOW, notFictional)).toBe(false);
-    expect(isOpenForClaims(settlement({ status: 'closed' }), NOW, notFictional)).toBe(false);
-    expect(isOpenForClaims(settlement({ status: 'draft' }), NOW, notFictional)).toBe(false);
-    expect(isOpenForClaims(settlement({ deadline: '2026-10-15' }), NOW, notFictional)).toBe(false);
-    expect(isOpenForClaims(settlement({ slug: 'fake-olive-oil' }), NOW, fictionalSlugs)).toBe(false);
+  it('is the shared rule: published, real, open or closing soon, deadline not passed', () => {
+    expect(isOpenForClaims(settlement(), NOW)).toBe(true);
+    expect(isOpenForClaims(settlement({ status: 'closing_soon' }), NOW)).toBe(true);
+    expect(isOpenForClaims(settlement({ deadline: null }), NOW)).toBe(true);
+    expect(isOpenForClaims(settlement({ review_status: 'pending_review' }), NOW)).toBe(false);
+    expect(isOpenForClaims(settlement({ review_status: 'rejected' }), NOW)).toBe(false);
+    expect(isOpenForClaims(settlement({ status: 'closed' }), NOW)).toBe(false);
+    expect(isOpenForClaims(settlement({ status: 'draft' }), NOW)).toBe(false);
+    expect(isOpenForClaims(settlement({ deadline: '2026-10-15' }), NOW)).toBe(false);
+    // One of the 22 fictional settlements (src/lib/fictional-slugs.ts).
+    expect(isOpenForClaims(settlement({ slug: 'robocall-tcpa-settlement' }), NOW)).toBe(false);
+  });
+
+  it('marks claims on the fictional settlements as fictional and never open', () => {
+    const real = ctx({ slug: 'robocall-tcpa-settlement' }, isFictionalSettlementSlug);
+    expect(real).toMatchObject({ fictional: true, openForClaims: false, lateReportOpen: false });
+    expect(ctx({}, isFictionalSettlementSlug)).toMatchObject({ fictional: false, openForClaims: true });
   });
 
   it('builds the context the claim flow uses', () => {

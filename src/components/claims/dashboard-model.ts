@@ -175,7 +175,8 @@ export function buildClosingSoon(
         UUID_RE.test(l.id) &&
         Boolean(l.deadline) &&
         !trackedLawsuitIds.has(l.id) &&
-        isOpenForClaims(l, now, isFictional),
+        !isFictional(l.slug) &&
+        isOpenForClaims(l, now),
     )
     .sort((a, b) => (a.deadline as string).localeCompare(b.deadline as string))
     .slice(0, limit)

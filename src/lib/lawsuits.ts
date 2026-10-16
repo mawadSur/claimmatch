@@ -2,7 +2,12 @@ import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { FICTIONAL_SLUGS, isFictionalSlug } from './fictional-slugs';
-import { isDeadlinePassed, isPlaceholderUrl, todayInLatestUSZone } from './utils';
+import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
+import { isPlaceholderUrl, todayInLatestUSZone } from './utils';
+
+// The open-for-claims rule lives in ./open-for-claims (pure, so the claim flow's
+// client components share it). Re-exported here for server code.
+export { filterOpenForClaims, isOpenForClaims, isPublicLawsuit };
 
 /**
  * Data access for the public settlement catalog (server only).
@@ -19,42 +24,6 @@ function supabaseConfigured() {
     !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
     !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
-}
-
-// ---------------------------------------------------------------------------
-// The open-for-claims rule
-// ---------------------------------------------------------------------------
-
-/**
- * Statuses that can take claims. 'closed' and 'draft' cannot, and neither can
- * any status added later until this rule is updated to allow it.
- */
-const OPEN_STATUSES = ['open', 'closing_soon'] as const;
-
-type RuleFields = Pick<Lawsuit, 'slug' | 'status' | 'review_status' | 'deadline'>;
-
-/** Published and not fictional: the settlement page may be shown to anyone. */
-export function isPublicLawsuit(lawsuit: Pick<Lawsuit, 'slug' | 'review_status'>): boolean {
-  return lawsuit.review_status === 'published' && !isFictionalSlug(lawsuit.slug);
-}
-
-/**
- * The one "open for claims" rule, used on every surface (catalog, sitemap,
- * matching, claim creation): published, not fictional, status open (or closing
- * soon), and the deadline has not passed. No deadline counts as open. A
- * date-only deadline stays open through 23:59:59 Pacific/Honolulu, the latest
- * US time zone (see isDeadlinePassed); people are told to check the official
- * site for the exact cutoff.
- */
-export function isOpenForClaims(lawsuit: RuleFields, now: Date = new Date()): boolean {
-  if (!isPublicLawsuit(lawsuit)) return false;
-  if (!(OPEN_STATUSES as readonly string[]).includes(lawsuit.status)) return false;
-  return !isDeadlinePassed(lawsuit.deadline, now);
-}
-
-/** The rows that are open for claims, in their original order. */
-export function filterOpenForClaims<T extends RuleFields>(rows: T[], now: Date = new Date()): T[] {
-  return rows.filter((row) => isOpenForClaims(row, now));
 }
 
 // ---------------------------------------------------------------------------

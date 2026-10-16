@@ -25,7 +25,7 @@ function reply(body: unknown, status = 200, headers: Record<string, string> = {}
  * reports it with PATCH /api/claims/[id].
  *
  * Refuses closed, unpublished and fictional settlements. The open check is the
- * claim flow's own helper (isOpenForClaims) until the shared catalog rule lands.
+ * shared open-for-claims rule (src/lib/open-for-claims.ts) that every surface uses.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
