@@ -83,6 +83,18 @@ const STATUSES = [
     label: 'Not reported filed',
     body: 'The deadline passed and you didn’t tell us you filed.',
   },
+  {
+    label: 'Not filed',
+    body: 'An earlier version of ClaimMatch wrongly showed this claim as filed. ClaimMatch didn’t file it. If you filed on the official site yourself, tell us. If not, check the official site: you may still be able to file before the deadline.',
+  },
+  {
+    label: 'Status not confirmed',
+    body: 'An older status we can’t confirm. Check the official site, then tell us where things stand.',
+  },
+  {
+    label: 'Not a real settlement',
+    body: 'This listing was test data, not a real settlement. There’s nothing to file.',
+  },
 ];
 
 // A friendly icon for each settlement category.

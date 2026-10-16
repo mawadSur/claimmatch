@@ -497,3 +497,21 @@ describe('legacyAnswerCopy', () => {
     }
   });
 });
+
+describe('the How it works status glossary', () => {
+  it('explains every label a claim can show today', async () => {
+    const { readFileSync } = await import('node:fs');
+    const page = readFileSync(new URL('../src/app/how-it-works/page.tsx', import.meta.url), 'utf8');
+    const labels = new Set<string>();
+    for (const status of CLAIM_STATUSES) {
+      for (const c of [OPEN, PAST_10_DAYS, FICTIONAL]) {
+        for (const number of [null, 'A-1']) {
+          labels.add(displayClaimStatus({ status, confirmation_number: number }, c).label.replace(/#.*$/, '#'));
+        }
+      }
+    }
+    // No Phase 0 path withdraws a claim on a real settlement (D45 is Phase 2).
+    labels.delete('Withdrawn by you');
+    for (const label of labels) expect(page, label).toContain(`label: '${label}`);
+  });
+});
