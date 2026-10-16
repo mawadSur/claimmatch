@@ -13,10 +13,12 @@ on:
 permissions:
   contents: read
 
-# One run per branch or pull request; a new push cancels the older run.
+# One run per branch or pull request. A new push to a pull request cancels its
+# older run. On main a started run is never cancelled; it finishes, and the
+# newest push waits its turn (GitHub keeps only the latest waiting run).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -58,12 +60,15 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Fails only on critical advisories in runtime dependencies. next 15 pins
-      # postcss 8.4.31, which has a high-severity advisory that only next 16
-      # fixes, so --audit-level=high would fail every run until that upgrade.
-      # Run "npm audit --omit=dev" locally to see everything below critical.
+      # Fails on any high or critical advisory in runtime dependencies except
+      # the postcss ones that next 15 pins (postcss 8.4.31; only next 16 fixes
+      # them). scripts/audit-gate.ts lists those by GHSA id. npm audit exits
+      # non-zero whenever it finds anything, so the gate decides, and it fails
+      # closed when npm could not audit at all.
       - name: Audit runtime dependencies
-        run: npm audit --omit=dev --audit-level=critical
+        run: |
+          npm audit --omit=dev --json > "$RUNNER_TEMP/npm-audit.json" || true
+          npx tsx scripts/audit-gate.ts "$RUNNER_TEMP/npm-audit.json"
 
   db-migrations:
     name: db-migrations
