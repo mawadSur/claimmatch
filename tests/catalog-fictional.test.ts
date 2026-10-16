@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -52,6 +52,14 @@ describe('fictional settlement denylist', () => {
       expect(sql).toContain(`'${record.external_id}'`);
     }
     expect(sql).not.toMatch(/\bdelete\s+from\b/i);
+  });
+
+  it('keeps the settlement page able to send a real 404', () => {
+    // A loading.tsx at or above /lawsuits/[slug] wraps the page in Suspense, so
+    // the response starts streaming as 200 before notFound() runs (a soft 404).
+    for (const path of ['src/app/lawsuits/loading.tsx', 'src/app/lawsuits/[slug]/loading.tsx']) {
+      expect(existsSync(`${root}/${path}`)).toBe(false);
+    }
   });
 
   it('recognises fictional slugs and nothing else', () => {

@@ -77,7 +77,10 @@ export function LawsuitCard({
       )}
 
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-gray-50 p-3">
-        <Stat label="Deadline" value={formatDeadline(lawsuit.deadline)} />
+        <Stat
+          label="Deadline"
+          value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed'}
+        />
         <Stat label="Proof" value={proofLabel(lawsuit)} />
         <div className="col-span-2">
           <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">
@@ -112,12 +115,12 @@ export function LawsuitCard({
 
       <div className="mt-auto pt-4">
         {open ? (
-          <div className="flex gap-2">
-            <Link href={`/claim/${lawsuit.slug}`} className="btn-primary flex-1 px-3">
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/claim/${lawsuit.slug}`} className="btn-primary grow basis-40 px-3">
               Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only"> for {lawsuit.title}</span>
             </Link>
-            <Link href={detailsHref} className="btn-secondary px-3">
+            <Link href={detailsHref} className="btn-secondary grow basis-20 px-3">
               Details<span className="sr-only"> about {lawsuit.title}</span>
             </Link>
           </div>

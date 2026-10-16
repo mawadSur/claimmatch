@@ -117,11 +117,26 @@ export default async function LawsuitDetailPage({ params }: Params) {
             {lawsuit.title}
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
+
+          {open && (
+            // On phones the sidebar comes last, so offer the next step up here too.
+            <div className="mt-6 lg:hidden">
+              <Link
+                href={`/claim/${lawsuit.slug}`}
+                className="btn-primary w-full justify-center sm:w-auto"
+              >
+                Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <p className="mt-2 text-xs text-ink-muted">
+                Free. You file on the official site yourself.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
       {/* D50: unverified label with the official link ------------------------ */}
-      <section className="container-page -mt-2 pb-4" aria-labelledby="unverified-heading">
+      <section className="container-page pb-4" aria-labelledby="unverified-heading">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
