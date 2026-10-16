@@ -2,9 +2,28 @@
 // supabase/migrations/0001_init.sql and are the single source of truth for
 // data shapes across the app. Keep in sync with the DB.
 
+/**
+ * Claim states (supabase/migrations/0006_claim_states.sql). ClaimMatch never
+ * files for anyone: people file on the official site and report it here.
+ *
+ *   self_file          still needs filing on the official site ("Not filed yet")
+ *   reported_filed     the user says they filed, no confirmation number yet
+ *   submitted          ONLY with the administrator's confirmation number
+ *   not_reported_filed the deadline passed with no report
+ *   withdrawn          the user stopped tracking the claim
+ *
+ * Legacy values: 'processing', 'approved', 'rejected', 'paid', and 'submitted'
+ * rows without a confirmation number were written by the retired e-sign flow,
+ * which filed nothing. Never read a status directly for display: use
+ * displayClaimStatus() from '@/lib/claims'.
+ */
 export type ClaimStatus =
-  | 'processing'
+  | 'self_file'
+  | 'reported_filed'
   | 'submitted'
+  | 'not_reported_filed'
+  | 'withdrawn'
+  | 'processing'
   | 'approved'
   | 'rejected'
   | 'paid';
@@ -127,24 +146,34 @@ export interface Match {
 
 export interface Claim {
   id: string;
+  /** Legacy identity column. Never shown to users. */
   receipt_number: number;
   user_id: string;
   lawsuit_id: string;
   lawsuit_title: string;
   status: ClaimStatus;
   form_data: Record<string, unknown>;
-  // Dream-state: e-sign authorization + filing lifecycle
+  // Legacy e-sign columns from the retired flow. filed_at was stamped although
+  // nothing was ever filed, so none of these are shown or written any more.
   authorized_at: string | null;
   signature_name: string | null;
   authorization_ip: string | null;
   filed_at: string | null;
   estimated_value: number | null;
+  // Self-file tracking (0006). Optional because readers must also work against
+  // a database where 0006 has not been applied yet.
+  /** The settlement administrator's confirmation number, as the user typed it. */
+  confirmation_number?: string | null;
+  /** When the user told ClaimMatch they filed (server time). */
+  reported_filed_at?: string | null;
+  /** The day the user says they filed on the official site (YYYY-MM-DD). */
+  user_filed_on?: string | null;
+  /** When the user answered the Phase 0 corrective notice on a legacy claim. */
+  corrective_notice_answered_at?: string | null;
   created_at: string;
   updated_at: string;
   /** joined lawsuit, when selected with a relation */
   lawsuit?: Lawsuit;
-  /** joined recovery, when selected with a relation */
-  recovery?: Recovery;
 }
 
 export interface Recovery {
@@ -252,14 +281,6 @@ export interface ScrapedLawsuit {
    */
   status?: FeedStatus;
 }
-
-export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
-  processing: 'Processing',
-  submitted: 'Submitted',
-  approved: 'Approved',
-  rejected: 'Not Eligible',
-  paid: 'Paid',
-};
 
 export const LAWSUIT_CATEGORIES = [
   'Data Breach',

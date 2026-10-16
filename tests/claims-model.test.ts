@@ -1,0 +1,349 @@
+import { describe, expect, it } from 'vitest';
+import {
+  CLAIM_STATUSES,
+  allowedNextStatuses,
+  claimActionAvailability,
+  daysUntilDeadline,
+  deadlineCountdown,
+  deadlineCutoff,
+  displayClaimStatus,
+  isDeadlinePassed,
+  isLateReportWindowOpen,
+  isLegacyClaim,
+  isOpenForClaims,
+  lateReportLastDay,
+  planClaimTransition,
+  settlementContext,
+  type ClaimAction,
+  type ClaimFields,
+  type SettlementContext,
+  type SettlementFacts,
+} from '@/lib/claims';
+
+const NOW = new Date('2026-10-16T18:00:00Z');
+const notFictional = () => false;
+const fictionalSlugs = (slug: string) => slug === 'fake-olive-oil';
+
+function settlement(overrides: Partial<SettlementFacts> = {}): SettlementFacts {
+  return { slug: 'real-settlement', status: 'open', review_status: 'published', deadline: '2026-11-30', ...overrides };
+}
+function ctx(
+  overrides: Partial<SettlementFacts> = {},
+  isFictional: (slug: string) => boolean = notFictional,
+  now: Date = NOW,
+): SettlementContext {
+  return settlementContext(settlement(overrides), now, isFictional);
+}
+const OPEN = ctx();
+const PAST_10_DAYS = ctx({ deadline: '2026-10-06' });
+const PAST_60_DAYS = ctx({ deadline: '2026-08-17' });
+const FICTIONAL = ctx({ slug: 'fake-olive-oil', review_status: 'rejected' }, fictionalSlugs);
+
+describe('deadlines (open through 23:59:59 Pacific/Honolulu)', () => {
+  it('cuts off at the end of the day in Honolulu', () => {
+    expect(deadlineCutoff('2026-11-30')?.toISOString()).toBe('2026-12-01T09:59:59.999Z');
+    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T09:59:59.999Z'))).toBe(false);
+    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T10:00:00.000Z'))).toBe(true);
+  });
+
+  it('counts days in Honolulu, with 0 on the last day', () => {
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe(0);
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe(1);
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T10:00:00Z'))).toBe(-1);
+    expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe('Last day is today');
+    expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe('1 day left');
+    expect(deadlineCountdown('2026-11-30', NOW)).toBe('45 days left');
+    expect(deadlineCountdown('2026-10-01', NOW)).toBe('Deadline passed');
+  });
+
+  it('treats missing or impossible dates as no deadline', () => {
+    expect(deadlineCutoff(null)).toBeNull();
+    expect(deadlineCutoff('2026-02-30')).toBeNull();
+    expect(deadlineCutoff('soon')).toBeNull();
+    expect(isDeadlinePassed('2026-02-30', NOW)).toBe(false);
+    expect(deadlineCountdown(null, NOW)).toBeNull();
+  });
+
+  it('accepts late reports until 30 days after the deadline', () => {
+    expect(lateReportLastDay('2026-11-30')).toBe('2026-12-30');
+    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T09:59:00Z'))).toBe(true);
+    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T10:00:01Z'))).toBe(false);
+    expect(isLateReportWindowOpen(null, NOW)).toBe(true);
+  });
+});
+
+describe('open-for-claims rule', () => {
+  it('needs published, real, not closed or draft, deadline not passed', () => {
+    expect(isOpenForClaims(settlement(), NOW, notFictional)).toBe(true);
+    expect(isOpenForClaims(settlement({ status: 'closing_soon' }), NOW, notFictional)).toBe(true);
+    expect(isOpenForClaims(settlement({ deadline: null }), NOW, notFictional)).toBe(true);
+    expect(isOpenForClaims(settlement({ review_status: 'pending_review' }), NOW, notFictional)).toBe(false);
+    expect(isOpenForClaims(settlement({ review_status: 'rejected' }), NOW, notFictional)).toBe(false);
+    expect(isOpenForClaims(settlement({ status: 'closed' }), NOW, notFictional)).toBe(false);
+    expect(isOpenForClaims(settlement({ status: 'draft' }), NOW, notFictional)).toBe(false);
+    expect(isOpenForClaims(settlement({ deadline: '2026-10-15' }), NOW, notFictional)).toBe(false);
+    expect(isOpenForClaims(settlement({ slug: 'fake-olive-oil' }), NOW, fictionalSlugs)).toBe(false);
+  });
+
+  it('builds the context the claim flow uses', () => {
+    expect(OPEN).toMatchObject({ known: true, openForClaims: true, deadlinePassed: false, lateReportOpen: true });
+    expect(PAST_10_DAYS).toMatchObject({ openForClaims: false, deadlinePassed: true, lateReportOpen: true });
+    expect(PAST_60_DAYS).toMatchObject({ deadlinePassed: true, lateReportOpen: false });
+    expect(FICTIONAL).toMatchObject({ fictional: true, openForClaims: false, lateReportOpen: false });
+    expect(settlementContext(null, NOW, notFictional)).toMatchObject({ known: false, lateReportOpen: true });
+  });
+});
+
+describe('displayClaimStatus', () => {
+  const label = (claim: ClaimFields, c?: SettlementContext) => displayClaimStatus(claim, c).label;
+
+  it('labels the Part A states', () => {
+    expect(label({ status: 'self_file' }, OPEN)).toBe('Not filed yet');
+    expect(label({ status: 'reported_filed' }, OPEN)).toBe('Reported filed by you');
+    expect(label({ status: 'submitted', confirmation_number: 'ABC-123' }, OPEN)).toBe('Submitted · #ABC-123');
+    expect(label({ status: 'submitted', confirmation_number: '#4471' }, OPEN)).toBe('Submitted · #4471');
+    expect(label({ status: 'not_reported_filed' }, OPEN)).toBe('Not reported filed');
+    expect(label({ status: 'withdrawn' }, OPEN)).toBe('Withdrawn by you');
+  });
+
+  it('never shows a legacy claim as submitted', () => {
+    for (const legacy of [
+      { status: 'submitted' },
+      { status: 'submitted', confirmation_number: null },
+      { status: 'submitted', confirmation_number: '   ' },
+      { status: 'processing' },
+    ]) {
+      const d = displayClaimStatus(legacy, OPEN);
+      expect(d.label).toBe('Not filed');
+      expect(d.legacy).toBe(true);
+      expect(d.showNotice).toBe(true);
+      expect(d.group).toBe('needs_filing');
+    }
+    for (const status of ['approved', 'rejected', 'paid']) {
+      expect(label({ status }, OPEN)).toBe('Status not confirmed');
+    }
+  });
+
+  it('works without 0006 columns or a settlement', () => {
+    expect(label({ status: 'submitted' })).toBe('Not filed');
+    expect(label({ status: 'self_file' })).toBe('Not filed yet');
+  });
+
+  it('says "Not reported filed" after the deadline, never "Expired"', () => {
+    expect(displayClaimStatus({ status: 'self_file' }, PAST_10_DAYS)).toMatchObject({
+      label: 'Not reported filed',
+      group: 'closed',
+    });
+    expect(displayClaimStatus({ status: 'submitted' }, PAST_10_DAYS)).toMatchObject({
+      label: 'Not filed',
+      group: 'closed',
+      showNotice: true,
+    });
+  });
+
+  it('gives unknown values a neutral label', () => {
+    expect(displayClaimStatus({ status: 'under_review' }, OPEN)).toMatchObject({
+      label: 'Status unavailable',
+      group: 'other',
+    });
+  });
+
+  it('marks claims on fictional settlements as not real', () => {
+    expect(displayClaimStatus({ status: 'submitted' }, FICTIONAL)).toMatchObject({
+      kind: 'fictional',
+      label: 'Not a real settlement',
+      group: 'closed',
+      showNotice: true,
+    });
+    expect(
+      displayClaimStatus({ status: 'withdrawn', corrective_notice_answered_at: NOW.toISOString() }, FICTIONAL)
+        .showNotice,
+    ).toBe(false);
+  });
+
+  it('uses no banned wording on any label', () => {
+    const banned = /expired|receipt|matched|owed|%|\$|we file|on your behalf|contingency/i;
+    for (const status of [...CLAIM_STATUSES, 'mystery']) {
+      for (const c of [OPEN, PAST_10_DAYS, FICTIONAL, undefined]) {
+        for (const number of [null, 'A-1']) {
+          expect(label({ status, confirmation_number: number }, c)).not.toMatch(banned);
+        }
+      }
+    }
+  });
+});
+
+describe('planClaimTransition', () => {
+  const plan = (claim: ClaimFields, action: ClaimAction, c: SettlementContext = OPEN) =>
+    planClaimTransition(claim, action, c, NOW);
+  function changes(claim: ClaimFields, action: ClaimAction, c: SettlementContext = OPEN) {
+    const r = plan(claim, action, c);
+    if (!r.ok || r.noop) throw new Error(`expected a change, got ${JSON.stringify(r)}`);
+    return r.plan;
+  }
+
+  it('self_file -> reported_filed without a number', () => {
+    const p = changes({ status: 'self_file' }, { action: 'report_filed', filed_on: '2026-10-15' });
+    expect(p.toStatus).toBe('reported_filed');
+    expect(p.changes).toMatchObject({
+      status: 'reported_filed',
+      confirmation_number: null,
+      reported_filed_at: NOW.toISOString(),
+      user_filed_on: '2026-10-15',
+    });
+  });
+
+  it('self_file -> submitted only with a number', () => {
+    const p = changes({ status: 'self_file' }, { action: 'report_filed', confirmation_number: 'XY-778' });
+    expect(p.changes).toMatchObject({ status: 'submitted', confirmation_number: 'XY-778' });
+  });
+
+  it('reported_filed -> submitted when the number is added, or back to self_file on undo', () => {
+    const add = changes({ status: 'reported_filed' }, { action: 'add_confirmation', confirmation_number: 'N-1' });
+    expect(add.changes).toEqual({ status: 'submitted', confirmation_number: 'N-1' });
+    const undo = changes(
+      { status: 'reported_filed', reported_filed_at: '2026-10-10T00:00:00Z', user_filed_on: '2026-10-10' },
+      { action: 'undo_report' },
+    );
+    expect(undo.changes).toEqual({
+      status: 'self_file',
+      confirmation_number: null,
+      reported_filed_at: null,
+      user_filed_on: null,
+    });
+  });
+
+  it('submitted: the number can be corrected, not undone', () => {
+    const fix = changes(
+      { status: 'submitted', confirmation_number: 'OLD-1' },
+      { action: 'add_confirmation', confirmation_number: 'NEW-2' },
+    );
+    expect(fix.toStatus).toBe('submitted');
+    expect(fix.changes).toEqual({ confirmation_number: 'NEW-2' });
+    expect(fix.detail).toMatchObject({ previous_confirmation_number: 'OLD-1' });
+    expect(plan({ status: 'submitted', confirmation_number: 'OLD-1' }, { action: 'add_confirmation', confirmation_number: 'OLD-1' })).toEqual({ ok: true, noop: true });
+    expect(plan({ status: 'submitted', confirmation_number: 'OLD-1' }, { action: 'undo_report' })).toMatchObject({
+      ok: false,
+      refusal: 'not_allowed',
+    });
+  });
+
+  it('legacy not-filed -> self_file, reported_filed or submitted, recording the answer', () => {
+    const legacy = { status: 'submitted', confirmation_number: null };
+    const notYet = changes(legacy, { action: 'acknowledge_notice' });
+    expect(notYet.changes).toEqual({ status: 'self_file', corrective_notice_answered_at: NOW.toISOString() });
+    const filed = changes(legacy, { action: 'report_filed' });
+    expect(filed.changes).toMatchObject({ status: 'reported_filed', corrective_notice_answered_at: NOW.toISOString() });
+    const withNumber = changes({ status: 'processing' }, { action: 'report_filed', confirmation_number: 'C-55' });
+    expect(withNumber.changes).toMatchObject({ status: 'submitted', confirmation_number: 'C-55' });
+  });
+
+  it('lets a legacy claim answer the notice even long after the deadline', () => {
+    expect(plan({ status: 'submitted' }, { action: 'report_filed' }, PAST_60_DAYS)).toMatchObject({ ok: true, noop: false });
+  });
+
+  it('accepts a late "I filed it" for 30 days after the deadline', () => {
+    expect(plan({ status: 'self_file' }, { action: 'report_filed' }, PAST_10_DAYS)).toMatchObject({ ok: true, noop: false });
+    expect(plan({ status: 'not_reported_filed' }, { action: 'report_filed' }, PAST_10_DAYS)).toMatchObject({ ok: true });
+    expect(plan({ status: 'self_file' }, { action: 'report_filed' }, PAST_60_DAYS)).toMatchObject({
+      ok: false,
+      refusal: 'window_closed',
+    });
+  });
+
+  it('refuses everything but acknowledging on a fictional settlement', () => {
+    expect(plan({ status: 'self_file' }, { action: 'report_filed' }, FICTIONAL)).toMatchObject({
+      ok: false,
+      refusal: 'fictional',
+    });
+    const ack = changes({ status: 'submitted' }, { action: 'acknowledge_notice' }, FICTIONAL);
+    expect(ack.changes).toEqual({ status: 'withdrawn', corrective_notice_answered_at: NOW.toISOString() });
+    expect(
+      plan({ status: 'withdrawn', corrective_notice_answered_at: NOW.toISOString() }, { action: 'acknowledge_notice' }, FICTIONAL),
+    ).toEqual({ ok: true, noop: true });
+  });
+
+  it('treats repeats as no-ops and refuses impossible moves', () => {
+    expect(plan({ status: 'reported_filed' }, { action: 'report_filed' })).toEqual({ ok: true, noop: true });
+    expect(changes({ status: 'reported_filed' }, { action: 'report_filed', confirmation_number: 'Z-9' }).changes).toMatchObject({
+      status: 'submitted',
+    });
+    expect(plan({ status: 'self_file' }, { action: 'acknowledge_notice' })).toEqual({ ok: true, noop: true });
+    expect(plan({ status: 'self_file' }, { action: 'undo_report' })).toEqual({ ok: true, noop: true });
+    expect(plan({ status: 'withdrawn' }, { action: 'report_filed' })).toMatchObject({ ok: false, refusal: 'not_allowed' });
+    expect(plan({ status: 'self_file' }, { action: 'add_confirmation', confirmation_number: 'A-1' })).toMatchObject({
+      ok: false,
+    });
+    expect(plan({ status: 'under_review' }, { action: 'report_filed' })).toMatchObject({
+      ok: false,
+      refusal: 'unknown_status',
+    });
+  });
+
+  it('withdraw (model only) follows WP:104-105', () => {
+    expect(changes({ status: 'self_file' }, { action: 'withdraw' }).toStatus).toBe('withdrawn');
+    expect(plan({ status: 'reported_filed' }, { action: 'withdraw' })).toMatchObject({ ok: false });
+  });
+
+  it('only ever plans allowed moves, and never "submitted" without a number', () => {
+    const actions: ClaimAction[] = [
+      { action: 'report_filed' },
+      { action: 'report_filed', confirmation_number: 'R-1', filed_on: '2026-10-01' },
+      { action: 'add_confirmation', confirmation_number: 'R-2' },
+      { action: 'undo_report' },
+      { action: 'acknowledge_notice' },
+      { action: 'withdraw' },
+    ];
+    const claims: ClaimFields[] = [
+      ...CLAIM_STATUSES.map((status) => ({ status })),
+      { status: 'submitted', confirmation_number: 'HAS-1' },
+      { status: 'submitted', corrective_notice_answered_at: NOW.toISOString() },
+    ];
+    for (const claim of claims) {
+      for (const c of [OPEN, PAST_10_DAYS, PAST_60_DAYS, FICTIONAL, settlementContext(null, NOW, notFictional)]) {
+        const allowed = allowedNextStatuses(claim, c);
+        for (const action of actions) {
+          const r = planClaimTransition(claim, action, c, NOW);
+          if (!r.ok || r.noop) continue;
+          const { toStatus, fromStatus, changes: ch } = r.plan;
+          if (toStatus !== fromStatus) expect(allowed).toContain(toStatus);
+          if (toStatus === 'submitted') {
+            const number = ch.confirmation_number ?? claim.confirmation_number;
+            expect(typeof number === 'string' && number.trim() !== '').toBe(true);
+          }
+        }
+      }
+    }
+  });
+});
+
+describe('claimActionAvailability', () => {
+  it('matches what the server accepts', () => {
+    expect(claimActionAvailability({ status: 'self_file' }, OPEN)).toMatchObject({ reportFiled: true, undoReport: false });
+    expect(claimActionAvailability({ status: 'reported_filed' }, OPEN)).toMatchObject({
+      addConfirmation: true,
+      undoReport: true,
+      reportFiled: false,
+    });
+    expect(claimActionAvailability({ status: 'submitted', confirmation_number: 'X-1' }, OPEN)).toMatchObject({
+      correctConfirmation: true,
+      undoReport: false,
+    });
+    expect(claimActionAvailability({ status: 'submitted' }, OPEN)).toMatchObject({
+      answerCorrectiveNotice: true,
+      reportFiled: true,
+      correctConfirmation: false,
+    });
+    expect(claimActionAvailability({ status: 'self_file' }, PAST_60_DAYS).reportFiled).toBe(false);
+    expect(claimActionAvailability({ status: 'submitted' }, FICTIONAL)).toMatchObject({
+      acknowledgeFictional: true,
+      reportFiled: false,
+    });
+  });
+
+  it('flags legacy rows', () => {
+    expect(isLegacyClaim({ status: 'submitted' })).toBe(true);
+    expect(isLegacyClaim({ status: 'submitted', confirmation_number: 'A-1' })).toBe(false);
+    expect(isLegacyClaim({ status: 'self_file' })).toBe(false);
+  });
+});
