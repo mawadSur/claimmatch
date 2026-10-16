@@ -12,7 +12,8 @@
     "seed": "tsx scripts/seed.ts",
     "scrape": "tsx scripts/run-scrape.ts",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "db:test": "scripts/db-test.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
