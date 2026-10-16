@@ -265,7 +265,10 @@ export function claimActionAvailability(
     reportFiled: legacy || (unreported && (claim.corrective_notice_required === true || ctx.lateReportOpen)),
     addConfirmation: claim.status === 'reported_filed',
     correctConfirmation: claim.status === 'submitted' && !legacy,
-    undoReport: claim.status === 'reported_filed',
+    // Only while the user could tell us again afterwards: undoing after the
+    // late-report window would erase a report that can't be made again.
+    undoReport:
+      claim.status === 'reported_filed' && (ctx.lateReportOpen || claim.corrective_notice_required === true),
     answerCorrectiveNotice: legacy || needsCorrectiveNotice(claim),
     acknowledgeFictional: false,
   };
@@ -451,6 +454,12 @@ export function planClaimTransition(
         );
       }
       if (from === 'self_file') return NOOP;
+      if (from === 'reported_filed') {
+        return refuse(
+          'window_closed',
+          "It has been more than 30 days since the deadline, so this report can't be undone here.",
+        );
+      }
       if (from === 'submitted' && !legacy) {
         return refuse(
           'not_allowed',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { BadgeCheck, CheckCircle2, Loader2, Pencil, Undo2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import {
@@ -8,6 +8,7 @@ import {
   claimActionAvailability,
   displayClaimStatus,
   isKnownClaimStatus,
+  reportByDay,
   validateFiledOn,
   type ClaimView,
   type SettlementContext,
@@ -41,7 +42,7 @@ export function ReportFiled({
   defaultFiledToday?: boolean;
   onChange: OnChange;
 }) {
-  if (claim?.status === 'reported_filed') return <ReportedCard claim={claim} onChange={onChange} />;
+  if (claim?.status === 'reported_filed') return <ReportedCard claim={claim} context={context} onChange={onChange} />;
   const display = claim ? displayClaimStatus(claim, context) : null;
   if (claim && display?.kind === 'submitted') {
     return <SubmittedCard claim={claim} label={display.label} onChange={onChange} />;
@@ -209,10 +210,28 @@ function ReportForm({
   );
 }
 
-function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChange }) {
+function ReportedCard({
+  claim,
+  context,
+  onChange,
+}: {
+  claim: ClaimView;
+  context: SettlementContext;
+  onChange: OnChange;
+}) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<ClaimErrorState | null>(null);
+  const confirmRef = useRef<HTMLParagraphElement>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const canUndo = claimActionAvailability(claim, context).undoReport;
+  // After the deadline a "not filed" claim can only be reported until this day.
+  const lastDay = context.deadlinePassed ? reportByDay(claim, context.deadline) : null;
+
+  useEffect(() => {
+    if (confirming) confirmRef.current?.focus();
+  }, [confirming]);
 
   async function undo() {
     setBusy(true);
@@ -224,7 +243,13 @@ function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChang
       return;
     }
     posthog?.capture('claim_report_undone');
-    onChange(result.claim, 'Undone. Your claim shows as Not filed yet again.');
+    const label = displayClaimStatus(result.claim, context).label;
+    onChange(
+      result.claim,
+      lastDay
+        ? `Undone. Your claim shows as ${label}. You can tell us you filed until ${formatDeadline(lastDay)}.`
+        : `Undone. Your claim shows as ${label}.`,
+    );
   }
 
   return (
@@ -243,14 +268,50 @@ function ReportedCard({ claim, onChange }: { claim: ClaimView; onChange: OnChang
         </div>
       </div>
       <AddConfirmationForm claimId={claim.id} onSaved={onChange} />
-      <div className="border-t border-gray-100 pt-4">
-        <p className="text-sm text-ink-muted">Told us by mistake?</p>
-        <button type="button" className="btn-ghost -ml-3 mt-1" onClick={undo} disabled={busy}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Undo2 className="h-4 w-4" aria-hidden />}
-          Undo: I haven&rsquo;t filed yet
-        </button>
-        <ClaimError error={error} className="mt-1" />
-      </div>
+      {canUndo && (
+        <div className="border-t border-gray-100 pt-4">
+          {confirming ? (
+            <div>
+              <p ref={confirmRef} tabIndex={-1} className="text-sm font-semibold text-ink focus:outline-none">
+                Undo your report that you filed?
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                {lastDay
+                  ? `Your claim will show as not filed. After ${formatDeadline(lastDay)} you won't be able to tell us you filed.`
+                  : 'Your claim will show as not filed until you tell us again.'}
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button type="button" className="btn-secondary" onClick={undo} disabled={busy}>
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                  Yes, undo it
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setConfirming(false);
+                    setError(null);
+                    // Back to the button that opened this, for keyboard users.
+                    requestAnimationFrame(() => undoRef.current?.focus());
+                  }}
+                  disabled={busy}
+                >
+                  Keep my report
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-ink-muted">Told us by mistake?</p>
+              <button ref={undoRef} type="button" className="btn-ghost -ml-3 mt-1" onClick={() => setConfirming(true)}>
+                <Undo2 className="h-4 w-4" aria-hidden />
+                Undo: I haven&rsquo;t filed yet
+              </button>
+            </>
+          )}
+          <ClaimError error={error} className="mt-1" />
+        </div>
+      )}
     </div>
   );
 }

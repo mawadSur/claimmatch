@@ -446,3 +446,34 @@ describe('legacyFilingState (D41)', () => {
     expect(legacyFilingState(ctx({ status: 'closed', deadline: '2026-10-01' }))).toBe('deadline_passed');
   });
 });
+
+describe('undo after the late-report window', () => {
+  const reported: ClaimFields = { status: 'reported_filed', reported_filed_at: '2026-07-20T00:00:00Z' };
+
+  it('is offered only while the user could tell us again afterwards', () => {
+    expect(claimActionAvailability(reported, OPEN).undoReport).toBe(true);
+    expect(claimActionAvailability(reported, PAST_10_DAYS).undoReport).toBe(true);
+    expect(claimActionAvailability(reported, PAST_60_DAYS).undoReport).toBe(false);
+    // A claim the old flow showed as filed can always be reported again.
+    expect(claimActionAvailability({ ...reported, corrective_notice_required: true }, PAST_60_DAYS).undoReport).toBe(true);
+  });
+
+  it('refuses the undo instead of erasing a report that cannot be made again', () => {
+    expect(planClaimTransition(reported, { action: 'undo_report' }, PAST_60_DAYS, NOW)).toMatchObject({
+      ok: false,
+      refusal: 'window_closed',
+    });
+    const marked = planClaimTransition(
+      { ...reported, corrective_notice_required: true },
+      { action: 'undo_report' },
+      PAST_60_DAYS,
+      NOW,
+    );
+    expect(marked).toMatchObject({ ok: true, noop: false });
+    // ...and after a marked claim is undone, "I filed" still goes through.
+    expect(
+      claimActionAvailability({ status: 'self_file', corrective_notice_required: true, corrective_notice_answered_at: NOW.toISOString() }, PAST_60_DAYS)
+        .reportFiled,
+    ).toBe(true);
+  });
+});
