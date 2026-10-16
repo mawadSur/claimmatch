@@ -17,6 +17,7 @@ import {
   type IsFictional,
   type SettlementFacts,
 } from '@/lib/claims';
+import { pickClosingSoon } from '@/lib/closing-soon';
 import { formatDeadline } from '@/lib/utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -160,7 +161,8 @@ export interface ClosingSoonItem {
 /**
  * Open settlements with the nearest deadlines. Only real rows (UUID ids, so a
  * code-only sample can never appear), open for claims, with a deadline, and
- * not already tracked by the user.
+ * not already tracked by the user. Ordered and trimmed by pickClosingSoon, the
+ * same helper the home page's "Closing soon" module uses.
  */
 export function buildClosingSoon(
   lawsuits: DashboardSettlement[],
@@ -169,18 +171,15 @@ export function buildClosingSoon(
   isFictional: IsFictional,
   limit = 5,
 ): ClosingSoonItem[] {
-  return lawsuits
-    .filter(
-      (l) =>
-        UUID_RE.test(l.id) &&
-        Boolean(l.deadline) &&
-        !trackedLawsuitIds.has(l.id) &&
-        !isFictional(l.slug) &&
-        isOpenForClaims(l, now),
-    )
-    .sort((a, b) => (a.deadline as string).localeCompare(b.deadline as string))
-    .slice(0, limit)
-    .map((l) => ({
+  const candidates = lawsuits.filter(
+    (l) =>
+      UUID_RE.test(l.id) &&
+      Boolean(l.deadline) &&
+      !trackedLawsuitIds.has(l.id) &&
+      !isFictional(l.slug) &&
+      isOpenForClaims(l, now),
+  );
+  return pickClosingSoon(candidates, limit).map((l) => ({
       id: l.id,
       slug: l.slug,
       title: l.title,
