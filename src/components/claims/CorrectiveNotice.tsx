@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, ExternalLink, Info, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
-import type { ClaimView } from '@/lib/claims';
+import type { ClaimView, LegacyFilingState } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
 import { updateClaim } from './claim-api';
 import { ClaimError, type ClaimErrorState } from './ClaimError';
@@ -59,41 +59,65 @@ export function LegacyClaimAnswer({ claimId, onAnswered }: { claimId: string; on
   );
 }
 
-/** What to do about one legacy claim: file before the deadline, or tell us you already did. */
+function OfficialLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 rounded font-semibold text-amber-950 underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+    >
+      {children}
+      <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+      <span className="sr-only">(opens in a new tab)</span>
+    </a>
+  );
+}
+
+/**
+ * What to do about one legacy claim: file before the deadline, or tell us you
+ * already did. "You still can" only while our list shows the settlement open;
+ * a settlement it marks closed, or no longer lists, is being re-checked (D41).
+ */
 export function LegacyClaimGuidance({
   deadline,
-  deadlinePassed,
+  filing,
   officialUrl,
 }: {
   deadline: string | null;
-  deadlinePassed: boolean;
+  filing: LegacyFilingState;
   officialUrl: string | null;
 }) {
   return (
     <ul className="mt-3 space-y-2 text-sm leading-relaxed text-amber-950">
       <li>
-        {deadlinePassed ? (
+        {filing === 'deadline_passed' ? (
           <>
             The deadline was <strong>{formatDeadline(deadline)}</strong>. If you filed
             on the official site before then, tell us below.
           </>
-        ) : (
+        ) : filing === 'open' ? (
           <>
             <strong>Haven&rsquo;t filed yet?</strong> You still can, on the official
             site{deadline ? <> before the deadline, <strong>{formatDeadline(deadline)}</strong></> : null}.
             {officialUrl && (
               <>
                 {' '}
-                <a
-                  href={officialUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded font-semibold text-amber-950 underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-                >
-                  Open the official claim form
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
+                <OfficialLink href={officialUrl}>Open the official claim form</OfficialLink>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <strong>Haven&rsquo;t filed yet?</strong>{' '}
+            {filing === 'closed_on_list'
+              ? 'Our list shows this settlement as closed, and we’re re-checking it.'
+              : 'This settlement is no longer listed on ClaimMatch while we re-check it.'}{' '}
+            Check the official site to see if it still takes claims.
+            {officialUrl && (
+              <>
+                {' '}
+                <OfficialLink href={officialUrl}>Check the official site</OfficialLink>
               </>
             )}
           </>
@@ -111,13 +135,13 @@ export function LegacyClaimGuidance({
 export function CorrectiveNotice({
   claimId,
   deadline,
-  deadlinePassed,
+  filing,
   officialUrl,
   onAnswered,
 }: {
   claimId: string;
   deadline: string | null;
-  deadlinePassed: boolean;
+  filing: LegacyFilingState;
   officialUrl: string | null;
   onAnswered: Answered;
 }) {
@@ -135,7 +159,7 @@ export function CorrectiveNotice({
         was wrong. We never sent anything to the settlement administrator, and we
         never file claims for anyone.
       </p>
-      <LegacyClaimGuidance deadline={deadline} deadlinePassed={deadlinePassed} officialUrl={officialUrl} />
+      <LegacyClaimGuidance deadline={deadline} filing={filing} officialUrl={officialUrl} />
       <div className="mt-4">
         <LegacyClaimAnswer claimId={claimId} onAnswered={onAnswered} />
       </div>

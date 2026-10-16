@@ -12,6 +12,7 @@ import {
   isLegacyClaim,
   isOpenForClaims,
   lateReportLastDay,
+  legacyFilingState,
   needsCorrectiveNotice,
   planClaimTransition,
   reportByDay,
@@ -432,5 +433,16 @@ describe('corrective notice after the D38 correction (0008 marker)', () => {
     expect(reportByDay(corrected, '2026-08-17')).toBeNull();
     expect(reportByDay({ status: 'submitted' }, '2026-08-17')).toBeNull();
     expect(reportByDay({ status: 'self_file' }, '2026-08-17')).toBe('2026-09-16');
+  });
+});
+
+describe('legacyFilingState (D41)', () => {
+  it('lets the notice say "you still can file" only while our list shows the settlement open', () => {
+    expect(legacyFilingState(OPEN)).toBe('open');
+    expect(legacyFilingState(ctx({ status: 'closed', deadline: null }))).toBe('closed_on_list');
+    expect(legacyFilingState(ctx({ status: 'closed' }))).toBe('closed_on_list');
+    expect(legacyFilingState(ctx({ review_status: 'rejected', deadline: null }))).toBe('unlisted');
+    expect(legacyFilingState(PAST_10_DAYS)).toBe('deadline_passed');
+    expect(legacyFilingState(ctx({ status: 'closed', deadline: '2026-10-01' }))).toBe('deadline_passed');
   });
 });

@@ -84,6 +84,24 @@ describe('buildDashboard', () => {
     expect(answered.rows[0]).toMatchObject({ nextStep: 'Filed before the deadline? Tell us.', action: { label: 'Tell us' } });
   });
 
+  it('never says "you still can file" on a settlement our list marks closed or no longer lists (D41)', () => {
+    const closed = row(claim({ status: 'submitted' }), settlement({ status: 'closed', deadline: null }));
+    expect(closed.notices[0]).toMatchObject({ kind: 'legacy', deadlinePassed: false, filing: 'closed_on_list' });
+    expect(closed.rows[0].nextStep).toBe(
+      "ClaimMatch did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.",
+    );
+    const unlisted = row(claim({ status: 'processing' }), settlement({ review_status: 'pending_review' }));
+    expect(unlisted.notices[0]).toMatchObject({ filing: 'unlisted' });
+    expect(unlisted.rows[0].nextStep).toMatch(/re-checking this settlement/);
+    const corrected = row(claim({ status: 'self_file', corrective_notice_required: true }), settlement({ status: 'closed' }));
+    expect(corrected.notices[0]).toMatchObject({ filing: 'closed_on_list' });
+    expect(corrected.rows[0].nextStep).not.toMatch(/File on the official site/);
+    expect(row(claim({ status: 'submitted' }), settlement()).notices[0]).toMatchObject({ filing: 'open' });
+    expect(row(claim({ status: 'submitted' }), settlement({ status: 'closed', deadline: '2026-10-01' })).notices[0]).toMatchObject({
+      filing: 'deadline_passed',
+    });
+  });
+
   it('says a fictional settlement was not real and needs nothing', () => {
     const { rows, notices } = row(claim({ status: 'submitted' }), settlement({ slug: 'fake-olive-oil', review_status: 'rejected' }));
     expect(rows[0]).toMatchObject({

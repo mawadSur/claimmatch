@@ -8,10 +8,13 @@ import {
   deadlineCountdown,
   displayClaimStatus,
   isOpenForClaims,
+  legacyFilingState,
+  legacyNextStep,
   reportByDay,
   safeExternalUrl,
   settlementContext,
   type ClaimGroup,
+  type LegacyFilingState,
   type ClaimTone,
   type ClaimView,
   type IsFictional,
@@ -45,6 +48,8 @@ export interface NoticeItem {
   kind: 'legacy' | 'fictional';
   deadline: string | null;
   deadlinePassed: boolean;
+  /** Whether "you still can file" may be said (D41). */
+  filing: LegacyFilingState;
   officialUrl: string | null;
 }
 
@@ -75,9 +80,8 @@ export function buildDashboard(
     const deadline = settlement?.deadline ?? null;
     const lastDay = reportByDay(claim, deadline);
     const tellUs = href ? { label: 'Tell us', href } : null;
-    const legacyStep = context.deadlinePassed
-      ? 'ClaimMatch did not file this. If you filed before the deadline, tell us.'
-      : 'ClaimMatch did not file this. File on the official site, or tell us if you already did.';
+    const filing = legacyFilingState(context);
+    const legacyStep = legacyNextStep(filing);
 
     let nextStep: string;
     let action: DashboardRow['action'] = null;
@@ -147,6 +151,7 @@ export function buildDashboard(
         kind: display.kind === 'fictional' ? 'fictional' : 'legacy',
         deadline,
         deadlinePassed: context.deadlinePassed,
+        filing,
         officialUrl: safeExternalUrl(settlement?.claim_url),
       });
     }

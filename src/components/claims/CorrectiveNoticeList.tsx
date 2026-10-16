@@ -81,11 +81,7 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
                 </>
               ) : (
                 <>
-                  <LegacyClaimGuidance
-                    deadline={item.deadline}
-                    deadlinePassed={item.deadlinePassed}
-                    officialUrl={item.officialUrl}
-                  />
+                  <LegacyClaimGuidance deadline={item.deadline} filing={item.filing} officialUrl={item.officialUrl} />
                   <div className="mt-4">
                     <LegacyClaimAnswer
                       claimId={item.claimId}

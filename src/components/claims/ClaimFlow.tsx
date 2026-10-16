@@ -10,6 +10,7 @@ import {
   deadlineCountdown,
   displayClaimStatus,
   lateReportLastDay,
+  legacyFilingState,
   reportByDay,
   type ClaimDisplay,
   type ClaimView,
@@ -108,7 +109,7 @@ export function ClaimFlow({
       <CorrectiveNotice
         claimId={claim.id}
         deadline={settlement.deadline}
-        deadlinePassed={context.deadlinePassed}
+        filing={legacyFilingState(context)}
         officialUrl={settlement.officialUrl}
         onAnswered={onChange}
       />

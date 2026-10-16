@@ -272,6 +272,36 @@ export function claimActionAvailability(
 }
 
 /**
+ * Where a claim the old flow showed as filed stands, for the corrective
+ * notice's "Haven't filed yet?" line (D41): it may say "you still can" only
+ * while our list shows the settlement open. A settlement our list marks
+ * closed, or no longer lists, is being re-checked, so people are sent to the
+ * official site to see whether it still takes claims.
+ */
+export type LegacyFilingState = 'open' | 'closed_on_list' | 'unlisted' | 'deadline_passed';
+
+export function legacyFilingState(settlement: SettlementContext): LegacyFilingState {
+  if (settlement.deadlinePassed) return 'deadline_passed';
+  if (settlement.closedByStatus) return 'closed_on_list';
+  if (settlement.known && !settlement.published) return 'unlisted';
+  return 'open';
+}
+
+/** The dashboard's next step for a claim with an open corrective notice. */
+export function legacyNextStep(state: LegacyFilingState): string {
+  switch (state) {
+    case 'deadline_passed':
+      return 'ClaimMatch did not file this. If you filed before the deadline, tell us.';
+    case 'closed_on_list':
+      return "ClaimMatch did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.";
+    case 'unlisted':
+      return "ClaimMatch did not file this. We're re-checking this settlement. Check the official site, or tell us if you already filed.";
+    case 'open':
+      return 'ClaimMatch did not file this. File on the official site, or tell us if you already did.';
+  }
+}
+
+/**
  * The last day a late "I filed it" is accepted, or null when there is no
  * limit: no deadline, or a claim the old flow showed as filed (D42).
  */
