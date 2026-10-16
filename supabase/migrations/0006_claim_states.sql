@@ -11,10 +11,11 @@
 -- Order: run this BEFORE deploying the Part A code (that code fails with a
 -- clear 503 until it has run). Then deploy. Then run 0007.
 --
--- Effect on the code that is live today: its e-sign "Claim filed" insert writes
+-- Effect on the code that is live today: its legacy e-sign insert writes
 -- status 'submitted' with no confirmation number, which the CHECK below now
--- refuses, so that fake filing stops (the user sees "Could not file your
--- claim"). This is intended (D38: stop the 'submitted' writes first).
+-- refuses, so the legacy insert stops writing 'submitted' without a
+-- confirmation number (the user sees "Could not file your claim"). This is
+-- intended (D38: stop the 'submitted' writes first).
 --
 -- No statement in this file uses a value it adds: the functions take the
 -- status as text and cast it at run time, so the file also works inside a
@@ -55,7 +56,7 @@ comment on column public.claims.user_filed_on is
 comment on column public.claims.corrective_notice_answered_at is
   'When the user answered the Phase 0 corrective notice (D42) on a legacy claim.';
 comment on column public.claims.filed_at is
-  'Legacy. The retired e-sign flow stamped this although nothing was filed. Never shown or written.';
+  'Legacy column from the retired e-sign flow. Not shown or written by the app.';
 
 -- ---------------------------------------------------------------------------
 -- 3. 'submitted' requires a non-empty confirmation number

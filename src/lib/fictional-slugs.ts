@@ -1,5 +1,6 @@
 /**
- * The 22 made-up settlements that were published in production by mistake.
+ * The 22 sample settlements (test data, not real settlements) that were
+ * published in production.
  *
  * - 16 came from the old supabase/seed.sql (now supabase/seed.dev.sql).
  * - 6 came from the sample-aggregator scraper adapter
