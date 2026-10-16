@@ -25,6 +25,7 @@ import {
 import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
+import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
 import { StatCard } from '@/components/admin/StatCard';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -101,6 +102,7 @@ export default async function AdminOverviewPage() {
     count('jobs', (q) => q.eq('status', 'done')),
     count('jobs', (q) => q.eq('status', 'failed')),
   ]);
+  const lastIngest = await loadLastIngestRun(svc);
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -248,6 +250,8 @@ export default async function AdminOverviewPage() {
         />
       </Section>
 
+      <LastIngestRun run={lastIngest} />
+
       <Section title="Pipeline health" subtitle="Background job queue">
         <StatCard
           label="Queued"
@@ -272,6 +276,105 @@ export default async function AdminOverviewPage() {
         />
       </Section>
     </div>
+  );
+}
+
+interface IngestRun {
+  at: string;
+  status: string;
+  error: string | null;
+  summary: Partial<IngestSummary>;
+}
+
+/** The latest ingest run record (src/lib/jobs.ts recordIngestRun), or null. */
+async function loadLastIngestRun(svc: ReturnType<typeof createServiceClient>): Promise<IngestRun | null> {
+  try {
+    const { data, error } = await svc
+      .from('jobs')
+      .select('created_at, status, error, result')
+      .eq('type', 'pipeline')
+      .in('status', ['done', 'failed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const result = data.result && typeof data.result === 'object' ? (data.result as Partial<IngestSummary>) : {};
+    return {
+      at: String(data.created_at),
+      status: String(data.status),
+      error: typeof data.error === 'string' ? data.error : null,
+      summary: result,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The latest catalog ingest: its counts and, in full, every closure the
+ * circuit breaker held, so each can be checked on the official site before
+ * INGEST_MAX_CLOSE_SHARE is raised for one run.
+ */
+function LastIngestRun({ run }: { run: IngestRun | null }) {
+  const held: HeldClosure[] = Array.isArray(run?.summary.heldClosures) ? run.summary.heldClosures : [];
+  const n = (v: number | undefined) => (typeof v === 'number' ? v.toLocaleString() : '—');
+  return (
+    <section aria-labelledby="last-ingest-title">
+      <div className="mb-4">
+        <h3 id="last-ingest-title" className="text-lg font-bold text-ink">
+          Last catalog ingest
+        </h3>
+        <p className="text-sm text-ink-soft">
+          {run
+            ? `${new Date(run.at).toUTCString()} · ${run.status === 'failed' ? 'needs attention' : 'no problems'}`
+            : 'No run recorded yet. The daily cron records each run here.'}
+        </p>
+      </div>
+      {run && (
+        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
+          {run.error && (
+            <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+              {run.error}
+            </p>
+          )}
+          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            {(
+              [
+                ['Feed records', run.summary.ingested],
+                ['New, in review', run.summary.pending_review],
+                ['Closed', run.summary.closed],
+                ['Held closures', run.summary.held],
+                ['Reopened', run.summary.reopened],
+                ['Deadline changes', run.summary.deadlineChanges],
+                ['Flagged for a look', run.summary.flagged],
+                ['Failed reads or writes', run.summary.failed],
+              ] as [string, number | undefined][]
+            ).map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-ink-muted">{label}</dt>
+                <dd className="font-bold tabular-nums text-ink">{n(value)}</dd>
+              </div>
+            ))}
+          </dl>
+          {held.length > 0 && (
+            <details className="rounded-xl bg-gray-50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-ink">
+                {held.length.toLocaleString()} held closures. Check each on the official site before raising
+                INGEST_MAX_CLOSE_SHARE.
+              </summary>
+              <ul className="mt-3 max-h-96 space-y-1.5 overflow-y-auto text-sm text-ink-muted">
+                {held.map((h) => (
+                  <li key={`${h.source}:${h.slug}`}>
+                    <span className="font-mono text-ink">{h.slug}</span>: {h.changes.join('; ')}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

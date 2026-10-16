@@ -9,12 +9,15 @@
  * keeps running so the catalog stays current.
  */
 
+import type { IngestSummary } from '@/lib/scraper/pipeline';
+
 export const D50_PAUSED = 'paused (D50)';
 
 export type StepResult =
   | { status: 'ran'; result: unknown }
   | { status: 'skipped'; reason: string; resume?: string }
-  | { status: 'failed'; error: string };
+  /** `result` is kept when the step ran but needs a person (see checkIngestStep). */
+  | { status: 'failed'; error: string; result?: unknown };
 
 export interface CronReport {
   job: string;
@@ -86,6 +89,39 @@ export async function runStep(
     log(`[cron] ${label} failed:`, err);
     return { status: 'failed', error: errorMessage(err) };
   }
+}
+
+/**
+ * What in an ingest summary needs a person: held closures, failed reads or
+ * writes, and sources that returned nothing. Each one leaves "open" listings
+ * that the source has closed, so none may pass as a quiet success.
+ */
+export function ingestProblems(result: unknown): string[] {
+  if (!result || typeof result !== 'object') return [];
+  const s = result as Partial<IngestSummary>;
+  const problems: string[] = [];
+  if ((s.held ?? 0) > 0) {
+    problems.push(
+      `${s.held} closures held for review (listed in heldClosures; raise INGEST_MAX_CLOSE_SHARE only after reviewing every one)`,
+    );
+  }
+  if ((s.failed ?? 0) > 0) problems.push(`${s.failed} catalog reads or writes failed`);
+  if (s.emptySources && s.emptySources.length > 0) {
+    problems.push(`no records from ${s.emptySources.join(', ')}`);
+  }
+  return problems;
+}
+
+/**
+ * The ingest step as the cron reports it. Until D40's alerting exists, a run
+ * that needs a person counts as failed (so the route answers 500), and keeps
+ * its summary so the response and the run record still list every held row.
+ */
+export function checkIngestStep(step: StepResult): StepResult {
+  if (step.status !== 'ran') return step;
+  const problems = ingestProblems(step.result);
+  if (problems.length === 0) return step;
+  return { status: 'failed', error: problems.join('; '), result: step.result };
 }
 
 export function buildReport(job: string, steps: Record<string, StepResult>): CronReport {

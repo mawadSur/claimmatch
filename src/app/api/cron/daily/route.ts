@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { flags } from '@/lib/flags';
+import { recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
 import {
   buildReport,
+  checkIngestStep,
   matchSweepGate,
   missingConfigStep,
   reportHttpStatus,
@@ -17,7 +19,9 @@ import {
  * Daily cron (06:00 UTC, vercel.json). Vercel Hobby allows two crons, so this
  * one route runs the daily steps in order:
  *   1. ingest: fetch every source adapter and refresh the catalog (new records
- *      wait for review; no model calls; large closure batches are held).
+ *      wait for review; no model calls; large closure batches are held). Held
+ *      closures, failed writes and empty sources make the step fail (500)
+ *      until D40's alerting exists; every run is stored as a jobs row.
  *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
  *      only when MATCH_EMAILS_ENABLED=1.
  * The JSON reports each step as ran, skipped or failed; any failure makes the
@@ -36,9 +40,12 @@ async function handle(req: Request) {
   const configProblem = serviceConfigProblem(process.env);
   const steps: Record<string, StepResult> = {};
 
-  steps.ingest = configProblem
-    ? missingConfigStep(configProblem, production)
-    : await runStep('daily/ingest', ingestAndExtract);
+  if (configProblem) {
+    steps.ingest = missingConfigStep(configProblem, production);
+  } else {
+    steps.ingest = checkIngestStep(await runStep('daily/ingest', ingestAndExtract));
+    await recordIngestRun('cron/daily', steps.ingest);
+  }
 
   const gate = matchSweepGate(flags.matchEmails());
   if (!gate.run) {

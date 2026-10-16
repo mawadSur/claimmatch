@@ -328,3 +328,39 @@ export function applyCloseBreaker(
     allowed,
   };
 }
+
+export interface HeldClosure {
+  source: string;
+  slug: string;
+  changes: string[];
+}
+
+/** Held closures per log line, so no line is cut off and none is left out. */
+export const HELD_PER_LOG_LINE = 40;
+
+/**
+ * The log lines for one source's held closures: a header, then every held row
+ * with its changes, about 40 per line, each line labeled "part i of n".
+ */
+export function heldClosureLogLines(
+  source: string,
+  held: { slug: string; changes: string[] }[],
+  limit: { allowed: number; openCount: number },
+  perLine: number = HELD_PER_LOG_LINE,
+): string[] {
+  if (held.length === 0) return [];
+  const parts = Math.ceil(held.length / perLine);
+  const lines = [
+    `[pipeline] ${source}: HELD ${held.length} closures (limit ${limit.allowed} of ${limit.openCount} open rows). ` +
+      'Nothing was closed. Review every held row (listed below and stored in the run record), ' +
+      'then set INGEST_MAX_CLOSE_SHARE=1 for one run to apply them.',
+  ];
+  for (let i = 0; i < parts; i += 1) {
+    const rows = held
+      .slice(i * perLine, (i + 1) * perLine)
+      .map((h) => `${h.slug} (${h.changes.join('; ')})`)
+      .join(', ');
+    lines.push(`[pipeline] ${source}: held closures, part ${i + 1} of ${parts}: ${rows}`);
+  }
+  return lines;
+}

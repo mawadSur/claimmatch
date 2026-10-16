@@ -5,10 +5,14 @@ import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
   applyCloseBreaker,
   EXISTING_ROW_COLUMNS,
+  heldClosureLogLines,
   maxCloseShareFromEnv,
   planIngest,
   type ExistingRow,
+  type HeldClosure,
 } from './plan';
+
+export type { HeldClosure } from './plan';
 
 /**
  * Nightly ingest. For each registered source adapter: fetch its records,
@@ -23,7 +27,10 @@ import {
  * - An empty or failed fetch changes nothing, and a record missing from the
  *   feed is never closed.
  * - Closures above INGEST_MAX_CLOSE_SHARE (default 20%) of a source's open rows
- *   are held and logged instead of applied.
+ *   are held instead of applied. Every held row is logged with its changes and
+ *   kept in the summary (heldClosures), which the cron routes store as a run
+ *   record and report as a failed step, so a person reviews the whole list
+ *   before raising the limit.
  *
  * Logs name settlements by slug only; nothing here touches personal data.
  */
@@ -47,6 +54,8 @@ export type IngestSummary = {
   /** Closures held by the circuit breaker, for a person to review. */
   held: number;
   heldSlugs: string[];
+  /** Every held closure with what it would change, for that review. */
+  heldClosures: HeldClosure[];
   /** Sources that returned nothing (outage, error or empty feed). */
   emptySources: string[];
   /** Writes or reads that failed. */
@@ -72,6 +81,7 @@ function emptySummary(): IngestSummary {
     flagged: 0,
     held: 0,
     heldSlugs: [],
+    heldClosures: [],
     emptySources: [],
     failed: 0,
     bySource: {},
@@ -132,14 +142,8 @@ export async function ingestAndExtract(): Promise<IngestSummary> {
     if (held.length > 0) {
       summary.held += held.length;
       summary.heldSlugs.push(...held.map((h) => h.slug));
-      console.warn(
-        `[pipeline] ${adapter.slug}: HELD ${held.length} closures (limit ${allowed} of ${openCount} open rows). ` +
-          'Nothing was closed. Review the list, then set INGEST_MAX_CLOSE_SHARE=1 for one run to apply it. ' +
-          `Held: ${held
-            .slice(0, LOG_LIST_LIMIT)
-            .map((h) => `${h.slug} (${h.changes.join('; ')})`)
-            .join(', ')}`,
-      );
+      summary.heldClosures.push(...held.map((h) => ({ source: adapter.slug, slug: h.slug, changes: h.changes })));
+      for (const line of heldClosureLogLines(adapter.slug, held, { allowed, openCount })) console.warn(line);
     }
     if (plan.flagged.length > 0) {
       summary.flagged += plan.flagged.length;

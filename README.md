@@ -80,7 +80,7 @@ See [`.env.example`](./.env.example). Summary:
 | `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
 | `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
 | `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
-| `INGEST_MAX_CLOSE_SHARE` | Share of open settlements one ingest run may close before closures are held for review (default `0.2`) |
+| `INGEST_MAX_CLOSE_SHARE` | Share of open settlements one ingest run may close before closures are held for review (default `0.2`). A run that holds closures fails the cron (500) and lists every held row under "Last catalog ingest" in /admin; raise this for one run only after checking them |
 | `CLAIMMATCH_ENV` | `local` or `staging`; required by `npm run seed` and `npm run scrape` |
 
 Contact details that are unset render nothing. `NEXT_PUBLIC_` values are built

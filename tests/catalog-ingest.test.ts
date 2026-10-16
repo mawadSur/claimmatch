@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyCloseBreaker,
   DEFAULT_MAX_CLOSE_SHARE,
+  heldClosureLogLines,
   isLocked,
   maxCloseShareFromEnv,
   nextStatus,
@@ -195,6 +196,17 @@ describe('circuit breaker', () => {
   it('always allows a few closures on a small catalog', () => {
     const p = plan(closing(5), rows.slice(0, 6));
     expect(applyCloseBreaker(p, { openCount: 6, maxShare: 0.2 }).held).toHaveLength(0);
+  });
+
+  it('logs every held closure with its changes, about 40 per line, each line labeled', () => {
+    const held = Array.from({ length: 95 }, (_, i) => ({ slug: `held-${i}`, changes: [`status open -> closed`] }));
+    const lines = heldClosureLogLines('settlesignal', held, { allowed: 20, openCount: 100 });
+    expect(lines).toHaveLength(4);
+    expect(lines[0]).toMatch(/HELD 95 closures \(limit 20 of 100 open rows\)\. Nothing was closed\./);
+    expect(lines[1]).toMatch(/held closures, part 1 of 3: held-0 \(status open -> closed\)/);
+    expect(lines[3]).toMatch(/part 3 of 3: .*held-94/);
+    for (const h of held) expect(lines.join('\n')).toContain(`${h.slug} (`);
+    expect(heldClosureLogLines('settlesignal', [], { allowed: 20, openCount: 100 })).toEqual([]);
   });
 
   it('reads INGEST_MAX_CLOSE_SHARE safely', () => {

@@ -19,6 +19,7 @@ const m = vi.hoisted(() => {
     claimDue: vi.fn(),
     completeJob: vi.fn(),
     failJob: vi.fn(),
+    recordIngestRun: vi.fn(),
     tables: {} as Record<string, unknown>,
     createServiceClient: vi.fn(),
     thenable,
@@ -33,6 +34,7 @@ vi.mock('@/lib/jobs', () => ({
   claimDue: m.claimDue,
   completeJob: m.completeJob,
   failJob: m.failJob,
+  recordIngestRun: m.recordIngestRun,
 }));
 vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: m.createServiceClient,
@@ -134,6 +136,50 @@ describe('/api/cron/daily', () => {
     const { status } = await call(daily.GET, '/api/cron/daily', false);
     expect(status).toBe(401);
     expect(m.ingestAndExtract).not.toHaveBeenCalled();
+  });
+
+  it('answers 500 when closures were held, and keeps every held row in the response and the run record', async () => {
+    const heldClosures = Array.from({ length: 190 }, (_, i) => ({
+      source: 'settlesignal',
+      slug: `held-${i}`,
+      changes: ['status open -> closed'],
+    }));
+    const summary = {
+      ...INGEST,
+      held: 190,
+      heldSlugs: heldClosures.map((h) => h.slug),
+      heldClosures,
+      failed: 0,
+      emptySources: [],
+    };
+    m.ingestAndExtract.mockResolvedValue(summary);
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(500);
+    expect(body.failedSteps).toEqual(['ingest']);
+    expect(body.steps.ingest.error).toMatch(/190 closures held for review/);
+    expect(body.steps.ingest.result.heldClosures).toHaveLength(190);
+    expect(m.recordIngestRun).toHaveBeenCalledWith(
+      'cron/daily',
+      expect.objectContaining({ status: 'failed', result: summary }),
+    );
+  });
+
+  it('answers 500 when a source returned nothing or a write failed', async () => {
+    m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 0, failed: 0, emptySources: ['settlesignal'] });
+    let res = await call(daily.GET, '/api/cron/daily');
+    expect(res.status).toBe(500);
+    expect(res.body.steps.ingest.error).toBe('no records from settlesignal');
+    m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 0, failed: 2, emptySources: [] });
+    res = await call(daily.GET, '/api/cron/daily');
+    expect(res.status).toBe(500);
+    expect(res.body.steps.ingest.error).toBe('2 catalog reads or writes failed');
+  });
+
+  it('records a clean run as done', async () => {
+    m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 0, failed: 0, emptySources: [] });
+    const { status } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.recordIngestRun).toHaveBeenCalledWith('cron/daily', expect.objectContaining({ status: 'ran' }));
   });
 
   it('fails loudly in production when the service role key is missing', async () => {
@@ -293,5 +339,13 @@ describe('/api/cron/pipeline and /api/cron/scrape', () => {
     m.runAllSources.mockRejectedValue(new Error('y'));
     expect((await call(pipeline.POST, '/api/cron/pipeline')).status).toBe(500);
     expect((await call(scrape.POST, '/api/cron/scrape')).status).toBe(500);
+  });
+
+  it('pipeline answers 500 and records the run when closures were held', async () => {
+    m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 3, heldSlugs: ['a', 'b', 'c'], failed: 0, emptySources: [] });
+    const { status, body } = await call(pipeline.GET, '/api/cron/pipeline');
+    expect(status).toBe(500);
+    expect(body.steps.ingest).toMatchObject({ status: 'failed', result: { heldSlugs: ['a', 'b', 'c'] } });
+    expect(m.recordIngestRun).toHaveBeenCalledWith('cron/pipeline', expect.objectContaining({ status: 'failed' }));
   });
 });
