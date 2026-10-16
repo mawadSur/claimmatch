@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 
 export const metadata: Metadata = {
@@ -11,14 +12,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = 'force-dynamic';
-
-/** Only same-site paths, so the redirect after onboarding can't leave the site. */
-function safeNext(raw: string | undefined): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
-    return '/dashboard?welcome=1';
-  }
-  return raw;
-}
 
 const HOW_IT_WORKS = [
   'Find an open settlement in our list.',
@@ -30,7 +23,7 @@ const HOW_IT_WORKS = [
 export default async function OnboardingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const { next } = await searchParams;
   const supabase = await createClient();
@@ -38,6 +31,8 @@ export default async function OnboardingPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/onboarding');
+  // Only a path on this site, so the redirect after onboarding can't leave it.
+  const destination = safeNextOr(next, '/dashboard?welcome=1');
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -82,7 +77,7 @@ export default async function OnboardingPage({
                 zip: profile?.zip ?? '',
               }}
               email={user.email ?? null}
-              next={safeNext(next)}
+              next={destination}
             />
           </div>
         </div>

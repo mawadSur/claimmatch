@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { US_STATES } from '@/lib/utils';
+import { safeNextOr } from '@/lib/safe-next';
 import {
   saveOnboardingProfile,
   skipOnboarding,
@@ -51,7 +52,7 @@ export function OnboardingWizard({
       return;
     }
     startTransition(() => {
-      router.push(next);
+      router.push(safeNextOr(next, '/dashboard?welcome=1'));
       router.refresh();
     });
   }

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
+import { safeNextPath } from '@/lib/safe-next';
 
 type Mode = 'login' | 'signup';
 
@@ -27,13 +28,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
-  const rawNext = searchParams.get('next');
-  // Only allow same-origin relative paths — never a protocol-relative ("//host")
-  // or absolute URL — to prevent an open redirect after authentication.
-  const next =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : null;
+  // Only a path on this site (no "//host", "/\host" or control characters), so
+  // a crafted link can't send people to another site after they log in.
+  const next = safeNextPath(searchParams.get('next'));
 
   // Referral code from ?ref (set by /r/[code]) or the cm_ref cookie fallback.
   function readRefCookie(): string | null {
