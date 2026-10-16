@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { claimDue, completeJob, failJob } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
+import type { Job } from '@/lib/types';
+import {
+  buildReport,
+  errorMessage,
+  missingConfigStep,
+  reportHttpStatus,
+  serviceConfigProblem,
+  type StepResult,
+} from '../_lib/report';
 
 // Drains the durable job queue with the service-role client → Node runtime,
 // never cached, and long-lived enough to work through a batch.
@@ -10,40 +19,75 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Generic worker: claim up to 20 due jobs and dispatch each by type. Every job
- * is wrapped so one failure never aborts the batch — it's marked failed (with
- * backoff/retry handled by {@link failJob}) and the drain continues.
+ * Generic worker (not scheduled): claim up to 20 due jobs and dispatch each by
+ * type. One failure never aborts the batch: the job is marked failed (with
+ * backoff and retry in {@link failJob}) and the drain continues. Each job is
+ * reported as a step; any failure makes the response a 500.
  */
 async function handle(req: Request) {
   if (!authorizeCron(req)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  const jobs = await claimDue(20);
+  const configProblem = serviceConfigProblem(process.env);
+  if (configProblem) {
+    const report = buildReport('jobs', {
+      claim: missingConfigStep(configProblem, process.env.NODE_ENV === 'production'),
+    });
+    return NextResponse.json({ ...report, claimed: 0 }, { status: reportHttpStatus(report) });
+  }
 
+  let jobs: Job[];
+  try {
+    jobs = await claimDue(20);
+  } catch (err) {
+    console.error('[cron/jobs] claim failed:', err);
+    const report = buildReport('jobs', { claim: { status: 'failed', error: errorMessage(err) } });
+    return NextResponse.json({ ...report, claimed: 0 }, { status: reportHttpStatus(report) });
+  }
+
+  const steps: Record<string, StepResult> = {};
   for (const job of jobs) {
+    const key = `${job.type}:${job.id}`;
     try {
-      switch (job.type) {
-        case 'scrape':
-        case 'extract':
-        case 'pipeline': {
-          const summary = await ingestAndExtract();
-          await completeJob(job.id, summary);
-          break;
-        }
-        case 'match':
-          // Matching runs in its own sweep (/api/cron/match); nothing to do here.
-          await completeJob(job.id, { noop: true });
-          break;
-        default:
-          await failJob(job, `unknown job type: ${job.type}`);
-      }
+      steps[key] = await processJob(job);
     } catch (err) {
-      await failJob(job, err instanceof Error ? err.message : String(err));
+      console.error(`[cron/jobs] ${key} failed:`, err);
+      const error = errorMessage(err);
+      try {
+        await failJob(job, error);
+      } catch (markErr) {
+        console.error(`[cron/jobs] could not mark ${key} failed:`, markErr);
+      }
+      steps[key] = { status: 'failed', error };
     }
   }
 
-  return NextResponse.json({ processed: jobs.length });
+  const report = buildReport('jobs', steps);
+  return NextResponse.json({ ...report, claimed: jobs.length }, { status: reportHttpStatus(report) });
+}
+
+/** Run one job. Throws on failure; the caller records it and marks the job failed. */
+async function processJob(job: Job): Promise<StepResult> {
+  switch (job.type) {
+    case 'scrape':
+    case 'extract':
+    case 'pipeline': {
+      const summary = await ingestAndExtract();
+      await completeJob(job.id, summary);
+      return { status: 'ran', result: summary };
+    }
+    case 'match':
+      // Never runs the sweep or sends email. The sweep runs only from
+      // /api/cron/daily, where D50 pauses it.
+      await completeJob(job.id, { noop: true });
+      return {
+        status: 'skipped',
+        reason: 'match jobs do nothing; the match sweep runs only from /api/cron/daily',
+      };
+    default:
+      throw new Error(`unknown job type: ${job.type}`);
+  }
 }
 
 export async function GET(req: Request) {

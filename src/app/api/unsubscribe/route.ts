@@ -1,57 +1,85 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { SITE } from '@/lib/utils';
+import { rateLimit, ipKey } from '@/lib/ratelimit';
+import {
+  TOKEN_PARAM,
+  emailMatchCandidates,
+  pageLocationForGet,
+  parseUnsubscribeToken,
+  unsubscribeBackendProblem,
+  unsubscribeResultPath,
+} from '@/lib/unsubscribe';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-// One-click unsubscribe target for email footers. Token `e` is the recipient's
-// email encoded as base64url (see unsubscribeUrl in @/lib/email). We never throw
-// here — any bad token or DB hiccup lands the user on a friendly fallback page.
+/**
+ * Unsubscribe endpoint (see @/lib/unsubscribe for the whole flow).
+ *
+ * GET changes nothing. Mail scanners and link previews open links in emails,
+ * so a GET only redirects to the /unsubscribe confirm page.
+ *
+ * POST is the confirm button on that page: a plain form post that works
+ * without JavaScript. It turns off profiles.email_opt_in for the token's
+ * address and redirects (303) back to the page with the outcome.
+ *
+ * Never log the token, the address, or a URL or error that might contain them.
+ */
 
-function decodeEmail(token: string | null): string | null {
-  if (!token) return null;
-  try {
-    const email = Buffer.from(token, 'base64url').toString('utf8').trim().toLowerCase();
-    // Cheap sanity check so a garbage token doesn't hit the DB.
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
-    return email;
-  } catch {
-    return null;
-  }
-}
+/** Per-IP attempts allowed per minute. */
+const POST_LIMIT = 10;
 
-function redirectDone(req: Request, done: 0 | 1): NextResponse {
-  const base = SITE.url.replace(/\/$/, '');
-  // Prefer the request origin so the redirect works on preview URLs too, but
-  // fall back to the configured site URL if the origin can't be resolved.
-  let origin = base;
-  try {
-    origin = new URL(req.url).origin;
-  } catch {
-    // keep base
-  }
-  return NextResponse.redirect(`${origin}/unsubscribe?done=${done}`, { status: 303 });
+function redirectTo(req: Request, path: string): NextResponse {
+  const res = NextResponse.redirect(new URL(path, req.url), { status: 303 });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
 }
 
 export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url);
-    const email = decodeEmail(url.searchParams.get('e'));
-    if (!email) return redirectDone(req, 0);
+  const raw = new URL(req.url).searchParams.get(TOKEN_PARAM);
+  return redirectTo(req, pageLocationForGet(raw));
+}
 
-    const supabase = createServiceClient();
-    const { error } = await supabase
+export async function POST(req: Request) {
+  let fromBody: FormDataEntryValue | null = null;
+  try {
+    fromBody = (await req.formData()).get(TOKEN_PARAM);
+  } catch {
+    // Not a form post; the token may still be in the query string.
+  }
+  const raw = typeof fromBody === 'string' ? fromBody : new URL(req.url).searchParams.get(TOKEN_PARAM);
+
+  const parsed = parseUnsubscribeToken(raw);
+  if (!parsed.ok) return redirectTo(req, unsubscribeResultPath('invalid'));
+  const { email } = parsed;
+
+  if (!rateLimit(`unsubscribe:${ipKey(req)}`, { limit: POST_LIMIT, windowMs: 60_000 }).ok) {
+    return redirectTo(req, unsubscribeResultPath('busy', email));
+  }
+
+  const problem = unsubscribeBackendProblem(process.env);
+  if (problem) {
+    console.error(`[unsubscribe] cannot save opt-outs: ${problem}`);
+    return redirectTo(req, unsubscribeResultPath('failed', email));
+  }
+
+  try {
+    const { error } = await createServiceClient()
       .from('profiles')
       .update({ email_opt_in: false })
-      .eq('email', email);
-
+      .in('email', emailMatchCandidates(email))
+      .select('id');
     if (error) {
-      console.error('[unsubscribe] update failed:', error);
-      return redirectDone(req, 0);
+      // The code only: messages and details can quote the filter, which holds the address.
+      console.error(`[unsubscribe] update failed (code ${error.code ?? 'unknown'})`);
+      return redirectTo(req, unsubscribeResultPath('failed', email));
     }
-    return redirectDone(req, 1);
   } catch (err) {
-    console.error('[unsubscribe] unexpected error:', err);
-    return redirectDone(req, 0);
+    console.error(`[unsubscribe] update threw (${err instanceof Error ? err.name : 'unknown'})`);
+    return redirectTo(req, unsubscribeResultPath('failed', email));
   }
+
+  // Same answer whether or not an account uses this address, so the page never
+  // reveals who has one. Either way, no match or digest email goes to it.
+  return redirectTo(req, unsubscribeResultPath('done'));
 }
