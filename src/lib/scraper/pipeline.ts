@@ -54,7 +54,9 @@ export type IngestSummary = {
   bySource: Record<string, number>;
 };
 
-const IN_CHUNK = 100;
+// External ids run to ~95 characters, so 40 per IN list keeps each request URL
+// near 4 KB, well under gateway URL limits.
+const IN_CHUNK = 40;
 const LOG_LIST_LIMIT = 50;
 
 function emptySummary(): IngestSummary {
