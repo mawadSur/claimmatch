@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CalendarClock, CheckCircle2, ExternalLink, ShieldCheck } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
@@ -73,6 +73,14 @@ export function ClaimFlow({
   const display = claim ? displayClaimStatus(claim, context) : null;
   const reported = claim?.status === 'reported_filed' || display?.kind === 'submitted';
 
+  // When a report succeeds the form is replaced, so move focus to the result.
+  const yourClaimHeading = useRef<HTMLHeadingElement>(null);
+  const wasReported = useRef(reported);
+  useEffect(() => {
+    if (reported && !wasReported.current) yourClaimHeading.current?.focus();
+    wasReported.current = reported;
+  }, [reported]);
+
   function openedOfficialForm() {
     posthog?.capture('official_form_opened');
     if (claim || !context.openForClaims) return;
@@ -107,7 +115,9 @@ export function ClaimFlow({
   } else if (claim && reported) {
     body = (
       <section aria-labelledby="your-claim" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
-        <h2 id="your-claim" className="text-lg font-bold">Your claim</h2>
+        <h2 id="your-claim" ref={yourClaimHeading} tabIndex={-1} className="text-lg font-bold focus:outline-none">
+          Your claim
+        </h2>
         <div className="mt-4">
           <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
         </div>

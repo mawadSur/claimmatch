@@ -70,7 +70,9 @@ export default async function DashboardPage({
 
         {welcome === '1' && <WelcomeCard />}
 
-        {notices.length > 0 && <CorrectiveNoticeList items={notices} />}
+        {/* Always rendered (it shows nothing without notices) so its answers stay
+            on screen after router.refresh() drops the answered rows. */}
+        <CorrectiveNoticeList items={notices} />
 
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
