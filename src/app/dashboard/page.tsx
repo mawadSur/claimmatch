@@ -40,9 +40,8 @@ export default async function DashboardPage({
   const [{ data: profile }, claims, catalog] = await Promise.all([
     supabase.from('profiles').select('full_name, onboarded').eq('id', user.id).maybeSingle(),
     loadUserClaims(user.id),
-    // INTEGRATION: getLawsuits applies the catalog's shared open-for-claims rule
-    // once that branch lands; buildClosingSoon filters again with the claim
-    // flow's own rule in the meantime.
+    // getLawsuits returns only settlements open for claims (the shared rule);
+    // buildClosingSoon applies the same rule again and drops tracked ones.
     getLawsuits().catch(() => []),
   ]);
 
