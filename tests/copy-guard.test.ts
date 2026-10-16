@@ -46,13 +46,37 @@ const RULES: Rule[] = [
   { id: 'bank-level', pattern: /\bbank[\s-]+level\b/gi },
   { id: 'autopilot', pattern: /\bautopilot\b/gi },
   { id: '$50b', pattern: /\$\s?50\s?b/gi },
+  // The exact strings production showed: "Claim filed", "Receipt #123".
+  { id: 'claim filed', pattern: /\bclaims?\s+(?:was\s+|were\s+|has\s+been\s+|is\s+)?filed\b/gi },
+  { id: 'receipt id', pattern: /\breceipts?\b\s*(?:#|no\.|number|:)/gi },
+  { id: 'receipt label', pattern: /(?:label=\{?["'`]|>\s*)receipts?\s*(?=["'`<{]|\s*:)/gi },
+  {
+    // "We file" has its own rule above.
+    id: 'we submit',
+    pattern:
+      /\b(?:(?:claimmatch|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:files?|filed|submits?|submitted)|we(?:['’]ll|\s+will|\s+can)?\s+(?:submits?|submitted))\b(?!\s+(?:nothing|no)\b)/gi,
+    negatable: true,
+  },
+  { id: 'N% match', pattern: /(?:\d{1,3}|\})\s?%\s*match/gi },
+  { id: 'you are owed', pattern: /\byou\s+(?:are|could\s+be|may\s+be|might\s+be)\s+owed\b/gi },
 ];
 
 /**
  * Deliberate exceptions. Keep empty unless a banned phrase must appear in
  * user-facing text for a real reason, and say why.
  */
-const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> = [];
+const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> = [
+  {
+    file: 'src/components/claims/CorrectiveNotice.tsx',
+    rule: 'claim filed',
+    reason: 'Quotes the wrong “Claim filed” message the old flow showed, in order to correct it (D42).',
+  },
+  {
+    file: 'src/components/claims/CorrectiveNoticeList.tsx',
+    rule: 'claim filed',
+    reason: 'Quotes the wrong “Claim filed” message the old flow showed, in order to correct it (D42).',
+  },
+];
 
 const NEGATION =
   /^(?:not|never|no|nothing|none|nobody|neither|nor|cannot|without)$|n['’]t$/i;
@@ -166,8 +190,34 @@ describe('copy guard rules', () => {
     ['const a = "a money autopilot";', 'autopilot'],
     ['const a = "$50B+ left unclaimed";', '$50b'],
     ['const a = "$50 billion";', '$50b'],
+    ['const a = "Claim filed!";', 'claim filed'],
+    ['const a = "Your claim was filed";', 'claim filed'],
+    ['const a = "Receipt #CM-12345";', 'receipt id'],
+    ['const a = "Receipt no. 12";', 'receipt id'],
+    ['const a = <dt>Receipt</dt>;', 'receipt label'],
+    ['const a = <Row label="Receipt" value={n} />;', 'receipt label'],
+    ['const a = "We submit your claim to the administrator";', 'we submit'],
+    ['const a = "ClaimMatch files your claim for you";', 'we submit'],
+    ['const a = "Our team submitted it";', 'we submit'],
+    ['const a = "92% match";', 'N% match'],
+    ['const a = `${pct}% match`;', 'N% match'],
+    ['const a = <b>{pct}% match</b>;', 'N% match'],
+    ['const a = "You are owed $180";', 'you are owed'],
+    ['const a = "you may be owed money";', 'you are owed'],
   ])('flags %s', (text, rule) => {
-    expect(flagged(text)).toContain(rule);
+    expect(flagged(text, text.includes('<') ? 'snippet.tsx' : 'snippet.ts')).toContain(rule);
+  });
+
+  it.each([
+    'const a = "ClaimMatch never files claims";',
+    'const a = "ClaimMatch files nothing";',
+    'const a = "ClaimMatch did not file this claim";',
+    'const a = "This claim now shows Not filed yet";',
+    'const a = "Reported filed by you";',
+    'const a = "No receipt needed";',
+    'const a = "Keep your receipts and statements";',
+  ])('the new rules allow %s', (text) => {
+    expect(flagged(text)).toEqual([]);
   });
 
   it.each([
@@ -206,6 +256,7 @@ describe('copy guard rules', () => {
     const found = scanSource('snippet.tsx', jsx);
     expect(found).toEqual([
       { file: 'snippet.tsx', line: 4, rule: 'file on your behalf', text: 'files on your behalf' },
+      { file: 'snippet.tsx', line: 4, rule: 'we submit', text: 'Our team files' },
     ]);
   });
 

@@ -88,8 +88,8 @@ const VERIFY_STEPS = [
 
 const FAQ = [
   {
-    q: 'Does ClaimMatch file claims for me?',
-    a: 'No. You file every claim yourself on the official settlement website. ClaimMatch helps you find open settlements and keep track of the claims you file.',
+    q: 'Who files my claim?',
+    a: 'You do, on the official settlement website. ClaimMatch never files claims for anyone. It helps you find open settlements and keep track of the claims you file.',
   },
   {
     q: 'What does ClaimMatch cost?',
