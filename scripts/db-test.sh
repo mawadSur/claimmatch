@@ -26,7 +26,8 @@ cd "$(dirname "$0")/.."
 export PGOPTIONS="${PGOPTIONS:--c client_min_messages=warning}"
 run() { psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -X "$@"; }
 
-echo "db-test: PostgreSQL $(run -At -c 'show server_version')"
+server_version=$(run -At -c 'show server_version')
+echo "db-test: PostgreSQL $server_version"
 run -f supabase/tests/00_auth_stub.sql
 for f in supabase/migrations/*.sql; do
   echo "migrate  $f"

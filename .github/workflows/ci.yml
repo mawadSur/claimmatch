@@ -1,0 +1,103 @@
+# CI for every pull request and every push to main.
+#
+# Branch protection on main requires the two jobs below by name: "verify" and
+# "db-migrations". Renaming a job (its id or its name) silently drops it from
+# the required checks, so update branch protection in the same change.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One run per branch or pull request; a new push cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:run
+
+      # No Supabase, Resend or other app settings on purpose: the build must
+      # pass without secrets, the way it does locally.
+      - name: Build
+        run: npm run build
+
+      # Fails only on critical advisories in runtime dependencies. next 15 pins
+      # postcss 8.4.31, which has a high-severity advisory that only next 16
+      # fixes, so --audit-level=high would fail every run until that upgrade.
+      # Run "npm audit --omit=dev" locally to see everything below critical.
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=critical
+
+  db-migrations:
+    name: db-migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # The throwaway database in the service container above. Never a real
+      # Supabase project: scripts/db-test.sh creates stub roles and writes rows.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the PostgreSQL client
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends postgresql-client
+          fi
+          psql --version
+
+      - name: Apply every migration from scratch and run the SQL tests
+        run: scripts/db-test.sh
