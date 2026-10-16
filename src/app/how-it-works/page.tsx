@@ -234,13 +234,13 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {LAWSUIT_CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat] ?? Gift;
               return (
                 <li
                   key={cat}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-card"
+                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-card sm:p-4"
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
                     <Icon className="h-5 w-5" aria-hidden />

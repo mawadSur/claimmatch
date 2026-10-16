@@ -18,7 +18,9 @@ export function Footer() {
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
                 <Scale className="h-4 w-4" aria-hidden />
               </span>
-              Claim<span className="-ml-1 text-brand-600">Match</span>
+              <span>
+                Claim<span className="text-brand-600">Match</span>
+              </span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-ink-muted">
               A free claim assistant. Find open class-action settlements, file on the

@@ -198,9 +198,7 @@ export default function TrustPage() {
             <Lock className="h-3.5 w-3.5" aria-hidden /> Your data
           </span>
           <h2 id="data-heading" className="mt-4 text-3xl font-extrabold">What we store and why</h2>
-          <p className="mt-3 text-ink-muted">
-            We keep only what we need to run your account and track your claims.
-          </p>
+          <p className="mt-3 text-ink-muted">Here is what we keep, and why.</p>
         </div>
         <dl className="mx-auto mt-10 max-w-3xl divide-y divide-gray-100 rounded-2xl border border-gray-100 bg-white shadow-card">
           {STORED.map((s) => (
