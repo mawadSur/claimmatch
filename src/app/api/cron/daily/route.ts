@@ -16,7 +16,8 @@ import {
 /**
  * Daily cron (06:00 UTC, vercel.json). Vercel Hobby allows two crons, so this
  * one route runs the daily steps in order:
- *   1. ingest: fetch every source adapter, extract, upsert with review gating.
+ *   1. ingest: fetch every source adapter and refresh the catalog (new records
+ *      wait for review; no model calls; large closure batches are held).
  *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
  *      only when MATCH_EMAILS_ENABLED=1.
  * The JSON reports each step as ran, skipped or failed; any failure makes the
