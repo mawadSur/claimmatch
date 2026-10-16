@@ -54,7 +54,7 @@ export function Footer() {
 
         <div className="mt-10 space-y-3 border-t border-gray-200 pt-6 text-xs leading-relaxed text-ink-muted">
           <p>
-            Settlement data comes from{' '}
+            Settlement listings include data from{' '}
             <a
               href="https://settlesignal.com/data/"
               target="_blank"
@@ -62,8 +62,8 @@ export function Footer() {
               className={INLINE_LINK}
             >
               SettleSignal
-            </a>{' '}
-            and is used under the{' '}
+            </a>
+            , used under the{' '}
             <a
               href="https://creativecommons.org/licenses/by/4.0/"
               target="_blank"

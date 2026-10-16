@@ -48,8 +48,8 @@ export function ReferralCard({ code }: { code: string | null }) {
           </button>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-ink-soft">
-          Your referral link will appear here once your profile finishes setting up.
+        <p className="mt-4 text-sm text-ink-muted">
+          Your link will appear here once your account finishes setting up.
         </p>
       )}
     </div>
