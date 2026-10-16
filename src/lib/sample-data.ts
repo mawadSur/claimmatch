@@ -1,10 +1,12 @@
 import type { Lawsuit } from './types';
 
 /**
- * A small set of realistic sample settlements used as a graceful fallback when
- * Supabase is not configured or the `lawsuits` table is empty. This keeps the
- * deployed site looking alive before the DB is seeded. The full seed lives in
- * supabase/seed.sql. These are illustrative examples, not legal solicitations.
+ * MADE-UP sample settlements for local and staging databases only.
+ *
+ * scripts/seed.ts writes these into a local or staging database (it refuses
+ * production). They are not real settlements, so the app never shows them as
+ * a fallback: SAMPLE_LAWSUITS is an empty list in production builds, which
+ * keeps any leftover `if (empty) use SAMPLE_LAWSUITS` path harmless there.
  */
 function iso(daysFromNow: number): string {
   const d = new Date();
@@ -31,7 +33,7 @@ const base = {
   updated_at: new Date().toISOString(),
 };
 
-export const SAMPLE_LAWSUITS: Lawsuit[] = [
+const SAMPLES: Lawsuit[] = [
   {
     ...base,
     id: 'sample-databreach',
@@ -147,6 +149,13 @@ export const SAMPLE_LAWSUITS: Lawsuit[] = [
     is_featured: false,
   },
 ];
+
+/**
+ * The made-up samples outside production, and an empty list in production
+ * builds (NODE_ENV is "production" on every Vercel deployment).
+ */
+export const SAMPLE_LAWSUITS: Lawsuit[] =
+  process.env.NODE_ENV === 'production' ? [] : SAMPLES;
 
 export function getSampleFeatured(): Lawsuit[] {
   return SAMPLE_LAWSUITS.filter((l) => l.is_featured);
