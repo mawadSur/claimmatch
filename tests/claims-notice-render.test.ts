@@ -68,3 +68,47 @@ describe('long notice lists (File-all accounts)', () => {
     expect(render([...many(2), ...many(1, 'fictional')])).not.toContain('Got it for all');
   });
 });
+
+describe('ClaimFlow caveat for a settlement our list marks closed', () => {
+  it("doesn't claim the deadline hasn't passed when there is none", async () => {
+    const { ClaimFlow } = await import('@/components/claims/ClaimFlow');
+    const { settlementContext } = await import('@/lib/claims');
+    const now = new Date('2026-10-16T18:00:00Z');
+    const facts = { slug: 'real', status: 'closed', review_status: 'published', deadline: null as string | null };
+    const settlement = {
+      id: '00000000-0000-4000-8000-0000000000d1',
+      slug: 'real',
+      title: 'Real settlement',
+      deadline: null,
+      officialUrl: 'https://www.realsettlement-admin.com/file',
+      sourceUrl: null,
+      sourceHost: null,
+      eligibility: null,
+      proof: 'unknown' as const,
+    };
+    const claim = {
+      id: 'c1',
+      lawsuit_id: settlement.id,
+      lawsuit_title: 'Real settlement',
+      status: 'self_file',
+      confirmation_number: null,
+      reported_filed_at: null,
+      user_filed_on: null,
+      corrective_notice_answered_at: null,
+      corrective_notice_required: false,
+      created_at: null,
+    };
+    const html = (deadline: string | null) =>
+      renderToStaticMarkup(
+        createElement(ClaimFlow, {
+          settlement: { ...settlement, deadline },
+          context: settlementContext({ ...facts, deadline }, now, () => false),
+          initialClaim: claim,
+          nowIso: now.toISOString(),
+        }),
+      ).replace(/&#x27;/g, "'");
+    expect(html(null)).toContain("Our list marks this settlement as closed. We're re-checking it.");
+    expect(html(null)).not.toContain("deadline hasn't passed");
+    expect(html('2026-12-01')).toContain("but its deadline hasn't passed");
+  });
+});

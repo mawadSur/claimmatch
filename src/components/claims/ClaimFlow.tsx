@@ -249,7 +249,9 @@ function StatusPanel({
 function Caveat({ context }: { context: SettlementContext }) {
   let text: string | null = null;
   if (context.closedByStatus) {
-    text = "Our list marks this settlement as closed, but its deadline hasn't passed. We're re-checking it. Check the official site before you file.";
+    text = context.deadline
+      ? "Our list marks this settlement as closed, but its deadline hasn't passed. We're re-checking it. Check the official site before you file."
+      : "Our list marks this settlement as closed. We're re-checking it. Check the official site before you file.";
   } else if (context.known && !context.published) {
     text = 'This settlement is no longer listed on ClaimMatch while we re-check it. Check the official site before you file.';
   }

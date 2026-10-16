@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import {
   eligibilitySummary,
@@ -76,6 +76,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   );
 
   if (!claim && !context.openForClaims) {
+    const official = safeExternalUrl(settlement.claim_url);
     return (
       <section className="container-narrow py-10 sm:py-12">
         {header}
@@ -88,7 +89,27 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
             {settlement.deadline && context.deadlinePassed
               ? `Its deadline was ${formatDeadline(settlement.deadline)}, so it is no longer taking claims.`
               : 'It is no longer taking claims.'}{' '}
-            If you think that&rsquo;s wrong, check the official site.
+            {official ? (
+              <>
+                If you think that&rsquo;s wrong,{' '}
+                <a
+                  href={official}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                >
+                  check the official site
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+                .
+              </>
+            ) : (
+              <>
+                If you think that&rsquo;s wrong, check the official site: use the link in the
+                notice you got by mail or email.
+              </>
+            )}
           </p>
           <Link href="/lawsuits" className="btn-primary mt-5 w-full sm:w-auto">
             Browse open settlements <ArrowRight className="h-4 w-4" aria-hidden />
