@@ -51,8 +51,12 @@ Auth, the catalog and email need Supabase and Resend keys.
 2. Apply `supabase/migrations/*` in order (`supabase db push`, or paste each file
    into the SQL editor). `scripts/db-test.sh` applies them all to a throwaway
    local Postgres.
-3. The seed files in `supabase/` and `npm run seed` load **fictional** sample
-   settlements for local development only. Never run them against production.
+3. Sample data is **fictional** and for a local or staging database only:
+   `CLAIMMATCH_ENV=local npm run seed` loads sample settlements the local site
+   shows, and `supabase/seed.dev.sql` (opt-in, see its header) recreates the 16
+   made-up rows production once showed. `npm run seed` and `npm run scrape`
+   refuse to run unless `CLAIMMATCH_ENV` is `local` or `staging`, and always
+   refuse the production project.
 4. Copy the project URL, anon key and service role key into `.env.local`.
 5. Make yourself an admin: set `ADMIN_EMAILS=you@example.com`, or run
    `update public.profiles set is_admin = true where email = 'you@example.com';`
@@ -65,16 +69,19 @@ See [`.env.example`](./.env.example). Summary:
 | Var | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client and server Supabase access |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only jobs and writes. Never exposed to the browser |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only jobs and writes, including every claim update and unsubscribe. Never exposed to the browser |
 | `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata, emails and referral links |
 | `RESEND_API_KEY` / `RESEND_FROM` | Email |
-| `ANTHROPIC_API_KEY` | Optional LLM extraction of settlement text |
+| `ANTHROPIC_API_KEY` | Not used in Phase 0 (the ingest makes no model calls) |
 | `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access |
 | `CRON_SECRET` | Protects `/api/cron/*` (Vercel Cron sends it automatically) |
 | `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Product analytics |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail |
 | `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
 | `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
+| `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
+| `INGEST_MAX_CLOSE_SHARE` | Share of open settlements one ingest run may close before closures are held for review (default `0.2`) |
+| `CLAIMMATCH_ENV` | `local` or `staging`; required by `npm run seed` and `npm run scrape` |
 
 Contact details that are unset render nothing. `NEXT_PUBLIC_` values are built
 into the site, so redeploy after changing one.
