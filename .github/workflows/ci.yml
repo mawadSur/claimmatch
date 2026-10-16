@@ -13,10 +13,12 @@ on:
 permissions:
   contents: read
 
-# One run per branch or pull request; a new push cancels the older run.
+# One run per branch or pull request. A new push to a pull request cancels its
+# older run. On main a started run is never cancelled; it finishes, and the
+# newest push waits its turn (GitHub keeps only the latest waiting run).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
