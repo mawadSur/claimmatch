@@ -118,7 +118,12 @@ describe('buildDashboard', () => {
       label: 'Not filed yet',
       group: 'needs_filing',
       action: { label: 'How to file' },
+      // Saving a settlement is not a decision that you qualify.
+      nextStep: 'If you qualify, file on the official site before the deadline, then tell us.',
     });
+    expect(row(claim(), settlement({ deadline: null })).rows[0].nextStep).toBe(
+      'If you qualify, file on the official site, then tell us.',
+    );
     expect(row(claim({ status: 'reported_filed' }), settlement()).rows[0]).toMatchObject({
       group: 'reported',
       action: { label: 'Add number' },

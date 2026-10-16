@@ -129,7 +129,9 @@ export function buildDashboard(
           nextStep = 'Our list marks this settlement closed. Check the official site before you file.';
           action = href ? { label: 'How to file', href } : null;
         } else {
-          nextStep = 'File on the official site before the deadline, then tell us.';
+          nextStep = deadline
+            ? 'If you qualify, file on the official site before the deadline, then tell us.'
+            : 'If you qualify, file on the official site, then tell us.';
           action = href ? { label: 'How to file', href } : null;
         }
         break;

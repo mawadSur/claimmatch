@@ -5,7 +5,7 @@ import { ClaimStatusBadge } from './ClaimStatusBadge';
 import { GROUP_ORDER, type DashboardRow } from './dashboard-model';
 
 const GROUP_HINT: Record<ClaimGroup, string> = {
-  needs_filing: 'File these on the official site before the deadline.',
+  needs_filing: 'If the official notice describes you, file on the official site before the deadline.',
   reported: 'You told us you filed. Add the confirmation number when you get it.',
   submitted: 'Filed, with the administrator’s confirmation number on record.',
   closed: 'The deadline passed, or there is nothing left to do.',

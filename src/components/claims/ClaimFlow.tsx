@@ -18,7 +18,6 @@ import {
   type SettlementContext,
 } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
-import { startTracking } from './claim-api';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
 import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { ReportFiled } from './ReportFiled';
@@ -83,15 +82,11 @@ export function ClaimFlow({
     wasReported.current = reported;
   }, [reported]);
 
+  // Opening the form tracks nothing: people often open it only to read the
+  // rules, and may find they don't qualify. The claim is saved when they tell
+  // us they filed, or choose "Not yet: save to my claims".
   function openedOfficialForm() {
     posthog?.capture('official_form_opened');
-    if (claim || !context.openForClaims) return;
-    // Start tracking in the background; the official site opens in a new tab.
-    void startTracking(settlement.id).then((result) => {
-      if (!result.ok) return;
-      posthog?.capture('claim_tracking_started');
-      onChange(result.claim, 'We added this settlement to your claims as Not filed yet.');
-    });
   }
 
   let body: React.ReactNode;

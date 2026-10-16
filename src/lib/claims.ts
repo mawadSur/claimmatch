@@ -334,8 +334,8 @@ export function legacyAnswerCopy(
       return {
         notYetLabel: 'I haven’t filed yet',
         notYetMessage: hasDeadline
-          ? 'Thanks. This claim now shows Not filed yet. File on the official site before the deadline, then tell us.'
-          : 'Thanks. This claim now shows Not filed yet. File on the official site, then tell us.',
+          ? 'Thanks. This claim now shows Not filed yet. If you qualify, file on the official site before the deadline, then tell us.'
+          : 'Thanks. This claim now shows Not filed yet. If you qualify, file on the official site, then tell us.',
         filedMessage,
       };
   }
