@@ -20,14 +20,28 @@ export function normalizeProof(value: unknown): ProofRequired {
 
 type ProofFields = Pick<Lawsuit, 'proof_required' | 'eligibility'>;
 
-/** The proof rule for a record: the feed's value when stored, else Required or Unknown. */
+/**
+ * Rows written before the adapter stored the feed's proof value only carry
+ * "optional" as a note ("Proof of purchase is optional but may increase your
+ * claim amount."), and refreshes never rewrite a published row's eligibility.
+ */
+const LEGACY_OPTIONAL_NOTE = /^\s*proof of purchase is optional\b/i;
+
+/**
+ * The proof rule for a record: the feed's value when stored, else Required
+ * (old boolean), else Optional (old note), else Unknown. Used by the catalog
+ * and the claim flow alike.
+ */
 export function proofStatus(lawsuit: ProofFields): ProofRequired {
   const stored = lawsuit.eligibility?.proof;
   if (stored !== undefined && stored !== null) {
     const proof = normalizeProof(stored);
     if (proof !== 'unknown') return proof;
   }
-  return lawsuit.proof_required ? 'yes' : 'unknown';
+  if (lawsuit.proof_required) return 'yes';
+  const notes = lawsuit.eligibility?.notes;
+  if (typeof notes === 'string' && LEGACY_OPTIONAL_NOTE.test(notes)) return 'optional';
+  return 'unknown';
 }
 
 const LABELS: Record<ProofRequired, string> = {

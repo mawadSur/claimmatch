@@ -5,6 +5,8 @@
 import { z } from 'zod';
 import type { ClaimAction } from './claims';
 import { parseCalendarDate } from './claim-deadlines';
+import { proofStatus } from './proof';
+import type { EligibilityCriteria, ProofRequired } from './types';
 import { getValidClaimUrl } from './utils';
 
 /* -------------------------------------------------------------------------- */
@@ -122,14 +124,20 @@ export function eligibilitySummary(text: string | null | undefined): string | nu
 
 export type ProofNeed = 'required' | 'optional' | 'none' | 'unknown';
 
-/** Proof rule as the source states it. Unknown never reads as "none". */
+const PROOF_NEED: Record<ProofRequired, ProofNeed> = {
+  yes: 'required',
+  no: 'none',
+  optional: 'optional',
+  unknown: 'unknown',
+};
+
+/**
+ * Proof rule as the source states it, from the catalog's proofStatus so the
+ * claim page and the settlement page agree. Unknown never reads as "none".
+ */
 export function proofNeed(l: { proof_required?: boolean | null; eligibility?: unknown }): ProofNeed {
-  const e = (l.eligibility ?? {}) as { proof?: unknown; notes?: unknown };
-  if (e.proof === 'yes' || l.proof_required === true) return 'required';
-  if (e.proof === 'optional') return 'optional';
-  if (typeof e.notes === 'string' && /proof[^.]*optional/i.test(e.notes)) return 'optional';
-  if (e.proof === 'no') return 'none';
-  return 'unknown';
+  const eligibility = (l.eligibility && typeof l.eligibility === 'object' ? l.eligibility : {}) as EligibilityCriteria;
+  return PROOF_NEED[proofStatus({ proof_required: l.proof_required === true, eligibility })];
 }
 
 /** A link we can show: http(s) only, and not a placeholder host. */

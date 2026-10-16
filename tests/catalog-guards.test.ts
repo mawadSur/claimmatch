@@ -81,6 +81,14 @@ describe('proof labels', () => {
     expect(proofDetail(base)).toMatch(/check the official notice/i);
   });
 
+  it('reads the old adapter note on rows written before the proof value was stored', () => {
+    const legacy = { ...base, eligibility: { notes: 'Proof of purchase is optional but may increase your claim amount.' } };
+    expect(proofLabel(legacy)).toBe('Optional');
+    expect(proofStatus({ ...base, eligibility: { notes: 'Documentation or proof of purchase required to file a claim.' } })).toBe('unknown');
+    // A stored feed value always wins over the note.
+    expect(proofLabel({ ...legacy, eligibility: { ...legacy.eligibility, proof: 'no' } })).toBe('Not required');
+  });
+
   it('normalizes odd values', () => {
     expect(normalizeProof(' YES ')).toBe('yes');
     expect(normalizeProof('maybe')).toBe('unknown');
