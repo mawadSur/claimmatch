@@ -33,6 +33,7 @@ export function LegacyClaimAnswer({
   const copy = legacyAnswerCopy(filing, hasDeadline);
 
   async function answer(kind: 'filed' | 'not_yet') {
+    if (busy) return;
     setBusy(kind);
     setError(null);
     const result = await updateClaim(claimId, {
@@ -51,12 +52,24 @@ export function LegacyClaimAnswer({
 
   return (
     <div>
+      {/* aria-disabled, not disabled, while saving: a disabled button drops
+          keyboard focus. answer() ignores taps while busy. */}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button type="button" className="btn-primary" onClick={() => answer('filed')} disabled={busy !== null}>
+        <button
+          type="button"
+          className="btn-primary aria-disabled:cursor-wait aria-disabled:opacity-60"
+          onClick={() => answer('filed')}
+          aria-disabled={busy !== null}
+        >
           {busy === 'filed' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           I already filed
         </button>
-        <button type="button" className="btn-secondary" onClick={() => answer('not_yet')} disabled={busy !== null}>
+        <button
+          type="button"
+          className="btn-secondary aria-disabled:cursor-wait aria-disabled:opacity-60"
+          onClick={() => answer('not_yet')}
+          aria-disabled={busy !== null}
+        >
           {busy === 'not_yet' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           {copy.notYetLabel}
         </button>
@@ -191,6 +204,7 @@ export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: strin
   const [error, setError] = useState<ClaimErrorState | null>(null);
 
   async function acknowledge() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     const result = await updateClaim(claimId, { action: 'acknowledge_notice' });
@@ -205,7 +219,12 @@ export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: strin
 
   return (
     <div>
-      <button type="button" className="btn-secondary" onClick={acknowledge} disabled={busy}>
+      <button
+        type="button"
+        className="btn-secondary aria-disabled:cursor-wait aria-disabled:opacity-60"
+        onClick={acknowledge}
+        aria-disabled={busy}
+      >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
         Got it
       </button>

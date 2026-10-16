@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { ClaimView } from '@/lib/claims';
@@ -29,9 +29,13 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
   // Keep the first list: after a refresh the server drops answered rows.
   const [rows] = useState(items);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  // One live region, present from the first render, so every answer is
+  // announced (a region created together with its text often is not).
+  const [announcement, setAnnouncement] = useState('');
 
   function answered(claimId: string, claim: ClaimView, message: string) {
     setAnswers((prev) => ({ ...prev, [claimId]: { claim, message } }));
+    setAnnouncement(message);
     router.refresh();
   }
 
@@ -60,6 +64,10 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
           {legacyCount === 1 ? 'Tell us where things stand.' : 'For each one, tell us where things stand.'}
         </p>
       )}
+
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
       <ul className="mt-5 space-y-3">
         {rows.map((item) => {
@@ -109,15 +117,31 @@ function AnsweredRow({
   answer: Answer;
   onSaved: (claimId: string, claim: ClaimView, message: string) => void;
 }) {
+  const messageRef = useRef<HTMLParagraphElement>(null);
+  const askNumber = answer.claim.status === 'reported_filed';
+  // The buttons that had focus are gone: keep keyboard users in this row, on
+  // the confirmation-number field after "I already filed", otherwise on the
+  // confirmation. (The list's live region announces it.)
+  useEffect(() => {
+    if (!askNumber) messageRef.current?.focus();
+  }, [answer.message, askNumber]);
   return (
-    <div role="status" aria-live="polite">
-      <p className="mt-1 flex items-start gap-2 text-sm font-medium text-success-700">
+    <div>
+      <p
+        ref={messageRef}
+        tabIndex={-1}
+        className="mt-1 flex items-start gap-2 rounded text-sm font-medium text-success-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+      >
         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         {answer.message}
       </p>
-      {answer.claim.status === 'reported_filed' && (
+      {askNumber && (
         <div className="mt-4">
-          <AddConfirmationForm claimId={claimId} onSaved={(claim, message) => onSaved(claimId, claim, message)} />
+          <AddConfirmationForm
+            claimId={claimId}
+            autoFocus
+            onSaved={(claim, message) => onSaved(claimId, claim, message)}
+          />
         </div>
       )}
     </div>

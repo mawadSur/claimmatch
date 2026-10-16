@@ -82,6 +82,18 @@ export function ClaimFlow({
     wasReported.current = reported;
   }, [reported]);
 
+  // When a notice is answered without a report ("I haven't filed yet", or
+  // "Got it" on a fictional settlement) its buttons disappear: move focus to
+  // the confirmation so keyboard and screen-reader users aren't left at the
+  // top of the page.
+  const announcementRef = useRef<HTMLParagraphElement>(null);
+  const showNotice = Boolean(display?.showNotice);
+  const hadNotice = useRef(showNotice);
+  useEffect(() => {
+    if (hadNotice.current && !showNotice && !reported) announcementRef.current?.focus();
+    hadNotice.current = showNotice;
+  }, [showNotice, reported]);
+
   // Opening the form tracks nothing: people often open it only to read the
   // rules, and may find they don't qualify. The claim is saved when they tell
   // us they filed, or choose "Not yet: save to my claims".
@@ -153,7 +165,11 @@ export function ClaimFlow({
       />
       <div role="status" aria-live="polite">
         {announcement && (
-          <p className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
+          <p
+            ref={announcementRef}
+            tabIndex={-1}
+            className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {announcement}
           </p>

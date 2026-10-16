@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import type { ClaimView } from '@/lib/claims';
@@ -16,17 +16,23 @@ export function AddConfirmationForm({
   claimId,
   initialValue = '',
   submitLabel = 'Add number',
+  autoFocus = false,
   onSaved,
   onCancel,
 }: {
   claimId: string;
   initialValue?: string;
   submitLabel?: string;
+  /** Move keyboard focus to the field when the form appears (after "I already filed"). */
+  autoFocus?: boolean;
   onSaved: (claim: ClaimView, message: string) => void;
   onCancel?: () => void;
 }) {
   const posthog = usePostHog();
   const id = useId();
+  useEffect(() => {
+    if (autoFocus) document.getElementById(`${id}-confirmation`)?.focus();
+  }, [autoFocus, id]);
   const [value, setValue] = useState(initialValue);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [error, setError] = useState<ClaimErrorState | null>(null);
