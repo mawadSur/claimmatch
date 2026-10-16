@@ -257,3 +257,20 @@ export async function getCategories(): Promise<string[]> {
 export function categoriesOf(lawsuits: Pick<Lawsuit, 'category'>[]): string[] {
   return Array.from(new Set(lawsuits.map((l) => l.category).filter(Boolean))).sort();
 }
+
+/**
+ * Filter an already-loaded list by category and a free-text search over the
+ * title and summary (case-insensitive; every word must appear).
+ */
+export function searchCatalog<T extends Pick<Lawsuit, 'title' | 'summary' | 'category'>>(
+  lawsuits: T[],
+  opts: { q?: string; category?: string },
+): T[] {
+  const words = (cleanSearchTerm(opts.q) ?? '').toLowerCase().split(' ').filter(Boolean);
+  return lawsuits.filter((l) => {
+    if (opts.category && l.category !== opts.category) return false;
+    if (words.length === 0) return true;
+    const text = `${l.title} ${l.summary ?? ''}`.toLowerCase();
+    return words.every((w) => text.includes(w));
+  });
+}

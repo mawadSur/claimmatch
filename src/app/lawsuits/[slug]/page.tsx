@@ -2,94 +2,87 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Wallet,
-  ShieldCheck,
+  CheckCircle2,
   Clock,
   ExternalLink,
   UserCheck,
-  CheckCircle2,
-  AlertTriangle,
 } from 'lucide-react';
-import { getLawsuitBySlug } from '@/lib/lawsuits';
-import { createClient } from '@/lib/supabase/server';
-import { formatDeadline, daysUntil, getValidClaimUrl, SITE } from '@/lib/utils';
+import {
+  isOpenForClaims,
+  isSettleSignalRecord,
+  lookupLawsuitBySlug,
+  officialLinkFor,
+  settleSignalPageFor,
+  type CatalogLink,
+} from '@/lib/lawsuits';
+import { proofDetail, proofLabel } from '@/lib/proof';
+import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
 import { Disclaimer } from '@/components/Disclaimer';
-import type { LawsuitStatus } from '@/lib/types';
+import type { Lawsuit } from '@/lib/types';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+type Params = { params: Promise<{ slug: string }> };
+
+function deadlineText(lawsuit: Lawsuit): string {
+  return lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed';
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const lawsuit = await getLawsuitBySlug(slug);
-  if (!lawsuit) return { title: 'Settlement not found' };
+  const result = await lookupLawsuitBySlug(slug);
+  if (result.status === 'missing') {
+    return { title: 'Settlement not found', robots: { index: false, follow: false } };
+  }
+  if (result.status === 'error') {
+    return { title: 'Settlement', robots: { index: false, follow: false } };
+  }
 
-  const deadlineText = lawsuit.deadline
-    ? ` Deadline: ${formatDeadline(lawsuit.deadline)}.`
-    : '';
-  const payoutText = lawsuit.typical_payout
-    ? ` Typical payout: ${lawsuit.typical_payout}.`
-    : '';
-  const description =
-    lawsuit.summary ??
-    `${lawsuit.title} class action settlement.${deadlineText}${payoutText} Check if you qualify.`;
+  const lawsuit = result.lawsuit;
+  const open = isOpenForClaims(lawsuit);
+  const url = `${SITE.url.replace(/\/$/, '')}/lawsuits/${lawsuit.slug}`;
+  const description = open
+    ? `${lawsuit.title}: deadline ${deadlineText(lawsuit)}. See who may qualify and go to the official site to file for free. Listing not yet verified by ClaimMatch.`
+    : `${lawsuit.title} is not taking claims.`;
 
   return {
-    title: `${lawsuit.title} Settlement`,
+    title: lawsuit.title,
     description,
+    alternates: { canonical: url },
+    // Only settlements open for claims are listed in the sitemap and indexed.
+    robots: open ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
-      title: `${lawsuit.title} — Class Action Settlement`,
+      title: lawsuit.title,
       description,
-      url: `${SITE.url}/lawsuits/${lawsuit.slug}`,
+      url,
       siteName: SITE.name,
       type: 'article',
     },
   };
 }
 
-const STATUS_META: Record<LawsuitStatus, { label: string; className: string }> = {
-  open: { label: 'Open for claims', className: 'badge-green' },
-  closing_soon: { label: 'Closing soon', className: 'badge-red' },
-  closed: { label: 'Closed', className: 'badge-gray' },
-  draft: { label: 'Draft', className: 'badge-gray' },
-};
-
-export default async function LawsuitDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function LawsuitDetailPage({ params }: Params) {
   const { slug } = await params;
-  const lawsuit = await getLawsuitBySlug(slug);
-  if (!lawsuit) notFound();
-
-  let signedIn = false;
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    signedIn = !!user;
-  } catch {
-    signedIn = false;
+  const result = await lookupLawsuitBySlug(slug);
+  if (result.status === 'missing') notFound();
+  if (result.status === 'error') {
+    // Shown by src/app/lawsuits/error.tsx with a retry button.
+    throw new Error('Settlement lookup failed');
   }
 
-  const days = daysUntil(lawsuit.deadline);
-  const closingSoon = days !== null && days >= 0 && days <= 30;
-  const status = STATUS_META[lawsuit.status] ?? STATUS_META.open;
-
-  const claimClosed = lawsuit.status === 'closed' || (days !== null && days < 0);
-  const claimHref = signedIn
-    ? `/claim/${lawsuit.slug}`
-    : `/signup?next=/claim/${lawsuit.slug}`;
-  const claimLabel = signedIn ? 'Start your claim' : 'Sign up to file';
-
-  const officialClaimUrl = getValidClaimUrl(lawsuit.claim_url);
-  const officialSourceUrl = getValidClaimUrl(lawsuit.source_url);
-  const hasOfficialLink = !!officialClaimUrl || !!officialSourceUrl;
+  const lawsuit = result.lawsuit;
+  const open = isOpenForClaims(lawsuit);
+  const urgency = open ? deadlineUrgencyLabel(lawsuit.deadline) : null;
+  const deadlinePassed = isDeadlinePassed(lawsuit.deadline);
+  const official = officialLinkFor(lawsuit);
+  const fromSettleSignal = isSettleSignalRecord(lawsuit);
+  const settleSignalPage = settleSignalPageFor(lawsuit);
+  const payout = lawsuit.typical_payout?.trim() || 'Not stated';
+  const showAbout =
+    !!lawsuit.description &&
+    lawsuit.description.trim() !== payout &&
+    lawsuit.description.trim() !== lawsuit.summary?.trim();
 
   return (
     <>
@@ -99,17 +92,21 @@ export default async function LawsuitDetailPage({
         <div className="container-page relative py-10 sm:py-14">
           <Link
             href="/lawsuits"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-brand-700"
+            className="inline-flex items-center gap-1.5 rounded text-sm font-medium text-ink-muted hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           >
-            <ArrowLeft className="h-4 w-4" /> All settlements
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All open settlements
           </Link>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <span className="badge-brand">{lawsuit.category}</span>
-            <span className={status.className}>{status.label}</span>
-            {closingSoon && (
+            {open ? (
+              <span className="badge-green">Open for claims</span>
+            ) : (
+              <span className="badge-gray">Claims closed</span>
+            )}
+            {urgency && (
               <span className="badge-red gap-1">
-                <Clock className="h-3 w-3" /> {days} day{days === 1 ? '' : 's'} left
+                <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
               </span>
             )}
           </div>
@@ -117,113 +114,164 @@ export default async function LawsuitDetailPage({
           <h1 className="mt-4 max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl">
             {lawsuit.title}
           </h1>
-          {lawsuit.summary && (
+          {lawsuit.summary && lawsuit.summary !== lawsuit.title && (
             <p className="mt-4 max-w-2xl text-lg text-ink-muted">{lawsuit.summary}</p>
           )}
         </div>
       </section>
 
-      {/* Administrator disclaimer ------------------------------------------- */}
-      <section className="container-page -mt-2 pb-4">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+      {/* D50: unverified label with the official link ------------------------ */}
+      <section className="container-page -mt-2 pb-4" aria-labelledby="unverified-heading">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">
-                ClaimMatch is not the settlement administrator
+              <h2 id="unverified-heading" className="text-sm font-bold text-amber-900">
+                Unverified: check the official site
+              </h2>
+              <p className="mt-1 text-sm text-amber-900">
+                We haven’t checked this listing against the official settlement notice yet.
+                Before you file, confirm the deadline, who qualifies and what proof you need
+                on the official site.
               </p>
-              <p className="mt-1 text-sm text-amber-700">
-                We help you discover and file claims, but the official settlement administrator
-                processes all claims and payments.
-                {officialClaimUrl && (
-                  <>
-                    {' '}To file directly with the administrator, visit the{' '}
-                    <a
-                      href={officialClaimUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold underline hover:text-amber-900"
-                    >
-                      official claim site
-                    </a>
-                    .
-                  </>
-                )}
-              </p>
+              <OfficialLink link={official} />
             </div>
           </div>
         </div>
       </section>
 
       {/* Body --------------------------------------------------------------- */}
-      <section className="container-page grid gap-8 py-12 lg:grid-cols-3">
-        {/* Main */}
+      <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 rounded-2xl bg-gray-50 p-5">
-            <Stat
-              icon={<Wallet className="h-4 w-4" />}
-              label="Typical payout"
-              value={lawsuit.typical_payout || 'Varies'}
-              accent
-            />
-            <Stat
-              icon={<ShieldCheck className="h-4 w-4" />}
-              label="Proof"
-              value={lawsuit.proof_required ? 'Required' : 'Not required'}
-            />
-            <Stat
-              icon={<Clock className="h-4 w-4" />}
-              label="Deadline"
-              value={formatDeadline(lawsuit.deadline)}
-            />
-          </div>
+          <dl className="grid gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
+              <dd className="mt-1 text-base font-bold text-ink">{deadlineText(lawsuit)}</dd>
+              <dd className="mt-1 text-sm text-ink-muted">
+                {lawsuit.deadline
+                  ? 'Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.'
+                  : 'This listing has no deadline. Check the official site.'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
+              <dd className="mt-1 text-base font-bold text-ink">{proofLabel(lawsuit)}</dd>
+              <dd className="mt-1 text-sm text-ink-muted">{proofDetail(lawsuit)}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Payout, as the listing states it
+              </dt>
+              <dd className="mt-1 text-sm leading-relaxed text-ink">{payout}</dd>
+              <dd className="mt-1 text-sm text-ink-muted">
+                The amount you get depends on the settlement’s rules and how many people file.
+              </dd>
+            </div>
+          </dl>
 
-          {lawsuit.description && (
+          {showAbout && (
             <div className="mt-8">
               <h2 className="text-xl font-bold">About this settlement</h2>
-              <p className="mt-3 leading-relaxed text-ink-muted">
-                {lawsuit.description}
-              </p>
+              <p className="mt-3 leading-relaxed text-ink-muted">{lawsuit.description}</p>
             </div>
           )}
 
           {lawsuit.eligibility_text && (
             <div className="mt-8 rounded-2xl border border-success-500/20 bg-success-50/60 p-5">
               <h2 className="flex items-center gap-2 text-lg font-bold">
-                <UserCheck className="h-5 w-5 text-success-600" /> Who qualifies
+                <UserCheck className="h-5 w-5 text-success-600" aria-hidden="true" /> Who may qualify
               </h2>
-              <p className="mt-2 leading-relaxed text-ink-muted">
-                {lawsuit.eligibility_text}
+              <p className="mt-2 leading-relaxed text-ink-muted">{lawsuit.eligibility_text}</p>
+              <p className="mt-2 text-sm text-ink-muted">
+                The official notice has the exact rules.
               </p>
             </div>
           )}
 
-          {hasOfficialLink && (
+          {open && (
             <div className="mt-8">
-              <h2 className="text-lg font-bold">Official sources</h2>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                {officialClaimUrl && (
+              <h2 className="text-xl font-bold">How filing works</h2>
+              <ol className="mt-4 space-y-4">
+                {[
+                  {
+                    title: 'Check that you qualify',
+                    body: 'Read the official notice. It has the exact rules and the deadline.',
+                  },
+                  {
+                    title: 'File on the official site yourself',
+                    body: 'Filing is free. ClaimMatch never files for you and never takes a cut of your payment.',
+                  },
+                  {
+                    title: 'Keep track in ClaimMatch',
+                    body: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
+                  },
+                ].map((step, i) => (
+                  <li key={step.title} className="flex gap-3">
+                    <span
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700"
+                      aria-hidden="true"
+                    >
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-ink">{step.title}</p>
+                      <p className="mt-0.5 text-sm text-ink-muted">{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {(fromSettleSignal || official?.kind === 'source') && (
+            <div className="mt-10 border-t border-gray-100 pt-6">
+              <h2 className="text-base font-bold">Where this listing comes from</h2>
+              {fromSettleSignal ? (
+                <p className="mt-2 text-sm text-ink-muted">
+                  Adapted from{' '}
                   <a
-                    href={officialClaimUrl}
+                    href="https://settlesignal.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-secondary"
+                    className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
                   >
-                    <ExternalLink className="h-4 w-4" /> Official claim site
+                    SettleSignal (settlesignal.com)
                   </a>
-                )}
-                {officialSourceUrl && (
+                  , used under{' '}
                   <a
-                    href={officialSourceUrl}
+                    href="https://creativecommons.org/licenses/by/4.0/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-ghost"
+                    className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
                   >
-                    <ExternalLink className="h-4 w-4" /> Settlement notice
+                    CC BY 4.0
                   </a>
-                )}
-              </div>
+                  . ClaimMatch may have shortened or reformatted it. SettleSignal is a
+                  listing service, not the settlement’s official site.
+                  {settleSignalPage && (
+                    <>
+                      {' '}
+                      <a
+                        href={settleSignalPage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                      >
+                        See the SettleSignal listing
+                        <span className="sr-only"> (opens in a new tab)</span>
+                      </a>
+                      .
+                    </>
+                  )}
+                </p>
+              ) : (
+                official && (
+                  <p className="mt-2 text-sm text-ink-muted">
+                    We found this listing on {official.host}. That page is a source, not the
+                    settlement’s official site.
+                  </p>
+                )
+              )}
             </div>
           )}
 
@@ -232,48 +280,70 @@ export default async function LawsuitDetailPage({
           </div>
         </div>
 
-        {/* Sidebar CTA */}
+        {/* Sidebar ---------------------------------------------------------- */}
         <aside className="lg:col-span-1">
           <div className="sticky top-24 rounded-2xl border-t-4 border-brand-400 bg-white p-6 shadow-card">
-            <h3 className="text-lg font-bold">
-              {claimClosed ? 'This settlement has closed' : 'Think this is you?'}
-            </h3>
-            <p className="mt-2 text-sm text-ink-muted">
-              {claimClosed
-                ? 'The filing window for this settlement has passed. Browse open settlements you may still qualify for.'
-                : 'We’ll pre-fill the official claim details from your profile so you can file in minutes.'}
-            </p>
-            {claimClosed ? (
-              <Link href="/lawsuits" className="btn-secondary mt-5 w-full justify-center">
-                Browse open settlements <ArrowRight className="h-4 w-4" />
-              </Link>
+            {open ? (
+              <>
+                <h2 className="text-lg font-bold">Ready to file?</h2>
+                <p className="mt-2 text-sm text-ink-muted">
+                  We’ll guide you to the official site, where you file for free, and help
+                  you keep track of your claim.
+                </p>
+                <Link
+                  href={`/claim/${lawsuit.slug}`}
+                  className="btn-primary mt-5 w-full justify-center"
+                >
+                  Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <p className="mt-2 text-center text-xs text-ink-muted">
+                  You’ll sign in or create a free account first.
+                </p>
+                {official?.kind === 'official' && (
+                  <a
+                    href={official.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary mt-4 w-full justify-center"
+                  >
+                    Go to the official site <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                )}
+                <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
+                  {[
+                    'You file on the official site yourself',
+                    'ClaimMatch never files for you or takes a cut',
+                    'Save your confirmation number in one place',
+                  ].map((t) => (
+                    <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden="true" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <>
-                <Link href={claimHref} className="btn-primary mt-5 w-full justify-center">
-                  {claimLabel} <ArrowRight className="h-4 w-4" />
+                <h2 className="text-lg font-bold">Claims closed</h2>
+                <p className="mt-2 text-sm text-ink-muted">
+                  {deadlinePassed && lawsuit.deadline
+                    ? `This settlement isn’t taking claims. The deadline listed was ${formatDeadline(lawsuit.deadline)}.`
+                    : 'This settlement isn’t taking claims.'}{' '}
+                  Some settlements pay eligible people automatically. The official site
+                  says whether that applies.
+                </p>
+                <p className="mt-3 text-sm text-ink-muted">
+                  Already filed? Keep the confirmation number the official site gave you.
+                </p>
+                <Link
+                  href="/lawsuits"
+                  className="mt-5 inline-flex items-center gap-1 rounded text-sm font-semibold text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                >
+                  Browse open settlements <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
-                {!signedIn && (
-                  <p className="mt-3 text-center text-xs text-ink-soft">
-                    Free to start · No win, no fee
-                  </p>
-                )}
               </>
             )}
-            <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
-              {[
-                'Guided, pre-filled claim form',
-                'A receipt number saved to your dashboard',
-                ...(officialClaimUrl ? ['A link straight to the official claim site'] : []),
-              ].map((t) => (
-                <li
-                  key={t}
-                  className="flex items-start gap-2 text-sm text-ink-muted"
-                >
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />{' '}
-                  {t}
-                </li>
-              ))}
-            </ul>
           </div>
         </aside>
       </section>
@@ -281,29 +351,42 @@ export default async function LawsuitDetailPage({
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="text-center">
-      <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wide text-ink-soft">
-        {icon} {label}
-      </div>
-      <div
-        className={`mt-1 truncate text-sm font-bold ${
-          accent ? 'text-success-600' : 'text-ink'
-        }`}
+function OfficialLink({ link }: { link: CatalogLink | null }) {
+  if (!link) {
+    return (
+      <p className="mt-3 text-sm font-semibold text-amber-900">
+        We don’t have a link to the official site yet. Search for the settlement’s
+        official website, and only use a site the settlement notice names.
+      </p>
+    );
+  }
+  if (link.kind === 'official') {
+    return (
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
       >
-        {value}
-      </div>
+        Go to the official site ({link.host})
+        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    );
+  }
+  return (
+    <div className="mt-3 text-sm text-amber-900">
+      <p>We don’t have the official site’s link yet. This is where we found the listing:</p>
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 font-semibold ring-1 ring-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
+      >
+        {link.label} ({link.host}, not the official site)
+        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
     </div>
   );
 }

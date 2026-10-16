@@ -8,12 +8,21 @@ export interface MatchResult {
 }
 
 /**
+ * Health answers are never used. The medication question is gone (Phase 0)
+ * and old answers may still sit in profiles until they are deleted, so a
+ * criterion on one of these keys can never be met: a settlement that requires
+ * one is never matched, and no reason ever mentions it.
+ */
+const HEALTH_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set(['took_medication']);
+
+/**
  * Rule-based eligibility matcher. Evaluates a user's profile (state +
  * attributes collected during onboarding) against a lawsuit's structured
- * eligibility criteria and returns a confidence score + human reasons.
+ * eligibility criteria and returns an internal 0..1 score + plain reasons.
+ * The score orders results; it is never shown to people as a percentage.
  *
- * This is intentionally transparent and deterministic. A future AI pass can
- * layer on top by populating `eligibility` from unstructured text.
+ * This is intentionally transparent and deterministic. The Phase 1 engine
+ * replaces it; until then (D50) no suggestions are shown or emailed.
  */
 export function scoreLawsuit(profile: Profile, lawsuit: Lawsuit): MatchResult {
   const criteria: EligibilityCriteria = lawsuit.eligibility || {};
@@ -41,7 +50,7 @@ export function scoreLawsuit(profile: Profile, lawsuit: Lawsuit): MatchResult {
   if (criteria.requires && criteria.requires.length > 0) {
     for (const key of criteria.requires) {
       signals += 1;
-      if (isTruthy(attrs[key])) {
+      if (!HEALTH_ATTRIBUTE_KEYS.has(key) && isTruthy(attrs[key])) {
         hits += 1;
         reasons.push(labelFor(key));
       } else {
@@ -53,6 +62,7 @@ export function scoreLawsuit(profile: Profile, lawsuit: Lawsuit): MatchResult {
   // --- anyOf attributes (attribute value must be in the allowed set) ------
   if (criteria.anyOf) {
     for (const [key, allowed] of Object.entries(criteria.anyOf)) {
+      if (HEALTH_ATTRIBUTE_KEYS.has(key)) continue;
       signals += 1;
       const value = attrs[key];
       const values = Array.isArray(value) ? value : [value];
@@ -112,7 +122,6 @@ const LABELS: Record<string, string> = {
   uses_social_media: 'You use a covered platform',
   used_streaming: 'You had a covered subscription',
   employed_hourly: 'You worked an hourly or gig job',
-  took_medication: 'You used a covered medication or device',
 };
 
 function labelFor(key: string): string {
