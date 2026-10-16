@@ -7,8 +7,8 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-// Distinctive display face (headings, the big "you're owed" numbers) paired with
-// a clean, trustworthy body sans — deliberately not the generic Inter default.
+// Distinctive display face for headings, paired with a clean, readable body
+// sans — deliberately not the generic Inter default.
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
   variable: '--font-display',

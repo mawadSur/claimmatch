@@ -1,103 +1,91 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
-  ArrowRight, Search, ShieldCheck, Sparkles, CheckCircle2,
-  ScanLine, ListChecks, Eye, Bell, Scale, HandCoins,
-  ShieldAlert, ShoppingBag, Car, Lock, Landmark, HeartPulse,
-  Briefcase, Utensils, Cpu, Gift, FileSignature, TrendingUp, Wallet,
+  ArrowRight, Search, ListChecks, ExternalLink, ClipboardCheck, CheckCircle2,
+  Database, Info, ShieldAlert, ShoppingBag, Car, Lock, Landmark, HeartPulse,
+  Briefcase, Utensils, Cpu, Gift,
 } from 'lucide-react';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
-import { FEE_PCT } from '@/lib/recovery';
 import { Disclaimer } from '@/components/Disclaimer';
 import { SITE } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'How ClaimMatch Works',
   description:
-    'How ClaimMatch works: we scan and structure every settlement, match you by eligibility, file on your behalf with one e-signature, and take our fee only when you get paid.',
+    'How ClaimMatch works: find a settlement that is open for claims, check who qualifies on the official notice, file on the official site yourself, and keep track of your claim. Free.',
   openGraph: {
-    title: 'How ClaimMatch Works — Find & File Settlement Claims',
+    title: 'How ClaimMatch works',
     description:
-      'We scan settlements, match you by eligibility, file on your behalf, and only charge when you get paid. See the full process.',
+      'Find open settlements, check who qualifies on the official notice, file on the official site, and keep track. Free.',
     url: `${SITE.url}/how-it-works`,
     siteName: SITE.name,
     type: 'website',
   },
 };
 
-const PCT = Math.round(FEE_PCT * 100);
-
 const STEPS = [
   {
-    n: '01',
-    icon: ScanLine,
-    title: 'We scan & structure every settlement',
-    body: 'Our system continuously pulls open class-action settlements from official sources, then uses AI to extract the eligibility rules, deadlines, and payouts. Every case is human-reviewed before it goes live.',
+    n: '1',
+    icon: Search,
+    title: 'Find an open settlement',
+    body: 'Browse settlements that are open for claims. Each listing shows the deadline we have on file and, when our source lists it, a link to the official settlement site.',
     points: [
-      'Fresh cases pulled from official sources',
-      'AI-extracted, then human-reviewed for accuracy',
-      'Deadlines and payouts in plain English',
+      'The closest deadlines are easy to spot',
+      'Listings are unverified for now, so check the official site',
     ],
   },
   {
-    n: '02',
-    icon: ShieldCheck,
-    title: 'We match you by eligibility',
-    body: 'Answer a few quick questions once — your state, what you’ve bought, whether you’ve had a data breach. We compare your profile to every published settlement and surface only the ones you actually qualify for.',
-    points: [
-      'A 2-minute, one-time eligibility profile',
-      'Every open case scored against your answers',
-      'Clear reasons for why each case matched',
-    ],
-  },
-  {
-    n: '03',
-    icon: FileSignature,
-    title: 'You authorize, we file for you',
-    body: 'Review your matches and authorize with a single e-signature. We prepare and submit your claims to the official administrators on your behalf — no forms to wrestle with, no deadlines to miss.',
-    points: [
-      'One e-signature authorizes your claims',
-      'We file directly with the official administrators',
-      'A receipt number to track everything you filed',
-    ],
-  },
-  {
-    n: '04',
-    icon: TrendingUp,
-    title: 'You get paid, we take our fee',
-    body: `We chase the payout end to end. When a settlement actually pays out, we forward you the money and keep a ${PCT}% contingency fee. If you never get paid, you never owe us a cent.`,
-    points: [
-      `We keep just ${PCT}% of what you recover`,
-      'No upfront cost — no win, no fee',
-      'We forward you the rest, end to end',
-    ],
-  },
-];
-
-const MATCH_POINTS = [
-  {
+    n: '2',
     icon: ListChecks,
-    title: 'Rule-based, not guesswork',
-    body: 'Each settlement lists exactly which answers qualify you — like living in a certain state or owning a certain product. We check your profile against those rules.',
+    title: 'Check if you qualify',
+    body: 'Open the official notice and read who qualifies. File only if it describes you. Filing a claim you don’t qualify for can be against the law.',
+    points: [
+      'The official notice is the final word',
+      'We’re not a law firm, so we can’t tell you if you qualify',
+    ],
   },
   {
-    icon: Eye,
-    title: 'Transparent by design',
-    body: 'Every match comes with the plain-English reasons it surfaced, so you can see why you qualify before you authorize a single claim.',
+    n: '3',
+    icon: ExternalLink,
+    title: 'File on the official site',
+    body: 'Fill out and send the claim form on the settlement’s official website. ClaimMatch never files or submits a claim for you.',
+    points: [
+      'Filing on the official site is free',
+      'Save the confirmation number the site gives you',
+    ],
   },
   {
-    icon: HandCoins,
-    title: 'Aligned with you',
-    body: `We only earn when you do. Because our fee is a slice of what you recover, our only incentive is to win you as much as possible — never to charge you upfront.`,
-  },
-  {
-    icon: Bell,
-    title: 'It keeps working for you',
-    body: 'New settlements open every week. We re-check your profile automatically and alert you when something new lines up — ready for one-tap authorization.',
+    n: '4',
+    icon: ClipboardCheck,
+    title: 'Keep track in ClaimMatch',
+    body: 'Come back and tell us you filed. Add your confirmation number if you got one. Your claims stay in one list, so you can see what’s done and what isn’t.',
+    points: [
+      'Your claim shows “Submitted” only after you add the confirmation number',
+      'If your claim is paid, the administrator pays you directly',
+    ],
   },
 ];
 
-// A friendly icon for each claim category we cover.
+const STATUSES = [
+  {
+    label: 'Not filed yet',
+    body: 'You’re tracking this settlement but haven’t told us you filed.',
+  },
+  {
+    label: 'Reported filed by you',
+    body: 'You told us you filed on the official site. We don’t have a confirmation number yet.',
+  },
+  {
+    label: 'Submitted · #…',
+    body: 'You added the confirmation number from the official site. We show it next to the status.',
+  },
+  {
+    label: 'Not reported filed',
+    body: 'The deadline passed and you didn’t tell us you filed.',
+  },
+];
+
+// A friendly icon for each settlement category.
 const CATEGORY_ICONS: Record<string, typeof Gift> = {
   'Data Breach': ShieldAlert,
   'Consumer Products': ShoppingBag,
@@ -115,240 +103,176 @@ export default function HowItWorksPage() {
   return (
     <>
       {/* Hero ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
-        <div className="container-page relative py-20 sm:py-24">
+      <section className="bg-gradient-to-b from-brand-50 via-white to-white">
+        <div className="container-page py-16 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="badge-brand mx-auto gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> How it works
-            </span>
+            <span className="badge-brand mx-auto">How it works</span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              We find it, file it, and recover it —{' '}
-              <span className="text-brand-600">you just sign.</span>
+              You file. <span className="text-brand-600">We help you stay on top of it.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              Billions in class-action settlements go unclaimed every year because
-              nobody knows they qualify or dreads the paperwork. ClaimMatch does the
-              hunting, matching, and filing — and we only get paid when you do.
+              ClaimMatch is a free claim assistant. We help you find settlements that
+              are open, point you to the official notice and claim site, and keep track
+              of the claims you file. You always file on the official site yourself.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/signup" className="btn-primary w-full sm:w-auto">
-                Find my settlements <ArrowRight className="h-4 w-4" />
+              <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
+                <Search className="h-4 w-4" aria-hidden /> Browse open settlements
               </Link>
-              <Link href="/lawsuits" className="btn-secondary w-full sm:w-auto">
-                <Search className="h-4 w-4" /> Browse all settlements
+              <Link href="/signup" className="btn-secondary w-full sm:w-auto">
+                Create a free account <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
-            <p className="mt-6 text-sm text-ink-soft">
-              Free to check · We file for you · You only pay {PCT}% when you get paid
-            </p>
           </div>
         </div>
       </section>
 
-      {/* The 4-step flow, expanded ------------------------------------------- */}
-      <section className="container-page py-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-extrabold">The full picture</h2>
-          <p className="mt-3 text-ink-muted">
-            We do the hunting, matching, and filing. You authorize once. Here&rsquo;s
-            exactly what happens.
-          </p>
-        </div>
-
-        <div className="mt-12 space-y-6">
+      {/* The four steps ------------------------------------------------------- */}
+      <section className="container-page py-12" aria-labelledby="steps-heading">
+        <h2 id="steps-heading" className="sr-only">The four steps</h2>
+        <ol className="space-y-6">
           {STEPS.map((s) => (
-            <div
+            <li
               key={s.n}
-              className="grid gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:grid-cols-[auto_1fr] sm:p-8"
+              className="grid gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:grid-cols-[auto_1fr] sm:p-8"
             >
-              <div className="flex items-start gap-4">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-                  <s.icon className="h-6 w-6" />
-                </div>
-                <span className="font-display text-4xl font-extrabold text-brand-100 sm:hidden">
-                  {s.n}
-                </span>
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
+                <s.icon className="h-6 w-6" aria-hidden />
               </div>
               <div>
-                <div className="flex items-center gap-3">
-                  <span className="hidden font-display text-2xl font-extrabold text-brand-200 sm:inline">
-                    {s.n}
-                  </span>
-                  <h3 className="text-xl font-bold">{s.title}</h3>
-                </div>
+                <h3 className="text-xl font-bold">
+                  <span className="text-brand-700">Step {s.n}.</span> {s.title}
+                </h3>
                 <p className="mt-2 max-w-2xl text-ink-muted">{s.body}</p>
-                <ul className="mt-4 grid gap-2 sm:grid-cols-3">
+                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                   {s.points.map((p) => (
                     <li key={p} className="flex items-start gap-2 text-sm text-ink-muted">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden />
                       {p}
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
+            </li>
           ))}
+        </ol>
+      </section>
+
+      {/* Claim statuses ------------------------------------------------------- */}
+      <section className="bg-gray-50 py-16" aria-labelledby="status-heading">
+        <div className="container-narrow">
+          <div className="text-center">
+            <h2 id="status-heading" className="text-3xl font-extrabold">
+              What your claim status means
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-ink-muted">
+              Your claim’s status in ClaimMatch is based on what you tell us. The
+              settlement administrator decides whether a claim is approved and paid.
+            </p>
+          </div>
+          <dl className="mt-10 space-y-4">
+            {STATUSES.map((s) => (
+              <div
+                key={s.label}
+                className="flex flex-col gap-2 rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:flex-row sm:items-start sm:gap-5"
+              >
+                <dt className="shrink-0 sm:w-56">
+                  <span className="badge-gray">{s.label}</span>
+                </dt>
+                <dd className="text-sm text-ink-muted">{s.body}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      {/* The one e-signature, explained -------------------------------------- */}
-      <section className="bg-gray-50 py-16">
-        <div className="container-narrow">
-          <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card">
-            <div className="grid gap-0 sm:grid-cols-[1fr_1.1fr]">
-              <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white sm:p-10">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                  <FileSignature className="h-3.5 w-3.5" /> One signature
-                </div>
-                <h2 className="mt-6 text-2xl font-extrabold">
-                  Sign once. We handle the rest.
-                </h2>
-                <p className="mt-4 text-sm leading-relaxed text-white/85">
-                  Instead of filling out a separate form for every settlement, you
-                  authorize us with a single e-signature. We prepare and submit each
-                  eligible claim to the official administrators on your behalf.
-                </p>
-              </div>
-              <div className="p-8 sm:p-10">
-                <h3 className="text-base font-bold">What your signature does</h3>
-                <ul className="mt-4 space-y-3">
-                  {[
-                    'Authorizes us to file your eligible claims for you',
-                    'Applies per claim — you always stay in control',
-                    'Lets us chase each payout end to end',
-                    'Costs you nothing — the fee only applies on a real recovery',
-                  ].map((t) => (
-                    <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+      {/* Where listings come from -------------------------------------------- */}
+      <section className="container-page py-16" aria-labelledby="source-heading">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-6 sm:p-8">
+          <div className="flex flex-col items-start gap-4 sm:flex-row">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-800">
+              <Database className="h-6 w-6" aria-hidden />
+            </div>
+            <div>
+              <h2 id="source-heading" className="text-xl font-extrabold text-amber-900">
+                Where our listings come from
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-amber-900">
+                Our settlement listings come from{' '}
+                <a
+                  href="https://settlesignal.com/data/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline"
+                >
+                  SettleSignal
+                </a>
+                , a public settlement data source shared under the CC BY 4.0 license. We
+                haven’t checked each listing ourselves yet, so each one is labeled
+                “Unverified: check the official site.”
+              </p>
+              <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-amber-900">
+                <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                Deadlines and details can change. The official settlement website is
+                always the final word, including the exact cutoff time.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How matching works -------------------------------------------------- */}
-      <section className="container-page py-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="badge-brand mx-auto gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5" /> Transparent matching
-          </span>
-          <h2 className="mt-4 text-3xl font-extrabold">How matching actually works</h2>
-          <p className="mt-3 text-ink-muted">
-            No black boxes. Matching is rule-based and driven entirely by the
-            answers you give — you can always see why a settlement showed up.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 sm:grid-cols-2">
-          {MATCH_POINTS.map((m) => (
-            <div
-              key={m.title}
-              className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
-            >
-              <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
-                <m.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-lg font-bold">{m.title}</h3>
-              <p className="mt-2 text-sm text-ink-muted">{m.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* What you can claim -------------------------------------------------- */}
-      <section className="bg-gray-50 py-16">
+      {/* Kinds of settlements ------------------------------------------------- */}
+      <section className="bg-gray-50 py-16" aria-labelledby="kinds-heading">
         <div className="container-page">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-extrabold">What you can claim</h2>
+            <h2 id="kinds-heading" className="text-3xl font-extrabold">
+              Kinds of settlements
+            </h2>
             <p className="mt-3 text-ink-muted">
-              Settlements span far more than you&rsquo;d expect. If it touched your
-              wallet, your data, or your day-to-day, there may be money waiting.
+              Class-action settlements cover many everyday things, from data breaches
+              to products you bought.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {LAWSUIT_CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat] ?? Gift;
               return (
-                <div
+                <li
                   key={cat}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
+                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-card"
                 >
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                    <Icon className="h-5 w-5" />
-                  </div>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </span>
                   <span className="text-sm font-semibold text-ink">{cat}</span>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
-          <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-soft">
-            Typical payouts range from a few dollars to several thousand — and since
-            it&rsquo;s free to check and we only earn when you recover, it costs you
-            nothing but a couple of minutes to find out.
+          <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-muted">
+            Each settlement decides what it pays and who can claim. Check the official
+            notice for the details.
           </p>
-        </div>
-      </section>
-
-      {/* Pricing recap ------------------------------------------------------- */}
-      <section className="container-page py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-100 bg-white p-8 shadow-card sm:p-10">
-          <div className="flex flex-col items-start gap-5 sm:flex-row">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-              <Wallet className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-extrabold">
-                One simple fee — {PCT}% of what you recover
-              </h2>
-              <p className="mt-3 text-ink-muted">
-                Checking, matching, and filing are all free. We only take a {PCT}%
-                contingency fee out of money you actually receive, and if a claim
-                pays out nothing, you owe nothing.
-              </p>
-              <Link
-                href="/pricing"
-                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700"
-              >
-                See the full pricing breakdown <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
         </div>
       </section>
 
       {/* CTA ----------------------------------------------------------------- */}
       <section className="bg-gradient-to-b from-white to-brand-50 py-16">
         <div className="container-narrow text-center">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-white">
-            <Scale className="h-6 w-6" />
-          </div>
-          <h2 className="mt-4 text-3xl font-extrabold">Find what you&rsquo;re owed</h2>
+          <h2 className="text-3xl font-extrabold">Ready to look?</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            Set up your eligibility profile in about two minutes. It&rsquo;s free to
-            check, we file on your behalf, and you only pay {PCT}% when you get paid.
+            It’s free. We never take a cut of your settlement.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/signup" className="btn-primary w-full sm:w-auto">
-              Get matched free <ArrowRight className="h-4 w-4" />
+            <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
+              <Search className="h-4 w-4" aria-hidden /> Browse open settlements
             </Link>
-            <Link href="/lawsuits" className="btn-secondary w-full sm:w-auto">
-              <Search className="h-4 w-4" /> Browse settlements
+            <Link href="/pricing" className="btn-secondary w-full sm:w-auto">
+              Is it really free?
             </Link>
           </div>
-          <ul className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-ink-muted">
-            {['Free to check', 'No win, no fee', 'Cancel anytime'].map((t) => (
-              <li key={t} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-success-500" /> {t}
-              </li>
-            ))}
-          </ul>
 
           <div className="mx-auto mt-10 max-w-2xl text-left">
             <Disclaimer />
