@@ -256,12 +256,19 @@ export const lookupLawsuitBySlug = cache(async (slug: string): Promise<LawsuitLo
 });
 
 /**
- * One public settlement by slug, open or closed, or null. Callers that let
- * someone act on it (start a claim) must also check isOpenForClaims.
+ * One settlement by slug, or null. By default only a settlement open for
+ * claims (isOpenForClaims), so a caller that lets someone start a claim is
+ * safe as is. With { includeClosed: true } it also returns a public settlement
+ * that is closed or past its deadline (never a fictional or unpublished one).
  */
-export async function getLawsuitBySlug(slug: string): Promise<Lawsuit | null> {
+export async function getLawsuitBySlug(
+  slug: string,
+  opts?: { includeClosed?: boolean },
+): Promise<Lawsuit | null> {
   const result = await lookupLawsuitBySlug(slug);
-  return result.status === 'found' ? result.lawsuit : null;
+  if (result.status !== 'found') return null;
+  if (opts?.includeClosed) return result.lawsuit;
+  return isOpenForClaims(result.lawsuit) ? result.lawsuit : null;
 }
 
 /** Categories that have at least one settlement open for claims, A to Z. */

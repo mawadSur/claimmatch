@@ -41,7 +41,7 @@ vi.mock('@/lib/supabase/server', () => {
   };
 });
 
-import { lookupLawsuitBySlug, lookupLawsuits } from '@/lib/lawsuits';
+import { getLawsuitBySlug, lookupLawsuitBySlug, lookupLawsuits } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import LawsuitDetailPage, { generateMetadata } from '@/app/lawsuits/[slug]/page';
 import LawsuitsPage from '@/app/lawsuits/page';
@@ -173,6 +173,20 @@ describe('catalog queries', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     db.single = { data: null, error: { message: 'boom' } };
     expect(await lookupLawsuitBySlug('amazon-return-policy-settlement')).toEqual({ status: 'error' });
+  });
+
+  it('getLawsuitBySlug returns only open settlements unless asked for closed ones', async () => {
+    db.single = { data: lawsuit(), error: null };
+    expect((await getLawsuitBySlug('amazon-return-policy-settlement'))?.slug).toBe('amazon-return-policy-settlement');
+
+    db.single = { data: lawsuit({ status: 'closed' }), error: null };
+    expect(await getLawsuitBySlug('amazon-return-policy-settlement')).toBeNull();
+    expect((await getLawsuitBySlug('amazon-return-policy-settlement', { includeClosed: true }))?.status).toBe('closed');
+
+    db.single = { data: lawsuit({ deadline: '2020-01-01' }), error: null };
+    expect(await getLawsuitBySlug('amazon-return-policy-settlement')).toBeNull();
+
+    expect(await getLawsuitBySlug('robocall-tcpa-settlement', { includeClosed: true })).toBeNull();
   });
 });
 
