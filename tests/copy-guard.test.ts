@@ -242,7 +242,6 @@ const PART_A_COPY = [
   'src/components/TrustBadges.tsx',
   'src/components/Disclaimer.tsx',
   'src/components/NotificationPrefs.tsx',
-  'src/components/CountUp.tsx',
   'src/components/ReferralCard.tsx',
   'src/lib/disclaimer.ts',
   'src/lib/eligibility.ts',
