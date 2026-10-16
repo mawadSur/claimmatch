@@ -7,6 +7,9 @@ import type { EligibilityQuestion } from './types';
  *
  * Add a question here + reference its key in a lawsuit's eligibility JSON and
  * the matcher will start using it — no code changes needed.
+ *
+ * Never add questions about health (medications, medical devices, conditions)
+ * or financial account numbers. ClaimMatch does not collect either.
  */
 export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
   {
@@ -57,9 +60,13 @@ export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
     label: 'Have you worked an hourly or gig job in the last 4 years?',
     type: 'boolean',
   },
-  {
-    key: 'took_medication',
-    label: 'Have you taken prescription medication or used a medical device?',
-    type: 'boolean',
-  },
 ];
+
+/**
+ * Question keys that were removed and must never be asked or stored again.
+ * took_medication asked about prescription drugs and medical devices: that is
+ * health data, which ClaimMatch does not collect. Answers saved before the
+ * removal stay in profiles.attributes until the founder and counsel decide how
+ * to delete them; nothing should read them.
+ */
+export const RETIRED_QUESTION_KEYS: readonly string[] = ['took_medication'];

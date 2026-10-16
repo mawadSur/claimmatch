@@ -186,9 +186,9 @@ export const US_STATES: { code: string; name: string }[] = [
 
 export const SITE = {
   name: 'ClaimMatch',
-  tagline: 'Find the settlement money you’re owed.',
+  tagline: 'Free claim assistant for class-action settlements',
   description:
-    'ClaimMatch scans class-action settlements and lawsuits, matches you to the ones you qualify for, and helps you file your claim in minutes.',
+    'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://claimmatch.vercel.app',
 };
 
