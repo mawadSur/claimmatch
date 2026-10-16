@@ -3,6 +3,12 @@
 -- claim_events log, no direct client writes to claims, and the corrective-
 -- notice marker. Runs after every migration.
 -- Each check raises 'FAIL: ...' on a regression; everything rolls back.
+--
+-- Sections 1-3 and 5-8 run against the schema the whole migration chain
+-- leaves. Sections 4 and 9 re-apply migrations over legacy rows, so each
+-- runs in its own transaction: a re-applied 0006 would otherwise restore
+-- 0006's functions and policies and hide a later migration that weakened
+-- them.
 
 begin;
 
@@ -13,7 +19,8 @@ insert into auth.users (id, email) values
 insert into public.lawsuits (id, slug, title) values
   ('00000000-0000-4000-8000-00000000c001', 'claims-test-one', 'Claims test one'),
   ('00000000-0000-4000-8000-00000000c002', 'claims-test-two', 'Claims test two'),
-  ('00000000-0000-4000-8000-00000000c003', 'claims-test-three', 'Claims test three');
+  ('00000000-0000-4000-8000-00000000c003', 'claims-test-three', 'Claims test three'),
+  ('00000000-0000-4000-8000-00000000c004', 'claims-test-four', 'Claims test four');
 
 -- 1. The new states exist beside the old ones.
 do $$
@@ -49,28 +56,18 @@ values ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000
 insert into public.claims (user_id, lawsuit_id, lawsuit_title, status)
 values ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-00000000c002', 'Two', 'self_file');
 
--- 4. Legacy rows: simulate a 'submitted' row written before 0006 (no number),
---    then re-apply 0006 on top of it. It must succeed and leave the CHECK
---    NOT VALID, and any later update of that row must leave 'submitted'.
-alter table public.claims drop constraint claims_submitted_needs_confirmation;
-insert into public.claims (user_id, lawsuit_id, lawsuit_title, status)
-values ('00000000-0000-4000-8000-0000000000b2', '00000000-0000-4000-8000-00000000c001', 'One (legacy)', 'submitted');
-\i supabase/migrations/0006_claim_states.sql
-
+-- 3b. 0008's trigger, as the migration chain left it: moving a legacy claim
+--     (the D38 correction) sets the corrective-notice marker.
+insert into public.claims (id, user_id, lawsuit_id, lawsuit_title, status) values
+  ('00000000-0000-4000-8000-0000000000d4', '00000000-0000-4000-8000-0000000000b2',
+   '00000000-0000-4000-8000-00000000c004', 'Four (legacy)', 'processing');
+update public.claims set status = 'self_file' where id = '00000000-0000-4000-8000-0000000000d4';
 do $$
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'claims_submitted_needs_confirmation' and not convalidated
-  ) then
-    raise exception 'FAIL: expected claims_submitted_needs_confirmation to exist as NOT VALID';
+  if (select corrective_notice_required from public.claims
+      where id = '00000000-0000-4000-8000-0000000000d4') is not true then
+    raise exception 'FAIL: moving a legacy claim did not keep the corrective-notice marker';
   end if;
-  begin
-    update public.claims set corrective_notice_answered_at = now()
-    where user_id = '00000000-0000-4000-8000-0000000000b2';
-    raise exception 'FAIL: a legacy submitted row was updated without leaving submitted';
-  exception when check_violation then null;
-  end;
 end $$;
 
 -- 5. The server functions change a claim and log it in one transaction.
@@ -173,6 +170,17 @@ begin
   end;
 end $$;
 
+-- User B gets a claim event too, so the check below that user A sees no one
+-- else's events can fail.
+do $$
+begin
+  perform public.claim_start_tracking('00000000-0000-4000-8000-0000000000b2',
+    '00000000-0000-4000-8000-00000000c003', 'Three', 'self_file', 'user', '{}');
+  if not exists (select 1 from public.claim_events where user_id = '00000000-0000-4000-8000-0000000000b2') then
+    raise exception 'FAIL: fixture: user B has no claim event';
+  end if;
+end $$;
+
 -- 6. After 0007, a signed-in user reads their own claims and events but cannot
 --    write claims (no direct status update, insert or delete), cannot write
 --    events and cannot run the server functions.
@@ -187,9 +195,11 @@ begin
   if n <> 3 then
     raise exception 'FAIL: user A should see exactly their 3 claims, saw %', n;
   end if;
+  -- User A's own 4 events (start, report, number, the rewritten insert), and
+  -- none of user B's.
   select count(*) into n from public.claim_events;
-  if n = 0 or exists (select 1 from public.claim_events where user_id <> auth.uid()) then
-    raise exception 'FAIL: user A sees the wrong claim events';
+  if n <> 4 or exists (select 1 from public.claim_events where user_id <> auth.uid()) then
+    raise exception 'FAIL: user A sees the wrong claim events (% rows)', n;
   end if;
 
   begin
@@ -247,6 +257,49 @@ begin
 end $$;
 reset role;
 
+-- 6b. The same rules, read from the catalog, so a later migration that loosens
+--     a grant, a policy or the append-only trigger fails here even if the
+--     runtime checks above happen to pass.
+do $$
+declare
+  fn text;
+begin
+  foreach fn in array array[
+    'public.claim_start_tracking(uuid, uuid, text, text, text, jsonb)',
+    'public.claim_apply_change(uuid, uuid, text, jsonb, text, jsonb)'
+  ] loop
+    if has_function_privilege('anon', fn, 'execute') or has_function_privilege('authenticated', fn, 'execute') then
+      raise exception 'FAIL: % is executable by anon or authenticated', fn;
+    end if;
+    if not has_function_privilege('service_role', fn, 'execute') then
+      raise exception 'FAIL: service_role cannot execute %', fn;
+    end if;
+  end loop;
+  if has_table_privilege('anon', 'public.claim_events', 'insert, update, delete')
+     or has_table_privilege('authenticated', 'public.claim_events', 'insert, update, delete')
+     or has_table_privilege('service_role', 'public.claim_events', 'update, delete') then
+    raise exception 'FAIL: an API role may edit or delete claim events, or a client may append them';
+  end if;
+  if has_table_privilege('anon', 'public.claims', 'insert, update, delete')
+     or has_table_privilege('authenticated', 'public.claims', 'insert, update, delete') then
+    raise exception 'FAIL: a client role may write claims directly';
+  end if;
+  if not exists (select 1 from pg_trigger
+                 where tgrelid = 'public.claim_events'::regclass
+                   and tgname = 'claim_events_no_update' and tgenabled <> 'D') then
+    raise exception 'FAIL: the append-only trigger on claim_events is missing or disabled';
+  end if;
+  if exists (select 1 from pg_policies
+             where schemaname = 'public' and tablename = 'claim_events'
+               and (cmd <> 'SELECT' or qual is distinct from '(auth.uid() = user_id)')) then
+    raise exception 'FAIL: claim_events has a policy other than "own events, read only"';
+  end if;
+  if position('user_id = p_user_id' in pg_get_functiondef(
+       'public.claim_apply_change(uuid, uuid, text, jsonb, text, jsonb)'::regprocedure)) = 0 then
+    raise exception 'FAIL: claim_apply_change no longer checks that the claim is the user''s';
+  end if;
+end $$;
+
 -- 7. The service role (route handlers) can run the functions and append events,
 --    but never edit or delete events.
 set local role service_role;
@@ -284,6 +337,40 @@ begin
              where not exists (select 1 from public.claims c where c.id = e.claim_id)) then
     raise exception 'FAIL: events outlived their claim';
   end if;
+end $$;
+
+rollback;
+
+-- 4. Legacy rows, in their own transaction (it re-applies 0006): simulate a
+--    'submitted' row written before 0006 (no number), then re-apply 0006 on
+--    top of it. It must succeed and leave the CHECK NOT VALID, and any later
+--    update of that row must leave 'submitted'.
+begin;
+
+insert into auth.users (id, email) values
+  ('00000000-0000-4000-8000-0000000000b2', 'claims-b@example.test');
+insert into public.lawsuits (id, slug, title) values
+  ('00000000-0000-4000-8000-00000000c001', 'claims-test-one', 'Claims test one');
+
+alter table public.claims drop constraint claims_submitted_needs_confirmation;
+insert into public.claims (user_id, lawsuit_id, lawsuit_title, status)
+values ('00000000-0000-4000-8000-0000000000b2', '00000000-0000-4000-8000-00000000c001', 'One (legacy)', 'submitted');
+\i supabase/migrations/0006_claim_states.sql
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'claims_submitted_needs_confirmation' and not convalidated
+  ) then
+    raise exception 'FAIL: expected claims_submitted_needs_confirmation to exist as NOT VALID';
+  end if;
+  begin
+    update public.claims set corrective_notice_answered_at = now()
+    where user_id = '00000000-0000-4000-8000-0000000000b2';
+    raise exception 'FAIL: a legacy submitted row was updated without leaving submitted';
+  exception when check_violation then null;
+  end;
 end $$;
 
 rollback;
