@@ -320,6 +320,30 @@ describe('/api/cron/jobs', () => {
     expect(status).toBe(200);
     expect(body).toMatchObject({ ok: true, claimed: 0, ranSteps: [], failedSteps: [] });
   });
+
+  it('records every ingest job as a run, and fails the step when closures were held', async () => {
+    const held = { ...INGEST, held: 2, heldSlugs: ['a', 'b'], failed: 0, emptySources: [] };
+    m.ingestAndExtract.mockResolvedValue(held);
+    m.claimDue.mockResolvedValue([job('p', 'pipeline')]);
+    const { status, body } = await call(jobs.GET, '/api/cron/jobs');
+    expect(status).toBe(500);
+    expect(body.failedSteps).toEqual(['pipeline:p']);
+    expect(body.steps['pipeline:p']).toMatchObject({ status: 'failed', result: { heldSlugs: ['a', 'b'] } });
+    expect(body.steps['pipeline:p'].error).toMatch(/2 closures held for review/);
+    expect(m.recordIngestRun).toHaveBeenCalledWith(
+      'cron/jobs:pipeline',
+      expect.objectContaining({ status: 'failed', result: held }),
+    );
+    // The queue job ran, so it is not retried; the run record carries the problem.
+    expect(m.completeJob).toHaveBeenCalledWith('p', held);
+    expect(m.failJob).not.toHaveBeenCalled();
+
+    m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 0, failed: 0, emptySources: [] });
+    m.claimDue.mockResolvedValue([job('s', 'scrape')]);
+    const clean = await call(jobs.GET, '/api/cron/jobs');
+    expect(clean.status).toBe(200);
+    expect(m.recordIngestRun).toHaveBeenLastCalledWith('cron/jobs:scrape', expect.objectContaining({ status: 'ran' }));
+  });
 });
 
 describe('/api/cron/pipeline and /api/cron/scrape', () => {
@@ -347,5 +371,39 @@ describe('/api/cron/pipeline and /api/cron/scrape', () => {
     expect(status).toBe(500);
     expect(body.steps.ingest).toMatchObject({ status: 'failed', result: { heldSlugs: ['a', 'b', 'c'] } });
     expect(m.recordIngestRun).toHaveBeenCalledWith('cron/pipeline', expect.objectContaining({ status: 'failed' }));
+  });
+
+  it('scrape answers 500 and records the run when closures were held, like the other ingest routes', async () => {
+    const held = { ...INGEST, held: 190, heldSlugs: ['a'], failed: 0, emptySources: [] };
+    m.runAllSources.mockResolvedValue(held);
+    const { status, body } = await call(scrape.GET, '/api/cron/scrape');
+    expect(status).toBe(500);
+    expect(body.failedSteps).toEqual(['scrape']);
+    expect(body.steps.scrape.error).toMatch(/190 closures held for review/);
+    expect(m.recordIngestRun).toHaveBeenCalledWith(
+      'cron/scrape',
+      expect.objectContaining({ status: 'failed', result: held }),
+    );
+  });
+
+  it('scrape records a clean run, and a thrown one, as runs', async () => {
+    m.runAllSources.mockResolvedValue({ ...INGEST, held: 0, failed: 0, emptySources: [] });
+    expect((await call(scrape.POST, '/api/cron/scrape')).status).toBe(200);
+    expect(m.recordIngestRun).toHaveBeenLastCalledWith('cron/scrape', expect.objectContaining({ status: 'ran' }));
+    m.runAllSources.mockRejectedValue(new Error('feed timed out'));
+    expect((await call(scrape.POST, '/api/cron/scrape')).status).toBe(500);
+    expect(m.recordIngestRun).toHaveBeenLastCalledWith('cron/scrape', {
+      status: 'failed',
+      error: 'feed timed out',
+    });
+  });
+
+  it('scrape skips (and records nothing) without the service config outside production', async () => {
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', '');
+    const { status, body } = await call(scrape.GET, '/api/cron/scrape');
+    expect(status).toBe(200);
+    expect(body.skippedSteps).toEqual(['scrape']);
+    expect(m.runAllSources).not.toHaveBeenCalled();
+    expect(m.recordIngestRun).not.toHaveBeenCalled();
   });
 });

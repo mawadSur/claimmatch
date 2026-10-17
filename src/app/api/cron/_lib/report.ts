@@ -124,6 +124,15 @@ export function checkIngestStep(step: StepResult): StepResult {
   return { status: 'failed', error: problems.join('; '), result: step.result };
 }
 
+/**
+ * Whether a stored ingest run needs a person: one stored as failed, or one
+ * whose summary shows held closures, failed writes or empty sources, whatever
+ * status it was stored with (a queued job, for example, is marked done).
+ */
+export function ingestRunNeedsAttention(run: { status: string; summary: unknown }): boolean {
+  return run.status === 'failed' || ingestProblems(run.summary).length > 0;
+}
+
 export function buildReport(job: string, steps: Record<string, StepResult>): CronReport {
   const names = Object.keys(steps);
   const failedSteps = names.filter((n) => steps[n].status === 'failed');

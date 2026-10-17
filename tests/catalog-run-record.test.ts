@@ -7,7 +7,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { recordIngestRun } from '@/lib/jobs';
-import { checkIngestStep, ingestProblems } from '@/app/api/cron/_lib/report';
+import { checkIngestStep, ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 
 const CLEAN = { ingested: 300, held: 0, failed: 0, emptySources: [], heldSlugs: [], heldClosures: [] };
 
@@ -28,6 +28,16 @@ describe('ingest problems (until D40 alerting)', () => {
     expect(checkIngestStep(thrown)).toBe(thrown);
     const skipped = { status: 'skipped' as const, reason: 'x' };
     expect(checkIngestStep(skipped)).toBe(skipped);
+  });
+
+  it('flags a stored run as needing attention by its summary, whatever its stored status', () => {
+    expect(ingestRunNeedsAttention({ status: 'done', summary: CLEAN })).toBe(false);
+    expect(ingestRunNeedsAttention({ status: 'failed', summary: {} })).toBe(true);
+    // A queued pipeline job is stored as done even when it held closures.
+    expect(ingestRunNeedsAttention({ status: 'done', summary: { ...CLEAN, held: 190 } })).toBe(true);
+    expect(ingestRunNeedsAttention({ status: 'done', summary: { ...CLEAN, failed: 1 } })).toBe(true);
+    expect(ingestRunNeedsAttention({ status: 'done', summary: { ...CLEAN, emptySources: ['settlesignal'] } })).toBe(true);
+    expect(ingestRunNeedsAttention({ status: 'done', summary: null })).toBe(false);
   });
 });
 

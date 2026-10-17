@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { claimDue, completeJob, failJob } from '@/lib/jobs';
+import { claimDue, completeJob, failJob, recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
 import type { Job } from '@/lib/types';
 import {
   buildReport,
+  checkIngestStep,
   errorMessage,
   missingConfigStep,
   reportHttpStatus,
@@ -73,9 +74,14 @@ async function processJob(job: Job): Promise<StepResult> {
     case 'scrape':
     case 'extract':
     case 'pipeline': {
+      // A throw is retried (failJob). Otherwise the same checks and run record
+      // as the cron routes: held closures, failed writes and empty sources
+      // fail the step, and the run is stored for the admin overview.
       const summary = await ingestAndExtract();
+      const step = checkIngestStep({ status: 'ran', result: summary });
+      await recordIngestRun(`cron/jobs:${job.type}`, step);
       await completeJob(job.id, summary);
-      return { status: 'ran', result: summary };
+      return step;
     }
     case 'match':
       // Never runs the sweep or sends email. The sweep runs only from

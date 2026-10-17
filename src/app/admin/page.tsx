@@ -26,6 +26,7 @@ import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
 import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
+import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -318,6 +319,10 @@ async function loadLastIngestRun(svc: ReturnType<typeof createServiceClient>): P
 function LastIngestRun({ run }: { run: IngestRun | null }) {
   const held: HeldClosure[] = Array.isArray(run?.summary.heldClosures) ? run.summary.heldClosures : [];
   const n = (v: number | undefined) => (typeof v === 'number' ? v.toLocaleString() : '—');
+  // Held closures or failed writes need a person whatever status the run was
+  // stored with; without a stored error, list what the summary shows.
+  const attention = run ? ingestRunNeedsAttention(run) : false;
+  const problem = run ? run.error ?? (ingestProblems(run.summary).join('; ') || null) : null;
   return (
     <section aria-labelledby="last-ingest-title">
       <div className="mb-4">
@@ -326,16 +331,16 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
         </h3>
         <p className="text-sm text-ink-soft">
           {run
-            ? `${new Date(run.at).toUTCString()} · ${run.status === 'failed' ? 'needs attention' : 'no problems'}`
+            ? `${new Date(run.at).toUTCString()} · ${attention ? 'needs attention' : 'no problems'}`
             : 'No run recorded yet. The daily cron records each run here.'}
         </p>
       </div>
       {run && (
         <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
-          {run.error && (
+          {problem && (
             <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
-              {run.error}
+              {problem}
             </p>
           )}
           <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
