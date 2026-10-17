@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import {
+  canReportWithoutClaim,
   eligibilitySummary,
   linkHost,
   proofNeed,
@@ -27,7 +28,8 @@ export const dynamic = 'force-dynamic';
  * The Part A filing flow. Signed-in only (the middleware and this page send
  * signed-out people to log in and back). A settlement the user already tracks
  * stays readable after it closes or leaves the catalog (account-only view);
- * without a claim, unlisted and fictional settlements are a 404.
+ * without a claim, unlisted and fictional settlements are a 404, and a closed
+ * one still takes "I filed my claim" until 30 days after its deadline.
  */
 export default async function ClaimPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -75,7 +77,10 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     </>
   );
 
-  if (!claim && !context.openForClaims) {
+  // Without a claim, a settlement that no longer takes claims still lets people
+  // tell us they filed (the deadline-passed or "closed on our list" card) until
+  // 30 days after its deadline. Only after that is there nothing left to do.
+  if (!claim && !context.openForClaims && !canReportWithoutClaim(context)) {
     const official = safeExternalUrl(settlement.claim_url);
     return (
       <section className="container-narrow py-10 sm:py-12">
@@ -110,6 +115,10 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
                 notice you got by mail or email.
               </>
             )}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            If you filed before the deadline, keep the confirmation the settlement administrator
+            sent you.
           </p>
           <Link href="/lawsuits" className="btn-primary mt-5 w-full sm:w-auto">
             Browse open settlements <ArrowRight className="h-4 w-4" aria-hidden />

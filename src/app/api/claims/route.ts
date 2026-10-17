@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   CLAIMS_UNAVAILABLE_MESSAGE,
   SETTLEMENT_UNAVAILABLE_MESSAGE,
+  canReportWithoutClaim,
   parseStartTracking,
   toClaimView,
 } from '@/lib/claims';
@@ -29,8 +30,15 @@ function reply(body: unknown, status = 200, headers: Record<string, string> = {}
  * they have. ClaimMatch files nothing: the user files on the official site and
  * reports it with PATCH /api/claims/[id].
  *
- * Refuses closed, unpublished and fictional settlements. The open check is the
- * shared open-for-claims rule (src/lib/open-for-claims.ts) that every surface uses.
+ *   { lawsuit_id }                          save it before filing: the settlement
+ *                                           must be open for claims (the shared
+ *                                           rule in src/lib/open-for-claims.ts)
+ *   { lawsuit_id, intent: 'report_filed' }  start it to report filing: allowed
+ *                                           until 30 days after the deadline,
+ *                                           also on a listing marked closed
+ *                                           (canReportWithoutClaim)
+ *
+ * Refuses unpublished and fictional settlements either way.
  */
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -76,7 +84,7 @@ export async function POST(req: Request) {
     }
     return reply({ error: parsed.message }, 400);
   }
-  const { lawsuitId } = parsed.value;
+  const { lawsuitId, intent } = parsed.value;
 
   // An existing claim is returned as it is, whatever the settlement's state.
   const existing = await supabase
@@ -107,7 +115,20 @@ export async function POST(req: Request) {
   if (!settlement || !context.published || context.fictional) {
     return reply({ error: "We couldn't find that settlement." }, 404);
   }
-  if (!context.openForClaims) {
+  if (intent === 'report_filed') {
+    // Anyone who says they filed enters tracking, also after the deadline or
+    // a closure on our list, until the late-report window ends.
+    if (!canReportWithoutClaim(context)) {
+      return reply(
+        {
+          error:
+            'It has been more than 30 days since the deadline, so a claim can no longer be reported here. If you filed, keep the confirmation the settlement administrator sent you.',
+          code: 'window_closed',
+        },
+        409,
+      );
+    }
+  } else if (!context.openForClaims) {
     return reply(
       { error: 'This settlement is closed to new claims. Check the official site to be sure.', code: 'settlement_closed' },
       409,
@@ -118,7 +139,7 @@ export async function POST(req: Request) {
     userId: user.id,
     lawsuitId: settlement.id,
     lawsuitTitle: settlement.title,
-    detail: { action: 'start_tracking', request_id: requestId(req) },
+    detail: { action: 'start_tracking', intent, request_id: requestId(req) },
   });
   if (!result.ok) return reply({ error: result.error, code: result.code }, result.status);
   return reply({ claim: result.claim, created: result.created }, result.created ? 201 : 200);

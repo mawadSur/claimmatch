@@ -79,10 +79,24 @@ describe('validateFiledOn', () => {
 describe('parseStartTracking', () => {
   it('needs a settlement id', () => {
     const id = '7f1c1c8e-0a51-4f3f-9a49-0f1e6a1d3b21';
-    expect(parseStartTracking({ lawsuit_id: id })).toEqual({ ok: true, value: { lawsuitId: id } });
+    expect(parseStartTracking({ lawsuit_id: id })).toEqual({ ok: true, value: { lawsuitId: id, intent: 'track' } });
     expect(parseStartTracking({ lawsuit_id: 'sample-databreach' })).toMatchObject({ ok: false });
     expect(parseStartTracking({})).toMatchObject({ ok: false, message: 'Pick a settlement first.' });
     expect(parseStartTracking(null)).toMatchObject({ ok: false });
+  });
+
+  it('takes an optional intent: save before filing, or start the claim to report filing', () => {
+    const id = '7f1c1c8e-0a51-4f3f-9a49-0f1e6a1d3b21';
+    expect(parseStartTracking({ lawsuit_id: id, intent: 'track' })).toEqual({
+      ok: true,
+      value: { lawsuitId: id, intent: 'track' },
+    });
+    expect(parseStartTracking({ lawsuit_id: id, intent: 'report_filed' })).toEqual({
+      ok: true,
+      value: { lawsuitId: id, intent: 'report_filed' },
+    });
+    expect(parseStartTracking({ lawsuit_id: id, intent: 'file_for_me' })).toEqual({ ok: false, message: 'Unknown action.' });
+    expect(parseStartTracking({ lawsuit_id: id, intent: 7 })).toEqual({ ok: false, message: 'Unknown action.' });
   });
 
   it('flags the retired e-sign payload so it can never start a claim', () => {

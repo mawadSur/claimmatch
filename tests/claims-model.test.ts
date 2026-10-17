@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CLAIM_STATUSES,
   allowedNextStatuses,
+  canReportWithoutClaim,
   claimActionAvailability,
   daysUntilDeadline,
   deadlineCountdown,
@@ -109,6 +110,56 @@ describe('open-for-claims rule', () => {
     expect(PAST_60_DAYS).toMatchObject({ deadlinePassed: true, lateReportOpen: false });
     expect(FICTIONAL).toMatchObject({ fictional: true, openForClaims: false, lateReportOpen: false });
     expect(settlementContext(null, NOW, notFictional)).toMatchObject({ known: false, lateReportOpen: true });
+  });
+});
+
+describe('reporting filing without a claim (WP:122, WP:141)', () => {
+  // NOW is 2026-10-16 18:00 UTC (08:00 in Honolulu).
+  const DAY_AFTER = ctx({ deadline: '2026-10-15' });
+  const DAY_30 = ctx({ deadline: '2026-09-16' }); // the last day to report is today
+  const DAY_31 = ctx({ deadline: '2026-09-15' });
+
+  it('stays possible for 30 days after the deadline, after saving is no longer possible', () => {
+    expect(OPEN).toMatchObject({ openForClaims: true });
+    expect(canReportWithoutClaim(OPEN)).toBe(true);
+    expect(DAY_AFTER).toMatchObject({ openForClaims: false, deadlinePassed: true });
+    expect(canReportWithoutClaim(DAY_AFTER)).toBe(true);
+    expect(canReportWithoutClaim(DAY_30)).toBe(true);
+    expect(canReportWithoutClaim(DAY_31)).toBe(false);
+    // The window ends with the last day in Honolulu.
+    const deadline = { deadline: '2026-09-15' };
+    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T09:59:59Z')))).toBe(true);
+    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T10:00:00Z')))).toBe(false);
+  });
+
+  it('stays possible on a listing our list marks closed while it is re-checked (D41)', () => {
+    const closed = ctx({ status: 'closed' });
+    expect(closed).toMatchObject({ openForClaims: false, closedByStatus: true, deadlinePassed: false });
+    expect(canReportWithoutClaim(closed)).toBe(true);
+    expect(canReportWithoutClaim(ctx({ status: 'closed', deadline: null }))).toBe(true);
+    expect(canReportWithoutClaim(ctx({ status: 'closed', deadline: '2026-09-15' }))).toBe(false);
+  });
+
+  it('is never possible on a fictional, unpublished or unknown settlement', () => {
+    expect(canReportWithoutClaim(FICTIONAL)).toBe(false);
+    expect(canReportWithoutClaim(ctx({ slug: 'robocall-tcpa-settlement' }, isFictionalSettlementSlug))).toBe(false);
+    expect(canReportWithoutClaim(ctx({ review_status: 'rejected' }))).toBe(false);
+    expect(canReportWithoutClaim(ctx({ review_status: 'pending_review', deadline: '2026-10-15' }))).toBe(false);
+    expect(canReportWithoutClaim(settlementContext(null, NOW, notFictional))).toBe(false);
+  });
+
+  it('matches what the new claim then accepts: the report the day after, nothing on day 31', () => {
+    // POST /api/claims creates the claim in self_file, then the report is a PATCH.
+    const fresh: ClaimFields = { status: 'self_file' };
+    for (const context of [DAY_AFTER, DAY_30, ctx({ status: 'closed' })]) {
+      expect(claimActionAvailability(fresh, context).reportFiled).toBe(true);
+      const result = planClaimTransition(fresh, { action: 'report_filed', confirmation_number: 'AB-123' }, context, NOW);
+      expect(result).toMatchObject({ ok: true, noop: false, plan: { toStatus: 'submitted' } });
+    }
+    expect(planClaimTransition(fresh, { action: 'report_filed' }, DAY_31, NOW)).toMatchObject({
+      ok: false,
+      refusal: 'window_closed',
+    });
   });
 });
 

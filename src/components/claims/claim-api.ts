@@ -1,4 +1,4 @@
-import type { ClaimView } from '@/lib/claims';
+import type { ClaimView, StartIntent } from '@/lib/claims';
 
 /** Browser calls to the claim routes. Every claim change goes through the server. */
 
@@ -36,9 +36,13 @@ async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promi
   return { ok: false, status: res.status, error: json?.error || 'Something went wrong. Please try again.' };
 }
 
-/** Starts tracking a settlement ("Not filed yet"), or returns the existing claim. */
-export function startTracking(lawsuitId: string): Promise<ClaimApiResult> {
-  return send('/api/claims', 'POST', { lawsuit_id: lawsuitId });
+/**
+ * Starts tracking a settlement ("Not filed yet"), or returns the existing
+ * claim. 'report_filed' starts it so the user can tell us they filed, which
+ * the server also allows after the deadline (within 30 days).
+ */
+export function startTracking(lawsuitId: string, intent: StartIntent = 'track'): Promise<ClaimApiResult> {
+  return send('/api/claims', 'POST', { lawsuit_id: lawsuitId, intent });
 }
 
 export function updateClaim(claimId: string, body: Record<string, unknown>): Promise<ClaimApiResult> {

@@ -5,6 +5,7 @@ import { BadgeCheck, CheckCircle2, Loader2, Pencil, Undo2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import {
   FILED_ON_EARLIEST,
+  canReportWithoutClaim,
   claimActionAvailability,
   displayClaimStatus,
   isKnownClaimStatus,
@@ -44,12 +45,18 @@ export function ReportFiled({
   if (claim && display?.kind === 'submitted') {
     return <SubmittedCard claim={claim} label={display.label} onChange={onChange} />;
   }
-  const canReport = claim ? claimActionAvailability(claim, context).reportFiled : context.openForClaims;
+  // Without a claim, "I filed my claim" starts one: allowed until 30 days after
+  // the deadline, also once the settlement no longer takes new claims.
+  const canReport = claim ? claimActionAvailability(claim, context).reportFiled : canReportWithoutClaim(context);
   if (!canReport) {
     let text =
       'It has been more than 30 days since the deadline, so this claim can no longer be updated here. If you filed, keep the confirmation the settlement administrator sent you.';
-    if (claim?.status === 'withdrawn') text = 'You stopped tracking this claim.';
-    else if (claim && !isKnownClaimStatus(claim.status)) {
+    if (!claim) {
+      text =
+        'It has been more than 30 days since the deadline, so a claim can no longer be reported here. If you filed, keep the confirmation the settlement administrator sent you.';
+    } else if (claim.status === 'withdrawn') {
+      text = 'You stopped tracking this claim.';
+    } else if (!isKnownClaimStatus(claim.status)) {
       text = "We can't update this claim here right now. Check the official site for its status.";
     }
     return <p className="rounded-xl bg-gray-50 p-4 text-sm leading-relaxed text-ink-muted">{text}</p>;
@@ -94,7 +101,9 @@ function ReportForm({
 
   async function ensureClaim(): Promise<ClaimView | null> {
     if (claim) return claim;
-    const started = await startTracking(lawsuitId);
+    // Starting the claim to report filing is accepted after the deadline too
+    // (within 30 days), unlike saving it before filing.
+    const started = await startTracking(lawsuitId, 'report_filed');
     if (!started.ok) {
       setError({ message: started.error, status: started.status });
       return null;

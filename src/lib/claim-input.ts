@@ -88,10 +88,20 @@ export function parseClaimPatch(body: unknown, now: Date): ParseResult<ClaimActi
   return { ok: true, value };
 }
 
+/**
+ * Why a claim is being started: 'track' saves it before filing ("Not yet:
+ * save to my claims", only while the settlement is open for claims);
+ * 'report_filed' creates it so the user can tell us they filed, which stays
+ * possible for 30 days after the deadline (canReportWithoutClaim).
+ */
+export const START_INTENTS = ['track', 'report_filed'] as const;
+export type StartIntent = (typeof START_INTENTS)[number];
+
 const startTrackingSchema = z.object({
   lawsuit_id: z
     .string({ required_error: 'Pick a settlement first.' })
     .uuid("That settlement link isn't valid. Go back and pick the settlement again."),
+  intent: z.enum(START_INTENTS, { errorMap: () => ({ message: 'Unknown action.' }) }).default('track'),
 });
 
 /**
@@ -100,13 +110,13 @@ const startTrackingSchema = z.object({
  */
 export function parseStartTracking(
   body: unknown,
-): ParseResult<{ lawsuitId: string }> & { legacyPayload?: boolean } {
+): ParseResult<{ lawsuitId: string; intent: StartIntent }> & { legacyPayload?: boolean } {
   if (body && typeof body === 'object' && 'signature_name' in body) {
     return { ok: false, message: 'This page is out of date.', legacyPayload: true };
   }
   const parsed = startTrackingSchema.safeParse(body);
   if (!parsed.success) return { ok: false, message: firstMessage(parsed.error) };
-  return { ok: true, value: { lawsuitId: parsed.data.lawsuit_id } };
+  return { ok: true, value: { lawsuitId: parsed.data.lawsuit_id, intent: parsed.data.intent } };
 }
 
 /* -------------------------------------------------------------------------- */

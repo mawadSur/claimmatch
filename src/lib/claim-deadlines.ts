@@ -151,3 +151,14 @@ export function settlementContext(
   };
 }
 
+/**
+ * Someone with no claim yet can still tell us they filed, and the claim is
+ * created with their report: anyone who says they filed enters tracking
+ * (WP:141). Allowed on a real, published settlement until 30 days after its
+ * deadline (WP:122), also when our list marks it closed while it is
+ * re-checked (D41). Saving a claim before filing needs openForClaims.
+ */
+export function canReportWithoutClaim(settlement: SettlementContext): boolean {
+  return settlement.known && settlement.published && !settlement.fictional && settlement.lateReportOpen;
+}
+

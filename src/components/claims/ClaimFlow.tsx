@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertTriangle, CalendarClock, CheckCircle2, ExternalLink, ShieldCheck } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import {
+  canReportWithoutClaim,
   claimActionAvailability,
   daysUntilDeadline,
   deadlineCountdown,
@@ -138,8 +139,11 @@ export function ClaimFlow({
         )}
       </section>
     );
-  } else if (context.deadlinePassed) {
-    body = <DeadlinePassed settlement={settlement} context={context} claim={claim} onChange={onChange} />;
+  } else if (context.deadlinePassed || (!initialClaim && !context.openForClaims)) {
+    // After the deadline; or, with no claim at page load, a listing our list
+    // marks closed (D41: still being re-checked). Keyed on the claim at load,
+    // so the form stays in place while "I filed my claim" starts the claim.
+    body = <NoLongerOpen settlement={settlement} context={context} claim={claim} onChange={onChange} />;
   } else {
     body = (
       <>
@@ -424,7 +428,11 @@ function FilingSteps({
   );
 }
 
-function DeadlinePassed({
+/**
+ * After the deadline, or (no claim at page load) a listing our list marks
+ * closed. People who filed can still tell us until 30 days after the deadline.
+ */
+function NoLongerOpen({
   settlement,
   context,
   claim,
@@ -435,31 +443,38 @@ function DeadlinePassed({
   claim: ClaimView | null;
   onChange: (claim: ClaimView, message: string) => void;
 }) {
-  const canReport = claim ? claimActionAvailability(claim, context).reportFiled : false;
+  const passed = context.deadlinePassed;
+  const official = settlement.officialUrl;
+  const canReport = claim ? claimActionAvailability(claim, context).reportFiled : canReportWithoutClaim(context);
   const lastDay = claim ? reportByDay(claim, settlement.deadline) : lateReportLastDay(settlement.deadline);
   return (
-    <section aria-labelledby="deadline-passed" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
-      <h2 id="deadline-passed" className="text-lg font-bold">The deadline has passed</h2>
-      <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-        The deadline for this settlement was {formatDeadline(settlement.deadline)}.
-        {canReport
-          ? lastDay
-            ? ` Did you file before then? Tell us by ${formatDeadline(lastDay)}.`
-            : ' Did you file before then? Tell us below.'
-          : ''}
-      </p>
+    <section aria-labelledby="no-longer-open" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
+      <h2 id="no-longer-open" className="text-lg font-bold">
+        {passed ? 'The deadline has passed' : 'Our list shows this settlement as closed'}
+      </h2>
+      {passed ? (
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+          The deadline for this settlement was {formatDeadline(settlement.deadline)}.
+          {canReport
+            ? lastDay
+              ? ` Did you file before then? Tell us by ${formatDeadline(lastDay)}.`
+              : ' Did you file before then? Tell us below.'
+            : ''}
+        </p>
+      ) : (
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+          We&rsquo;re re-checking it. Check the{' '}
+          {official ? <ExternalTextLink href={official}>official site</ExternalTextLink> : 'official site'} to see
+          if it still takes claims{official ? '.' : ': use the link in the notice you got by mail or email.'}{' '}
+          Already filed? Tell us here, and we&rsquo;ll keep your claim and confirmation number in one place.
+        </p>
+      )}
       <div className="mt-4">
-        <ReportFiled
-          lawsuitId={settlement.id}
-          claim={claim}
-          context={context}
-          allowSave={false}
-          onChange={onChange}
-        />
+        <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
       </div>
-      {settlement.officialUrl && (
+      {passed && official && (
         <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">
-          For updates, check the <ExternalTextLink href={settlement.officialUrl}>official site</ExternalTextLink>.
+          For updates, check the <ExternalTextLink href={official}>official site</ExternalTextLink>.
         </p>
       )}
     </section>

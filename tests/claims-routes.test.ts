@@ -259,6 +259,79 @@ describe('POST /api/claims', () => {
     expect(h.started).toHaveLength(0);
   });
 
+  describe('starting a claim to report filing (intent: report_filed)', () => {
+    const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
+    it('is accepted the day after the deadline, when saving is refused', async () => {
+      h.claimRow = null;
+      // Two days back in UTC is always past the Honolulu cutoff.
+      h.settlement = settlement({ deadline: daysAgo(2) });
+      const save = await post({ lawsuit_id: LAWSUIT_ID });
+      expect(save.status).toBe(409);
+      expect((await save.json()).code).toBe('settlement_closed');
+      expect(h.started).toHaveLength(0);
+
+      const res = await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' });
+      expect(res.status).toBe(201);
+      expect(h.started[0]).toMatchObject({
+        userId: 'user-a',
+        lawsuitId: LAWSUIT_ID,
+        detail: { action: 'start_tracking', intent: 'report_filed' },
+      });
+    });
+
+    it('is accepted on a listing our list marks closed (D41), but not saving', async () => {
+      h.claimRow = null;
+      h.settlement = settlement({ status: 'closed' });
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'track' })).status).toBe(409);
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' })).status).toBe(201);
+      h.settlement = settlement({ status: 'closed', deadline: null });
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' })).status).toBe(201);
+      expect(h.started).toHaveLength(2);
+    });
+
+    it('is refused more than 30 days after the deadline', async () => {
+      h.claimRow = null;
+      h.settlement = settlement({ deadline: daysAgo(32) });
+      const res = await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' });
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body.code).toBe('window_closed');
+      expect(body.error).toMatch(/more than 30 days/);
+      expect(h.started).toHaveLength(0);
+    });
+
+    it('is still accepted 30 days after the deadline', async () => {
+      h.claimRow = null;
+      // Today (UTC) is the 30th day: the window ends at 10:00 UTC tomorrow.
+      h.settlement = settlement({ deadline: daysAgo(30) });
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' })).status).toBe(201);
+    });
+
+    it('never starts a claim on a fictional or unpublished settlement', async () => {
+      h.claimRow = null;
+      h.settlement = settlement({ slug: 'robocall-tcpa-settlement', deadline: daysAgo(2) });
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' })).status).toBe(404);
+      h.settlement = settlement({ review_status: 'rejected', deadline: daysAgo(2) });
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' })).status).toBe(404);
+      expect(h.started).toHaveLength(0);
+    });
+
+    it('returns an existing claim as it is', async () => {
+      h.settlement = settlement({ deadline: daysAgo(40) });
+      const res = await post({ lawsuit_id: LAWSUIT_ID, intent: 'report_filed' });
+      expect(res.status).toBe(200);
+      expect((await res.json()).created).toBe(false);
+      expect(h.started).toHaveLength(0);
+    });
+
+    it('rejects an unknown intent', async () => {
+      h.claimRow = null;
+      expect((await post({ lawsuit_id: LAWSUIT_ID, intent: 'file_for_me' })).status).toBe(400);
+      expect(h.started).toHaveLength(0);
+    });
+  });
+
   it('answers 503, not 404, when the settlement cannot be read', async () => {
     h.claimRow = null;
     h.settlementReadFails = true;
