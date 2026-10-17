@@ -32,6 +32,17 @@ describe('safeNextPath', () => {
       'evil.example',
       '',
       `/${'a'.repeat(2048)}`,
+      // Dot segments that resolve to "//evil.example".
+      '/..//evil.example',
+      '/..//evil.example/login',
+      '/.//evil.example',
+      '/%2e%2e//evil.example',
+      '/%2E%2e//evil.example',
+      '/.%2e//evil.example',
+      '/%2e//evil.example',
+      '/a/..//evil.example',
+      '/a/b/../..//evil.example',
+      '/././/evil.example',
     ]) {
       expect(safeNextPath(raw), JSON.stringify(raw)).toBeNull();
     }
@@ -40,12 +51,42 @@ describe('safeNextPath', () => {
     expect(safeNextPath(42)).toBeNull();
   });
 
+  it('still accepts dot segments that stay on this site', () => {
+    expect(safeNextPath('/a/../claim/x')).toBe('/claim/x');
+    expect(safeNextPath('/./dashboard')).toBe('/dashboard');
+    expect(safeNextPath('/..')).toBe('/');
+  });
+
   it('only ever returns something the browser resolves on this site', () => {
-    const tricky = ['/%5Cevil.example', '/%2F%2Fevil.example', '/ /evil.example', '/.%2E/evil', '/@evil.example', '/claim/x?next=//evil'];
+    const tricky = [
+      '/%5Cevil.example',
+      '/%2F%2Fevil.example',
+      '/ /evil.example',
+      '/.%2E/evil',
+      '/@evil.example',
+      '/claim/x?next=//evil',
+      '/..//evil.example',
+      '/.//evil.example',
+      '/%2e%2e//evil.example',
+      '/a/..//evil.example',
+    ];
+    // Every combination of up to four pieces after the leading slash.
+    const pieces = ['/', '.', '..', '%2e', '%2E%2e', '%2F', '%5C', '@', '?', '#', ' ', 'evil.example'];
+    let combos = [''];
+    for (let depth = 0; depth < 4; depth++) {
+      combos = combos.flatMap((c) => pieces.map((p) => c + p));
+      tricky.push(...combos.map((c) => `/${c}`));
+    }
+    let accepted = 0;
     for (const raw of tricky) {
       const out = safeNextPath(raw);
-      if (out !== null) expect(new URL(out, SITE).origin, raw).toBe(SITE);
+      if (out === null) continue;
+      accepted++;
+      // What router.push and redirects do with the value.
+      expect(new URL(out, SITE).origin, JSON.stringify(raw)).toBe(SITE);
+      expect(out.startsWith('//'), JSON.stringify(raw)).toBe(false);
     }
+    expect(accepted).toBeGreaterThan(0);
   });
 
   it('falls back when there is no safe path', () => {

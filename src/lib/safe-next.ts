@@ -2,8 +2,9 @@
  * Where to send someone after they log in, sign up, confirm their email or
  * finish onboarding. The value comes from ?next in a URL anyone can craft, so
  * it must only ever be a path on this site: a link like
- * /login?next=/%5Cevil.example (or /%09/evil.example) would otherwise send
- * people to a look-alike site right after they log in on the real one.
+ * /login?next=/%5Cevil.example (or /%09/evil.example, or /..//evil.example)
+ * would otherwise send people to a look-alike site right after they log in on
+ * the real one.
  *
  * Pure (no window, no Next APIs), so the same rule runs in the browser, in
  * route handlers and in server components.
@@ -14,6 +15,9 @@ const MAX_LENGTH = 2048;
 // Backslashes and control characters (tab, CR, LF...) are the bypasses: the
 // URL parser turns "\" into "/" and drops tabs and newlines.
 const UNSAFE = /[\\\u0000-\u001f\u007f]/;
+// A path that starts with two slashes (or a slash and a backslash) is read by
+// browsers as a link to another site ("//evil.example").
+const OTHER_SITE = /^\/[\\/]/;
 
 /**
  * A same-site path ("/claim/abc?x=1#y") built from `raw`, or null when `raw`
@@ -23,15 +27,21 @@ const UNSAFE = /[\\\u0000-\u001f\u007f]/;
 export function safeNextPath(raw: unknown): string | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
   if (typeof value !== 'string' || value.length === 0 || value.length > MAX_LENGTH) return null;
-  if (!value.startsWith('/') || value.startsWith('//') || UNSAFE.test(value)) return null;
-  let url: URL;
+  if (!value.startsWith('/') || OTHER_SITE.test(value) || UNSAFE.test(value)) return null;
   try {
-    url = new URL(value, BASE);
+    const url = new URL(value, BASE);
+    if (url.origin !== BASE) return null;
+    // Check the resolved path as well as the input: dot segments turn
+    // "/..//evil.example", "/.//evil.example" or "/%2e%2e//evil.example" into
+    // "//evil.example".
+    if (OTHER_SITE.test(url.pathname)) return null;
+    const path = url.pathname + url.search + url.hash;
+    // What we return must stay on this site when router.push or a redirect
+    // resolves it again.
+    return new URL(path, BASE).origin === BASE ? path : null;
   } catch {
     return null;
   }
-  if (url.origin !== BASE) return null;
-  return url.pathname + url.search + url.hash;
 }
 
 /** safeNextPath(raw), or `fallback` when there is no safe path. */
