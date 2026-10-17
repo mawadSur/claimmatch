@@ -12,6 +12,13 @@ const db = vi.hoisted(() => ({
   single: { data: null as unknown, error: null as { message: string } | null },
 }));
 
+// The settlement 404 page reads the path to tell fictional listings apart.
+const nav = vi.hoisted(() => ({ pathname: null as string | null }));
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  usePathname: () => nav.pathname,
+}));
+
 vi.mock('@/lib/supabase/server', () => {
   // A query: every filter returns itself; awaiting it yields db.list.
   function query() {
@@ -282,12 +289,26 @@ describe('settlement page', () => {
     expect(html).not.toMatch(/bg-success-50/);
   });
 
-  it('tells people from an old email about a fictional listing that there is nothing to file', () => {
+  it('tells people arriving at a fictional listing that it was not real and there is nothing to file', () => {
+    nav.pathname = '/lawsuits/robocall-tcpa-settlement';
     const html = renderToStaticMarkup(createElement(SettlementNotFound));
-    expect(html).toContain('We couldn’t find this settlement');
-    expect(html).toContain('test data, not real settlements');
-    expect(html).toContain('there is nothing to file');
+    expect(html).toContain('This was not a real settlement');
+    expect(html).toContain('test data, not a real settlement');
+    expect(html).toContain('nothing to file');
     expect(html).toContain('href="/lawsuits"');
+  });
+
+  it('never says "nothing to file" for any other missing settlement', () => {
+    // A real listing taken off the list (old match emails linked those too), a
+    // closed one, a mistyped link, or no path at all.
+    for (const path of ['/lawsuits/amazon-return-policy-settlement', '/lawsuits/robocall-tcpa', '/lawsuits/%E0%A4%A', null]) {
+      nav.pathname = path;
+      const html = renderToStaticMarkup(createElement(SettlementNotFound));
+      expect(html, String(path)).toContain('We couldn’t find this settlement');
+      expect(html, String(path)).toContain('check the site it names');
+      expect(html, String(path)).not.toContain('nothing to file');
+      expect(html, String(path)).not.toContain('test data');
+    }
   });
 
   it('credits SettleSignal only on SettleSignal records', async () => {
