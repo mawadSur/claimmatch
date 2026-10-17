@@ -1,18 +1,31 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
+import { flags } from '@/lib/flags';
+import { recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
+import {
+  buildReport,
+  checkIngestStep,
+  matchSweepGate,
+  missingConfigStep,
+  reportHttpStatus,
+  runStep,
+  serviceConfigProblem,
+  type StepResult,
+} from '../_lib/report';
 
 /**
- * Consolidated daily cron: runs the ingest pipeline followed by the match sweep.
- * Combines what was previously two separate crons (pipeline + match) into one
- * to stay within Vercel Hobby's 2-cron limit.
- *
- * Schedule: daily at 06:00 UTC
- *   1. Ingest: fetch from all SOURCE_ADAPTERS, extract via LLM (if configured),
- *      upsert lawsuits with review gating.
- *   2. Match sweep: recompute matches for opted-in users and email them about
- *      brand-new matches (notified_at IS NULL).
+ * Daily cron (06:00 UTC, vercel.json). Vercel Hobby allows two crons, so this
+ * one route runs the daily steps in order:
+ *   1. ingest: fetch every source adapter and refresh the catalog (new records
+ *      wait for review; no model calls; large closure batches are held). Held
+ *      closures, failed writes and empty sources make the step fail (500)
+ *      until D40's alerting exists; every run is stored as a jobs row.
+ *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
+ *      only when MATCH_EMAILS_ENABLED=1.
+ * The JSON reports each step as ran, skipped or failed; any failure makes the
+ * response a 500.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,31 +36,29 @@ async function handle(req: Request) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  const results: {
-    ingest?: Awaited<ReturnType<typeof ingestAndExtract>>;
-    ingestError?: string;
-    match?: Awaited<ReturnType<typeof runMatchSweep>>;
-    matchError?: string;
-  } = {};
+  const production = process.env.NODE_ENV === 'production';
+  const configProblem = serviceConfigProblem(process.env);
+  const steps: Record<string, StepResult> = {};
 
-  // Step 1: Ingest pipeline
-  try {
-    results.ingest = await ingestAndExtract();
-  } catch (err) {
-    console.error('[cron/daily] ingest failed:', err);
-    results.ingestError = err instanceof Error ? err.message : 'Ingest failed.';
+  if (configProblem) {
+    steps.ingest = missingConfigStep(configProblem, production);
+  } else {
+    steps.ingest = checkIngestStep(await runStep('daily/ingest', ingestAndExtract));
+    await recordIngestRun('cron/daily', steps.ingest);
   }
 
-  // Step 2: Match sweep (run even if ingest failed — there may be existing lawsuits)
-  try {
-    results.match = await runMatchSweep();
-  } catch (err) {
-    console.error('[cron/daily] match sweep failed:', err);
-    results.matchError = err instanceof Error ? err.message : 'Match sweep failed.';
+  const gate = matchSweepGate(flags.matchEmails());
+  if (!gate.run) {
+    steps.matchSweep = gate.step;
+  } else {
+    // Runs even if ingest failed: existing settlements can still match.
+    steps.matchSweep = configProblem
+      ? missingConfigStep(configProblem, production)
+      : await runStep('daily/matchSweep', runMatchSweep);
   }
 
-  const hasError = results.ingestError || results.matchError;
-  return NextResponse.json(results, { status: hasError ? 500 : 200 });
+  const report = buildReport('daily', steps);
+  return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 
 export async function GET(req: Request) {

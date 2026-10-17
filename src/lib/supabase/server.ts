@@ -48,9 +48,20 @@ export async function createClient() {
 /**
  * Service-role client for trusted server jobs (scraping, matching, cron).
  * Bypasses RLS — NEVER import this into client code. Falls back to the anon
- * key if no service role is configured so builds don't crash.
+ * key if no service role is configured so builds don't crash, except in
+ * production with a real project: there the anon key would quietly hide rows
+ * (every unpublished settlement, every user's claims) and refuse writes, so
+ * pages and jobs would "succeed" with wrong data. It throws instead, and the
+ * page's error boundary or the route's error handling shows the failure.
  */
 export function createServiceClient() {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+  }
   const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,

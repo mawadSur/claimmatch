@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils';
  * Client filter bar for the settlements catalog. Writes ?q / ?category to the
  * URL so the server page re-queries. The text input is debounced ~300ms;
  * category pills commit immediately.
+ *
+ * Analytics get only the search length, never the words: people type names,
+ * emails and medicines into search boxes.
  */
 export function LawsuitFilters({ categories }: { categories: string[] }) {
   const router = useRouter();
@@ -54,7 +57,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
     const t = setTimeout(() => {
       commit({ q });
       if (q.trim()) {
-        posthog?.capture('claim_search_submitted', { query: q.trim() });
+        posthog?.capture('claim_search_submitted', { query_length: q.trim().length });
       }
     }, 300);
     return () => clearTimeout(t);
@@ -66,31 +69,40 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-card sm:p-5">
       {/* Search input */}
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
+        <Search
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+          aria-hidden="true"
+        />
         <input
           type="text"
+          inputMode="search"
+          enterKeyHint="search"
+          maxLength={100}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search settlements — data breach, overdraft fees, vehicle…"
+          placeholder="Search: data breach, overdraft fees, vehicle…"
           className="field-input pl-10 pr-10"
-          aria-label="Search settlements"
+          aria-label="Search open settlements"
         />
         {isPending ? (
-          <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-500" />
+          <Loader2
+            className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-brand-500"
+            aria-label="Updating results"
+          />
         ) : q ? (
           <button
             type="button"
             onClick={() => setQ('')}
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-ink-soft hover:bg-gray-100 hover:text-ink"
+            className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-ink-muted hover:bg-gray-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         ) : null}
       </div>
 
       {/* Category pills */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
         <Pill active={!activeCategory} onClick={() => commit({ category: '' })}>
           All
         </Pill>
@@ -112,9 +124,9 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
             setQ('');
             commit({ q: '', category: '' });
           }}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800"
+          className="mt-3 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         >
-          <X className="h-3.5 w-3.5" /> Clear all filters
+          <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear all filters
         </button>
       )}
     </div>
@@ -136,7 +148,7 @@ function Pill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-full px-3.5 py-1.5 text-sm font-medium transition',
+        'rounded-full px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2',
         active
           ? 'bg-brand-600 text-white shadow-sm'
           : 'bg-white text-ink-muted ring-1 ring-gray-200 hover:bg-brand-50 hover:text-brand-700',

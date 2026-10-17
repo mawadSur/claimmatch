@@ -11,11 +11,16 @@ import {
   ArrowRight,
   AlertCircle,
   MailCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
+import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
 
 type Mode = 'login' | 'signup';
+
+/** D44: new passwords are at least 10 characters (set the same in Supabase Auth). */
+const MIN_PASSWORD_LENGTH = 10;
 
 /**
  * Shared email/password authentication card used by /login and /signup.
@@ -27,13 +32,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
-  const rawNext = searchParams.get('next');
-  // Only allow same-origin relative paths — never a protocol-relative ("//host")
-  // or absolute URL — to prevent an open redirect after authentication.
-  const next =
-    rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-      ? rawNext
-      : null;
+  // Only a path on this site (no "//host", "/\host" or control characters), so
+  // a crafted link can't send people to another site after they log in.
+  const next = safeNextPath(searchParams.get('next'));
+  // Set by /auth/callback when the confirmation link could not sign the person
+  // in here (opened in another browser, or used twice), or had expired.
+  const confirmed = searchParams.get('confirmed') === '1';
+  const linkExpired = searchParams.get('link') === 'expired';
+  const toClaim = next?.startsWith('/claim/') ?? false;
 
   // Referral code from ?ref (set by /r/[code]) or the cm_ref cookie fallback.
   function readRefCookie(): string | null {
@@ -58,12 +64,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    // The form has noValidate, so check the new password's length here.
+    if (isSignup && password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`);
+      return;
+    }
     setStatus('loading');
 
     const supabase = createClient();
 
     try {
       if (isSignup) {
+        // The confirmation link opens /auth/callback, which then goes to
+        // onboarding; this cookie (on this device) brings the person back to
+        // the page they started from, such as the claim they picked.
+        document.cookie = next
+          ? pendingNextCookie(next, window.location.protocol === 'https:')
+          : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -81,12 +98,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
-          posthog?.identify(data.session.user.id, {
-            email: data.session.user.email,
-            name: fullName,
-          });
+          // The account id only: no email, name or other PII in analytics.
+          posthog?.identify(data.session.user.id);
           posthog?.capture('signup_completed');
-          router.push('/onboarding');
+          // Onboarding returns people to where they started (for example the
+          // claim page they were on) when given ?next.
+          router.push(onboardingPath(next));
           router.refresh();
           return;
         }
@@ -110,9 +127,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
-        posthog?.identify(userData.user.id, {
-          email: userData.user.email,
-        });
+        posthog?.identify(userData.user.id);
         posthog?.capture('login_completed');
       }
 
@@ -136,6 +151,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <span className="font-semibold text-ink">{email}</span>. Click it to
           verify your account and finish setting up your profile.
         </p>
+        {next && (
+          <p className="mt-2 text-sm text-ink-muted">
+            Open the link on this device and we&rsquo;ll bring you back to{' '}
+            {toClaim ? 'the settlement you picked' : 'where you were'}.
+          </p>
+        )}
         <p className="mt-4 text-xs text-ink-soft">
           Didn’t get it? Check your spam folder, or{' '}
           <button
@@ -159,6 +180,28 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {!isSignup && confirmed && (
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm text-success-700"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>Your email is confirmed. Log in to continue{toClaim ? ' to your claim' : ''}.</span>
+          </div>
+        )}
+        {!isSignup && linkExpired && (
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-950"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              That confirmation link has expired or was already used. If you already
+              confirmed your email, log in below. If not, create your account again with
+              the same email to get a new link.
+            </span>
+          </div>
+        )}
         {error && (
           <div
             role="alert"
@@ -223,10 +266,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
               type="password"
               autoComplete={isSignup ? 'new-password' : 'current-password'}
               required
-              minLength={isSignup ? 6 : undefined}
+              minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+              placeholder={isSignup ? `At least ${MIN_PASSWORD_LENGTH} characters` : 'Your password'}
               className="field-input pl-10"
             />
           </div>

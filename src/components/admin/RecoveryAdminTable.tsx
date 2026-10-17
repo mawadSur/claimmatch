@@ -10,7 +10,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import type { Claim, Recovery, RecoveryStatus } from '@/lib/types';
-import { FEE_PCT, formatUSD, round2 } from '@/lib/recovery';
+import { formatUSD, round2 } from '@/lib/recovery';
 import { cn } from '@/lib/utils';
 
 /** A recovery joined with its claim + the claim's lawsuit (title/slug only). */
@@ -55,10 +55,10 @@ function lawsuitTitle(r: RecoveryRow): string {
 }
 
 /**
- * Admin recovery ledger. Each row records the gross a member recovered (which
- * recomputes our fee + their net server-side), advances the payout, or denies
- * the recovery. Actions PATCH /api/admin/recoveries and optimistically fold the
- * returned row back in. Money uses tabular-nums so figures never jitter.
+ * The legacy recovery ledger (shown only when flags.adminRecoveries() is on).
+ * Each row can record a gross amount a member reports, advance it, or deny it.
+ * The fee column shows the rate stored on the legacy row; ClaimMatch collects
+ * no fee. Actions PATCH /api/admin/recoveries and fold the returned row back in.
  */
 export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
   const [rows, setRows] = useState<Row[]>(() =>
@@ -122,10 +122,9 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-600">
           <Wallet className="h-6 w-6" />
         </div>
-        <h3 className="mt-4 text-lg font-bold">No recoveries yet</h3>
+        <h3 className="mt-4 text-lg font-bold">No legacy rows</h3>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          When a filed claim starts paying out, its recovery lands here to record
-          the money in and advance the payout.
+          No fee rows from the retired e-sign flow were found.
         </p>
       </div>
     );
@@ -148,7 +147,7 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
         <tbody>
           {rows.map((row) => {
             const r = row.recovery;
-            const pct = r.fee_pct && r.fee_pct > 0 ? r.fee_pct : FEE_PCT;
+            const pct = Number(r.fee_pct ?? 0);
             const grossNum = Number(row.gross.replace(/[^0-9.]/g, '')) || 0;
             // Live preview from the input; falls back to the persisted values.
             const feeNum = grossNum > 0 ? round2(grossNum * pct) : Number(r.fee_amount ?? 0);
