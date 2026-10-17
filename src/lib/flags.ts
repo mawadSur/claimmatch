@@ -11,7 +11,7 @@ export const flags = {
   matchEmails: () => on('MATCH_EMAILS_ENABLED'),
   /** D50: the Monday digest. Off until the Phase 1 engine ships. */
   digest: () => on('DIGEST_ENABLED'),
-  /** Admin money actions on legacy 15% recovery rows (record received, mark paid). */
+  /** Admin money actions on legacy recovery rows (record received, mark paid). */
   adminRecoveries: () => on('ADMIN_RECOVERIES_ENABLED'),
   /** The fictional sample adapter. Never runs in production, even if set. */
   sampleSource: () => on('ENABLE_SAMPLE_SOURCE') && process.env.NODE_ENV !== 'production',

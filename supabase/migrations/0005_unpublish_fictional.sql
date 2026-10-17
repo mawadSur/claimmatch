@@ -1,11 +1,10 @@
 -- ClaimMatch 0005: unpublish the 22 fictional settlements (Phase 0, D38).
 --
--- RUN ONLY AFTER the founder's read-only snapshot/export of affected users
--- (D38): the users with claims, matches or emails on these settlements. This
--- changes what those users see (the settlements become unavailable), and the
--- corrective notices are built from that export. To make that order explicit,
--- the file stops with an error when it would change rows unless the session
--- confirms the export first:
+-- RUN ONLY AFTER the read-only snapshot that the private plan (D38) requires
+-- before this step. Unpublishing changes what users with claims or matches on
+-- these settlements see (the settlements become unavailable). To make that
+-- order explicit, the file stops with an error when it would change rows
+-- unless the session confirms the snapshot first:
 --   set claimmatch.d38_export_done = 'yes';
 -- (On an empty database, such as CI, there is nothing to change and it runs.)
 --
@@ -23,7 +22,7 @@
 -- Never deletes: deleting a lawsuit cascades into users' claims and matches.
 -- Idempotent: rows already in that state are left alone.
 -- Uses only columns from 0001 and 0002, so it can run without 0004.
--- Rollback: restore the three columns from the D38 export. Never republish
+-- Rollback: restore the three columns from the D38 snapshot. Never republish
 -- these rows: none of these settlements exist.
 
 begin;
@@ -79,7 +78,7 @@ begin
   then
     raise exception using
       message = '0005 unpublishes fictional settlements that users may have claims on.',
-      hint = 'Take the D38 read-only export of affected users first, then run '
+      hint = 'Take the read-only snapshot the private plan (D38) requires first, then run '
           || 'set claimmatch.d38_export_done = ''yes''; in the same session and apply this file again.';
   end if;
 end $$;

@@ -66,7 +66,7 @@ export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
  * Question keys that were removed and must never be asked or stored again.
  * took_medication asked about prescription drugs and medical devices: that is
  * health data, which ClaimMatch does not collect. Answers saved before the
- * removal stay in profiles.attributes until the founder and counsel decide how
- * to delete them; nothing should read them.
+ * removal stay in profiles.attributes until the deletion step in the private
+ * plan (Phase 0 item 4, D38); nothing should read them.
  */
 export const RETIRED_QUESTION_KEYS: readonly string[] = ['took_medication'];

@@ -32,7 +32,8 @@ const BodySchema = z
  *
  * Turned off (404) unless ADMIN_RECOVERIES_ENABLED=1 (flags.adminRecoveries,
  * read on the server). ClaimMatch never handles settlement money; these rows
- * come from the retired e-sign flow and stay only for the release-letter work.
+ * come from the retired e-sign flow and are kept for the follow-up in the
+ * private plan (D38).
  *
  * fee_amount and net_amount are GENERATED columns in the DB — we never write
  * them. Writes use the service client (bypasses RLS) after an admin check.

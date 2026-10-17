@@ -8,8 +8,9 @@ const GONE = {
 };
 
 /**
- * Retired. It summed an invented dollar total, with a made-up default amount
- * per match, over unfiltered rows. Kept as 410 so old open tabs get an answer.
+ * Retired. It summed a dollar total from a fixed default amount per match over
+ * unfiltered rows, not from amounts the settlements state. Kept as 410 so old
+ * open tabs get an answer.
  */
 export async function POST() {
   return NextResponse.json(GONE, { status: 410, headers: { 'Cache-Control': 'no-store' } });

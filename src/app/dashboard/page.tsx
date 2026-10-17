@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * The dashboard (D50 interim): the user's claims grouped by next step, the
- * corrective notice for claims the old flow wrongly called filed, and a
+ * corrective notice (D42) for claims the old flow showed as filed, and a
  * "Closing soon" catalog module. No match list, no scores, no dollar totals.
  */
 export default async function DashboardPage({

@@ -24,10 +24,11 @@ export const metadata: Metadata = { title: 'Legacy recoveries' };
 export const dynamic = 'force-dynamic';
 
 /**
- * The legacy recoveries ledger. The retired e-sign flow opened a fee row for
- * every "filed" claim although nothing was filed. ClaimMatch never handles
- * settlement money, so this page (and its money actions) is off unless
- * ADMIN_RECOVERIES_ENABLED=1 is set on the server, for the release-letter work.
+ * The legacy recoveries ledger: the rows the retired e-sign flow opened, one
+ * per claim it recorded as filed (ClaimMatch did not file any of them).
+ * ClaimMatch never handles settlement money, so this page (and its money
+ * actions) is off unless ADMIN_RECOVERIES_ENABLED=1 is set on the server. The
+ * rows are kept for the follow-up in the private plan (D38).
  */
 export default async function AdminRecoveriesPage() {
   if (!flags.adminRecoveries()) notFound();
@@ -73,9 +74,9 @@ export default async function AdminRecoveriesPage() {
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
           The retired e-sign flow opened one of these rows for every claim it
-          called filed, although nothing was filed. ClaimMatch never handles
-          settlement money and collects no fee. Keep this ledger for the release
-          letters; record money here only if a person truly reports it.
+          recorded as filed. ClaimMatch did not file any of them, never handles
+          settlement money and collects no fee. Keep these rows for the D38
+          follow-up; record money here only if a person reports receiving it.
         </p>
       </header>
 

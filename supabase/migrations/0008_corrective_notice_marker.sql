@@ -6,8 +6,7 @@
 -- e-sign or File-all flow recorded as filed. Until now it found those claims
 -- by their legacy status alone: 'submitted' without a confirmation number,
 -- 'processing', 'approved', 'rejected' or 'paid'. The D38 data correction moves
--- exactly those rows to 'self_file', so the notice, which is the fallback for
--- every corrective email that is not delivered (WP:3101), would disappear for
+-- exactly those rows to 'self_file', so the notice would disappear for
 -- everyone who has not answered it yet.
 --
 -- claims.corrective_notice_required records that a claim needs the notice,

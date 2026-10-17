@@ -22,8 +22,8 @@ export type OnboardingResult =
 /**
  * Saves the onboarding profile: name and state only. No ZIP code: nothing
  * uses one yet (D50), so it isn't collected. It never touches
- * profiles.attributes (older answers there are kept until the counsel-gated
- * cleanup) and asks no health questions.
+ * profiles.attributes (older answers there are kept until the deletion step in
+ * the private plan, D38) and asks no health questions.
  */
 export async function saveOnboardingProfile(input: {
   full_name: string;

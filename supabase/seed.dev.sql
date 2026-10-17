@@ -1,8 +1,8 @@
 -- ClaimMatch — DEV ONLY: made-up settlements for a LOCAL or STAGING database.
 --
 -- NEVER run this against production. None of these 16 settlements exist.
--- They (and the 4 made-up "sources" below) were published in production by
--- mistake through the old supabase/seed.sql; migration
+-- They (and the 4 made-up "sources" below) were published in production
+-- through the old supabase/seed.sql; migration
 -- 0005_unpublish_fictional.sql unpublishes them there. Their slugs are on the
 -- fictional denylist (src/lib/fictional-slugs.ts), so the app hides them in
 -- every environment: these rows exist to reproduce production's state and to
