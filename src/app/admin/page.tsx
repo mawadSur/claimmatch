@@ -349,6 +349,8 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
                 ['Feed records', run.summary.ingested],
                 ['New, in review', run.summary.pending_review],
                 ['Closed', run.summary.closed],
+                ['Closed by deadline', run.summary.closedByDeadline],
+                ['Closed by missing feed', run.summary.closedByMissingFeed],
                 ['Held closures', run.summary.held],
                 ['Reopened', run.summary.reopened],
                 ['Deadline changes', run.summary.deadlineChanges],
