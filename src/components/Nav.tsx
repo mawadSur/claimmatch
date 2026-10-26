@@ -1,12 +1,29 @@
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 import { Scale } from 'lucide-react';
 import { NavAuthLinks } from './NavAuthLinks';
+import { getAdminUser } from '@/lib/admin';
 
 /**
- * Top navigation. Auth state is resolved client-side so public marketing
- * routes can skip the session middleware.
+ * Top navigation. Server component: reads the session to decide whether to
+ * show "Dashboard / Sign out" vs "Log in / Get started".
  */
-export function Nav() {
+export async function Nav() {
+  let signedIn = false;
+  let isAdmin = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    signedIn = !!user;
+    if (signedIn) {
+      isAdmin = !!(await getAdminUser());
+    }
+  } catch {
+    signedIn = false;
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/85 backdrop-blur-md">
       <nav className="container-page flex h-16 items-center justify-between">
@@ -34,7 +51,7 @@ export function Nav() {
           </Link>
         </div>
 
-        <NavAuthLinks />
+        <NavAuthLinks signedIn={signedIn} isAdmin={isAdmin} />
       </nav>
     </header>
   );

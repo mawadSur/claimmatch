@@ -21,10 +21,13 @@ import { pathToFileURL } from 'node:url';
  * or once package.json overrides postcss under next.
  */
 export const ALLOWED_ADVISORIES: ReadonlySet<string> = new Set([
-  'GHSA-qx2v-qp2m-jg93', // postcss
+  'GHSA-qx2v-qp2m-jg93', // postcss (next 15 pins 8.4.31; only next 16 moves past it)
   'GHSA-6g55-p6wh-862q', // postcss
   'GHSA-fxqj-rqcc-2cmp', // postcss
   'GHSA-r28c-9q8g-f849', // postcss
+  // zod 3.x is vulnerable; the fix is zod 4.6.6, a breaking major. Stay on 3
+  // until a dedicated upgrade. Override cannot patch 3.x.
+  'GHSA-mrhx-c7xc-m3w5',
 ]);
 
 const BLOCKING_SEVERITIES = new Set(['high', 'critical']);

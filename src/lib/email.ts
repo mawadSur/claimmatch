@@ -1,8 +1,9 @@
 // Transactional email via Resend. This module never throws on a missing API
 // key — it logs and no-ops so local/preview environments work without email
 // configured. Only server code should import this (it reads server env vars).
-import { SITE, formatDeadline, POSTAL_ADDRESS, isPlaceholderValue } from '@/lib/utils';
+import { SITE, formatDeadline } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { legalContact } from '@/lib/legal-contact';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
 
 const BRAND = '#7526d1';
@@ -58,13 +59,14 @@ export function unsubscribeUrl(email: string): string {
 
 /** Footer legal + unsubscribe block shared by all transactional emails. */
 function footerNote(reason: string, to?: string): string {
+  const postal = legalContact().postalAddress;
   const unsub = to
     ? ` <a href="${unsubscribeUrl(to)}" style="color:#8b859e;text-decoration:underline;">Unsubscribe</a> or <a href="${SITE.url.replace(/\/$/, '')}/settings" style="color:#8b859e;text-decoration:underline;">manage preferences</a>.`
     : ` <a href="${SITE.url.replace(/\/$/, '')}/settings" style="color:#8b859e;text-decoration:underline;">Manage your email preferences</a> to unsubscribe.`;
   return `
         <tr><td style="padding:22px 8px 0 8px;">
           <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
-          ${isPlaceholderValue(POSTAL_ADDRESS) ? '' : `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(POSTAL_ADDRESS)}</p>`}
+          ${postal ? `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(postal)}</p>` : ''}
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(reason)}${unsub}</p>
         </td></tr>`;
 }
