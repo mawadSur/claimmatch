@@ -8,6 +8,8 @@ import {
   pageUrl,
 } from '@/lib/settlement-seo';
 
+export const revalidate = 3600;
+
 /**
  * Public pages plus one URL per settlement that is open for claims
  * (getLawsuits applies isOpenForClaims: published, not fictional, open,
