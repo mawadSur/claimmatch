@@ -89,9 +89,11 @@ export function resolveShareRedirect(opts: {
   }
 
   if (opts.isPersonalReferral) {
+    // Incoming UTMs win; referral defaults only fill blanks so /r/code?utm_*
+    // still reaches signup.
     const attribution = fillAttribution(
-      { ...PERSONAL_REFERRAL_UTM, ref: code },
       { ...opts.incoming, ref: code },
+      { ...PERSONAL_REFERRAL_UTM, ref: code },
     );
     return {
       url: joinOrigin(opts.origin, '/signup', attribution),

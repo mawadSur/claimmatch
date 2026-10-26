@@ -38,8 +38,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Could not load share links.' }, { status: 500 });
   }
 
-  const rows = links ?? [];
-  const codes = rows.map((r) => r.code as string);
+  const rows = (links ?? []) as ShareLinkStats[];
+  const codes = rows.map((r) => r.code);
   const clicksByCode = new Map<string, number>();
   const signupsByCode = new Map<string, number>();
 
@@ -48,28 +48,19 @@ export async function GET() {
       svc.from('share_link_clicks').select('code').in('code', codes),
       svc.from('profiles').select('first_ref').in('first_ref', codes),
     ]);
-    for (const row of clicks ?? []) {
-      const c = row.code as string;
-      clicksByCode.set(c, (clicksByCode.get(c) ?? 0) + 1);
+    for (const row of (clicks ?? []) as Array<{ code: string }>) {
+      clicksByCode.set(row.code, (clicksByCode.get(row.code) ?? 0) + 1);
     }
-    for (const row of signups ?? []) {
-      const c = row.first_ref as string;
-      if (c) signupsByCode.set(c, (signupsByCode.get(c) ?? 0) + 1);
+    for (const row of (signups ?? []) as Array<{ first_ref: string | null }>) {
+      if (row.first_ref) signupsByCode.set(row.first_ref, (signupsByCode.get(row.first_ref) ?? 0) + 1);
     }
   }
 
   const items: ShareLinkStats[] = rows.map((r) => ({
-    id: r.id as string,
-    code: r.code as string,
-    destination: (r.destination as string) || '/',
-    utm_source: (r.utm_source as string) ?? null,
-    utm_medium: (r.utm_medium as string) ?? null,
-    utm_campaign: (r.utm_campaign as string) ?? null,
-    utm_content: (r.utm_content as string) ?? null,
-    label: (r.label as string) ?? null,
-    created_at: r.created_at as string,
-    clicks: clicksByCode.get(r.code as string) ?? 0,
-    signups: signupsByCode.get(r.code as string) ?? 0,
+    ...r,
+    destination: r.destination || '/',
+    clicks: clicksByCode.get(r.code) ?? 0,
+    signups: signupsByCode.get(r.code) ?? 0,
   }));
 
   return NextResponse.json({ links: items });

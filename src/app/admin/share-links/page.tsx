@@ -19,8 +19,18 @@ export default async function AdminShareLinksPage() {
       .from('share_links')
       .select('id, code, destination, utm_source, utm_medium, utm_campaign, utm_content, label, created_at')
       .order('created_at', { ascending: false });
-    const rows = links ?? [];
-    const codes = rows.map((r) => r.code as string);
+    const rows = (links ?? []) as Array<{
+      id: string;
+      code: string;
+      destination: string | null;
+      utm_source: string | null;
+      utm_medium: string | null;
+      utm_campaign: string | null;
+      utm_content: string | null;
+      label: string | null;
+      created_at: string;
+    }>;
+    const codes = rows.map((r) => r.code);
     const clicksByCode = new Map<string, number>();
     const signupsByCode = new Map<string, number>();
     if (codes.length > 0) {
@@ -28,27 +38,27 @@ export default async function AdminShareLinksPage() {
         svc.from('share_link_clicks').select('code').in('code', codes),
         svc.from('profiles').select('first_ref').in('first_ref', codes),
       ]);
-      for (const row of clicks ?? []) {
-        const c = row.code as string;
-        clicksByCode.set(c, (clicksByCode.get(c) ?? 0) + 1);
+      for (const row of (clicks ?? []) as Array<{ code: string }>) {
+        clicksByCode.set(row.code, (clicksByCode.get(row.code) ?? 0) + 1);
       }
-      for (const row of signups ?? []) {
-        const c = row.first_ref as string;
-        if (c) signupsByCode.set(c, (signupsByCode.get(c) ?? 0) + 1);
+      for (const row of (signups ?? []) as Array<{ first_ref: string | null }>) {
+        if (row.first_ref) {
+          signupsByCode.set(row.first_ref, (signupsByCode.get(row.first_ref) ?? 0) + 1);
+        }
       }
     }
     items = rows.map((r) => ({
-      id: r.id as string,
-      code: r.code as string,
-      destination: (r.destination as string) || '/',
-      utm_source: (r.utm_source as string) ?? null,
-      utm_medium: (r.utm_medium as string) ?? null,
-      utm_campaign: (r.utm_campaign as string) ?? null,
-      utm_content: (r.utm_content as string) ?? null,
-      label: (r.label as string) ?? null,
-      created_at: r.created_at as string,
-      clicks: clicksByCode.get(r.code as string) ?? 0,
-      signups: signupsByCode.get(r.code as string) ?? 0,
+      id: r.id,
+      code: r.code,
+      destination: r.destination || '/',
+      utm_source: r.utm_source,
+      utm_medium: r.utm_medium,
+      utm_campaign: r.utm_campaign,
+      utm_content: r.utm_content,
+      label: r.label,
+      created_at: r.created_at,
+      clicks: clicksByCode.get(r.code) ?? 0,
+      signups: signupsByCode.get(r.code) ?? 0,
     }));
   } catch {
     items = [];

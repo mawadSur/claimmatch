@@ -72,7 +72,14 @@ function AttributionSync() {
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!POSTHOG_KEY) return;
-    if (doNotTrackEnabled(navigator, typeof window !== 'undefined' ? window.doNotTrack : null)) {
+    if (
+      doNotTrackEnabled(
+        navigator,
+        typeof window !== 'undefined'
+          ? (window as Window & { doNotTrack?: string | null }).doNotTrack
+          : null,
+      )
+    ) {
       return;
     }
     posthog.init(POSTHOG_KEY, {
