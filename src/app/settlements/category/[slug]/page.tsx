@@ -46,10 +46,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
   const { title, description } = categoryCopy(category);
   const url = pageUrl(categoryHubPath(category));
+  const openInCategory = lawsuitsInCategory(catalog.lawsuits, category);
   return {
     title,
     description,
     alternates: { canonical: url },
+    // Empty known categories stay reachable but are not indexed.
+    robots: openInCategory.length > 0 ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title: `${title} — ${SITE.name}`,
       description,

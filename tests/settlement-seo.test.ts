@@ -154,6 +154,26 @@ describe('settlement page source uses the safe JSON-LD helper', () => {
   });
 });
 
+describe('ISR revalidate exports', () => {
+  it('uses a numeric literal on every SEO route', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const files = [
+      '../src/app/lawsuits/[slug]/page.tsx',
+      '../src/app/settlements/category/[slug]/page.tsx',
+      '../src/app/settlements/closing-soon/page.tsx',
+      '../src/app/settlements/new/page.tsx',
+      '../src/app/llms.txt/route.ts',
+      '../src/app/sitemap.ts',
+    ];
+    for (const rel of files) {
+      const src = readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
+      expect(src, rel).toMatch(/export const revalidate = 3600;/);
+      expect(src, rel).not.toMatch(/export const revalidate = [A-Za-z_]/);
+    }
+  });
+});
+
 describe('HubLinks', () => {
   it('internally links the hubs', async () => {
     const { HubLinks } = await import('@/components/settlement/HubLinks');

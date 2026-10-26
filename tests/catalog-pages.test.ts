@@ -293,6 +293,18 @@ describe('settlement page', () => {
     expect(meta.robots).toMatchObject({ index: false });
   });
 
+  it('noindexes a published settlement whose deadline has passed', async () => {
+    db.single = { data: lawsuit({ deadline: '2020-01-01' }), error: null };
+    const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(html).toContain('Claims closed');
+    expect(html).not.toContain('Start your claim');
+    expectHonest(html);
+
+    const meta = await generateMetadata(page('amazon-return-policy-settlement'));
+    expect(meta.robots).toMatchObject({ index: false, follow: true });
+    expect(meta.description).toContain('is not taking claims');
+  });
+
   it('never shows the feed placeholder as who qualifies, and frames real text as an unverified summary', async () => {
     db.single = { data: lawsuit({ eligibility_text: 'Open to eligible US residents.' }), error: null };
     let html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));

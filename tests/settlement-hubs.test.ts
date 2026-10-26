@@ -134,6 +134,11 @@ describe('hub pages', () => {
     await expect(CategoryHubPage({ params: Promise.resolve({ slug: 'not-a-category' }) })).rejects.toThrow();
     const meta = await categoryMeta({ params: Promise.resolve({ slug: 'not-a-category' }) });
     expect(meta.robots).toMatchObject({ index: false });
+
+    const emptyMeta = await categoryMeta({ params: Promise.resolve({ slug: 'data-breach' }) });
+    expect(emptyMeta.robots).toMatchObject({ index: false, follow: true });
+    const liveMeta = await categoryMeta({ params: Promise.resolve({ slug: 'consumer-products' }) });
+    expect(liveMeta.robots).toMatchObject({ index: true, follow: true });
   });
 });
 
@@ -162,5 +167,13 @@ describe('sitemap', () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls.some((u) => u.includes('/settlements/'))).toBe(false);
     expect(urls.some((u) => u.endsWith('/lawsuits'))).toBe(true);
+  });
+
+  it('exports hourly ISR as a numeric literal', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const src = readFileSync(fileURLToPath(new URL('../src/app/sitemap.ts', import.meta.url)), 'utf8');
+    expect(src).toMatch(/export const revalidate = 3600;/);
+    expect(src).not.toMatch(/export const revalidate = [A-Z_]/);
   });
 });
