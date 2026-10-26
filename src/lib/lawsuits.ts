@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { FICTIONAL_SLUGS, isFictionalSlug } from './fictional-slugs';
 import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
@@ -151,7 +151,7 @@ export async function lookupLawsuits(
 ): Promise<CatalogResult> {
   if (!supabaseConfigured()) return { lawsuits: [], error: false };
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     let query = supabase
       .from('lawsuits')
       .select('*')
@@ -204,7 +204,7 @@ export const lookupLawsuitBySlug = cache(async (slug: string): Promise<LawsuitLo
   if (!slug || isFictionalSlug(slug)) return { status: 'missing' };
   if (!supabaseConfigured()) return { status: 'missing' };
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from('lawsuits')
       .select('*')

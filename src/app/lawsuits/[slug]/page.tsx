@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -12,6 +11,7 @@ import {
 import { eligibilitySummary } from '@/lib/claim-input';
 import {
   displaySummary,
+  getLawsuits,
   isOpenForClaims,
   isSettleSignalRecord,
   lookupLawsuitBySlug,
@@ -20,14 +20,40 @@ import {
   type CatalogLink,
 } from '@/lib/lawsuits';
 import { proofDetail, proofLabel } from '@/lib/proof';
+import {
+  breadcrumbJsonLd,
+  categoryHubPath,
+  faqJsonLd,
+  pageUrl,
+  SETTLEMENT_REVALIDATE_SECONDS,
+  settlementAnswerFacts,
+  settlementArticleJsonLd,
+  settlementFaqs,
+  settlementMetaDescription,
+  settlementMetaTitle,
+  settlementPath,
+} from '@/lib/settlement-seo';
 import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
+import { AnswerBlock } from '@/components/settlement/AnswerBlock';
+import { HubLinks } from '@/components/settlement/HubLinks';
+import { JsonLd } from '@/components/settlement/JsonLd';
+import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
+import { SettlementFaq } from '@/components/settlement/SettlementFaq';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { Lawsuit } from '@/lib/types';
+
+export const revalidate = SETTLEMENT_REVALIDATE_SECONDS;
+export const dynamic = 'force-static';
 
 type Params = { params: Promise<{ slug: string }> };
 
 function deadlineText(lawsuit: Lawsuit): string {
   return lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed';
+}
+
+export async function generateStaticParams() {
+  const lawsuits = await getLawsuits();
+  return lawsuits.map((lawsuit) => ({ slug: lawsuit.slug }));
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -42,23 +68,29 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const lawsuit = result.lawsuit;
   const open = isOpenForClaims(lawsuit);
-  const url = `${SITE.url.replace(/\/$/, '')}/lawsuits/${lawsuit.slug}`;
+  const url = pageUrl(settlementPath(lawsuit.slug));
+  const title = settlementMetaTitle(lawsuit);
   const description = open
-    ? `${lawsuit.title}: deadline ${deadlineText(lawsuit)}. See who may qualify and go to the official site to file for free. Listing not yet verified by ClaimMatch.`
+    ? settlementMetaDescription(lawsuit)
     : `${lawsuit.title} is not taking claims.`;
 
   return {
-    title: lawsuit.title,
+    title,
     description,
     alternates: { canonical: url },
     // Only settlements open for claims are listed in the sitemap and indexed.
     robots: open ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
-      title: lawsuit.title,
+      title,
       description,
       url,
       siteName: SITE.name,
       type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   };
 }
@@ -87,22 +119,42 @@ export default async function LawsuitDetailPage({ params }: Params) {
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
     lawsuit.description.trim() !== summary;
+  const facts = settlementAnswerFacts(lawsuit);
+  const faqs = settlementFaqs(lawsuit);
+  const claimHref = `/claim/${lawsuit.slug}`;
+  const crumbs = [
+    { name: 'Home', path: '/' },
+    { name: 'Open settlements', path: '/lawsuits' },
+    { name: lawsuit.category, path: categoryHubPath(lawsuit.category) },
+    { name: lawsuit.title, path: settlementPath(lawsuit.slug) },
+  ];
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd(crumbs)} />
+      <JsonLd data={faqJsonLd(faqs)} />
+      <JsonLd data={settlementArticleJsonLd(lawsuit)} />
+
       {/* Header ------------------------------------------------------------- */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
         <div className="container-page relative py-10 sm:py-14">
-          <Link
-            href="/lawsuits"
-            className="inline-flex items-center gap-1.5 rounded text-sm font-medium text-ink-muted hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All open settlements
-          </Link>
+          <PageBreadcrumbs
+            items={[
+              { name: 'Home', href: '/' },
+              { name: 'Open settlements', href: '/lawsuits' },
+              { name: lawsuit.category, href: categoryHubPath(lawsuit.category) },
+              { name: lawsuit.title },
+            ]}
+          />
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <span className="badge-brand">{lawsuit.category}</span>
+            <Link
+              href={categoryHubPath(lawsuit.category)}
+              className="badge-brand rounded-full hover:bg-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+            >
+              {lawsuit.category}
+            </Link>
             {open ? (
               <span className="badge-green">Open for claims</span>
             ) : (
@@ -120,11 +172,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
 
+          <AnswerBlock facts={facts} open={open} claimHref={claimHref} official={official} />
+
           {open && (
             // On phones the sidebar comes last, so offer the next step up here too.
             <div className="mt-6 lg:hidden">
               <Link
-                href={`/claim/${lawsuit.slug}`}
+                href={claimHref}
                 className="btn-primary w-full justify-center sm:w-auto"
               >
                 Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -264,6 +318,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
             </div>
           )}
 
+          <SettlementFaq items={faqs} />
+
+          <div className="mt-10">
+            <HubLinks categories={[lawsuit.category]} />
+          </div>
+
           {(fromSettleSignal || official?.kind === 'source') && (
             <div className="mt-10 border-t border-gray-100 pt-6">
               <h2 className="text-base font-bold">Where this listing comes from</h2>
@@ -326,14 +386,20 @@ export default async function LawsuitDetailPage({ params }: Params) {
           <div className="sticky top-24 rounded-2xl border-t-4 border-brand-400 bg-white p-6 shadow-card">
             {open ? (
               <>
-                <h2 className="text-lg font-bold">Ready to file?</h2>
+                <h2 className="text-lg font-bold">Check if you qualify</h2>
                 <p className="mt-2 text-sm text-ink-muted">
                   We’ll guide you to the official site, where you file for free, and help
                   you keep track of your claim.
                 </p>
                 <Link
-                  href={`/claim/${lawsuit.slug}`}
+                  href={claimHref}
                   className="btn-primary mt-5 w-full justify-center"
+                >
+                  Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  href={claimHref}
+                  className="btn-secondary mt-3 w-full justify-center"
                 >
                   Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>

@@ -46,6 +46,20 @@ export async function createClient() {
 }
 
 /**
+ * Cookie-free anon client for the public catalog. Settlement landing pages and
+ * hubs statically generate / ISR; using cookies() here would force them dynamic.
+ * RLS still applies (anon can read published rows).
+ */
+export function createPublicClient() {
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
+
+/**
  * Service-role client for trusted server jobs (scraping, matching, cron).
  * Bypasses RLS — NEVER import this into client code. Falls back to the anon
  * key if no service role is configured so builds don't crash, except in

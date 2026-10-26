@@ -167,10 +167,10 @@ export default async function HomePage() {
               </p>
             </div>
             <Link
-              href="/lawsuits"
+              href="/settlements/closing-soon"
               className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800"
             >
-              See all open settlements <ArrowRight className="h-4 w-4" aria-hidden />
+              See settlements closing soon <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
 
