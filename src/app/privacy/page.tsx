@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'What ClaimMatch collects, why, who helps us process it, the cookies we use, and your choices. Interim policy, pending legal review.',
 };
 
-const LAST_UPDATED = 'October 16, 2026';
+const LAST_UPDATED = 'October 26, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 /** Service providers that process personal information for us (or, for SettleSignal, none). */
@@ -24,7 +24,7 @@ const PROVIDERS = [
   },
   {
     name: 'PostHog',
-    role: 'Product analytics: which pages are visited and which buttons are clicked. It uses cookies and similar browser storage.',
+    role: 'Product analytics: which pages are visited and which buttons are clicked. It uses cookies and similar browser storage. Events go through a first-party /ingest path on this site. We skip PostHog when your browser sends a Do Not Track signal.',
   },
   {
     name: 'Resend',
@@ -124,7 +124,7 @@ export default function PrivacyPage() {
                 you visit, buttons you click, your browser and device type, and approximate
                 location based on your IP address, collected through PostHog and Vercel Web
                 Analytics. When you’re logged in, PostHog links this activity to your
-                account, which currently includes your email address and name. Like most
+                account id only — not your email address or name. Like most
                 websites, our hosting provider also keeps technical logs, such as IP
                 addresses, to keep the Service working and secure.
               </li>
@@ -193,18 +193,28 @@ export default function PrivacyPage() {
               <li>
                 <span className="font-semibold text-ink">Analytics:</span> PostHog stores a
                 random ID in a cookie and in your browser’s local storage so we can count
-                visits and see how people use the site.
+                visits and see how people use the site. If your browser sends a Do Not
+                Track signal, we do not load PostHog or set that cookie.
               </li>
               <li>
                 <span className="font-semibold text-ink">Referral cookie:</span> if you open
                 someone’s invite link, we save their invite code in a cookie for 30 days.
               </li>
+              <li>
+                <span className="font-semibold text-ink">First-touch campaign cookie:</span>{' '}
+                if a link includes utm_source, utm_medium, utm_campaign, utm_content or
+                ref, we save those values in a cookie for 30 days so we can attribute
+                your signup to the first campaign you arrived from. Later links do not
+                overwrite it.
+              </li>
               <li>Vercel Web Analytics does not use cookies.</li>
               <li>We don’t use advertising cookies.</li>
             </ul>
             <p>
-              You can block or delete cookies in your browser settings. If you block
-              sign-in cookies, you won’t be able to log in.
+              You can block or delete cookies in your browser settings, or send a Do Not
+              Track signal to skip analytics. If you block sign-in cookies, you won’t be
+              able to log in. Using the Service with analytics cookies allowed is your
+              consent to this product-analytics use — not advertising.
             </p>
           </section>
 

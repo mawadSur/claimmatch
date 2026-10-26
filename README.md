@@ -128,6 +128,8 @@ src/
     claim/[slug]/            claim page (self-file flow + pre-fill packet)
     dashboard/               the user's claims
     login, signup, onboarding, settings, auth/callback
+    r/[code]                 tracked share / referral short links
+    admin/share-links        admin campaign link builder
     how-it-works, pricing, trust, about, privacy, terms
     api/                     route handlers (claims, settings, cron/*, ...)
   components/                LawsuitCard, ClaimFlow, PrefillPacket, AuthForm, Footer, ...
@@ -139,7 +141,7 @@ src/
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/                0001–0009: schema, RLS, grants, trust reset
+  migrations/                0001–0009 + 0011: schema, RLS, grants, trust reset, attribution
   tests/                     SQL tests run by scripts/db-test.sh
 tests/                       vitest
 ```

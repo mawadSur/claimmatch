@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Copy } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 import { US_STATES } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
 
@@ -45,7 +46,16 @@ function formatPacketBlock(fields: PacketFields): string {
  * through /api/settings (profile RLS). Does not write claims — ClaimFlow
  * handles tracking and "I filed".
  */
-export function PrefillPacket({ profile }: { profile: Profile | null }) {
+export function PrefillPacket({
+  profile,
+  lawsuitId,
+  lawsuitSlug,
+}: {
+  profile: Profile | null;
+  lawsuitId?: string;
+  lawsuitSlug?: string;
+}) {
+  const posthog = usePostHog();
   const [fields, setFields] = useState<PacketFields>({
     full_name: profile?.full_name || '',
     email: profile?.email || '',
@@ -62,6 +72,13 @@ export function PrefillPacket({ profile }: { profile: Profile | null }) {
 
   const needsConsent = !profile?.prefill_consent_at && !consent;
   const hasAddress = Boolean(fields.address_line1 || fields.city);
+  const eventProps = { lawsuit_id: lawsuitId, slug: lawsuitSlug };
+
+  useEffect(() => {
+    posthog?.capture('prefill_opened', eventProps);
+    // Once per mount: opening the packet is the start of the pre-fill step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posthog, lawsuitId, lawsuitSlug]);
 
   function update<K extends keyof PacketFields>(key: K, value: PacketFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -71,6 +88,9 @@ export function PrefillPacket({ profile }: { profile: Profile | null }) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(label);
+      if (label === 'all') {
+        posthog?.capture('prefill_completed', { ...eventProps, method: 'copy_all' });
+      }
       window.setTimeout(() => setCopied((c) => (c === label ? null : c)), 1600);
     } catch {
       setCopied(null);
@@ -107,6 +127,7 @@ export function PrefillPacket({ profile }: { profile: Profile | null }) {
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error || 'Could not save.');
       setSaveState('saved');
+      posthog?.capture('prefill_completed', { ...eventProps, method: 'save' });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Could not save.');
       setSaveState('error');

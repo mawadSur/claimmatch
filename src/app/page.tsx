@@ -8,6 +8,7 @@ import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { LawsuitCard } from '@/components/LawsuitCard';
+import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 
 const STEPS = [
   {
@@ -64,6 +65,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <CaptureOnce event="landing_viewed" />
       {/* Hero ---------------------------------------------------------------- */}
       <section className="relative isolate overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
         <div className="container-page relative py-16 sm:py-20 lg:py-24">

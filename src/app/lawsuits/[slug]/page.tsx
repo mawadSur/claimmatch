@@ -22,6 +22,7 @@ import {
 import { proofDetail, proofLabel } from '@/lib/proof';
 import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
 import { Disclaimer } from '@/components/Disclaimer';
+import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import type { Lawsuit } from '@/lib/types';
 
 type Params = { params: Promise<{ slug: string }> };
@@ -90,6 +91,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
   return (
     <>
+      <CaptureOnce
+        event="settlement_viewed"
+        properties={{ lawsuit_id: lawsuit.id, slug: lawsuit.slug }}
+      />
       {/* Header ------------------------------------------------------------- */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />

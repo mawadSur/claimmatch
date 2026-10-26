@@ -136,6 +136,12 @@ export interface Profile {
   prefill_consent_at?: string | null;
   referral_code: string | null;
   referred_by: string | null;
+  /** 0011_attribution: first-touch campaign fields. Written once. */
+  first_utm_source?: string | null;
+  first_utm_medium?: string | null;
+  first_utm_campaign?: string | null;
+  first_utm_content?: string | null;
+  first_ref?: string | null;
   created_at: string;
   updated_at: string;
 }

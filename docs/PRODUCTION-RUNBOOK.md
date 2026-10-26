@@ -11,8 +11,9 @@ in this order. Every file is additive: nothing is deleted.
 4. `0007_corrective_notice_marker.sql` — durable D42 notice marker
 5. `0008_claims_server_writes.sql` — revoke browser writes to `claims`
 6. `0009_unpublish_fictional.sql` — unpublish all 22 fictional rows (16 seed slugs + 6 sample-aggregator), never a DELETE
+7. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Numbered 0011 so 0010 stays free for the feed-presence PR. Additive; apply any time.
 
-CI applies 0001–0009 in that filename order on an empty database.
+CI applies 0001–0009 then 0011 in that filename order on an empty database.
 
 ## Production order
 
@@ -37,7 +38,9 @@ CI applies 0001–0009 in that filename order on an empty database.
 
 5. **After the read-only snapshot the private plan requires**, run `0009_unpublish_fictional.sql` in one session that starts with `set claimmatch.d38_export_done = 'yes';`. The app already hides these slugs in code.
 
-6. **Set the Vercel rollback floor** at this deployment.
+6. **Run `0011_attribution.sql` any time.** It only adds profile columns, share-link tables, and a function. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+
+7. **Set the Vercel rollback floor** at this deployment.
 
 ## Smoke checks after the deploy
 
@@ -52,6 +55,7 @@ Signed out (read-only):
 Signed in as yourself:
 
 - The dashboard groups your claims by next step and shows no dollar amounts.
+- Settings shows your `/r/<code>` referral link. Admins can open `/admin/share-links` and create a campaign URL.
 - Any older "filed" claim reads "Not filed" with the notice.
 - The claim page shows a pre-fill packet (name, address, email) to copy into the official form.
 
