@@ -25,7 +25,6 @@ import {
   categoryHubPath,
   faqJsonLd,
   pageUrl,
-  SETTLEMENT_REVALIDATE_SECONDS,
   settlementAnswerFacts,
   settlementArticleJsonLd,
   settlementFaqs,
@@ -42,7 +41,7 @@ import { SettlementFaq } from '@/components/settlement/SettlementFaq';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { Lawsuit } from '@/lib/types';
 
-export const revalidate = SETTLEMENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 export const dynamic = 'force-static';
 
 type Params = { params: Promise<{ slug: string }> };

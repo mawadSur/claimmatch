@@ -6,14 +6,13 @@ import {
   CLOSING_SOON_PATH,
   collectionJsonLd,
   pageUrl,
-  SETTLEMENT_REVALIDATE_SECONDS,
   settlementPath,
 } from '@/lib/settlement-seo';
 import { HubChrome } from '@/components/settlement/HubChrome';
 import { JsonLd } from '@/components/settlement/JsonLd';
 import { SITE } from '@/lib/utils';
 
-export const revalidate = SETTLEMENT_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 export const dynamic = 'force-static';
 
 const TITLE = 'Settlements closing soon';
