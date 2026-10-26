@@ -5,6 +5,8 @@ const listed = vi.hoisted(() => ({ lawsuits: [] as Lawsuit[] }));
 
 vi.mock('@/lib/lawsuits', () => ({
   getLawsuits: async () => listed.lawsuits,
+  categoriesOf: (lawsuits: { category?: string }[]) =>
+    Array.from(new Set(lawsuits.map((l) => l.category).filter(Boolean))).sort(),
 }));
 
 import sitemap from '@/app/sitemap';
@@ -28,6 +30,8 @@ describe('sitemap', () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls.some((u) => u.endsWith('/lawsuits/amazon-return-policy-settlement'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/lawsuits'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/closing-soon'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
   });
 
   it('omits closed and expired rows because getLawsuits already dropped them', async () => {
