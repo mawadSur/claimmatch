@@ -11,6 +11,8 @@ import {
 } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
+import { HubLinks } from '@/components/settlement/HubLinks';
+import { pageUrl } from '@/lib/settlement-seo';
 import { SITE } from '@/lib/utils';
 
 const DESCRIPTION =
@@ -19,13 +21,18 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: 'Open Class Action Settlements',
   description: DESCRIPTION,
-  alternates: { canonical: `${SITE.url.replace(/\/$/, '')}/lawsuits` },
+  alternates: { canonical: pageUrl('/lawsuits') },
   openGraph: {
     title: 'Open Class Action Settlements — ClaimMatch',
     description: DESCRIPTION,
-    url: `${SITE.url.replace(/\/$/, '')}/lawsuits`,
+    url: pageUrl('/lawsuits'),
     siteName: SITE.name,
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Open Class Action Settlements',
+    description: DESCRIPTION,
   },
 };
 
@@ -66,6 +73,10 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             the official site, file there for free, and keep track of your claim in
             ClaimMatch.
           </p>
+
+          <div className="mt-6">
+            <HubLinks categories={categories} current="all" />
+          </div>
 
           <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />

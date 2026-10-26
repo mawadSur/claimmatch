@@ -32,6 +32,9 @@ export function Footer() {
             <h2 className="text-sm font-semibold text-ink">Product</h2>
             <ul className="mt-3 space-y-2 text-sm text-ink-muted">
               <li><Link href="/lawsuits" className={LINK}>Browse settlements</Link></li>
+              <li><Link href="/settlements/closing-soon" className={LINK}>Closing soon</Link></li>
+              <li><Link href="/settlements/new" className={LINK}>New settlements</Link></li>
+              <li><Link href="/settlements/category/data-breach" className={LINK}>Data breach settlements</Link></li>
               <li><Link href="/how-it-works" className={LINK}>How it works</Link></li>
               <li><Link href="/pricing" className={LINK}>Pricing</Link></li>
               <li><Link href="/signup" className={LINK}>Create a free account</Link></li>
