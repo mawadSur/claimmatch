@@ -4,8 +4,7 @@ import { proofDetail, proofLabel } from '@/lib/proof';
 import { LAWSUIT_CATEGORIES, type Lawsuit } from '@/lib/types';
 import { formatDeadline, SITE, slugify } from '@/lib/utils';
 
-/** Hourly ISR for public settlement and hub pages. */
-export const SETTLEMENT_REVALIDATE_SECONDS = 3600;
+/** Hourly ISR. Page files must export `revalidate = 3600` as a literal. */
 
 export interface FaqItem {
   q: string;
