@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { lookupLawsuitBySlug, computedLawsuitStatus } from '@/lib/lawsuits';
+import { lookupLawsuitBySlug } from '@/lib/lawsuits';
+import { isOpenForClaims } from '@/lib/open-for-claims';
 import { formatDeadline } from '@/lib/utils';
 
 export const size = { width: 1200, height: 630 };
@@ -13,14 +14,14 @@ export default async function Image({
 }) {
   const { slug } = await params;
   const result = await lookupLawsuitBySlug(slug);
-  const title = result.status === 'ok' ? result.lawsuit.title : 'Settlement';
+  const title = result.status === 'found' ? result.lawsuit.title : 'Settlement';
   const deadline =
-    result.status === 'ok' ? formatDeadline(result.lawsuit.deadline) : 'See official notice';
+    result.status === 'found' ? formatDeadline(result.lawsuit.deadline) : 'See official notice';
   const status =
-    result.status === 'ok'
-      ? computedLawsuitStatus(result.lawsuit) === 'closed'
-        ? 'Closed'
-        : 'Open for claims'
+    result.status === 'found'
+      ? isOpenForClaims(result.lawsuit)
+        ? 'Open for claims'
+        : 'Closed'
       : 'ClaimMatch';
 
   return new ImageResponse(

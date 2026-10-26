@@ -44,3 +44,11 @@ yarn-error.log*
 /supabase/.temp
 public/video/.claude-flow/
 .claude-flow/
+
+# agent memory and private planning docs (keep out of this public repo)
+.swarm/
+.claude/
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+docs/designs/

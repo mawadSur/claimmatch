@@ -68,6 +68,37 @@ export async function claimDue(limit = 10): Promise<Job[]> {
   return claimed;
 }
 
+/**
+ * Keeps a record of one ingest run as a `jobs` row: type 'pipeline', status
+ * 'done' or 'failed' (never 'queued', so the worker never runs it again), the
+ * full summary in `result` (every held closure with its changes) and the
+ * problems in `error`. The admin overview shows the latest one. A skipped run
+ * is not recorded. Never throws: a run record must not break the cron.
+ */
+export async function recordIngestRun(
+  trigger: string,
+  step:
+    | { status: 'ran'; result: unknown }
+    | { status: 'failed'; error: string; result?: unknown }
+    | { status: 'skipped' },
+): Promise<void> {
+  if (!configured() || step.status === 'skipped') return;
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.from('jobs').insert({
+      type: 'pipeline',
+      status: step.status === 'ran' ? 'done' : 'failed',
+      payload: { trigger },
+      attempts: 1,
+      result: step.result ?? null,
+      error: step.status === 'failed' ? step.error : null,
+    });
+    if (error) console.error('[jobs] could not record the ingest run:', error.message);
+  } catch (err) {
+    console.error('[jobs] could not record the ingest run:', err);
+  }
+}
+
 export async function completeJob(id: string, result: Record<string, unknown>): Promise<void> {
   if (!configured()) return;
   const supabase = createServiceClient();

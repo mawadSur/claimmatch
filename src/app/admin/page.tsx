@@ -11,20 +11,22 @@ import {
   Pencil,
   XCircle,
   FileText,
-  Wallet,
-  CircleDollarSign,
-  Percent,
   ListChecks,
   Loader2,
   Activity,
   ClipboardCheck,
   ArrowRight,
   AlertCircle,
+  AlertTriangle,
+  Hash,
+  Send,
+  HelpCircle,
 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
-import { formatUSD } from '@/lib/recovery';
+import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
+import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -36,39 +38,25 @@ export default async function AdminOverviewPage() {
   if (!(await getAdminUser())) redirect('/login?next=/admin');
   const svc = createServiceClient();
 
-  // Resilient exact-count helper (head:true → no rows transferred, just the count).
-  // Degrades to 0 if Supabase isn't configured so the page still renders.
+  // Exact-count helper (head:true → no rows transferred). Returns null when the
+  // query fails (for example a claim state before migration 0006), so a broken
+  // count shows "—" instead of a misleading 0.
   async function count(
     table: string,
-    modify?: (q: any) => any,
-  ): Promise<number> {
+    modify?: (q: any) => any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ): Promise<number | null> {
     try {
       let q = svc.from(table).select('*', { count: 'exact', head: true });
       if (modify) q = modify(q);
-      const { count: c } = await q;
+      const { count: c, error } = await q;
+      if (error) return null;
       return c ?? 0;
     } catch {
-      return 0;
+      return null;
     }
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  // Sums can't use head:true — pull just the money columns and reduce in JS.
-  const recoveriesPromise = (async () => {
-    try {
-      const { data } = await svc
-        .from('recoveries')
-        .select('gross_amount, fee_amount, status');
-      return (data ?? []) as {
-        gross_amount: number | null;
-        fee_amount: number | null;
-        status?: string;
-      }[];
-    } catch {
-      return [] as { gross_amount: number | null; fee_amount: number | null; status?: string }[];
-    }
-  })();
 
   const [
     members,
@@ -81,16 +69,17 @@ export default async function AdminOverviewPage() {
     draft,
     rejectedLawsuits,
     claimsTotal,
-    claimsProcessing,
-    claimsSubmitted,
-    claimsApproved,
-    claimsRejected,
-    claimsPaid,
+    legacySubmittedNoNumber,
+    legacySubmittedAny,
+    legacyProcessing,
+    legacyOther,
+    selfFile,
+    reportedFiled,
+    submittedWithNumber,
     jobsQueued,
     jobsRunning,
     jobsDone,
     jobsFailed,
-    recoveries,
   ] = await Promise.all([
     count('profiles'),
     count('profiles', (q) => q.eq('onboarded', true)),
@@ -102,27 +91,29 @@ export default async function AdminOverviewPage() {
     count('lawsuits', (q) => q.eq('review_status', 'draft')),
     count('lawsuits', (q) => q.eq('review_status', 'rejected')),
     count('claims'),
-    count('claims', (q) => q.eq('status', 'processing')),
+    count('claims', (q) => q.eq('status', 'submitted').is('confirmation_number', null)),
     count('claims', (q) => q.eq('status', 'submitted')),
-    count('claims', (q) => q.eq('status', 'approved')),
-    count('claims', (q) => q.eq('status', 'rejected')),
-    count('claims', (q) => q.eq('status', 'paid')),
+    count('claims', (q) => q.eq('status', 'processing')),
+    count('claims', (q) => q.in('status', ['approved', 'rejected', 'paid'])),
+    count('claims', (q) => q.eq('status', 'self_file')),
+    count('claims', (q) => q.eq('status', 'reported_filed')),
+    count('claims', (q) => q.eq('status', 'submitted').not('confirmation_number', 'is', null)),
     count('jobs', (q) => q.eq('status', 'queued')),
     count('jobs', (q) => q.eq('status', 'running')),
     count('jobs', (q) => q.eq('status', 'done')),
     count('jobs', (q) => q.eq('status', 'failed')),
-    recoveriesPromise,
   ]);
+  const lastIngest = await loadLastIngestRun(svc);
 
-  const recoveriesCount = recoveries.length;
-  const grossSum = recoveries.reduce((s, r) => s + Number(r.gross_amount ?? 0), 0);
-  const feeSum = recoveries.reduce((s, r) => s + Number(r.fee_amount ?? 0), 0);
-
-  const pctOf = (n: number, d: number) =>
-    d > 0 ? `${Math.round((n / d) * 100)}% of ${d.toLocaleString()}` : 'No members yet';
-  const awaitingPayoutRecoveries = recoveries.filter(
-    (r) => r.status === 'awaiting_payout',
-  ).length;
+  const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
+  const pctOf = (n: number | null, d: number | null) =>
+    n !== null && d ? `${Math.round((n / d) * 100)}% of ${d.toLocaleString()}` : 'No members yet';
+  // Before migration 0006 there is no confirmation_number column, so every
+  // 'submitted' row is a legacy, never-filed row.
+  const legacySubmitted = legacySubmittedNoNumber ?? legacySubmittedAny;
+  const notFiledLegacy =
+    legacySubmitted === null || legacyProcessing === null ? null : legacySubmitted + legacyProcessing;
+  const needsMigration = selfFile === null || legacySubmittedNoNumber === null;
 
   return (
     <div className="space-y-10">
@@ -134,61 +125,52 @@ export default async function AdminOverviewPage() {
           Operations dashboard
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Users pre-fill packets and submit on official sites — track progress, review
-          new settlements, and manage payouts. All counts refresh on each load.
+          Members, catalog review and claim tracking. ClaimMatch never files
+          claims or handles settlement money. Counts refresh on each load.
         </p>
       </header>
 
       {/* Quick-action cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         <QuickActionCard
           href="/admin/review"
           icon={<ClipboardCheck className="h-5 w-5" />}
           title="Review queue"
           description="Check new SettleSignal extractions and publish or reject"
-          count={pending}
+          count={pending ?? 0}
           countLabel="pending"
-          urgent={pending > 0}
+          urgent={(pending ?? 0) > 0}
         />
         <QuickActionCard
           href="/admin/catalog"
           icon={<Library className="h-5 w-5" />}
           title="Settlement catalog"
           description="Manage all settlements, feature the best ones"
-          count={lawsuitsTotal}
+          count={lawsuitsTotal ?? 0}
           countLabel="total"
-        />
-        <QuickActionCard
-          href="/admin/recoveries"
-          icon={<Wallet className="h-5 w-5" />}
-          title="Recoveries"
-          description="Record payouts and advance member funds"
-          count={awaitingPayoutRecoveries}
-          countLabel="awaiting payout"
-          urgent={awaitingPayoutRecoveries > 0}
         />
       </section>
 
       <Section title="Growth" subtitle="Members and engagement">
         <StatCard
           label="Total members"
-          value={members.toLocaleString()}
+          value={fmt(members)}
           icon={<Users className="h-4 w-4" />}
         />
         <StatCard
           label="Onboarded"
-          value={onboarded.toLocaleString()}
+          value={fmt(onboarded)}
           sub={pctOf(onboarded, members)}
           icon={<UserCheck className="h-4 w-4" />}
         />
         <StatCard
           label="Matches generated"
-          value={matchesTotal.toLocaleString()}
+          value={fmt(matchesTotal)}
           icon={<Sparkles className="h-4 w-4" />}
         />
         <StatCard
           label="Notifications (7d)"
-          value={notifs7d.toLocaleString()}
+          value={fmt(notifs7d)}
           sub="emails + SMS sent"
           icon={<Bell className="h-4 w-4" />}
         />
@@ -197,89 +179,207 @@ export default async function AdminOverviewPage() {
       <Section title="Catalog" subtitle="Settlement review pipeline">
         <StatCard
           label="Total settlements"
-          value={lawsuitsTotal.toLocaleString()}
+          value={fmt(lawsuitsTotal)}
           icon={<Library className="h-4 w-4" />}
         />
         <StatCard
           label="Published"
-          value={published.toLocaleString()}
+          value={fmt(published)}
           sub="live to the public"
           icon={<CheckCircle2 className="h-4 w-4" />}
         />
         <StatCard
           label="Pending review"
-          value={pending.toLocaleString()}
-          sub={pending > 0 ? 'awaiting your call' : 'queue clear'}
+          value={fmt(pending)}
+          sub={(pending ?? 0) > 0 ? 'awaiting your call' : 'queue clear'}
           icon={<Clock className="h-4 w-4" />}
         />
         <StatCard
           label="Draft"
-          value={draft.toLocaleString()}
+          value={fmt(draft)}
           icon={<Pencil className="h-4 w-4" />}
         />
         <StatCard
           label="Rejected"
-          value={rejectedLawsuits.toLocaleString()}
+          value={fmt(rejectedLawsuits)}
           icon={<XCircle className="h-4 w-4" />}
         />
       </Section>
 
-      <Section title="Claims & revenue" subtitle="Filed claims and money recovered">
+      <Section
+        title="Claims"
+        subtitle={
+          needsMigration
+            ? 'Members file on official sites and report it here. Some counts need migration 0006.'
+            : 'Members file on official sites and report it here. ClaimMatch files nothing.'
+        }
+      >
         <StatCard
-          label="Claims filed"
-          value={claimsTotal.toLocaleString()}
-          sub={`${claimsSubmitted.toLocaleString()} submitted · ${claimsApproved.toLocaleString()} approved`}
+          label="Claims tracked"
+          value={fmt(claimsTotal)}
           icon={<FileText className="h-4 w-4" />}
         />
         <StatCard
-          label="Paid claims"
-          value={claimsPaid.toLocaleString()}
-          sub={`${claimsProcessing.toLocaleString()} processing · ${claimsRejected.toLocaleString()} not eligible`}
-          icon={<CheckCircle2 className="h-4 w-4" />}
+          label="Legacy, not filed"
+          value={fmt(notFiledLegacy)}
+          sub="old e-sign rows; users see “Not filed”. Target 0 after the data correction"
+          icon={<AlertTriangle className="h-4 w-4" />}
         />
         <StatCard
-          label="Recoveries opened"
-          value={recoveriesCount.toLocaleString()}
-          icon={<Wallet className="h-4 w-4" />}
+          label="Legacy, unconfirmed"
+          value={fmt(legacyOther)}
+          sub="approved, rejected or paid rows to review one by one"
+          icon={<HelpCircle className="h-4 w-4" />}
         />
         <StatCard
-          label="Gross recovered"
-          value={formatUSD(grossSum)}
-          sub="total settlements paid"
-          icon={<CircleDollarSign className="h-4 w-4" />}
+          label="Not filed yet"
+          value={fmt(selfFile)}
+          sub="tracking, still to file on the official site"
+          icon={<ListChecks className="h-4 w-4" />}
         />
         <StatCard
-          label="Our fees"
-          value={formatUSD(feeSum)}
-          sub="from stored recovery rates"
-          icon={<Percent className="h-4 w-4" />}
+          label="Reported filed"
+          value={fmt(reportedFiled)}
+          sub="no confirmation number yet"
+          icon={<Send className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Submitted with a number"
+          value={fmt(submittedWithNumber)}
+          sub="administrator confirmation number on file"
+          icon={<Hash className="h-4 w-4" />}
         />
       </Section>
+
+      <LastIngestRun run={lastIngest} />
 
       <Section title="Pipeline health" subtitle="Background job queue">
         <StatCard
           label="Queued"
-          value={jobsQueued.toLocaleString()}
+          value={fmt(jobsQueued)}
           icon={<ListChecks className="h-4 w-4" />}
         />
         <StatCard
           label="Running"
-          value={jobsRunning.toLocaleString()}
+          value={fmt(jobsRunning)}
           icon={<Loader2 className="h-4 w-4" />}
         />
         <StatCard
           label="Done"
-          value={jobsDone.toLocaleString()}
+          value={fmt(jobsDone)}
           icon={<CheckCircle2 className="h-4 w-4" />}
         />
         <StatCard
           label="Failed"
-          value={jobsFailed.toLocaleString()}
-          sub={jobsFailed > 0 ? 'needs attention' : 'all clear'}
+          value={fmt(jobsFailed)}
+          sub={(jobsFailed ?? 0) > 0 ? 'needs attention' : 'all clear'}
           icon={<XCircle className="h-4 w-4" />}
         />
       </Section>
     </div>
+  );
+}
+
+interface IngestRun {
+  at: string;
+  status: string;
+  error: string | null;
+  summary: Partial<IngestSummary>;
+}
+
+/** The latest ingest run record (src/lib/jobs.ts recordIngestRun), or null. */
+async function loadLastIngestRun(svc: ReturnType<typeof createServiceClient>): Promise<IngestRun | null> {
+  try {
+    const { data, error } = await svc
+      .from('jobs')
+      .select('created_at, status, error, result')
+      .eq('type', 'pipeline')
+      .in('status', ['done', 'failed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const result = data.result && typeof data.result === 'object' ? (data.result as Partial<IngestSummary>) : {};
+    return {
+      at: String(data.created_at),
+      status: String(data.status),
+      error: typeof data.error === 'string' ? data.error : null,
+      summary: result,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The latest catalog ingest: its counts and, in full, every closure the
+ * circuit breaker held, so each can be checked on the official site before
+ * INGEST_MAX_CLOSE_SHARE is raised for one run.
+ */
+function LastIngestRun({ run }: { run: IngestRun | null }) {
+  const held: HeldClosure[] = Array.isArray(run?.summary.heldClosures) ? run.summary.heldClosures : [];
+  const n = (v: number | undefined) => (typeof v === 'number' ? v.toLocaleString() : '—');
+  // Held closures or failed writes need a person whatever status the run was
+  // stored with; without a stored error, list what the summary shows.
+  const attention = run ? ingestRunNeedsAttention(run) : false;
+  const problem = run ? run.error ?? (ingestProblems(run.summary).join('; ') || null) : null;
+  return (
+    <section aria-labelledby="last-ingest-title">
+      <div className="mb-4">
+        <h3 id="last-ingest-title" className="text-lg font-bold text-ink">
+          Last catalog ingest
+        </h3>
+        <p className="text-sm text-ink-soft">
+          {run
+            ? `${new Date(run.at).toUTCString()} · ${attention ? 'needs attention' : 'no problems'}`
+            : 'No run recorded yet. The daily cron records each run here.'}
+        </p>
+      </div>
+      {run && (
+        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
+          {problem && (
+            <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+              {problem}
+            </p>
+          )}
+          <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            {(
+              [
+                ['Feed records', run.summary.ingested],
+                ['New, in review', run.summary.pending_review],
+                ['Closed', run.summary.closed],
+                ['Held closures', run.summary.held],
+                ['Reopened', run.summary.reopened],
+                ['Deadline changes', run.summary.deadlineChanges],
+                ['Flagged for a look', run.summary.flagged],
+                ['Failed reads or writes', run.summary.failed],
+              ] as [string, number | undefined][]
+            ).map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-ink-muted">{label}</dt>
+                <dd className="font-bold tabular-nums text-ink">{n(value)}</dd>
+              </div>
+            ))}
+          </dl>
+          {held.length > 0 && (
+            <details className="rounded-xl bg-gray-50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-ink">
+                {held.length.toLocaleString()} held closures. Check each on the official site before raising
+                INGEST_MAX_CLOSE_SHARE.
+              </summary>
+              <ul className="mt-3 max-h-96 space-y-1.5 overflow-y-auto text-sm text-ink-muted">
+                {held.map((h) => (
+                  <li key={`${h.source}:${h.slug}`}>
+                    <span className="font-mono text-ink">{h.slug}</span>: {h.changes.join('; ')}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

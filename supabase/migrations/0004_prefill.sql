@@ -1,6 +1,19 @@
--- ClaimMatch — pre-fill packet columns + claims update policy
--- Additive only. Do not edit 0001–0003. Mohammed runs this in production
--- after review; this file is not applied automatically to prod.
+-- ClaimMatch 0004: pre-fill packet columns + tighter claims update policy
+-- Additive only. Do not edit 0001–0003. Production has 0001–0003 applied;
+-- Mohammed runs this (and the later files) per docs/PRODUCTION-RUNBOOK.md.
+--
+-- What it adds:
+--   - profiles: mailing address used to pre-fill official claim forms
+--   - claims: user_submitted_at (kept beside 0006's reported_filed_at) and
+--     confirmation_number (0006 also adds this with IF NOT EXISTS)
+--   - lawsuits: closed_at / last_verified_at for close-job bookkeeping
+--   - Recreates "own claims update" with an explicit WITH CHECK so a user
+--     cannot reassign user_id. 0008_claims_server_writes.sql later revokes
+--     browser writes and drops this policy; the two are compatible: tighten
+--     first, then move writes to the server. Rollback for 0008 recreates
+--     this WITH CHECK policy, not the looser 0001 version.
+--
+-- Idempotent. Nothing is deleted.
 
 -- ---------------------------------------------------------------------------
 -- Profiles: mailing address used to pre-fill official claim forms

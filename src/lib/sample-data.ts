@@ -1,12 +1,12 @@
 import type { Lawsuit } from './types';
 
 /**
- * A small set of realistic sample settlements used as a graceful fallback when
- * Supabase is not configured or the `lawsuits` table is empty. This keeps the
- * deployed site looking alive before the DB is seeded. Used only when
- * NODE_ENV !== 'production'. The full fictional seed lives in
- * supabase/seed.dev.sql (DEV ONLY). These are illustrative examples, not
- * legal solicitations.
+ * MADE-UP sample settlements for local and staging databases only.
+ *
+ * scripts/seed.ts writes these into a local or staging database (it refuses
+ * production). They are not real settlements, so the app never shows them as
+ * a fallback: SAMPLE_LAWSUITS is an empty list in production builds, which
+ * keeps any leftover `if (empty) use SAMPLE_LAWSUITS` path harmless there.
  */
 function iso(daysFromNow: number): string {
   const d = new Date();
@@ -29,13 +29,11 @@ const base = {
   estimated_value_max: null,
   reviewed_by: null,
   reviewed_at: null,
-  closed_at: null,
-  last_verified_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
 
-export const SAMPLE_LAWSUITS: Lawsuit[] = [
+const SAMPLES: Lawsuit[] = [
   {
     ...base,
     id: 'sample-databreach',
@@ -150,28 +148,14 @@ export const SAMPLE_LAWSUITS: Lawsuit[] = [
     claim_url: null,
     is_featured: false,
   },
-  {
-    ...base,
-    id: 'sample-closed',
-    slug: 'expired-demo-settlement',
-    title: 'Expired Demo Settlement',
-    summary:
-      'DEV ONLY closed example so the closed-settlement banner can be reviewed locally.',
-    description:
-      'This sample row is past its deadline. It should show a Closed badge, hide the pre-fill CTA, and list similar open settlements.',
-    category: 'Consumer Protection',
-    typical_payout: '$20–$80',
-    proof_required: false,
-    deadline: iso(-20),
-    status: 'closed',
-    closed_at: iso(-20),
-    eligibility: { requires: ['purchased_product'] },
-    eligibility_text: 'Purchasers during the class period.',
-    source_url: null,
-    claim_url: null,
-    is_featured: false,
-  },
 ];
+
+/**
+ * The made-up samples outside production, and an empty list in production
+ * builds (NODE_ENV is "production" on every Vercel deployment).
+ */
+export const SAMPLE_LAWSUITS: Lawsuit[] =
+  process.env.NODE_ENV === 'production' ? [] : SAMPLES;
 
 export function getSampleFeatured(): Lawsuit[] {
   return SAMPLE_LAWSUITS.filter((l) => l.is_featured);

@@ -173,11 +173,11 @@ export function ClaimPacket({
       const res = await fetch('/api/claims', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lawsuit_id: lawsuit.id, form_data: fields }),
+        body: JSON.stringify({ lawsuit_id: lawsuit.id }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Could not save.');
-      const next = { ...(claim ?? {}), ...json } as Claim;
+      const next = { ...(claim ?? {}), ...(json.claim ?? json) } as Claim;
       setClaim(next);
       setSaveState('saved');
       return next;
@@ -194,10 +194,10 @@ export function ClaimPacket({
         const res = await fetch('/api/claims', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lawsuit_id: lawsuit.id, form_data: fields }),
+          body: JSON.stringify({ lawsuit_id: lawsuit.id }),
         });
         const json = await res.json();
-        if (res.ok) setClaim((prev) => ({ ...(prev ?? {}), ...json } as Claim));
+        if (res.ok) setClaim((prev) => ({ ...(prev ?? {}), ...(json.claim ?? json) } as Claim));
       } catch {
         // Opening the official form should not fail if the packet save does.
       }
@@ -219,13 +219,14 @@ export function ClaimPacket({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          confirmation_number: confirmNumber,
-          submitted_on: submittedOn || undefined,
+          action: 'report_filed',
+          confirmation_number: confirmNumber || undefined,
+          filed_on: submittedOn || undefined,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Could not save.');
-      setClaim((prev) => ({ ...(prev ?? {}), ...json } as Claim));
+      setClaim((prev) => ({ ...(prev ?? {}), ...(json.claim ?? json) } as Claim));
       posthog?.capture('user_reported_submitted', { lawsuit_id: lawsuit.id, slug: lawsuit.slug });
       setReportState('idle');
     } catch {

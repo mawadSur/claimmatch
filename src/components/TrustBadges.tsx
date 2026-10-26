@@ -1,18 +1,15 @@
-import {
-  BadgeCheck, HandCoins, Link2, Lock, XCircle,
-} from 'lucide-react';
+import { BadgeCheck, HandCoins, ExternalLink, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Server-safe presentational row of trust signals. Used on the trust and
- * pricing marketing pages to reassure would-be users at a glance.
+ * Server-safe row of trust facts, used on the trust and pricing pages. Every
+ * badge must stay literally true; add one only when the product does it.
  */
 const BADGES = [
-  { icon: BadgeCheck, label: 'Free to check' },
-  { icon: HandCoins, label: 'Free during beta' },
-  { icon: Link2, label: 'Official sources linked' },
-  { icon: Lock, label: 'You submit the claim' },
-  { icon: XCircle, label: 'Cancel anytime' },
+  { icon: BadgeCheck, label: 'Free to use' },
+  { icon: HandCoins, label: 'We never take a cut' },
+  { icon: ExternalLink, label: 'You file on the official site' },
+  { icon: Scale, label: 'Not a law firm' },
 ] as const;
 
 export function TrustBadges({ className }: { className?: string }) {
@@ -28,7 +25,7 @@ export function TrustBadges({ className }: { className?: string }) {
           key={b.label}
           className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-ink shadow-sm"
         >
-          <b.icon className="h-4 w-4 shrink-0 text-brand-600" />
+          <b.icon className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
           {b.label}
         </li>
       ))}

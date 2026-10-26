@@ -1,22 +1,32 @@
--- DEV ONLY — fictional
--- Do not run this file against production. These 16 settlements are invented
--- for local UI work. Production unpublishes them via 0005_remove_sample_rows.sql.
+-- ClaimMatch — DEV ONLY: made-up settlements for a LOCAL or STAGING database.
 --
--- ClaimMatch — catalog seed data (development)
--- Inserts a handful of scraper "sources" and a set of realistic settlement rows
--- into public.lawsuits. Idempotent: re-running is a no-op for existing slugs.
+-- NEVER run this against production. None of these 16 settlements exist.
+-- They (and the 4 made-up "sources" below) were published in production
+-- through the old supabase/seed.sql; migration
+-- 0009_unpublish_fictional.sql unpublishes them there. Their slugs are on the
+-- fictional denylist (src/lib/fictional-slugs.ts), so the app hides them in
+-- every environment: these rows exist to reproduce production's state and to
+-- exercise the denylist and 0009. For sample settlements the local site shows,
+-- run `CLAIMMATCH_ENV=local npm run seed` instead.
 --
--- Apply with either:
---   supabase db reset            (runs migrations, then this seed)
---   psql "$DATABASE_URL" -f supabase/seed.sql
+-- The file refuses to run unless the session opts in, so pasting it into the
+-- production SQL editor fails before writing anything:
+--   PGOPTIONS="-c claimmatch.allow_dev_seed=on" psql "$DATABASE_URL" -f supabase/seed.dev.sql
+-- or, inside one psql session:
+--   set claimmatch.allow_dev_seed = 'on';
+--   \i supabase/seed.dev.sql
 --
--- Deadlines are relative to the day the seed runs, so the catalog always looks
--- current. Eligibility JSON references the attribute keys defined in
--- src/lib/eligibility.ts (had_data_breach, employed_hourly, took_medication,
--- bought_consumer_goods, used_streaming, uses_social_media, owns_vehicle,
--- used_banking, …).
+-- Idempotent: re-running is a no-op for existing slugs. Deadlines are relative
+-- to the day the seed runs.
 
 begin;
+
+do $$
+begin
+  if coalesce(current_setting('claimmatch.allow_dev_seed', true), '') <> 'on' then
+    raise exception 'seed.dev.sql writes made-up settlements and runs only on a local or staging database. Opt in with: set claimmatch.allow_dev_seed = ''on'';';
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Sources (scraper provenance)
@@ -34,7 +44,7 @@ on conflict (slug) do nothing;
 insert into public.lawsuits
   (slug, title, summary, description, category, status, typical_payout,
    proof_required, deadline, eligibility, eligibility_text,
-   source_url, claim_url, is_featured, source_id)
+   source_url, claim_url, is_featured, source_id, review_status)
 values
   (
     'healthcare-provider-data-breach-2025',
@@ -48,7 +58,8 @@ values
     null,
     null,
     true,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   ),
   (
     'prepaid-card-hidden-fees-settlement',
@@ -62,7 +73,8 @@ values
     null,
     null,
     true,
-    (select id from public.sources where slug = 'class-action-org')
+    (select id from public.sources where slug = 'class-action-org'),
+    'published'
   ),
   (
     'smart-tv-viewing-data-settlement',
@@ -76,7 +88,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'open-settlements')
+    (select id from public.sources where slug = 'open-settlements'),
+    'published'
   ),
   (
     'defective-brake-system-settlement',
@@ -90,7 +103,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   ),
   (
     'contaminated-eye-drops-settlement',
@@ -104,7 +118,8 @@ values
     null,
     null,
     true,
-    (select id from public.sources where slug = 'class-action-org')
+    (select id from public.sources where slug = 'class-action-org'),
+    'published'
   ),
   (
     'gig-driver-expense-reimbursement-settlement',
@@ -118,7 +133,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'open-settlements')
+    (select id from public.sources where slug = 'open-settlements'),
+    'published'
   ),
   (
     'protein-powder-protein-spiking-settlement',
@@ -132,7 +148,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   ),
   (
     'wireless-router-security-flaw-settlement',
@@ -146,7 +163,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'class-action-org')
+    (select id from public.sources where slug = 'class-action-org'),
+    'published'
   ),
   (
     'nonstick-cookware-coating-settlement',
@@ -160,7 +178,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'open-settlements')
+    (select id from public.sources where slug = 'open-settlements'),
+    'published'
   ),
   (
     'robocall-tcpa-settlement',
@@ -174,7 +193,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   ),
   (
     'university-student-records-breach-settlement',
@@ -188,7 +208,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'class-action-org')
+    (select id from public.sources where slug = 'class-action-org'),
+    'published'
   ),
   (
     'mortgage-late-fee-settlement',
@@ -202,7 +223,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'open-settlements')
+    (select id from public.sources where slug = 'open-settlements'),
+    'published'
   ),
   (
     'voice-assistant-recording-settlement',
@@ -216,7 +238,8 @@ values
     null,
     null,
     true,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   ),
   (
     'sunscreen-benzene-recall-settlement',
@@ -230,7 +253,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'class-action-org')
+    (select id from public.sources where slug = 'class-action-org'),
+    'published'
   ),
   (
     'retail-off-the-clock-wages-settlement',
@@ -244,7 +268,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'open-settlements')
+    (select id from public.sources where slug = 'open-settlements'),
+    'published'
   ),
   (
     'sparkling-water-natural-flavor-settlement',
@@ -258,7 +283,8 @@ values
     null,
     null,
     false,
-    (select id from public.sources where slug = 'top-class-actions')
+    (select id from public.sources where slug = 'top-class-actions'),
+    'published'
   )
 on conflict (slug) do nothing;
 

@@ -1,19 +1,19 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Suspense } from 'react';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 
 export const metadata: Metadata = {
-  title: 'Sign up',
+  title: 'Create your free account',
   description:
-    'Create a free ClaimMatch account and get matched to class-action settlements you qualify for.',
-  robots: { index: false, follow: false },
+    'Create a free ClaimMatch account to keep track of the settlement claims you file on official settlement websites.',
 };
 
-const TRUST_BULLETS = [
-  'Free to check — always',
-  'Get matched to settlements you qualify for',
-  'We email you the moment a new match opens',
+const BULLETS = [
+  'Free to use. We never take a cut of your settlement.',
+  'Browse settlements that are open for claims.',
+  'Keep track of the claims you file on official sites.',
 ];
 
 function AuthFormFallback() {
@@ -22,6 +22,9 @@ function AuthFormFallback() {
   );
 }
 
+const LEGAL_LINK =
+  'font-semibold text-brand-700 underline hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
+
 export default function SignupPage() {
   return (
     <section className="bg-gradient-to-b from-brand-50 via-white to-white">
@@ -29,23 +32,21 @@ export default function SignupPage() {
         <div className="mx-auto max-w-md">
           <div className="text-center">
             <span className="badge-brand mx-auto gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" /> Free to check · You submit
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Free claim assistant
             </span>
             <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl">
-              Find the settlements{' '}
-              <span className="text-brand-600">you may qualify for.</span>
+              Create your free account
             </h1>
             <p className="mt-3 text-ink-muted">
-              Create your free account and answer a few quick questions. We’ll
-              match you to open class-action settlements and pre-fill your claim
-              details — you submit on the official site.
+              Keep track of the settlement claims you file, all in one place. You
+              always file on the official settlement website yourself.
             </p>
           </div>
 
           <ul className="mx-auto mt-6 max-w-sm space-y-2.5">
-            {TRUST_BULLETS.map((t) => (
+            {BULLETS.map((t) => (
               <li key={t} className="flex items-center gap-2.5 text-sm text-ink-muted">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-success-500" />
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-success-600" aria-hidden />
                 {t}
               </li>
             ))}
@@ -56,6 +57,18 @@ export default function SignupPage() {
               <AuthForm mode="signup" />
             </Suspense>
           </div>
+
+          <p className="mt-4 text-center text-sm text-ink-muted">
+            By creating an account, you agree to the{' '}
+            <Link href="/terms" className={LEGAL_LINK}>
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className={LEGAL_LINK}>
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </section>

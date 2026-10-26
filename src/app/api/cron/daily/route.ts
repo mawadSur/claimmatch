@@ -1,17 +1,31 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
+import { flags } from '@/lib/flags';
+import { recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
-import { runCloseJob } from '@/lib/close-job';
+import {
+  buildReport,
+  checkIngestStep,
+  matchSweepGate,
+  missingConfigStep,
+  reportHttpStatus,
+  runStep,
+  serviceConfigProblem,
+  type StepResult,
+} from '../_lib/report';
 
 /**
- * Consolidated daily cron: close expired rows, ingest, then match.
- * Schedule: daily at 06:00 UTC
- *   1. Close job: past-deadline rows + SettleSignal feed reconciliation.
- *   2. Ingest: SOURCE_ADAPTERS + LLM extract, last_verified_at on upsert.
- *   3. Match sweep: recompute matches for opted-in users.
- *
- * Catalog dates use UTC calendar days (see todayISO).
+ * Daily cron (06:00 UTC, vercel.json). Vercel Hobby allows two crons, so this
+ * one route runs the daily steps in order:
+ *   1. ingest: fetch every source adapter and refresh the catalog (new records
+ *      wait for review; no model calls; large closure batches are held). Held
+ *      closures, failed writes and empty sources make the step fail (500)
+ *      until D40's alerting exists; every run is stored as a jobs row.
+ *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
+ *      only when MATCH_EMAILS_ENABLED=1.
+ * The JSON reports each step as ran, skipped or failed; any failure makes the
+ * response a 500.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,38 +36,29 @@ async function handle(req: Request) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
-  const results: {
-    close?: Awaited<ReturnType<typeof runCloseJob>>;
-    closeError?: string;
-    ingest?: Awaited<ReturnType<typeof ingestAndExtract>>;
-    ingestError?: string;
-    match?: Awaited<ReturnType<typeof runMatchSweep>>;
-    matchError?: string;
-  } = {};
+  const production = process.env.NODE_ENV === 'production';
+  const configProblem = serviceConfigProblem(process.env);
+  const steps: Record<string, StepResult> = {};
 
-  try {
-    results.close = await runCloseJob();
-  } catch (err) {
-    console.error('[cron/daily] close job failed:', err);
-    results.closeError = err instanceof Error ? err.message : 'Close job failed.';
+  if (configProblem) {
+    steps.ingest = missingConfigStep(configProblem, production);
+  } else {
+    steps.ingest = checkIngestStep(await runStep('daily/ingest', ingestAndExtract));
+    await recordIngestRun('cron/daily', steps.ingest);
   }
 
-  try {
-    results.ingest = await ingestAndExtract();
-  } catch (err) {
-    console.error('[cron/daily] ingest failed:', err);
-    results.ingestError = err instanceof Error ? err.message : 'Ingest failed.';
+  const gate = matchSweepGate(flags.matchEmails());
+  if (!gate.run) {
+    steps.matchSweep = gate.step;
+  } else {
+    // Runs even if ingest failed: existing settlements can still match.
+    steps.matchSweep = configProblem
+      ? missingConfigStep(configProblem, production)
+      : await runStep('daily/matchSweep', runMatchSweep);
   }
 
-  try {
-    results.match = await runMatchSweep();
-  } catch (err) {
-    console.error('[cron/daily] match sweep failed:', err);
-    results.matchError = err instanceof Error ? err.message : 'Match sweep failed.';
-  }
-
-  const hasError = results.closeError || results.ingestError || results.matchError;
-  return NextResponse.json(results, { status: hasError ? 500 : 200 });
+  const report = buildReport('daily', steps);
+  return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 
 export async function GET(req: Request) {

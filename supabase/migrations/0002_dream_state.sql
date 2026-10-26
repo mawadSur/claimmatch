@@ -34,7 +34,7 @@ alter table public.profiles add column if not exists referred_by uuid references
 -- pre-existing draft doesn't get silently published), then lock down.
 alter table public.lawsuits add column if not exists review_status review_status;
 update public.lawsuits
-  set review_status = case when status = 'draft' then 'draft' else 'published' end
+  set review_status = case when status = 'draft' then 'draft'::review_status else 'published'::review_status end
   where review_status is null;
 alter table public.lawsuits alter column review_status set default 'published';
 alter table public.lawsuits alter column review_status set not null;
