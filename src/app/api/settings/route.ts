@@ -10,6 +10,11 @@ const SettingsSchema = z.object({
   phone: z.string().trim().max(32).optional(),
   full_name: z.string().trim().max(120).optional(),
   state: z.string().trim().max(2).optional(),
+  zip: z.string().trim().max(16).optional(),
+  address_line1: z.string().trim().max(200).optional(),
+  address_line2: z.string().trim().max(200).optional(),
+  city: z.string().trim().max(120).optional(),
+  prefill_consent_at: z.string().trim().max(40).optional(),
 });
 
 /** POST /api/settings — update the current user's profile preferences. */

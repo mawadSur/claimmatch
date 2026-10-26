@@ -1,5 +1,6 @@
-import type { ScrapedLawsuit, EligibilityCriteria } from '@/lib/types';
+import type { ScrapedLawsuit, EligibilityCriteria, ProofRequired } from '@/lib/types';
 import type { SourceAdapter } from './index';
+import { normalizeProof } from '@/lib/proof';
 
 /**
  * SettleSignal open data adapter.
@@ -62,24 +63,76 @@ function mapCategory(category: string, settlementType?: string): string {
   return 'General';
 }
 
-function mapProofRequired(proof: string): boolean {
-  return proof === 'yes';
+/** Tri-state plus unknown. Display layer must not show "None" for unknown. */
+export function mapProofRequired(proof: string): ProofRequired {
+  return normalizeProof(proof);
 }
 
 function buildEligibility(record: SettleSignalRecord): EligibilityCriteria {
-  const criteria: EligibilityCriteria = {};
+  const proof = mapProofRequired(record.proof_required);
+  const criteria: EligibilityCriteria = { proof };
 
   if (record.applicable_states && record.applicable_states.length > 0) {
     criteria.states = record.applicable_states;
   }
 
-  if (record.proof_required === 'optional') {
+  if (proof === 'optional') {
     criteria.notes = 'Proof of purchase is optional but may increase your claim amount.';
-  } else if (record.proof_required === 'yes') {
+  } else if (proof === 'yes') {
     criteria.notes = 'Documentation or proof of purchase required to file a claim.';
+  } else if (proof === 'unknown') {
+    criteria.notes = 'Unknown — check official notice.';
   }
 
   return criteria;
+}
+
+export type SettleSignalOpenSet =
+  | { ok: true; count: number; externalIds: string[]; status: number }
+  | { ok: false; reason: string; status?: number };
+
+function externalIdFor(record: SettleSignalRecord): string {
+  return `settlesignal:${record['@id'].replace(/[^a-zA-Z0-9-]/g, '-').slice(-80)}`;
+}
+
+/**
+ * Fetch the current "Open for claims" SettleSignal set. Used by the adapter
+ * and by the daily close job's feed reconciliation. Soft-fails; never throws.
+ */
+export async function fetchSettleSignalOpenSet(): Promise<SettleSignalOpenSet> {
+  try {
+    const res = await fetch(FEED_URL, {
+      headers: {
+        'User-Agent': USER_AGENT,
+        Accept: 'application/json',
+      },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) {
+      console.error(`[settlesignal] HTTP ${res.status}: ${res.statusText}`);
+      return { ok: false, reason: `HTTP ${res.status}`, status: res.status };
+    }
+    const data: SettleSignalFeed = await res.json();
+    if (!data.settlements || !Array.isArray(data.settlements)) {
+      console.error('[settlesignal] Invalid feed structure');
+      return { ok: false, reason: 'invalid feed structure', status: res.status };
+    }
+    const open = data.settlements.filter(
+      (r) => r.accepted_official_evidence && r.status === 'Open for claims' && r['@id'],
+    );
+    if (open.length === 0) {
+      return { ok: false, reason: 'empty open set', status: res.status };
+    }
+    return {
+      ok: true,
+      count: open.length,
+      status: res.status,
+      externalIds: open.map(externalIdFor),
+    };
+  } catch (err) {
+    console.error('[settlesignal] Fetch failed:', err);
+    return { ok: false, reason: err instanceof Error ? err.message : 'fetch failed' };
+  }
 }
 
 function mapRecord(record: SettleSignalRecord): ScrapedLawsuit | null {
@@ -87,10 +140,10 @@ function mapRecord(record: SettleSignalRecord): ScrapedLawsuit | null {
 
   if (record.status !== 'Open for claims') return null;
 
-  const externalId = `settlesignal:${record['@id'].replace(/[^a-zA-Z0-9-]/g, '-').slice(-80)}`;
+  const proof = mapProofRequired(record.proof_required);
 
   return {
-    external_id: externalId,
+    external_id: externalIdFor(record),
     title: record.title,
     summary: record.estimated_payout
       ? `${record.title}. Estimated payout: ${record.estimated_payout}`
@@ -98,7 +151,8 @@ function mapRecord(record: SettleSignalRecord): ScrapedLawsuit | null {
     description: record.estimated_payout || undefined,
     category: mapCategory(record.category, record.settlement_type),
     typical_payout: record.estimated_payout || 'Varies',
-    proof_required: mapProofRequired(record.proof_required),
+    proof_required: proof === 'yes',
+    proof,
     deadline: record.claim_deadline || undefined,
     eligibility: buildEligibility(record),
     eligibility_text: record.applicable_states?.length
@@ -106,6 +160,7 @@ function mapRecord(record: SettleSignalRecord): ScrapedLawsuit | null {
       : 'Open to eligible US residents.',
     source_url: record.url,
     claim_url: record.official_claim_url || record.official_settlement_url || undefined,
+    last_verified_at: record.last_verified || null,
   };
 }
 

@@ -1,8 +1,9 @@
 # ClaimMatch
 
-**Find the settlement money you’re owed.** ClaimMatch scans class-action settlements
-and lawsuits, matches you to the ones you qualify for, and helps you file your claim in
-minutes — then emails you when new matches open up.
+**Find settlements you qualify for.** ClaimMatch scans class-action settlements
+and lawsuits, matches you to the ones you may qualify for, and pre-fills your
+claim details. You review them and submit free on the official administrator
+site — then we email you when new matches open up.
 
 This is a ground-up rebuild (React / Next.js + Node + Supabase) of a legacy WordPress
 "settlement finder" site, with WordPress removed entirely.
@@ -16,8 +17,9 @@ This is a ground-up rebuild (React / Next.js + Node + Supabase) of a legacy Word
   required, and a "who qualifies" description.
 - **Eligibility matching** — users answer a short one-time questionnaire; a transparent
   rule engine compares their profile to every case and surfaces the ones they qualify for.
-- **Guided claims** — the right claim form is pre-filled from the user's profile; filing
-  produces a **receipt number** and a status (`processing → submitted → approved → paid`).
+- **Claim packets** — ClaimMatch pre-fills official claim details from the user's
+  profile. The user copies them into the official form and submits themselves.
+  Status is `processing` (ready to submit) until they report “I submitted”.
 - **Email alerts** — a daily job re-matches everyone and emails users the moment a new
   eligible settlement appears.
 - **Scraper framework** — a pluggable source-adapter system ingests settlements from
@@ -58,9 +60,9 @@ cp .env.example .env.local     # fill in Supabase + Resend values (optional to s
 npm run dev                    # http://localhost:3000
 ```
 
-The app runs **without any configuration** — it falls back to sample settlements so you
-can see the whole UI immediately. Auth, persistence, matching, and email switch on once
-you add Supabase + Resend keys.
+The app runs **without any configuration** in development — it falls back to sample
+settlements so you can see the UI. In production the sample catalog is disabled.
+Auth, persistence, matching, and email switch on once you add Supabase + Resend keys.
 
 ### Wire up Supabase
 
@@ -70,13 +72,13 @@ you add Supabase + Resend keys.
    # Option A — Supabase CLI
    supabase link --project-ref <your-ref>
    supabase db push                       # applies supabase/migrations/* in order
-   # then paste supabase/seed.sql into the SQL editor
+   # DEV ONLY — fictional catalog: supabase/seed.dev.sql
+   # Do not run seed.dev.sql against production.
    ```
    ```bash
-   # Option B — in the Supabase SQL editor, run in this order:
-   #   1. supabase/migrations/0001_init.sql
-   #   2. supabase/migrations/0002_dream_state.sql   (recoveries, jobs, review workflow, admin)
-   #   3. supabase/seed.sql
+   # Option B — in the Supabase SQL editor, run migrations in order
+   # (0001, 0002, 0003, then 0004_prefill and 0005_remove_sample_rows).
+   # For a local/dev catalog only: supabase/seed.dev.sql (DEV ONLY — fictional).
    ```
 3. Copy your Project URL + anon key + service role key into `.env.local`.
 4. **Make yourself an admin:** set `ADMIN_EMAILS=you@example.com` in the env, or run
@@ -95,7 +97,9 @@ See [`.env.example`](./.env.example). Summary:
 | `RESEND_API_KEY` / `RESEND_FROM` | Transactional email (match alerts, welcome, digest) |
 | `ANTHROPIC_API_KEY` | Claude (Opus 4.8) LLM extraction pipeline — scraped text → structured settlements |
 | `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access (also set `profiles.is_admin`) |
-| `NEXT_PUBLIC_CLAIMMATCH_FEE_PCT` | Contingency fee we take from a recovery (default `0.15` = 15%) |
+| `NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY` | Public fee label (default `TBD` — free during beta) |
+| `NEXT_PUBLIC_CLAIMMATCH_FEE_PCT` | Stored for later accounting only — not shown on public pages |
+| `NEXT_PUBLIC_CONTACT_EMAIL` / `NEXT_PUBLIC_POSTAL_ADDRESS` | Contact placeholders until a real inbox and address exist |
 | `CRON_SECRET` | Protects `/api/cron/*` endpoints (Vercel Cron sends it automatically) |
 
 ---
@@ -143,7 +147,8 @@ src/
     email.ts                 Resend wrapper + templates
 supabase/
   migrations/0001_init.sql   schema + RLS + triggers
-  seed.sql                   sample sources + settlements
+  seed.sql                   production-safe stub (no fictional rows)
+  seed.dev.sql               DEV ONLY — fictional sample settlements
 scripts/
   seed.ts, run-scrape.ts
 ```
@@ -167,4 +172,7 @@ scripts/
 
 ClaimMatch is an information and matching service, **not a law firm**, and does not
 provide legal advice. Using the site does not create an attorney-client relationship.
-See [`/terms`](src/app/terms/page.tsx) and the disclaimer in `src/lib/disclaimer.ts`.
+ClaimMatch pre-fills claim details; **you** submit on the official administrator site.
+See [`/terms`](src/app/terms/page.tsx), [`/how-we-make-money`](src/app/how-we-make-money/page.tsx),
+and the disclaimer in `src/lib/disclaimer.ts`. Terms and privacy are interim drafts
+pending counsel review.

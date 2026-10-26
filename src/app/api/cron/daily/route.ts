@@ -2,17 +2,16 @@ import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
+import { runCloseJob } from '@/lib/close-job';
 
 /**
- * Consolidated daily cron: runs the ingest pipeline followed by the match sweep.
- * Combines what was previously two separate crons (pipeline + match) into one
- * to stay within Vercel Hobby's 2-cron limit.
- *
+ * Consolidated daily cron: close expired rows, ingest, then match.
  * Schedule: daily at 06:00 UTC
- *   1. Ingest: fetch from all SOURCE_ADAPTERS, extract via LLM (if configured),
- *      upsert lawsuits with review gating.
- *   2. Match sweep: recompute matches for opted-in users and email them about
- *      brand-new matches (notified_at IS NULL).
+ *   1. Close job: past-deadline rows + SettleSignal feed reconciliation.
+ *   2. Ingest: SOURCE_ADAPTERS + LLM extract, last_verified_at on upsert.
+ *   3. Match sweep: recompute matches for opted-in users.
+ *
+ * Catalog dates use UTC calendar days (see todayISO).
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,13 +23,21 @@ async function handle(req: Request) {
   }
 
   const results: {
+    close?: Awaited<ReturnType<typeof runCloseJob>>;
+    closeError?: string;
     ingest?: Awaited<ReturnType<typeof ingestAndExtract>>;
     ingestError?: string;
     match?: Awaited<ReturnType<typeof runMatchSweep>>;
     matchError?: string;
   } = {};
 
-  // Step 1: Ingest pipeline
+  try {
+    results.close = await runCloseJob();
+  } catch (err) {
+    console.error('[cron/daily] close job failed:', err);
+    results.closeError = err instanceof Error ? err.message : 'Close job failed.';
+  }
+
   try {
     results.ingest = await ingestAndExtract();
   } catch (err) {
@@ -38,7 +45,6 @@ async function handle(req: Request) {
     results.ingestError = err instanceof Error ? err.message : 'Ingest failed.';
   }
 
-  // Step 2: Match sweep (run even if ingest failed — there may be existing lawsuits)
   try {
     results.match = await runMatchSweep();
   } catch (err) {
@@ -46,7 +52,7 @@ async function handle(req: Request) {
     results.matchError = err instanceof Error ? err.message : 'Match sweep failed.';
   }
 
-  const hasError = results.ingestError || results.matchError;
+  const hasError = results.closeError || results.ingestError || results.matchError;
   return NextResponse.json(results, { status: hasError ? 500 : 200 });
 }
 

@@ -1,30 +1,29 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
-  ArrowRight, ShieldCheck, Link2, Landmark, HandCoins, Lock, Scale,
-  CheckCircle2, XCircle, Search, Eye, Database, ServerCog, FileSignature,
+  ArrowRight, ShieldCheck, Link2, Landmark, Lock, Scale,
+  CheckCircle2, XCircle, Search, Eye, Database, ServerCog,
   BadgeCheck, Building2, ExternalLink, HelpCircle,
 } from 'lucide-react';
-import { FEE_PCT } from '@/lib/recovery';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { SITE } from '@/lib/utils';
+import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
+import { SITE, canonicalUrl } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Is ClaimMatch legit?',
   description:
-    'Is ClaimMatch a scam? No. We link to the official court or administrator page for every settlement, we name who runs it, we never ask for money upfront, and we protect your data with bank-level security. Here is exactly why you can trust us.',
+    'Is ClaimMatch a scam? No. We link to the official court or administrator page for every settlement, we name who runs it, and you submit every claim yourself.',
+  alternates: { canonical: canonicalUrl('/trust') },
   openGraph: {
     title: "Is ClaimMatch legit? Here's the proof.",
     description:
-      'We link to official court pages, name who runs each settlement, and never charge upfront. Verify us in 60 seconds.',
-    url: `${SITE.url}/trust`,
+      'We link to official court pages, name who runs each settlement, and you submit on the official site.',
+    url: canonicalUrl('/trust'),
     siteName: SITE.name,
     type: 'website',
   },
 };
-
-const PCT = Math.round(FEE_PCT * 100);
 
 const KNOWN_ADMINISTRATORS = [
   { name: 'JND Legal Administration', url: 'https://www.jndla.com' },
@@ -36,84 +35,73 @@ const KNOWN_ADMINISTRATORS = [
 const TRUST_FAQ = [
   {
     q: 'How does ClaimMatch matching work?',
-    a: 'You answer a few quick questions about your state, past purchases, and data breaches you may have been part of. We compare your answers against the published eligibility rules for every open settlement and surface only the ones you actually qualify for — with clear reasons for each match.',
+    a: 'You answer a few questions about your state, past purchases, and data breaches you may have been part of. We compare your answers against the published eligibility rules for every open settlement and surface the ones you may qualify for — with clear reasons for each match.',
   },
   {
     q: 'What does ClaimMatch cost?',
-    a: `Checking your matches is always free. If you choose to have us file on your behalf, we take a ${PCT}% contingency fee only out of money you actually recover. No recovery, no fee — ever.`,
+    a: 'Checking your matches is always free. Using ClaimMatch is free during beta. Filing on the official administrator site is always free, and you never need ClaimMatch to file.',
   },
   {
     q: 'Is ClaimMatch a law firm?',
-    a: 'No. ClaimMatch is an information and claims-filing service. We help you discover settlements and file with the official administrators, but we are not attorneys and do not provide legal advice.',
+    a: 'No. ClaimMatch is an information and matching service. We help you discover settlements and pre-fill claim details. We are not attorneys and do not provide legal advice.',
   },
 ];
 
-// The specific, verifiable reasons ClaimMatch is trustworthy.
 const REASONS = [
   {
     icon: Link2,
     title: 'Every case links to the official source',
-    body: 'Each settlement we surface links straight to the official court, government, or administrator page. You can read the notice yourself and confirm every detail before you do anything.',
+    body: 'Each settlement we surface links straight to the official court, government, or administrator page. You can read the notice yourself before you do anything.',
   },
   {
     icon: Landmark,
     title: 'We name the administrator',
-    body: 'We show you who is actually running each settlement — the court-appointed claims administrator — so you can verify it independently. We are not the administrator, and we never pretend to be.',
-  },
-  {
-    icon: HandCoins,
-    title: 'We never ask for money upfront',
-    body: `Checking, matching, and filing are free. We are paid only through a ${PCT}% contingency fee on money you actually recover. If you are ever asked to pay upfront, it is not us — and it is a red flag.`,
+    body: 'We show you who is actually running each settlement — the court-appointed claims administrator. We are not the administrator, and we never pretend to be.',
   },
   {
     icon: Lock,
-    title: 'Your data is protected, never sold',
-    body: 'Your information is stored on Supabase with encryption at rest and access controls, and used only to match and file your claims. We do not sell your data, and we do not send you spam.',
+    title: 'Your data stays on your account',
+    body: 'Your information is stored on Supabase with encryption at rest and row-level security, and used to match you and pre-fill packets you ask for. We do not sell your data.',
   },
   {
     icon: Scale,
-    title: 'A claims service, not a law firm',
-    body: 'ClaimMatch is an information and claims-filing service. We help you find settlements and file with the official administrators. We are not a law firm and do not provide legal advice.',
+    title: 'A matching service, not a law firm',
+    body: 'ClaimMatch helps you find settlements and pre-fill details. We are not a law firm and do not provide legal advice. You submit every claim yourself.',
   },
   {
     icon: Eye,
     title: 'You can see exactly why you matched',
-    body: 'Every match comes with the plain-English reasons it surfaced, based on the answers you gave. No black boxes, no pressure — you decide what to authorize.',
+    body: 'Every match comes with the plain-English reasons it surfaced, based on the answers you gave. No black boxes.',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'You submit. We don’t.',
+    body: 'ClaimMatch pre-fills a packet. You review it and submit on the official site under the administrator’s terms.',
   },
 ];
 
-// How ClaimMatch protects user data, spelled out.
 const DATA_POINTS = [
   {
     icon: Database,
     title: 'Encrypted at rest',
-    body: 'Your profile and claim details live in a Supabase Postgres database with encryption at rest and row-level security, so your records are isolated to your account.',
+    body: 'Your profile and claim details live in a Supabase Postgres database with encryption at rest and row-level security.',
   },
   {
     icon: ServerCog,
-    title: 'Used only to file your claims',
-    body: 'We use what you tell us for one thing: matching you to settlements and preparing the claims you ask us to file. Nothing more.',
+    title: 'Used to match and pre-fill',
+    body: 'We use what you tell us to match you to settlements and to pre-fill packets you open. Nothing more.',
   },
   {
     icon: XCircle,
-    title: 'Never sold, never spammed',
-    body: 'We never sell, rent, or trade your personal information, and we do not blast you with marketing. You control your alerts and can unsubscribe anytime.',
+    title: 'Never sold',
+    body: 'We never sell, rent, or trade your personal information. You control your alerts and can unsubscribe anytime.',
   },
-];
-
-// Simple steps a skeptic can take to verify us before signing up.
-const VERIFY_STEPS = [
-  'Open any settlement and click through to the official court or administrator page.',
-  'Confirm the deadline, eligibility, and payout on that official notice.',
-  'Check that you are never asked for payment or card details to file a claim.',
 ];
 
 export default function TrustPage() {
   return (
     <>
-      {/* Hero ---------------------------------------------------------------- */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
         <div className="container-page relative py-20 sm:py-24">
           <div className="mx-auto max-w-3xl text-center">
             <span className="badge-brand mx-auto gap-1.5">
@@ -121,13 +109,11 @@ export default function TrustPage() {
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
               ClaimMatch is real —{' '}
-              <span className="text-brand-600">and here&rsquo;s the proof.</span>
+              <span className="text-brand-600">and here’s the proof.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              &ldquo;Free money from a lawsuit&rdquo; sounds like a scam — so we
-              built ClaimMatch to be checkable at every step. We link to the
-              official source for every case, name who runs it, and never ask you
-              for a dollar upfront.
+              We link to the official source for every case, name who runs it, and
+              you submit every claim yourself on the administrator’s site.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/signup" className="btn-primary w-full sm:w-auto">
@@ -144,22 +130,16 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* Why you can trust us ------------------------------------------------ */}
       <section className="container-page py-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-extrabold">Why you can trust us</h2>
           <p className="mt-3 text-ink-muted">
-            Not vibes — specifics. Every one of these is something you can verify
-            yourself before you ever authorize a claim.
+            Specifics you can verify before you ever open a packet.
           </p>
         </div>
-
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {REASONS.map((r) => (
-            <div
-              key={r.title}
-              className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
-            >
+            <div key={r.title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
                 <r.icon className="h-5 w-5" />
               </div>
@@ -170,7 +150,6 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* We are NOT the administrator ---------------------------------------- */}
       <section className="bg-gray-50 py-16">
         <div className="container-page">
           <div className="mx-auto max-w-3xl">
@@ -185,30 +164,16 @@ export default function TrustPage() {
                   </h2>
                   <p className="mt-3 text-sm leading-relaxed text-amber-800">
                     Class-action settlements are administered by court-appointed
-                    companies — not ClaimMatch. We are a discovery and filing service
-                    that helps you find settlements you qualify for and submit claims
-                    on your behalf. The official administrator processes all claims
-                    and distributes payments.
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-amber-800">
-                    <strong className="font-semibold">The official source is always authoritative.</strong>{' '}
-                    Every settlement we surface links to the official court or
-                    administrator page. If you ever have questions about a settlement,
-                    check the official notice — that&rsquo;s the final word.
+                    companies — not ClaimMatch. We help you find settlements and
+                    pre-fill details. You submit on the official site. The official
+                    source is always authoritative.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-
           <div className="mx-auto mt-10 max-w-3xl">
-            <h3 className="text-center text-lg font-bold">
-              Common settlement administrators
-            </h3>
-            <p className="mt-2 text-center text-sm text-ink-muted">
-              These are some of the largest court-appointed administrators. We are
-              not affiliated with any of them — we just help you file.
-            </p>
+            <h3 className="text-center text-lg font-bold">Common settlement administrators</h3>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {KNOWN_ADMINISTRATORS.map((admin) => (
                 <a
@@ -227,64 +192,22 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* No money upfront callout -------------------------------------------- */}
-      <section className="py-16">
-        <div className="container-narrow">
-          <div className="overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-card">
-            <div className="grid gap-0 sm:grid-cols-[1fr_1.1fr]">
-              <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white sm:p-10">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                  <HandCoins className="h-3.5 w-3.5" /> No upfront cost
-                </div>
-                <h2 className="mt-6 text-2xl font-extrabold">
-                  We only get paid when you do.
-                </h2>
-                <p className="mt-4 text-sm leading-relaxed text-white/85">
-                  There is no signup fee, no subscription, and no charge to file.
-                  We take a {PCT}% contingency fee only out of money you actually
-                  recover. No recovery, no fee.
-                </p>
-              </div>
-              <div className="p-8 sm:p-10">
-                <h3 className="text-base font-bold">A scam asks you to pay first.</h3>
-                <ul className="mt-4 space-y-3">
-                  {[
-                    'We never ask for a card to check or file a claim',
-                    'We never charge before you are actually paid',
-                    'You can cancel anytime before a claim is filed',
-                    'Filing directly with the administrator is always free',
-                  ].map((t) => (
-                    <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
+      <section className="container-page py-16">
+        <div className="mx-auto max-w-3xl">
+          <HowWeMakeMoney />
         </div>
       </section>
 
-      {/* How we protect your data -------------------------------------------- */}
-      <section className="container-page py-16">
+      <section className="container-page pb-16">
         <div className="mx-auto max-w-2xl text-center">
           <span className="badge-brand mx-auto gap-1.5">
             <Lock className="h-3.5 w-3.5" /> Your data
           </span>
           <h2 className="mt-4 text-3xl font-extrabold">How we protect your data</h2>
-          <p className="mt-3 text-ink-muted">
-            You share a little about yourself so we can match and file for you. We
-            treat that with bank-level care.
-          </p>
         </div>
-
         <div className="mt-12 grid gap-6 sm:grid-cols-3">
           {DATA_POINTS.map((d) => (
-            <div
-              key={d.title}
-              className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
-            >
+            <div key={d.title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
                 <d.icon className="h-5 w-5" />
               </div>
@@ -293,28 +216,30 @@ export default function TrustPage() {
             </div>
           ))}
         </div>
+        <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-muted">
+          Data: SettleSignal (
+          <a href="https://settlesignal.com/data/" className="font-semibold text-brand-700 underline" target="_blank" rel="noopener noreferrer">
+            settlesignal.com
+          </a>
+          ), CC-BY 4.0. Processors: Supabase, Vercel, PostHog, Resend, and Anthropic when extraction is enabled.
+        </p>
       </section>
 
-      {/* Verify us yourself -------------------------------------------------- */}
       <section className="bg-gray-50 py-16">
         <div className="container-narrow">
           <div className="mx-auto max-w-2xl text-center">
             <span className="badge-brand mx-auto gap-1.5">
-              <BadgeCheck className="h-3.5 w-3.5" /> Don&rsquo;t take our word for it
+              <BadgeCheck className="h-3.5 w-3.5" /> Don’t take our word for it
             </span>
             <h2 className="mt-4 text-3xl font-extrabold">Verify us in 60 seconds</h2>
-            <p className="mt-3 text-ink-muted">
-              The best way to know we&rsquo;re legit is to check for yourself. Here
-              is exactly how.
-            </p>
           </div>
-
           <ol className="mx-auto mt-10 max-w-2xl space-y-4">
-            {VERIFY_STEPS.map((step, i) => (
-              <li
-                key={step}
-                className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card"
-              >
+            {[
+              'Open any settlement and click through to the official court or administrator page.',
+              'Confirm the deadline, eligibility, and payout on that official notice.',
+              'Check that you are never asked for a card to file a claim on the official site.',
+            ].map((step, i) => (
+              <li key={step} className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-100 font-display text-sm font-extrabold text-brand-700">
                   {i + 1}
                 </span>
@@ -325,36 +250,6 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* Not a law firm ------------------------------------------------------ */}
-      <section className="container-page py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-100 bg-white p-8 shadow-card sm:p-10">
-          <div className="flex flex-col items-start gap-5 sm:flex-row">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-              <FileSignature className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-extrabold">
-                What we are — and what we&rsquo;re not
-              </h2>
-              <p className="mt-3 text-ink-muted">
-                ClaimMatch is an information and claims-filing service. We scan open
-                settlements, match you to the ones you may qualify for, and — with
-                your per-claim e-signature — file on your behalf with the official
-                administrators.
-              </p>
-              <p className="mt-3 text-ink-muted">
-                We are <strong className="font-semibold text-ink">not a law firm</strong>,
-                we do not provide legal advice, and we are not affiliated with the
-                courts or the settlement administrators. Filing a claim through us
-                is your choice, and you can always file directly with the
-                administrator yourself for free.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ ----------------------------------------------------------------- */}
       <section className="bg-gray-50 py-16">
         <div className="container-page">
           <div className="mx-auto max-w-2xl text-center">
@@ -363,26 +258,18 @@ export default function TrustPage() {
             </span>
             <h2 className="mt-4 text-3xl font-extrabold">FAQ</h2>
           </div>
-
           <div className="mx-auto mt-10 max-w-3xl space-y-4">
             {TRUST_FAQ.map((f) => (
-              <div
-                key={f.q}
-                className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card"
-              >
+              <div key={f.q} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
                 <h3 className="flex items-start gap-2 text-base font-bold">
                   <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
                   {f.q}
                 </h3>
-                <p className="mt-2 pl-7 text-sm leading-relaxed text-ink-muted">
-                  {f.a}
-                </p>
+                <p className="mt-2 pl-7 text-sm leading-relaxed text-ink-muted">{f.a}</p>
               </div>
             ))}
           </div>
         </div>
-
-        {/* FAQ JSON-LD for SEO */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -392,36 +279,28 @@ export default function TrustPage() {
               mainEntity: TRUST_FAQ.map((f) => ({
                 '@type': 'Question',
                 name: f.q,
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: f.a,
-                },
+                acceptedAnswer: { '@type': 'Answer', text: f.a },
               })),
             }),
           }}
         />
       </section>
 
-      {/* CTA ----------------------------------------------------------------- */}
       <section className="bg-gradient-to-b from-white to-brand-50 py-16">
         <div className="container-narrow text-center">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-white">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <h2 className="mt-4 text-3xl font-extrabold">Check with confidence</h2>
+          <h2 className="text-3xl font-extrabold">Check with confidence</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            It&rsquo;s free to see what you&rsquo;re owed, and every case links back
-            to the official source. You risk nothing by looking.
+            It’s free to see what you may qualify for, and every case links back
+            to the official source.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/signup" className="btn-primary w-full sm:w-auto">
               Get matched free <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/pricing" className="btn-secondary w-full sm:w-auto">
-              See our pricing
+            <Link href="/how-we-make-money" className="btn-secondary w-full sm:w-auto">
+              How we make money
             </Link>
           </div>
-
           <div className="mx-auto mt-10 max-w-2xl text-left">
             <Disclaimer />
           </div>

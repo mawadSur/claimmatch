@@ -101,4 +101,18 @@ abuse/fraud watch; revenue.
 1. Confirm business model — the review assumed free + referral fees.
 2. Which real ingest sources to start with (and their ToS posture)?
 3. Appetite for the legal review needed to unlock assisted filing later?
+
+---
+
+## Oct 15, 2026 — owner decisions (Mohammed)
+
+Recorded for PR 1 (`feat/prefill-honest-catalog`):
+
+- **Product model:** for every good match, ClaimMatch fully pre-fills official claim details. The user reviews them and submits on the official administrator site. ClaimMatch never files or submits on the user's behalf.
+- **Money page:** approved. Fee amount undecided — public UI uses `NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY` (default TBD) and says ClaimMatch is free during beta.
+- **Catalog honesty:** unpublish the 16 fictional seed rows (migration 0005), hide expired settlements, daily close job, remove “we file for you” / unsourced 15% stats.
+- **SEO:** top technical fixes from the Oct 15 SEO plan, plus `/llms.txt` and robots groups for OAI-SearchBot, PerplexityBot, and Bingbot. GPTBot and Google-Extended left at defaults (undecided).
+- **Contact:** `{POSTAL_ADDRESS}` / `{CONTACT_EMAIL}` placeholders via env until a real inbox and address exist.
+- **Not in this PR:** detail template v2, hubs, pagination/ISR, browser-extension autofill, Stripe, SMS, domain cutover, counsel-final legal text.
+
 ```

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
-import { FEE_PCT, formatUSD } from '@/lib/recovery';
+import { formatUSD } from '@/lib/recovery';
 import type { RecoveryStatus } from '@/lib/types';
 import { StatCard } from '@/components/admin/StatCard';
 import {
@@ -63,8 +63,6 @@ export default async function AdminRecoveriesPage() {
     if (r.status in counts) counts[r.status] += 1;
   }
 
-  const feePctLabel = `${Math.round(FEE_PCT * 100)}% contingency`;
-
   return (
     <div className="space-y-8">
       <header>
@@ -75,10 +73,8 @@ export default async function AdminRecoveriesPage() {
           Recoveries
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          When settlement administrators pay out on claims we filed, record the
-          gross here. We take our {feePctLabel.toLowerCase()}, then advance the
-          net to the account holder. Recording a gross recomputes the fee and net
-          automatically.
+          When a user reports a payout, record the gross here. Fee and net
+          columns are computed from the stored rate on each recovery row.
         </p>
       </header>
 
@@ -92,7 +88,7 @@ export default async function AdminRecoveriesPage() {
         <StatCard
           label="Our fees"
           value={<span className="tabular-nums">{formatUSD(feeSum)}</span>}
-          sub={feePctLabel}
+          sub="from stored recovery rates"
           icon={<Percent className="h-4 w-4" />}
         />
         <StatCard

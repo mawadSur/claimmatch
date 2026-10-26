@@ -2,15 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FileText, ShieldAlert } from 'lucide-react';
 import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
+import { CONTACT_EMAIL, POSTAL_ADDRESS, canonicalUrl, isPlaceholderValue } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
     'The terms that govern your use of ClaimMatch — an information and matching service, not a law firm. No legal advice, no attorney-client relationship.',
+  alternates: { canonical: canonicalUrl('/terms') },
 };
 
-const LAST_UPDATED = 'January 2026';
-const CONTACT_EMAIL = 'legal@claimmatch.app';
+const LAST_UPDATED = 'October 15, 2026';
 
 export default function TermsPage() {
   return (
@@ -63,7 +64,8 @@ export default function TermsPage() {
             </h2>
             <p>
               ClaimMatch helps you discover class-action settlements and lawsuits you
-              may qualify for and points you toward the relevant official claim forms.
+              may qualify for, pre-fills your claim details, and points you toward
+              the official claim forms. You review and submit every claim yourself.
               We are not attorneys, we do not represent you, and nothing on the Service
               is legal advice. Using the Service, communicating with us, or receiving a
               match does not create an attorney-client relationship. Any decision about
@@ -161,13 +163,20 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-ink">9. Contact us</h2>
             <p>
               Questions about these terms? Reach us at{' '}
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="font-semibold text-brand-700 hover:text-brand-800"
-              >
-                {CONTACT_EMAIL}
-              </a>
-              .
+              {isPlaceholderValue(CONTACT_EMAIL) ? (
+                <span className="font-semibold text-ink">{CONTACT_EMAIL}</span>
+              ) : (
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="font-semibold text-brand-700 hover:text-brand-800"
+                >
+                  {CONTACT_EMAIL}
+                </a>
+              )}
+              . Postal address: {POSTAL_ADDRESS}.
+            </p>
+            <p className="text-xs text-ink-soft">
+              Interim draft — pending counsel review.
             </p>
           </section>
         </div>

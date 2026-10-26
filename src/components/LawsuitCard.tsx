@@ -7,7 +7,7 @@ import { formatDeadline, daysUntil } from '@/lib/utils';
  * The settlement card — the signature UI element carried over from the original
  * site (brand purple top border, payout / proof / deadline stats, CTA).
  *
- * `badge` overrides the default status badge, e.g. "AI Matched" for featured
+ * `badge` overrides the default status badge, e.g. a match score on the dashboard.
  * cards or a claim status on the dashboard.
  */
 export function LawsuitCard({

@@ -42,8 +42,7 @@ export default async function AdminCatalogPage() {
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
           The 100 newest settlements across every review state. Feature the best
           ones for the homepage; unpublish anything that shouldn&rsquo;t be live.
-          Account holders see published settlements and we file claims on their
-          behalf.
+          Account holders see published settlements and can pre-fill a claim packet.
         </p>
       </header>
 

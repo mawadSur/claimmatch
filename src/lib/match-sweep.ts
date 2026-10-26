@@ -2,6 +2,8 @@ import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server
 import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
 import type { Lawsuit, Profile } from '@/lib/types';
+import { todayISO } from './utils';
+import { isFictionalSlug } from './fictional-slugs';
 
 export interface MatchSweepResult {
   users: number;
@@ -24,11 +26,17 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
   const supabase = createServiceClient();
 
   // Candidate lawsuits (published only). Build a lookup for email content.
+  const today = todayISO();
   const { data: lawsuitData } = await supabase
     .from('lawsuits')
     .select('*')
-    .neq('status', 'draft');
-  const lawsuits = (lawsuitData ?? []) as Lawsuit[];
+    .eq('review_status', 'published')
+    .neq('status', 'closed')
+    .neq('status', 'draft')
+    .or(`deadline.is.null,deadline.gte.${today}`);
+  const lawsuits = ((lawsuitData ?? []) as Lawsuit[]).filter(
+    (l) => !isFictionalSlug(l.slug),
+  );
 
   if (lawsuits.length === 0) {
     return { users: 0, newMatches: 0, emailed: 0 };
