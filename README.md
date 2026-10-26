@@ -1,54 +1,37 @@
 # ClaimMatch
 
-**Find settlements you qualify for.** ClaimMatch scans class-action settlements
-and lawsuits, matches you to the ones you may qualify for, and pre-fills your
-claim details. You review them and submit free on the official administrator
-site — then we email you when new matches open up.
+ClaimMatch is a free claim assistant for class-action settlements. People find
+settlements that are open for claims, check whether they qualify on the official
+notice, file on the official administrator's site themselves, and keep track of
+their claims in ClaimMatch.
 
-This is a ground-up rebuild (React / Next.js + Node + Supabase) of a legacy WordPress
-"settlement finder" site, with WordPress removed entirely.
+- ClaimMatch never files or submits a claim for anyone, never handles settlement
+  money, and never takes a cut.
+- A claim reads "Submitted" only with the administrator's confirmation number.
+  Before that it reads "Not filed yet" or "Reported filed by you".
+- Settlement listings come from [SettleSignal](https://settlesignal.com/data/)
+  (CC BY 4.0) and are labeled "Unverified: check the official site" until each
+  record is verified.
+- Pre-filled claim packets (the user's details, ready to copy into the official
+  form) are offered in every state. The user still reviews and submits the claim.
+- Filing as the user's agent may come only in a later phase, with counsel review
+  and written permission from each settlement administrator.
 
----
-
-## What it does
-
-- **Catalog of settlements** — a browsable, filterable list of open class-action
-  settlements and lawsuits, each with a payout range, claim deadline, whether proof is
-  required, and a "who qualifies" description.
-- **Eligibility matching** — users answer a short one-time questionnaire; a transparent
-  rule engine compares their profile to every case and surfaces the ones they qualify for.
-- **Claim packets** — ClaimMatch pre-fills official claim details from the user's
-  profile. The user copies them into the official form and submits themselves.
-  Status is `processing` (ready to submit) until they report “I submitted”.
-- **Email alerts** — a daily job re-matches everyone and emails users the moment a new
-  eligible settlement appears.
-- **Scraper framework** — a pluggable source-adapter system ingests settlements from
-  external sources and normalizes them into the catalog (a sample adapter ships in the box;
-  add real ones per source).
-
-### How this maps to the original WordPress site
-
-| WordPress                                   | ClaimMatch                                   |
-| ------------------------------------------- | -------------------------------------------- |
-| Posts in category "Settlement"              | `lawsuits` table                             |
-| Post meta `deadline`, `no_proof_required`   | `lawsuits.deadline`, `lawsuits.proof_required` |
-| `settlement-buttons` plugin (Yes/No + AJAX) | Claim flow + `claims` table + receipt number |
-| `grgt_settlement_responses` / `_statuses`   | `claims` + `claim_status` enum               |
-| "AI Matched" featured cards                 | `matches` table + rule-based matcher         |
-| BuddyPress profiles / registration          | Supabase Auth + `profiles`                   |
-| MailChimp                                    | Resend transactional email                   |
-| Settlement card UI                          | `<LawsuitCard>` / `<ClaimCard>` (design kept) |
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what comes next. Production apply
+order for the trust-reset migrations is in
+[docs/PRODUCTION-RUNBOOK.md](docs/PRODUCTION-RUNBOOK.md).
 
 ---
 
 ## Tech stack
 
-- **Next.js 15** (App Router, React 19, TypeScript) — the React front end **and** the
-  Node.js backend (route handlers) in one deployable unit.
-- **Supabase** — Postgres, Auth, and Row Level Security.
-- **Tailwind CSS** — design system in `tailwind.config.ts` + `src/app/globals.css`.
-- **Resend** — transactional email.
-- **Vercel** — hosting + Cron (daily scrape + match jobs).
+- **Next.js 15** (App Router, React 19, TypeScript): the front end and the
+  Node.js route handlers in one deployable unit.
+- **Supabase**: Postgres, Auth and Row Level Security.
+- **Tailwind CSS**: design tokens in `tailwind.config.ts` and `src/app/globals.css`.
+- **Resend**: email.
+- **Vercel**: hosting, Web Analytics and Cron.
+- **PostHog**: product analytics.
 
 ---
 
@@ -56,34 +39,29 @@ This is a ground-up rebuild (React / Next.js + Node + Supabase) of a legacy Word
 
 ```bash
 npm install
-cp .env.example .env.local     # fill in Supabase + Resend values (optional to start)
+cp .env.example .env.local     # fill in Supabase + Resend values
 npm run dev                    # http://localhost:3000
+npm run test:run               # vitest
 ```
 
-The app runs **without any configuration** in development — it falls back to sample
-settlements so you can see the UI. In production the sample catalog is disabled.
-Auth, persistence, matching, and email switch on once you add Supabase + Resend keys.
+Auth, the catalog and email need Supabase and Resend keys.
 
 ### Wire up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. Apply the migrations **in order**, then seed:
-   ```bash
-   # Option A — Supabase CLI
-   supabase link --project-ref <your-ref>
-   supabase db push                       # applies supabase/migrations/* in order
-   # DEV ONLY — fictional catalog: supabase/seed.dev.sql
-   # Do not run seed.dev.sql against production.
-   ```
-   ```bash
-   # Option B — in the Supabase SQL editor, run migrations in order
-   # (0001, 0002, 0003, then 0004_prefill and 0005_remove_sample_rows).
-   # For a local/dev catalog only: supabase/seed.dev.sql (DEV ONLY — fictional).
-   ```
-3. Copy your Project URL + anon key + service role key into `.env.local`.
-4. **Make yourself an admin:** set `ADMIN_EMAILS=you@example.com` in the env, or run
-   `update public.profiles set is_admin = true where email = 'you@example.com';` after you sign up.
-5. (Optional) `npm run seed` upserts the sample catalog via the service role key.
+2. Apply `supabase/migrations/*` in order (`supabase db push`, or paste each file
+   into the SQL editor). `scripts/db-test.sh` applies them all to a throwaway
+   local Postgres.
+3. Sample data is **fictional** and for a local or staging database only:
+   `CLAIMMATCH_ENV=local npm run seed` loads sample settlements the local site
+   shows, and `supabase/seed.dev.sql` (opt-in, see its header) recreates the 16
+   made-up rows production once showed. `npm run seed` and `npm run scrape`
+   refuse to run unless `CLAIMMATCH_ENV` is `local` or `staging`, and always
+   refuse the production project.
+4. Copy the project URL, anon key and service role key into `.env.local`.
+5. Make yourself an admin: set `ADMIN_EMAILS=you@example.com`, or run
+   `update public.profiles set is_admin = true where email = 'you@example.com';`
+   after you sign up.
 
 ### Environment variables
 
@@ -91,34 +69,52 @@ See [`.env.example`](./.env.example). Summary:
 
 | Var | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server Supabase access |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server jobs (pipeline/match cron, recovery writes, seed) — never exposed to client |
-| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata + email + referral links |
-| `RESEND_API_KEY` / `RESEND_FROM` | Transactional email (match alerts, welcome, digest) |
-| `ANTHROPIC_API_KEY` | Claude (Opus 4.8) LLM extraction pipeline — scraped text → structured settlements |
-| `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access (also set `profiles.is_admin`) |
-| `NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY` | Public fee label (default `TBD` — free during beta) |
-| `NEXT_PUBLIC_CLAIMMATCH_FEE_PCT` | Stored for later accounting only — not shown on public pages |
-| `NEXT_PUBLIC_CONTACT_EMAIL` / `NEXT_PUBLIC_POSTAL_ADDRESS` | Contact placeholders until a real inbox and address exist |
-| `CRON_SECRET` | Protects `/api/cron/*` endpoints (Vercel Cron sends it automatically) |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client and server Supabase access |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only jobs and writes, including every claim update and unsubscribe. Never exposed to the browser |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL for metadata, emails and referral links |
+| `RESEND_API_KEY` / `RESEND_FROM` | Email |
+| `ANTHROPIC_API_KEY` | Not used in Phase 0 (the ingest makes no model calls) |
+| `ADMIN_EMAILS` | Comma-separated allowlist that bootstraps admin access |
+| `CRON_SECRET` | Protects `/api/cron/*` (Vercel Cron sends it automatically) |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Product analytics |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail. **Required in Production:** a production build (`VERCEL_ENV=production`) stops without a working address |
+| `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
+| `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
+| `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
+| `INGEST_MAX_CLOSE_SHARE` | Share of open settlements one ingest run may close before closures are held for review (default `0.2`). A run that holds closures fails the cron (500) and lists every held row under "Last catalog ingest" in /admin; raise this for one run only after checking them |
+| `CLAIMMATCH_ENV` | `local` or `staging`; required by `npm run seed` and `npm run scrape` |
+
+Contact details that are unset render nothing. `NEXT_PUBLIC_` values are built
+into the site, so redeploy after changing one.
 
 ---
 
 ## Deploy to Vercel
 
 ```bash
-npm i -g vercel            # if needed
 vercel                     # first deploy (links the project)
-# add env vars in the Vercel dashboard (Project → Settings → Environment Variables)
 vercel --prod              # production deploy
 ```
 
-`vercel.json` registers two daily Cron jobs:
+`vercel.json` schedules `GET /api/cron/daily` (06:00 UTC) and
+`GET /api/cron/digest` (Mondays, 15:00 UTC). Match emails and the Monday digest
+stay paused until verified settlement records ship; the switches live in
+`src/lib/flags.ts` and default to off.
 
-- `GET /api/cron/scrape` (06:00 UTC) — ingest new settlements.
-- `GET /api/cron/match` (07:00 UTC) — re-match users and send alert emails.
+### Production runbook (in this order)
 
-Set `CRON_SECRET` in Vercel and Vercel Cron will send it automatically.
+Full steps, smoke checks and rollback: [docs/PRODUCTION-RUNBOOK.md](docs/PRODUCTION-RUNBOOK.md).
+
+1. Set env vars (`NEXT_PUBLIC_CONTACT_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`; leave match/digest/sample flags off).
+2. **Before deploying**, in the Supabase SQL editor:
+   1. `0004_prefill.sql` (any time)
+   2. `0005_review_default.sql` (any time)
+   3. `0006_claim_states.sql`
+   4. `0007_corrective_notice_marker.sql`
+3. Merge and deploy.
+4. **Right after the deploy**, run `0008_claims_server_writes.sql`. Never run it before the deploy.
+5. **After the read-only snapshot**, run `0009_unpublish_fictional.sql` in a session that starts with `set claimmatch.d38_export_done = 'yes';`.
+6. Set the Vercel rollback floor at this deployment.
 
 ---
 
@@ -127,52 +123,45 @@ Set `CRON_SECRET` in Vercel and Vercel Cron will send it automatically.
 ```
 src/
   app/
-    page.tsx                 landing
-    lawsuits/                browse + [slug] detail
-    claim/[slug]/            guided claim flow
-    dashboard/               my matches + my claims
-    login, signup, onboarding, auth/callback
-    how-it-works, about, privacy, terms
-    api/
-      subscribe, claims, matches
-      cron/scrape, cron/match
-  components/                LawsuitCard, ClaimCard, ClaimForm, AuthForm, ...
+    page.tsx                 home
+    lawsuits/                catalog + [slug] detail
+    claim/[slug]/            claim page (self-file flow + pre-fill packet)
+    dashboard/               the user's claims
+    login, signup, onboarding, settings, auth/callback
+    how-it-works, pricing, trust, about, privacy, terms
+    api/                     route handlers (claims, settings, cron/*, ...)
+  components/                LawsuitCard, ClaimFlow, PrefillPacket, AuthForm, Footer, ...
   lib/
     types.ts                 shared domain types (mirror the SQL schema)
-    matching.ts              eligibility rule engine
-    eligibility.ts           onboarding questionnaire
-    lawsuits.ts              catalog data access (Supabase + sample fallback)
-    scraper/                 pluggable source adapters + orchestrator
+    eligibility.ts           profile questions
+    lawsuits.ts              catalog data access
+    scraper/                 source adapters + ingest pipeline
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/0001_init.sql   schema + RLS + triggers
-  seed.sql                   production-safe stub (no fictional rows)
-  seed.dev.sql               DEV ONLY — fictional sample settlements
-scripts/
-  seed.ts, run-scrape.ts
+  migrations/                0001–0009: schema, RLS, grants, trust reset
+  tests/                     SQL tests run by scripts/db-test.sh
+tests/                       vitest
 ```
 
 ---
 
-## Adding a real scraper source
+## Adding a settlement source
 
 1. Create an adapter in `src/lib/scraper/sources/` that implements `SourceAdapter`
    (`{ slug, name, fetch(): Promise<ScrapedLawsuit[]> }`).
 2. Fetch the source's listing, parse it, and map each item to `ScrapedLawsuit`
    (`src/lib/types.ts`) with a stable `external_id`.
 3. Register it in `src/lib/scraper/sources/index.ts`.
-4. `runAllSources()` handles upserting + dedupe. Test with `npm run scrape`.
+4. Credit the source as its license requires.
 
-> Respect each source's `robots.txt` and Terms of Service, and rate-limit politely.
+> Respect each source's `robots.txt` and terms of service, and rate-limit politely.
 
 ---
 
 ## Legal
 
-ClaimMatch is an information and matching service, **not a law firm**, and does not
-provide legal advice. Using the site does not create an attorney-client relationship.
-ClaimMatch pre-fills claim details; **you** submit on the official administrator site.
-See [`/terms`](src/app/terms/page.tsx), [`/how-we-make-money`](src/app/how-we-make-money/page.tsx),
-and the disclaimer in `src/lib/disclaimer.ts`. Terms and privacy are interim drafts
-pending counsel review.
+ClaimMatch is a free claim assistant, **not a law firm**, and does not give legal
+advice. The Terms and Privacy Policy are interim versions pending legal review.
+See [`/terms`](src/app/terms/page.tsx), [`/privacy`](src/app/privacy/page.tsx) and
+`src/lib/disclaimer.ts`.

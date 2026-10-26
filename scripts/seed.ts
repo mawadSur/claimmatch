@@ -1,13 +1,19 @@
 /* eslint-disable no-console */
 /**
- * Seed the `lawsuits` table.
+ * Seed MADE-UP settlements into a LOCAL or STAGING database. Never production.
  *
- * Uses the raw @supabase/supabase-js client (no cookies in a script context) and
- * the SERVICE ROLE key so it can write past RLS. Combines the static sample
- * catalog with the sample scraper adapter's records and upserts them by slug.
+ * Writes the sample catalog (src/lib/sample-data.ts) and the sample-aggregator
+ * adapter's records, upserted by slug, as published rows so the local site has
+ * something to show. None of these settlements exist. The sample-aggregator
+ * rows are on the fictional denylist, so the app hides them; they are seeded
+ * only to exercise that guard.
  *
- * DEV ONLY. Do not run against production. Uses the in-repo sample catalog.
- * Run: `npm run seed`  (requires NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
+ * Refuses to run unless CLAIMMATCH_ENV is "local" or "staging", and always
+ * refuses when the Supabase URL or service key belongs to production
+ * (src/lib/scraper/env-guard.ts).
+ *
+ * Run: CLAIMMATCH_ENV=local npm run seed
+ *      (also needs NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)
  *
  * NOTE: tsx executes this file directly, so imports use relative paths
  * ('../src/lib/...') rather than the '@/' alias.
@@ -15,10 +21,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { SAMPLE_LAWSUITS } from '../src/lib/sample-data';
 import { slugify } from '../src/lib/utils';
+import { checkScriptTarget } from '../src/lib/scraper/env-guard';
 import { sampleAggregatorAdapter } from '../src/lib/scraper/sources/sample-source';
 import type {
   EligibilityCriteria,
   LawsuitStatus,
+  ReviewStatus,
   ScrapedLawsuit,
 } from '../src/lib/types';
 
@@ -30,6 +38,7 @@ interface LawsuitRow {
   description: string | null;
   category: string;
   status: LawsuitStatus;
+  review_status: ReviewStatus;
   typical_payout: string | null;
   proof_required: boolean;
   deadline: string | null;
@@ -42,6 +51,13 @@ interface LawsuitRow {
 }
 
 async function main(): Promise<void> {
+  const target = checkScriptTarget(process.env);
+  if (!target.ok) {
+    console.error(`\n[seed] Refusing to run: ${target.reason}\n`);
+    process.exit(1);
+    return;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -49,10 +65,12 @@ async function main(): Promise<void> {
     console.error('\n[seed] Missing required environment variables:');
     console.error(`  NEXT_PUBLIC_SUPABASE_URL   = ${url ? 'set' : 'MISSING'}`);
     console.error(`  SUPABASE_SERVICE_ROLE_KEY  = ${serviceKey ? 'set' : 'MISSING'}`);
-    console.error('\nAdd them to .env.local (or your shell) and re-run: npm run seed\n');
+    console.error('\nAdd them to .env.local (or your shell) and re-run: CLAIMMATCH_ENV=local npm run seed\n');
     process.exit(1);
     return;
   }
+
+  console.log(`[seed] Seeding made-up settlements into the ${target.env} database.`);
 
   const supabase = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -66,6 +84,7 @@ async function main(): Promise<void> {
     description: l.description,
     category: l.category,
     status: l.status,
+    review_status: 'published',
     typical_payout: l.typical_payout,
     proof_required: l.proof_required,
     deadline: l.deadline,
@@ -86,6 +105,7 @@ async function main(): Promise<void> {
     description: item.description ?? null,
     category: item.category ?? 'General',
     status: 'open',
+    review_status: 'published',
     typical_payout: item.typical_payout ?? 'Varies',
     proof_required: item.proof_required ?? false,
     deadline: item.deadline ?? null,

@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
-import { SAMPLE_LAWSUITS } from '@/lib/sample-data';
-import type { Lawsuit, Profile } from '@/lib/types';
+import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
+import type { Lawsuit, Match, Profile } from '@/lib/types';
 
 /**
  * POST /api/matches — recompute the current user's matches and upsert them.
  * Returns the number of eligible matches found.
+ *
+ * Only settlements open for claims are considered (isOpenForClaims). There is
+ * no fallback to made-up settlements: if the catalog cannot be read, this
+ * fails with 503 and stores nothing.
  */
 export async function POST() {
   const supabase = await createClient();
@@ -39,31 +43,21 @@ export async function POST() {
       updated_at: new Date().toISOString(),
     } as Profile);
 
-  // Load candidate lawsuits (published only), degrading to sample data.
-  let lawsuits: Lawsuit[] = [];
-  try {
-    const { data } = await supabase.from('lawsuits').select('*').neq('status', 'draft');
-    if (data && data.length > 0) lawsuits = data as Lawsuit[];
-  } catch {
-    // fall through to sample data
+  const catalog = await lookupLawsuits();
+  if (catalog.error) {
+    return NextResponse.json(
+      { error: 'We couldn’t load settlements right now. Please try again in a few minutes.' },
+      { status: 503 },
+    );
   }
-  if (lawsuits.length === 0) lawsuits = SAMPLE_LAWSUITS;
 
-  const results = matchProfile(profile, lawsuits);
-
-  // Only persist matches for real DB lawsuits: sample-data ids ("sample-*") are
-  // not UUIDs and would fail the uuid FK cast. In sample-only mode there is no
-  // durable catalog to reference, so we compute-only.
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const rows = results
-    .filter((r) => UUID_RE.test(r.lawsuit_id))
-    .map((r) => ({
-      user_id: user.id,
-      lawsuit_id: r.lawsuit_id,
-      score: r.score,
-      reasons: r.reasons,
-    }));
+  const results = matchProfile(profile, catalog.lawsuits);
+  const rows = results.map((r) => ({
+    user_id: user.id,
+    lawsuit_id: r.lawsuit_id,
+    score: r.score,
+    reasons: r.reasons,
+  }));
 
   let persisted = 0;
   if (rows.length > 0) {
@@ -71,7 +65,7 @@ export async function POST() {
       .from('matches')
       .upsert(rows, { onConflict: 'user_id,lawsuit_id' });
     if (error) {
-      console.error('[matches] upsert failed:', error);
+      console.error('[matches] upsert failed:', error.message);
     } else {
       persisted = rows.length;
     }
@@ -80,7 +74,11 @@ export async function POST() {
   return NextResponse.json({ count: results.length, persisted });
 }
 
-/** GET /api/matches — the current user's active matches, best score first. */
+/**
+ * GET /api/matches — the current user's active matches on settlements that
+ * are still open for claims, best first. Matches on closed, unpublished or
+ * fictional settlements are left out.
+ */
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -98,9 +96,13 @@ export async function GET() {
     .order('score', { ascending: false });
 
   if (error) {
-    console.error('[matches] list failed:', error);
+    console.error('[matches] list failed:', error.message);
     return NextResponse.json({ matches: [] });
   }
 
-  return NextResponse.json({ matches: data ?? [] });
+  const now = new Date();
+  const matches = ((data ?? []) as (Match & { lawsuit?: Lawsuit | null })[]).filter(
+    (m) => !!m.lawsuit && isOpenForClaims(m.lawsuit, now),
+  );
+  return NextResponse.json({ matches });
 }

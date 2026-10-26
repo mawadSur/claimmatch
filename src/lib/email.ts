@@ -3,6 +3,7 @@
 // configured. Only server code should import this (it reads server env vars).
 import { SITE, formatDeadline, POSTAL_ADDRESS, isPlaceholderValue } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { unsubscribePageUrl } from '@/lib/unsubscribe';
 
 const BRAND = '#7526d1';
 const FROM = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
@@ -48,13 +49,11 @@ function lawsuitUrl(slug: string): string {
 }
 
 /**
- * One-click unsubscribe link for email footers. The recipient's email is
- * base64url-encoded into the `e` param; /api/unsubscribe decodes it and clears
- * their email opt-in. Keep in sync with the decoder in @/app/api/unsubscribe.
+ * Unsubscribe link for email footers. It opens a confirm page; nothing changes
+ * until the reader presses the button. Token format: see @/lib/unsubscribe.
  */
 export function unsubscribeUrl(email: string): string {
-  const token = Buffer.from(email).toString('base64url');
-  return `${SITE.url.replace(/\/$/, '')}/unsubscribe?e=${encodeURIComponent(token)}`;
+  return unsubscribePageUrl(email);
 }
 
 /** Footer legal + unsubscribe block shared by all transactional emails. */

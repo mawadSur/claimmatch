@@ -2,16 +2,17 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
-/** Retired. ClaimMatch no longer marks claims submitted in bulk. */
+const GONE = {
+  error:
+    'This feature was removed. ClaimMatch does not file claims for you. Open each settlement, file on its official site, then tell us you filed.',
+  code: 'gone',
+};
+
+/** Retired. File-all marked claims as filed although nothing was filed. */
 export async function POST() {
-  return NextResponse.json(
-    {
-      error: 'This action is no longer available. Prepare a claim packet for each settlement, then submit on the official site.',
-    },
-    { status: 410 },
-  );
+  return NextResponse.json(GONE, { status: 410, headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function GET() {
-  return NextResponse.json({ error: 'Gone.' }, { status: 410 });
+  return NextResponse.json(GONE, { status: 410, headers: { 'Cache-Control': 'no-store' } });
 }

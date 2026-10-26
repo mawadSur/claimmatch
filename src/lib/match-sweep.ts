@@ -1,9 +1,10 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
+import { filterOpenForClaims } from '@/lib/lawsuits';
+import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import { todayInLatestUSZone } from '@/lib/utils';
 import type { Lawsuit, Profile } from '@/lib/types';
-import { todayISO } from './utils';
-import { isFictionalSlug } from './fictional-slugs';
 
 export interface MatchSweepResult {
   users: number;
@@ -16,6 +17,12 @@ export interface MatchSweepResult {
  * Recompute matches for every opted-in, onboarded user and email them about
  * brand-new matches (notified_at IS NULL), marking those as notified.
  *
+ * Only settlements open for claims count (isOpenForClaims: published, not
+ * fictional, open status, deadline not passed). This runs with the
+ * service-role client, which bypasses RLS, so the review gate is applied here
+ * explicitly. D50: the caller keeps this switched off until the Phase 1
+ * engine ships; it must still be correct if it runs.
+ *
  * Extracted from /api/cron/match to be reusable by the consolidated daily cron.
  */
 export async function runMatchSweep(): Promise<MatchSweepResult> {
@@ -25,18 +32,20 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
 
   const supabase = createServiceClient();
 
-  // Candidate lawsuits (published only). Build a lookup for email content.
-  const today = todayISO();
-  const { data: lawsuitData } = await supabase
+  // Candidate lawsuits: open for claims only. Build a lookup for email content.
+  const now = new Date();
+  const { data: lawsuitData, error: lawsuitErr } = await supabase
     .from('lawsuits')
     .select('*')
     .eq('review_status', 'published')
-    .neq('status', 'closed')
-    .neq('status', 'draft')
-    .or(`deadline.is.null,deadline.gte.${today}`);
-  const lawsuits = ((lawsuitData ?? []) as Lawsuit[]).filter(
-    (l) => !isFictionalSlug(l.slug),
-  );
+    .in('status', ['open', 'closing_soon'])
+    .or(`deadline.is.null,deadline.gte.${todayInLatestUSZone(now)}`)
+    .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
+  if (lawsuitErr) {
+    // Fail loudly so the cron reports an error instead of a quiet "0 sent".
+    throw new Error(`[match-sweep] loading settlements failed: ${lawsuitErr.message}`);
+  }
+  const lawsuits = filterOpenForClaims((lawsuitData ?? []) as Lawsuit[], now);
 
   if (lawsuits.length === 0) {
     return { users: 0, newMatches: 0, emailed: 0 };
@@ -86,7 +95,11 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
       .eq('dismissed', false)
       .is('notified_at', null);
 
-    const pendingRows = (pending ?? []) as { id: string; lawsuit_id: string }[];
+    // Only matches on settlements that are open for claims right now. Others
+    // stay un-notified, so nothing is marked sent that was never emailed.
+    const pendingRows = ((pending ?? []) as { id: string; lawsuit_id: string }[]).filter(
+      (row) => lawsuitById.has(row.lawsuit_id),
+    );
     if (pendingRows.length === 0) continue;
     newMatches += pendingRows.length;
 
@@ -94,7 +107,7 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     if (!to) continue;
 
     const items: MatchEmailItem[] = pendingRows
-      .map((row) => lawsuitById.get(row.lawsuit_id as string))
+      .map((row) => lawsuitById.get(row.lawsuit_id))
       .filter((l): l is Lawsuit => !!l)
       .map((l) => ({
         title: l.title,

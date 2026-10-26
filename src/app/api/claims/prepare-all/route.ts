@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { estimateLawsuitValue } from '@/lib/recovery';
+import { isFictionalSlug } from '@/lib/fictional-slugs';
+import { isOpenForClaims } from '@/lib/open-for-claims';
+import { claimContext, serviceRoleConfigured, startTrackingClaim } from '@/lib/claims-server';
 import type { Lawsuit } from '@/lib/types';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /**
- * POST /api/claims/prepare-all — create processing packets for every match
- * the user does not already have a claim for. Never marks anything submitted.
+ * POST /api/claims/prepare-all — start tracking every match the user does not
+ * already have a claim for. Uses the 0006 server function (never a browser
+ * insert). Never marks anything submitted. Matching is paused in production,
+ * so this is a no-op until verified records ship.
  */
 export async function POST() {
   const supabase = await createClient();
@@ -15,17 +20,19 @@ export async function POST() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+    return NextResponse.json({ error: 'Please log in again.' }, { status: 401 });
+  }
+  if (!serviceRoleConfigured()) {
+    return NextResponse.json({ error: 'Claim writes are unavailable.' }, { status: 503 });
   }
 
-  const [{ data: matchesData }, { data: claimsData }, { data: profile }] = await Promise.all([
+  const [{ data: matchesData }, { data: claimsData }] = await Promise.all([
     supabase
       .from('matches')
       .select('lawsuit_id, lawsuit:lawsuits(*)')
       .eq('user_id', user.id)
       .eq('dismissed', false),
     supabase.from('claims').select('lawsuit_id').eq('user_id', user.id),
-    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
   ]);
 
   const claimed = new Set(
@@ -39,42 +46,26 @@ export async function POST() {
     lawsuit: Array.isArray(m.lawsuit) ? (m.lawsuit[0] ?? null) : (m.lawsuit ?? null),
   }));
 
-  const form_data = {
-    full_name: profile?.full_name ?? '',
-    email: profile?.email ?? '',
-    phone: profile?.phone ?? '',
-    address_line1: profile?.address_line1 ?? '',
-    address_line2: profile?.address_line2 ?? '',
-    city: profile?.city ?? '',
-    state: profile?.state ?? '',
-    zip: profile?.zip ?? '',
-  };
-
   const created: { slug: string; id: string }[] = [];
   for (const match of matches) {
     const lawsuit = match.lawsuit;
     if (!lawsuit || claimed.has(match.lawsuit_id)) continue;
     if (!/^[0-9a-f-]{36}$/i.test(lawsuit.id)) continue;
+    if (isFictionalSlug(lawsuit.slug)) continue;
+    if (lawsuit.review_status !== 'published') continue;
+    if (!isOpenForClaims(lawsuit)) continue;
+    const context = claimContext(lawsuit);
+    if (!context.published || context.fictional || !context.openForClaims) continue;
 
-    const { data, error } = await supabase
-      .from('claims')
-      .insert({
-        user_id: user.id,
-        lawsuit_id: lawsuit.id,
-        lawsuit_title: lawsuit.title,
-        status: 'processing',
-        form_data,
-        estimated_value: estimateLawsuitValue(lawsuit),
-      })
-      .select('id')
-      .single();
-    if (error) {
-      if (error.code !== '23505') {
-        console.error('[claims/prepare-all] insert failed:', error);
-      }
-      continue;
+    const result = await startTrackingClaim({
+      userId: user.id,
+      lawsuitId: lawsuit.id,
+      lawsuitTitle: lawsuit.title,
+      detail: { action: 'prepare_all' },
+    });
+    if (result.ok && result.created) {
+      created.push({ slug: lawsuit.slug, id: result.claim.id });
     }
-    if (data) created.push({ slug: lawsuit.slug, id: data.id });
   }
 
   return NextResponse.json({ prepared: created.length, packets: created });

@@ -23,7 +23,7 @@ export function HowWeMakeMoney({
       <ul className="mt-6 space-y-3 text-sm leading-relaxed text-ink-muted">
         {[
           'Filing a settlement claim is always free on the official administrator’s site. You never need ClaimMatch to file.',
-          'ClaimMatch finds settlements, checks them against your profile, and pre-fills your claim details so you can submit faster. You review and submit every claim yourself.',
+          'ClaimMatch finds settlements and pre-fills your claim details so you can copy them into the official form. You review and file every claim yourself. ClaimMatch never files and never takes a cut.',
         ].map((t) => (
           <li key={t} className="flex items-start gap-2">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />

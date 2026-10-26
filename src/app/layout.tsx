@@ -3,10 +3,13 @@ import { Bricolage_Grotesque, Lato } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { SITE, canonicalUrl } from '@/lib/utils';
+import { jsonLd } from '@/lib/jsonld';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
+// Distinctive display face for headings, paired with a clean, readable body
+// sans — deliberately not the generic Inter default.
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
   variable: '--font-display',
@@ -68,7 +71,7 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(orgJsonLd) }}
         />
         <PostHogProvider>
           <Nav />

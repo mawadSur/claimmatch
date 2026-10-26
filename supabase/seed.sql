@@ -1,9 +1,12 @@
--- ClaimMatch production seed
+-- ClaimMatch — seed for `supabase db reset`.
 --
--- DEV ONLY data lives in supabase/seed.dev.sql (fictional settlements).
--- Do not run seed.dev.sql against production. This file is intentionally
--- empty of catalog rows so a default `supabase db reset` cannot republish
--- sample cases.
+-- Intentionally empty. The catalog comes only from the ingest
+-- (src/lib/scraper/pipeline.ts), and every new record waits for human review
+-- before it is published, so a reset never puts made-up settlements in front
+-- of anyone.
 --
--- To load fictional rows in a local/dev database:
---   psql "$DATABASE_URL" -f supabase/seed.dev.sql
+-- Made-up data for a LOCAL or STAGING database lives elsewhere:
+--   supabase/seed.dev.sql       the 16 fictional rows production once showed
+--                               (hidden by the app; for testing the denylist)
+--   CLAIMMATCH_ENV=local npm run seed
+--                               sample settlements the local site displays
