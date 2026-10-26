@@ -1,0 +1,199 @@
+import { describe, expect, it } from 'vitest';
+import {
+  buildClosingSoon,
+  buildDashboard,
+  type DashboardSettlement,
+} from '@/components/claims/dashboard-model';
+import type { ClaimView } from '@/lib/claims';
+
+const NOW = new Date('2026-10-16T18:00:00Z');
+const isFictional = (slug: string) => slug.startsWith('fake-');
+let n = 0;
+const uuid = () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`;
+
+function settlement(overrides: Partial<DashboardSettlement> = {}): DashboardSettlement {
+  return {
+    id: uuid(),
+    slug: 'real-one',
+    title: 'Real settlement',
+    status: 'open',
+    review_status: 'published',
+    deadline: '2026-11-30',
+    claim_url: 'https://www.realsettlement-admin.com/file',
+    ...overrides,
+  };
+}
+function claim(overrides: Partial<ClaimView> = {}): ClaimView {
+  return {
+    id: uuid(),
+    lawsuit_id: 'l',
+    lawsuit_title: 'Stored title',
+    status: 'self_file',
+    confirmation_number: null,
+    reported_filed_at: null,
+    user_filed_on: null,
+    corrective_notice_answered_at: null,
+    corrective_notice_required: false,
+    created_at: null,
+    ...overrides,
+  };
+}
+function row(c: ClaimView, s: DashboardSettlement | null) {
+  return buildDashboard([{ claim: c, settlement: s }], NOW, isFictional);
+}
+
+describe('buildDashboard', () => {
+  it('shows a legacy "submitted" claim as Not filed with the corrective notice', () => {
+    const s = settlement();
+    const { rows, notices } = row(claim({ status: 'submitted' }), s);
+    expect(rows[0]).toMatchObject({
+      label: 'Not filed',
+      group: 'needs_filing',
+      action: { label: 'Tell us', href: '/claim/real-one' },
+      deadlineText: 'Deadline Nov 30, 2026 · 45 days left',
+    });
+    expect(notices).toEqual([
+      expect.objectContaining({
+        kind: 'legacy',
+        deadline: '2026-11-30',
+        deadlinePassed: false,
+        officialUrl: 'https://www.realsettlement-admin.com/file',
+      }),
+    ]);
+  });
+
+  it('keeps the corrective notice after the D38 correction moves the claim to self_file', () => {
+    const s = settlement();
+    const corrected = claim({ status: 'self_file', corrective_notice_required: true });
+    const { rows, notices } = row(corrected, s);
+    expect(notices).toEqual([expect.objectContaining({ claimId: corrected.id, kind: 'legacy' })]);
+    expect(rows[0]).toMatchObject({
+      label: 'Not filed yet',
+      nextStep: 'ClaimMatch did not file this. File on the official site, or tell us if you already did.',
+      action: { label: 'Tell us', href: '/claim/real-one' },
+    });
+    const late = row(corrected, settlement({ deadline: '2026-08-01' }));
+    expect(late.notices).toHaveLength(1);
+    expect(late.rows[0]).toMatchObject({ label: 'Not reported filed', action: { label: 'Tell us' } });
+    // Answered: no notice, and no "tell us by" limit on a claim the old flow showed as filed.
+    const answered = row(
+      claim({ status: 'self_file', corrective_notice_required: true, corrective_notice_answered_at: '2026-10-01T00:00:00Z' }),
+      settlement({ deadline: '2026-08-01' }),
+    );
+    expect(answered.notices).toEqual([]);
+    expect(answered.rows[0]).toMatchObject({ nextStep: 'Filed before the deadline? Tell us.', action: { label: 'Tell us' } });
+  });
+
+  it('never says "you still can file" on a settlement our list marks closed or no longer lists (D41)', () => {
+    const closed = row(claim({ status: 'submitted' }), settlement({ status: 'closed', deadline: null }));
+    expect(closed.notices[0]).toMatchObject({ kind: 'legacy', deadlinePassed: false, filing: 'closed_on_list' });
+    expect(closed.rows[0].nextStep).toBe(
+      "ClaimMatch did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.",
+    );
+    const unlisted = row(claim({ status: 'processing' }), settlement({ review_status: 'pending_review' }));
+    expect(unlisted.notices[0]).toMatchObject({ filing: 'unlisted' });
+    expect(unlisted.rows[0].nextStep).toMatch(/re-checking this settlement/);
+    const corrected = row(claim({ status: 'self_file', corrective_notice_required: true }), settlement({ status: 'closed' }));
+    expect(corrected.notices[0]).toMatchObject({ filing: 'closed_on_list' });
+    expect(corrected.rows[0].nextStep).not.toMatch(/File on the official site/);
+    expect(row(claim({ status: 'submitted' }), settlement()).notices[0]).toMatchObject({ filing: 'open' });
+    expect(row(claim({ status: 'submitted' }), settlement({ status: 'closed', deadline: '2026-10-01' })).notices[0]).toMatchObject({
+      filing: 'deadline_passed',
+    });
+  });
+
+  it('says a fictional settlement was not real and needs nothing', () => {
+    const { rows, notices } = row(claim({ status: 'submitted' }), settlement({ slug: 'fake-olive-oil', review_status: 'rejected' }));
+    expect(rows[0]).toMatchObject({
+      label: 'Not a real settlement',
+      group: 'closed',
+      action: null,
+      nextStep: 'This settlement was not real. There is nothing to do.',
+    });
+    expect(notices[0]).toMatchObject({ kind: 'fictional' });
+  });
+
+  it('gives each state a clear next step', () => {
+    expect(row(claim(), settlement()).rows[0]).toMatchObject({
+      label: 'Not filed yet',
+      group: 'needs_filing',
+      action: { label: 'How to file' },
+      // Saving a settlement is not a decision that you qualify.
+      nextStep: 'If you qualify, file on the official site before the deadline, then tell us.',
+    });
+    expect(row(claim(), settlement({ deadline: null })).rows[0].nextStep).toBe(
+      'If you qualify, file on the official site, then tell us.',
+    );
+    expect(row(claim({ status: 'reported_filed' }), settlement()).rows[0]).toMatchObject({
+      group: 'reported',
+      action: { label: 'Add number' },
+    });
+    expect(row(claim({ status: 'submitted', confirmation_number: 'AB-1' }), settlement()).rows[0]).toMatchObject({
+      label: 'Submitted · #AB-1',
+      group: 'submitted',
+      action: { label: 'View' },
+    });
+    const late = row(claim(), settlement({ deadline: '2026-10-06' })).rows[0];
+    expect(late).toMatchObject({ label: 'Not reported filed', group: 'closed', action: { label: 'Tell us' } });
+    expect(late.nextStep).toBe('Filed before the deadline? Tell us by Nov 5, 2026.');
+    const tooLate = row(claim(), settlement({ deadline: '2026-08-01' })).rows[0];
+    expect(tooLate).toMatchObject({ group: 'closed', action: null, deadlineText: 'Deadline was Aug 1, 2026' });
+  });
+
+  it('keeps a claim readable when its settlement row could not be read, without guessing', () => {
+    const { rows } = row(claim({ status: 'reported_filed' }), null);
+    expect(rows[0]).toMatchObject({ title: 'Stored title', action: null, deadlineText: 'Details unavailable' });
+    // A legacy claim might be on a fictional settlement: no notice, no "file on the official site".
+    const legacy = row(claim({ status: 'submitted' }), null);
+    expect(legacy.notices).toEqual([]);
+    expect(legacy.rows[0].nextStep).toBe("We couldn't load this settlement's details. Refresh the page in a minute.");
+    expect(legacy.rows[0].action).toBeNull();
+  });
+
+  it('never shows money, percentages or "Matched"', () => {
+    const statuses = ['self_file', 'reported_filed', 'submitted', 'processing', 'paid', 'withdrawn', 'mystery'];
+    for (const status of statuses) {
+      for (const s of [settlement(), settlement({ deadline: '2026-01-01' }), settlement({ slug: 'fake-x' }), null]) {
+        const { rows } = row(claim({ status, confirmation_number: status === 'submitted' ? 'Z-9' : null }), s);
+        const text = JSON.stringify(rows);
+        expect(text).not.toMatch(/\$|%|matched|owed|receipt|expired/i);
+      }
+    }
+  });
+});
+
+describe('notice order', () => {
+  it('lists claims people can still file first, soonest deadline first, and fictional ones last', () => {
+    const inputs = [
+      { claim: claim({ status: 'submitted', lawsuit_title: 'fictional' }), settlement: settlement({ slug: 'fake-a', title: 'fictional' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'passed', deadline: '2026-09-01' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'later', deadline: '2026-12-20' }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'no deadline', deadline: null }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'closed on list', status: 'closed', deadline: null }) },
+      { claim: claim({ status: 'submitted' }), settlement: settlement({ title: 'soon', deadline: '2026-10-25' }) },
+    ];
+    const { notices } = buildDashboard(inputs, NOW, isFictional);
+    expect(notices.map((n) => n.title)).toEqual(['soon', 'later', 'no deadline', 'closed on list', 'passed', 'fictional']);
+  });
+});
+
+describe('buildClosingSoon', () => {
+  it('lists only open, real, untracked settlements by nearest deadline', () => {
+    const tracked = settlement({ slug: 'tracked', deadline: '2026-10-20' });
+    const list = [
+      settlement({ slug: 'later', deadline: '2026-12-31' }),
+      settlement({ slug: 'soon', deadline: '2026-10-25' }),
+      settlement({ slug: 'closed', status: 'closed', deadline: '2026-10-21' }),
+      settlement({ slug: 'past', deadline: '2026-10-10' }),
+      settlement({ slug: 'draft-review', review_status: 'pending_review', deadline: '2026-10-22' }),
+      settlement({ slug: 'fake-olive-oil', deadline: '2026-10-23' }),
+      settlement({ slug: 'no-deadline', deadline: null }),
+      { ...settlement({ slug: 'code-sample', deadline: '2026-10-24' }), id: 'sample-databreach' },
+      tracked,
+    ];
+    const items = buildClosingSoon(list, new Set([tracked.id]), NOW, isFictional);
+    expect(items.map((i) => i.slug)).toEqual(['soon', 'later']);
+    expect(items[0]).toMatchObject({ deadlineText: 'Deadline Oct 25, 2026 · 9 days left' });
+    expect(buildClosingSoon(list, new Set(), NOW, isFictional, 1).map((i) => i.slug)).toEqual(['tracked']);
+  });
+});

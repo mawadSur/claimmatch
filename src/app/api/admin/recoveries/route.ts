@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminUser } from '@/lib/admin';
+import { flags } from '@/lib/flags';
 import { createServiceClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -24,17 +25,23 @@ const BodySchema = z
   });
 
 /**
- * PATCH /api/admin/recoveries — admin-only recovery lifecycle actions.
+ * PATCH /api/admin/recoveries — admin-only actions on the legacy ledger.
  *   record    → set gross_amount, move to 'awaiting_payout', stamp received_at
  *   mark_paid → mark 'paid', stamp paid_out_at
  *   deny      → mark 'denied'
  *
+ * Turned off (404) unless ADMIN_RECOVERIES_ENABLED=1 (flags.adminRecoveries,
+ * read on the server). ClaimMatch never handles settlement money; these rows
+ * come from the retired e-sign flow and are kept for the follow-up in the
+ * private plan (D38).
+ *
  * fee_amount and net_amount are GENERATED columns in the DB — we never write
- * them; recording the gross recomputes them, and returning '*' echoes the fresh
- * values back for an optimistic UI update. Writes use the service client
- * (bypasses RLS) but are gated behind an admin check first.
+ * them. Writes use the service client (bypasses RLS) after an admin check.
  */
 export async function PATCH(req: Request) {
+  if (!flags.adminRecoveries()) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
   const admin = await getAdminUser();
   if (!admin) {
     return NextResponse.json({ error: 'Not authorized.' }, { status: 401 });

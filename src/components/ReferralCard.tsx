@@ -23,11 +23,11 @@ export function ReferralCard({ code }: { code: string | null }) {
     <div className="rounded-2xl border border-brand-100 bg-brand-50 p-6">
       <div className="flex items-center gap-2 text-brand-700">
         <Gift className="h-5 w-5" />
-        <h2 className="text-lg font-bold">Invite friends, spread the payouts</h2>
+        <h2 className="text-lg font-bold">Share ClaimMatch</h2>
       </div>
       <p className="mt-1 text-sm text-ink-muted">
-        Most people are owed money from the same settlements — the big data breaches hit
-        tens of millions of us. Share your link and help someone claim what they’re owed.
+        Know someone who might qualify for a settlement? Send them your link. ClaimMatch
+        is free for them too, and they file on the official site themselves.
       </p>
 
       {link ? (
@@ -48,8 +48,8 @@ export function ReferralCard({ code }: { code: string | null }) {
           </button>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-ink-soft">
-          Your referral link will appear here once your profile finishes setting up.
+        <p className="mt-4 text-sm text-ink-muted">
+          Your link will appear here once your account finishes setting up.
         </p>
       )}
     </div>

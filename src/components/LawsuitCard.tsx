@@ -1,14 +1,22 @@
 import Link from 'next/link';
-import { ArrowRight, Clock, ShieldCheck, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
-import { formatDeadline, daysUntil } from '@/lib/utils';
+import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
+import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
+import { proofLabel } from '@/lib/proof';
 
 /**
- * The settlement card — the signature UI element carried over from the original
- * site (brand purple top border, payout / proof / deadline stats, CTA).
+ * The settlement card (server component; brand top border from the original
+ * site). It shows the payout as the source states it, the proof rule and the
+ * deadline, the D50 "Unverified: check the official site" label with the
+ * official link, and "Start your claim" while the settlement is open for
+ * claims. A settlement that is not open shows "Claims closed" and no call to
+ * action.
  *
- * `badge` overrides the default status badge, e.g. "AI Matched" for featured
- * cards or a claim status on the dashboard.
+ * `badge` replaces the category label, e.g. a claim status on the dashboard.
+ * Labels with a percentage or "Matched" are dropped: ClaimMatch shows no match
+ * scores (D50). `href` changes where the title links (default: the settlement
+ * page).
  */
 export function LawsuitCard({
   lawsuit,
@@ -21,11 +29,15 @@ export function LawsuitCard({
   reasons?: string[];
   href?: string;
 }) {
-  const link = href ?? `/lawsuits/${lawsuit.slug}`;
-  const days = daysUntil(lawsuit.deadline);
-  const closingSoon = days !== null && days >= 0 && days <= 30;
+  const open = isOpenForClaims(lawsuit);
+  const urgency = open ? deadlineUrgencyLabel(lawsuit.deadline) : null;
+  const detailsHref = `/lawsuits/${lawsuit.slug}`;
+  const titleHref = href ?? detailsHref;
+  const official = officialLinkFor(lawsuit);
+  const summary = displaySummary(lawsuit);
+  const shownBadge = badge && isAllowedBadge(badge.label) ? badge : undefined;
 
-  const tone = badge?.tone ?? 'brand';
+  const tone = shownBadge?.tone ?? 'brand';
   const badgeClass =
     tone === 'green' ? 'badge-green'
     : tone === 'red' ? 'badge-red'
@@ -33,71 +45,105 @@ export function LawsuitCard({
     : 'badge-brand';
 
   return (
-    <article className="settlement-card group">
+    <article className="settlement-card group h-full">
       <div className="flex items-start justify-between gap-3">
-        <span className={badgeClass}>{badge?.label ?? lawsuit.category}</span>
-        {closingSoon && (
-          <span className="badge-red gap-1">
-            <Clock className="h-3 w-3" /> {days}d left
+        <span className={badgeClass}>{shownBadge?.label ?? lawsuit.category}</span>
+        {urgency && (
+          <span className="badge-red shrink-0 gap-1">
+            <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
           </span>
         )}
       </div>
 
       <h3 className="mt-3 text-lg font-bold leading-snug">
-        <Link href={link} className="hover:text-brand-700">
+        <Link
+          href={titleHref}
+          className="rounded hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+        >
           {lawsuit.title}
         </Link>
       </h3>
 
-      {lawsuit.summary && (
-        <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{lawsuit.summary}</p>
-      )}
+      {summary && <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{summary}</p>}
 
       {reasons && reasons.length > 0 && (
         <ul className="mt-3 space-y-1">
           {reasons.slice(0, 3).map((r, i) => (
             <li key={i} className="flex items-start gap-1.5 text-xs text-success-700">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {r}
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {r}
             </li>
           ))}
         </ul>
       )}
 
-      <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-center">
-        <Stat icon={<Wallet className="h-3.5 w-3.5" />} label="Typical" value={lawsuit.typical_payout || 'Varies'} accent />
-        <Stat icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Proof" value={lawsuit.proof_required ? 'Required' : 'None'} />
-        <Stat icon={<Clock className="h-3.5 w-3.5" />} label="Deadline" value={formatDeadline(lawsuit.deadline)} />
-      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-gray-50 p-3">
+        <Stat
+          label="Deadline"
+          value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed'}
+        />
+        <Stat label="Proof" value={proofLabel(lawsuit)} />
+        <div className="col-span-2">
+          <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+            Payout, as listed
+          </dt>
+          <dd className="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">
+            {lawsuit.typical_payout?.trim() || 'Not stated'}
+          </dd>
+        </div>
+      </dl>
 
-      <Link
-        href={link}
-        className="btn-secondary mt-4 w-full justify-center group-hover:bg-brand-600 group-hover:text-white group-hover:ring-brand-600"
-      >
-        View settlement <ArrowRight className="h-4 w-4" />
-      </Link>
+      <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-800">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+        <span>
+          <span className="font-semibold">Unverified: check the official site.</span>{' '}
+          {official ? (
+            <a
+              href={official.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 rounded font-semibold underline underline-offset-2 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            >
+              {official.label}
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only"> for {lawsuit.title} (opens in a new tab)</span>
+            </a>
+          ) : (
+            'We don’t have its link yet.'
+          )}
+        </span>
+      </p>
+
+      <div className="mt-auto pt-4">
+        {open ? (
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/claim/${lawsuit.slug}`} className="btn-primary grow basis-40 px-3">
+              Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only"> for {lawsuit.title}</span>
+            </Link>
+            <Link href={detailsHref} className="btn-secondary grow basis-20 px-3">
+              Details<span className="sr-only"> about {lawsuit.title}</span>
+            </Link>
+          </div>
+        ) : (
+          <p className="rounded-xl bg-gray-100 px-3 py-2.5 text-center text-sm font-semibold text-gray-700">
+            Claims closed
+          </p>
+        )}
+      </div>
     </article>
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
+/** No match scores or "Matched" labels on cards (D50; no percentage scores anywhere). */
+function isAllowedBadge(label: string): boolean {
+  return !label.includes('%') && !/\bmatched\b/i.test(label);
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wide text-ink-soft">
-        {icon} {label}
-      </div>
-      <div className={`mt-0.5 truncate text-sm font-bold ${accent ? 'text-success-600' : 'text-ink'}`}>
-        {value}
-      </div>
+      <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">{label}</dt>
+      <dd className="mt-0.5 text-sm font-semibold text-ink">{value}</dd>
     </div>
   );
 }

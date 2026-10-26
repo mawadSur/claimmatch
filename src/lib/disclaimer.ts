@@ -1,8 +1,9 @@
 /**
- * Legal disclaimer carried over verbatim (lightly adapted) from the original
- * site. Shown on claim confirmation and in the site footer. ClaimMatch is an
- * information/matching service, not a law firm.
+ * Legal disclaimers. LEGAL_DISCLAIMER is shown on the legal pages and in the
+ * <Disclaimer> box; SHORT_DISCLAIMER is shown in the site footer and emails.
+ * ClaimMatch is a free claim assistant, not a law firm: it never files claims
+ * for anyone and never handles settlement money.
  */
-export const LEGAL_DISCLAIMER = `The information provided on this website is for general informational purposes only and does not constitute legal advice. While we strive to ensure that the content is accurate and up-to-date, we make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, suitability, or availability of the information contained on the website for any purpose. Using this website or communicating with us through it does not create an attorney-client relationship. You should not act or refrain from acting based on the information provided here without seeking professional legal advice from a licensed attorney in your jurisdiction. Any rewards, settlements, or compensation obtained may be subject to applicable fees, including attorney's fees and court costs. Links to third-party websites are provided for convenience only and do not imply endorsement. Past results do not guarantee future outcomes, and each legal matter is unique.`;
+export const LEGAL_DISCLAIMER = `ClaimMatch is a free claim assistant, not a law firm. The information on this website is general information, not legal advice. Using this website or contacting us does not create an attorney-client relationship. ClaimMatch does not file, submit or sign claims for anyone, and it never receives or handles settlement payments. Settlement listings come from third-party sources and may be incomplete or out of date. The official settlement notice and website are the final word on deadlines, who qualifies and payments, so check them before you act. We make no promise that the information here is complete, accurate or current, or that you will receive any payment. Settlement payments may be reduced by fees and costs the court approves, such as attorneys' fees. Links to other websites are provided for convenience and do not mean we endorse them.`;
 
-export const SHORT_DISCLAIMER = `ClaimMatch is an information and matching service, not a law firm, and does not provide legal advice. Using this site does not create an attorney-client relationship.`;
+export const SHORT_DISCLAIMER = `ClaimMatch is a free claim assistant, not a law firm, and does not give legal advice. Using this site does not create an attorney-client relationship. You file every claim yourself on the official settlement website.`;

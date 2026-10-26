@@ -27,16 +27,120 @@ export function formatDeadline(iso: string | null | undefined): string {
 /**
  * Whole days until a deadline; negative if passed, null if no deadline.
  * Compared as UTC calendar days so "days left" doesn't drift by one with the
- * viewer's timezone.
+ * viewer's timezone. For "is this still open?" use isDeadlinePassed instead:
+ * UTC days flip to "passed" while the deadline day is still running in the US.
  */
-export function daysUntil(iso: string | null | undefined): number | null {
+export function daysUntil(
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): number | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
   const deadlineUTC = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
   const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return Math.round((deadlineUTC - todayUTC) / (1000 * 60 * 60 * 24));
+}
+
+// ---------------------------------------------------------------------------
+// Claim deadlines
+//
+// Records store the deadline as a bare date with no time zone. Until each
+// record carries its administrator's time zone (Phase 1), a deadline day counts
+// as open through 23:59:59 in the latest US time zone, so a settlement is never
+// hidden while it may still be open somewhere in the US. Pages tell people to
+// check the official site for the exact cutoff.
+// ---------------------------------------------------------------------------
+
+/** The latest US time zone. Hawaii has no daylight saving time, so UTC-10 all year. */
+export const LATEST_US_TIME_ZONE = 'Pacific/Honolulu';
+const LATEST_US_UTC_OFFSET_HOURS = -10;
+const HOUR_MS = 60 * 60 * 1000;
+const LEADING_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/**
+ * The calendar date a deadline value names, as [year, month (1-12), day], or
+ * null when it has none. Only the leading YYYY-MM-DD counts: any time part is
+ * ignored because records do not say which time zone it is in.
+ */
+function deadlineDate(deadline: string): [number, number, number] | null {
+  const m = LEADING_DATE.exec(deadline.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const check = new Date(Date.UTC(y, mo - 1, d));
+  if (
+    check.getUTCFullYear() !== y ||
+    check.getUTCMonth() !== mo - 1 ||
+    check.getUTCDate() !== d
+  ) {
+    return null; // e.g. 2026-02-30
+  }
+  return [y, mo, d];
+}
+
+/**
+ * The first instant at which a deadline has passed: the day after the deadline
+ * at 00:00 in Pacific/Honolulu (10:00 UTC). Null when there is no usable date.
+ * Example: a 2026-10-15 deadline passes at 2026-10-16T10:00:00Z.
+ */
+export function deadlineCutoff(deadline: string | null | undefined): Date | null {
+  if (!deadline) return null;
+  const parts = deadlineDate(deadline);
+  if (!parts) return null;
+  const [y, mo, d] = parts;
+  return new Date(Date.UTC(y, mo - 1, d + 1, -LATEST_US_UTC_OFFSET_HOURS));
+}
+
+/**
+ * True once the deadline day has ended everywhere in the US. A missing or
+ * unreadable deadline never counts as passed.
+ */
+export function isDeadlinePassed(
+  deadline: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  const cutoff = deadlineCutoff(deadline);
+  return cutoff !== null && now.getTime() >= cutoff.getTime();
+}
+
+/**
+ * Today's date (YYYY-MM-DD) in Pacific/Honolulu. A deadline is still open
+ * exactly when `deadline >= todayInLatestUSZone()`, which is how database
+ * queries apply the same rule as isDeadlinePassed.
+ */
+export function todayInLatestUSZone(now: Date = new Date()): string {
+  return new Date(now.getTime() + LATEST_US_UTC_OFFSET_HOURS * HOUR_MS)
+    .toISOString()
+    .slice(0, 10);
+}
+
+/**
+ * Whole days left to file, for urgency labels. Counted in UTC days, which run
+ * ahead of every US time zone, so we never overstate the time left; 0 means
+ * "last day". Null when there is no deadline or it has passed.
+ */
+export function daysLeftToFile(
+  deadline: string | null | undefined,
+  now: Date = new Date(),
+): number | null {
+  if (!deadline || !deadlineDate(deadline)) return null;
+  if (isDeadlinePassed(deadline, now)) return null;
+  const days = daysUntil(deadline.trim().slice(0, 10), now);
+  return days === null ? null : Math.max(0, days);
+}
+
+/** Short urgency label ("Last day to file", "3 days left"), or null when not urgent. */
+export function deadlineUrgencyLabel(
+  deadline: string | null | undefined,
+  now: Date = new Date(),
+  withinDays = 30,
+): string | null {
+  const days = daysLeftToFile(deadline, now);
+  if (days === null || days > withinDays) return null;
+  if (days === 0) return 'Last day to file';
+  return `${days} day${days === 1 ? '' : 's'} left`;
 }
 
 /** URL-safe slug from a title. */
@@ -82,9 +186,9 @@ export const US_STATES: { code: string; name: string }[] = [
 
 export const SITE = {
   name: 'ClaimMatch',
-  tagline: 'Find the settlement money you’re owed.',
+  tagline: 'Free claim assistant for class-action settlements',
   description:
-    'ClaimMatch scans class-action settlements and lawsuits, matches you to the ones you qualify for, and helps you file your claim in minutes.',
+    'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://claimmatch.vercel.app',
 };
 
