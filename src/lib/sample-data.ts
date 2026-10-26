@@ -29,6 +29,8 @@ const base = {
   estimated_value_max: null,
   reviewed_by: null,
   reviewed_at: null,
+  last_seen_at: null,
+  missed_feed_count: 0,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };

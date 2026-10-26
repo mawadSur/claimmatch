@@ -11,9 +11,10 @@ in this order. Every file is additive: nothing is deleted.
 4. `0007_corrective_notice_marker.sql` — durable D42 notice marker
 5. `0008_claims_server_writes.sql` — revoke browser writes to `claims`
 6. `0009_unpublish_fictional.sql` — unpublish all 22 fictional rows (16 seed slugs + 6 sample-aggregator), never a DELETE
-7. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Numbered 0011 so 0010 stays free for the feed-presence PR. Additive; apply any time.
+7. `0010_feed_presence.sql` — `last_seen_at` and `missed_feed_count` so the nightly ingest can close rows missing from consecutive successful feeds (additive; no status changes here)
+8. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Additive; apply any time after 0010.
 
-CI applies 0001–0009 then 0011 in that filename order on an empty database.
+CI applies 0001–0011 in that filename order on an empty database.
 
 ## Production order
 
@@ -22,7 +23,7 @@ CI applies 0001–0009 then 0011 in that filename order on an empty database.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
    - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED` and `ENABLE_SAMPLE_SOURCE`.
-   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2).
+   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
    1. `0004_prefill.sql` (any time).
@@ -38,15 +39,18 @@ CI applies 0001–0009 then 0011 in that filename order on an empty database.
 
 5. **After the read-only snapshot the private plan requires**, run `0009_unpublish_fictional.sql` in one session that starts with `set claimmatch.d38_export_done = 'yes';`. The app already hides these slugs in code.
 
-6. **Run `0011_attribution.sql` any time.** It only adds profile columns, share-link tables, and a function. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+6. **Run `0010_feed_presence.sql` any time.** It only adds columns and an index. The next nightly ingest starts the miss clock from zero; nothing closes on the first run after it lands. Optional: `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) and `INGEST_DRY_RUN=1` / `npm run scrape:dry-run` to preview closures.
 
-7. **Set the Vercel rollback floor** at this deployment.
+7. **Run `0011_attribution.sql` any time.** It only adds profile columns, share-link tables, and a function. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+
+8. **Set the Vercel rollback floor** at this deployment.
 
 ## Smoke checks after the deploy
 
 Signed out (read-only):
 
 - `/` and `/lawsuits` load, and listings show the "Unverified" label and an official link.
+- An open settlement page (`/lawsuits/<slug>`) shows the answer block, FAQ and official link. `/settlements/closing-soon` and `/settlements/new` load.
 - A test settlement slug, for example `/lawsuits/robocall-tcpa-settlement`, returns 404.
 - `/claim/<slug>` redirects to `/login?next=…`.
 - `/api/estimate`, `/api/claims/file-all`, `/api/recoveries` and `/api/subscribe` return 410.

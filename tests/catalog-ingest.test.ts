@@ -137,7 +137,9 @@ describe('published rows (locked)', () => {
 });
 
 describe('absence from the feed', () => {
-  it('changes nothing', () => {
+  // planIngest still ignores rows the feed does not mention. Consecutive-miss
+  // closes live in stale.ts (see catalog-stale.test.ts).
+  it('changes nothing in the feed-present planner', () => {
     const p = plan([item({ external_id: 'settlesignal:other', title: 'Other Settlement' })], [row()]);
     expect(p.updates).toHaveLength(0);
   });

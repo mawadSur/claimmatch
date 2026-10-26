@@ -19,8 +19,11 @@ import { isDeadlinePassed, slugify } from '@/lib/utils';
  *   status, as the source states them. Other differences are flagged for a
  *   person and left alone.
  * - Rows nobody has reviewed yet follow the feed.
- * - A record missing from the feed changes nothing. Only an explicit closed
- *   status or a new deadline that has passed can close a row, and a closed row
+ * - A record missing from this fetch changes nothing *here*. The stale
+ *   planner (stale.ts) increments missed_feed_count on a successful
+ *   non-empty feed and closes the row after N consecutive misses; a failed
+ *   or empty feed never does that. Only an explicit closed status or a new
+ *   deadline that has passed can close a row in this file, and a closed row
  *   reopens when the source lists it as open again.
  * - A circuit breaker holds a run's closures when they exceed a set share of
  *   the open catalog, so a broken or reshaped feed cannot empty the site.
@@ -65,6 +68,8 @@ export interface NewRow {
   estimated_value_max: null;
   review_status: 'pending_review';
   status: 'open';
+  last_seen_at: string;
+  missed_feed_count: 0;
 }
 
 export interface PlannedUpdate {
@@ -78,6 +83,8 @@ export interface PlannedUpdate {
   /** The row was closed and the source lists it as open again. */
   reopens: boolean;
   deadlineChange: { from: string | null; to: string } | null;
+  /** Why this update would close a public row. Unset when it does not close. */
+  closeReason?: 'deadline' | 'missing_from_feed' | 'feed_status';
 }
 
 export interface IngestPlan {
@@ -128,7 +135,7 @@ export function nextStatus(
   return null;
 }
 
-function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string): NewRow {
+function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string, now: Date): NewRow {
   const rawText = item.description || item.summary || item.title || '';
   return {
     slug,
@@ -152,6 +159,8 @@ function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string): NewRo
     estimated_value_max: null,
     review_status: 'pending_review',
     status: 'open',
+    last_seen_at: now.toISOString(),
+    missed_feed_count: 0,
   };
 }
 
@@ -163,14 +172,16 @@ function finishUpdate(
   now: Date,
 ): PlannedUpdate {
   const after = { ...row, ...patch } as ExistingRow;
+  const closes = isOpenForClaims(row, now) && !isOpenForClaims(after, now);
   return {
     id: row.id,
     slug: row.slug,
     patch,
     changes,
-    closes: isOpenForClaims(row, now) && !isOpenForClaims(after, now),
+    closes,
     reopens: row.status === 'closed' && patch.status === 'open',
     deadlineChange,
+    closeReason: closes ? 'feed_status' : undefined,
   };
 }
 
@@ -280,7 +291,7 @@ export function planIngest(args: {
         continue;
       }
       newSlugs.add(slug);
-      plan.inserts.push(newRowFrom(item, args.sourceId, slug));
+      plan.inserts.push(newRowFrom(item, args.sourceId, slug, now));
       continue;
     }
 

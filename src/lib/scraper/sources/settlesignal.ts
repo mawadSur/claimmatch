@@ -18,8 +18,9 @@ import type { SourceAdapter } from './index';
  * Only records SettleSignal backs with official evidence are used. Records in
  * every status are returned (with `status` mapped below) so the ingest can
  * close or reopen rows it already has; the ingest only adds new rows that are
- * open for claims. Soft-fails to [] on any error, and an empty result changes
- * nothing: a record missing from the feed is never closed.
+ * open for claims. Soft-fails to [] on any error. An empty or failed fetch
+ * changes nothing (no miss increment, no absence close). After N consecutive
+ * successful non-empty feeds, a source row still missing is closed.
  */
 
 const FEED_URL = 'https://settlesignal.com/data/settlements.json';

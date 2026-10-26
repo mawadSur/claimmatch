@@ -43,6 +43,7 @@ vi.mock('@/lib/supabase/server', () => {
   };
   return {
     createClient: async () => client,
+    createPublicClient: () => client,
     createServiceClient: () => client,
     isSupabaseConfigured: () => true,
   };
@@ -86,6 +87,8 @@ function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
     estimated_value_max: null,
     reviewed_by: null,
     reviewed_at: null,
+    last_seen_at: null,
+    missed_feed_count: 0,
     created_at: '2026-10-01T00:00:00Z',
     updated_at: '2026-10-01T00:00:00Z',
     ...overrides,
@@ -254,10 +257,27 @@ describe('settlement page', () => {
     expect(html).toContain('href="https://www.returnsettlement.com/submit-claim"');
     expect(html).toContain('href="/claim/amazon-return-policy-settlement"');
     expect(html).toContain('Start your claim');
+    expect(html).toContain('Check if you qualify');
+    expect(html).toContain('The short answer');
+    expect(html).toContain('Who qualifies');
+    expect(html).toContain('Administrator');
+    expect(html).toContain('Frequently asked questions');
+    expect(html).toContain('FAQPage');
+    expect(html).toContain('BreadcrumbList');
+    expect(html).toContain('"@type":"Article"');
     expect(html).toContain('CC BY 4.0');
     expect(html).toContain('SettleSignal (settlesignal.com)');
     expect(html).not.toContain('Claims closed');
     expectHonest(html);
+
+    const meta = await generateMetadata(page('amazon-return-policy-settlement'));
+    expect(meta.title).toContain('Who Qualifies');
+    expect(meta.title).toContain('Claim Deadline');
+    expect(meta.alternates).toMatchObject({
+      canonical: expect.stringContaining('/lawsuits/amazon-return-policy-settlement'),
+    });
+    expect(meta.openGraph).toMatchObject({ type: 'article' });
+    expect(meta.robots).toMatchObject({ index: true, follow: true });
   });
 
   it('shows a plain "Claims closed" state for a closed settlement', async () => {
@@ -271,6 +291,18 @@ describe('settlement page', () => {
 
     const meta = await generateMetadata(page('amazon-return-policy-settlement'));
     expect(meta.robots).toMatchObject({ index: false });
+  });
+
+  it('noindexes a published settlement whose deadline has passed', async () => {
+    db.single = { data: lawsuit({ deadline: '2020-01-01' }), error: null };
+    const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(html).toContain('Claims closed');
+    expect(html).not.toContain('Start your claim');
+    expectHonest(html);
+
+    const meta = await generateMetadata(page('amazon-return-policy-settlement'));
+    expect(meta.robots).toMatchObject({ index: false, follow: true });
+    expect(meta.description).toContain('is not taking claims');
   });
 
   it('never shows the feed placeholder as who qualifies, and frames real text as an unverified summary', async () => {

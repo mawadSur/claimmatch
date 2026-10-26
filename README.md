@@ -114,7 +114,8 @@ Full steps, smoke checks and rollback: [docs/PRODUCTION-RUNBOOK.md](docs/PRODUCT
 3. Merge and deploy.
 4. **Right after the deploy**, run `0008_claims_server_writes.sql`. Never run it before the deploy.
 5. **After the read-only snapshot**, run `0009_unpublish_fictional.sql` in a session that starts with `set claimmatch.d38_export_done = 'yes';`.
-6. Set the Vercel rollback floor at this deployment.
+6. Run `0010_feed_presence.sql` any time (adds feed-presence columns; no status changes).
+7. Set the Vercel rollback floor at this deployment.
 
 ---
 
@@ -141,7 +142,7 @@ src/
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/                0001–0009 + 0011: schema, RLS, grants, trust reset, attribution
+  migrations/                0001–0011: schema, RLS, grants, trust reset, feed presence, attribution
   tests/                     SQL tests run by scripts/db-test.sh
 tests/                       vitest
 ```
