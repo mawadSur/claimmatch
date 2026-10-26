@@ -1,9 +1,5 @@
--- ClaimMatch 0100: feed presence + consecutive-miss tracking for stale closes.
+-- ClaimMatch 0010: feed presence + consecutive-miss tracking for stale closes.
 -- EXPAND ONLY.
---
--- Numbered 0100 so it cannot clash with the in-flight PR that is reconciling
--- p0/02-ci onto main and renumbering 0004–0008. Renumber this file at merge
--- to the next free slot after that reconciliation.
 --
 -- The nightly ingest (PR #11) closes a row only when the feed still lists it
 -- and explicitly marks it closed. Rows that drop out of the feed stay open
@@ -28,7 +24,7 @@ alter table public.lawsuits add column if not exists last_seen_at timestamptz;
 alter table public.lawsuits add column if not exists missed_feed_count int not null default 0;
 
 comment on column public.lawsuits.last_seen_at is
-  'Last time this row appeared in a successful, non-empty source feed. Null until the first successful feed after 0100.';
+  'Last time this row appeared in a successful, non-empty source feed. Null until the first successful feed after 0010.';
 comment on column public.lawsuits.missed_feed_count is
   'Consecutive successful non-empty feeds this feed-source row was missing from. Reset to 0 when the row reappears. Never incremented on a failed or empty feed.';
 
