@@ -10,9 +10,26 @@ import {
   planIngest,
   type ExistingRow,
   type HeldClosure,
+  type IngestPlan,
+  type PlannedUpdate,
 } from './plan';
+import {
+  catalogOpenStatusCount,
+  formatDryRunReport,
+  isFeedSourceRow,
+  mergeStaleIntoPlan,
+  missingFeedCloseAfterFromEnv,
+  planDeadlineCloses,
+  planFeedPresence,
+  STALE_CANDIDATE_COLUMNS,
+  wouldCloseFromUpdate,
+  type StaleCandidate,
+  type WouldCloseRow,
+} from './stale';
 
 export type { HeldClosure } from './plan';
+export type { WouldCloseRow } from './stale';
+export { formatDryRunReport } from './stale';
 
 /**
  * Nightly ingest. For each registered source adapter: fetch its records,
@@ -24,13 +41,17 @@ export type { HeldClosure } from './plan';
  * - No model calls: setting ANTHROPIC_API_KEY changes nothing in this run.
  * - Published rows only take deadline and open/closed status changes from the
  *   source; other differences are logged for a person to check.
- * - An empty or failed fetch changes nothing, and a record missing from the
- *   feed is never closed.
+ * - An empty or failed fetch changes nothing. A record missing from a
+ *   successful non-empty feed increments missed_feed_count; after N
+ *   consecutive misses (default 3) the row is closed. Past-deadline rows
+ *   close even when the feed is empty or down.
  * - Closures above INGEST_MAX_CLOSE_SHARE (default 20%) of a source's open rows
  *   are held instead of applied. Every held row is logged with its changes and
  *   kept in the summary (heldClosures), which the cron routes store as a run
  *   record and report as a failed step, so a person reviews the whole list
  *   before raising the limit.
+ * - INGEST_DRY_RUN=1 (or ingestAndExtract({ dryRun: true })) plans the same
+ *   writes and reports which rows would close, then writes nothing.
  *
  * Logs name settlements by slug only; nothing here touches personal data.
  */
@@ -56,11 +77,27 @@ export type IngestSummary = {
   heldSlugs: string[];
   /** Every held closure with what it would change, for that review. */
   heldClosures: HeldClosure[];
+  /** Public rows closed because their deadline has passed. */
+  closedByDeadline: number;
+  /** Feed-source rows closed after N consecutive successful-feed misses. */
+  closedByMissingFeed: number;
+  /** Planned closes (applied, or reported only when dryRun). */
+  wouldClose: WouldCloseRow[];
+  /** Feed-source rows whose miss count would go up but not yet close. */
+  wouldIncrementMiss: WouldCloseRow[];
+  /** True when this run planned writes and applied none. */
+  dryRun: boolean;
   /** Sources that returned nothing (outage, error or empty feed). */
   emptySources: string[];
   /** Writes or reads that failed. */
   failed: number;
   bySource: Record<string, number>;
+};
+
+export type IngestOptions = {
+  /** Plan writes and report them; apply nothing. Also set by INGEST_DRY_RUN=1. */
+  dryRun?: boolean;
+  now?: Date;
 };
 
 // External ids run to ~95 characters, so 40 per IN list keeps each request URL
@@ -82,6 +119,11 @@ function emptySummary(): IngestSummary {
     held: 0,
     heldSlugs: [],
     heldClosures: [],
+    closedByDeadline: 0,
+    closedByMissingFeed: 0,
+    wouldClose: [],
+    wouldIncrementMiss: [],
+    dryRun: false,
     emptySources: [],
     failed: 0,
     bySource: {},
@@ -90,15 +132,50 @@ function emptySummary(): IngestSummary {
 
 type Db = ReturnType<typeof createServiceClient>;
 
-export async function ingestAndExtract(): Promise<IngestSummary> {
+function envDryRun(value: string | undefined): boolean {
+  return value === '1' || value === 'true';
+}
+
+export async function ingestAndExtract(options: IngestOptions = {}): Promise<IngestSummary> {
   const summary = emptySummary();
+  const now = options.now ?? new Date();
+  const dryRun = options.dryRun ?? envDryRun(process.env.INGEST_DRY_RUN);
+  summary.dryRun = dryRun;
 
   // No backend → nothing to persist.
   if (!isSupabaseConfigured()) return summary;
 
   const supabase = createServiceClient();
   const maxShare = maxCloseShareFromEnv(process.env.INGEST_MAX_CLOSE_SHARE);
-  const now = new Date();
+  const closeAfter = missingFeedCloseAfterFromEnv(process.env.INGEST_MISSING_FEED_CLOSE_AFTER);
+
+  const loadedCloseable = await loadCloseableRows(supabase);
+  if (!loadedCloseable) {
+    console.error('[pipeline] cannot read open rows; deadline and miss tracking skipped.');
+    summary.failed += 1;
+  }
+
+  // Deadline closes do not depend on the feed. A down or empty feed still
+  // expires rows whose claim window has ended. Those ids are then left out of
+  // miss tracking so a single row is not closed twice in one run.
+  let remainingCloseable = loadedCloseable;
+  if (loadedCloseable) {
+    const deadlineActions = planDeadlineCloses(loadedCloseable, now);
+    const deadlineIds = new Set(deadlineActions.map((a) => a.id));
+    remainingCloseable = loadedCloseable.filter((row) => !deadlineIds.has(row.id));
+    const deadlinePlan = mergeStaleIntoPlan(
+      { inserts: [], updates: [], flagged: [], skipped: 0 },
+      deadlineActions,
+    );
+    await applyPlanned(supabase, deadlinePlan, {
+      summary,
+      adapterSlug: 'deadline',
+      openCount: catalogOpenStatusCount(loadedCloseable),
+      maxShare,
+      dryRun,
+      extrasById: extrasFromCandidates(loadedCloseable),
+    });
+  }
 
   for (const adapter of getSourceAdapters()) {
     summary.bySource[adapter.slug] ??= 0;
@@ -121,6 +198,8 @@ export async function ingestAndExtract(): Promise<IngestSummary> {
       items = [];
     }
     if (items.length === 0) {
+      // Failed or empty feed: change nothing for absence. Deadline closes
+      // already ran above.
       console.warn(`[pipeline] ${adapter.slug}: no records returned; nothing changed.`);
       summary.emptySources.push(adapter.slug);
       continue;
@@ -135,65 +214,204 @@ export async function ingestAndExtract(): Promise<IngestSummary> {
       continue;
     }
 
-    const planned = planIngest({ items, existing, sourceId: source.id, now });
-    const openCount = existing.filter((row) => isOpenForClaims(row, now)).length;
-    const { plan, held, allowed } = applyCloseBreaker(planned, { openCount, maxShare });
+    let planned = planIngest({ items, existing, sourceId: source.id, now });
 
-    if (held.length > 0) {
-      summary.held += held.length;
-      summary.heldSlugs.push(...held.map((h) => h.slug));
-      summary.heldClosures.push(...held.map((h) => ({ source: adapter.slug, slug: h.slug, changes: h.changes })));
-      for (const line of heldClosureLogLines(adapter.slug, held, { allowed, openCount })) console.warn(line);
-    }
-    if (plan.flagged.length > 0) {
-      summary.flagged += plan.flagged.length;
-      console.log(
-        `[pipeline] ${adapter.slug}: ${plan.flagged.length} published rows differ from the feed and were left as they are: ${plan.flagged
-          .slice(0, LOG_LIST_LIMIT)
-          .map((f) => `${f.slug} (${f.fields.join(', ')})`)
-          .join(', ')}`,
-      );
+    // Presence tracking only after a successful non-empty fetch.
+    if (remainingCloseable) {
+      const sourceRows = remainingCloseable.filter((row) => isFeedSourceRow(row, source.id, adapter.slug));
+      const presence = planFeedPresence({
+        sourceRows,
+        seenExternalIds: items.map((i) => i.external_id),
+        now,
+        closeAfter,
+      });
+      planned = mergeStaleIntoPlan(planned, [...presence.seen, ...presence.missing]);
     }
 
-    for (const row of plan.inserts) {
-      const { error } = await supabase.from('lawsuits').insert(row);
-      if (error) {
-        console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
-        summary.failed += 1;
-        continue;
-      }
+    const openCount = remainingCloseable
+      ? remainingCloseable.filter(
+          (row) => isFeedSourceRow(row, source.id, adapter.slug) && isOpenForClaims(row, now),
+        ).length
+      : existing.filter((row) => isOpenForClaims(row, now)).length;
+    await applyPlanned(supabase, planned, {
+      summary,
+      adapterSlug: adapter.slug,
+      openCount,
+      maxShare,
+      dryRun,
+      extrasById: extrasFromCandidates([
+        ...existingAsCandidates(existing),
+        ...(remainingCloseable ?? []),
+      ]),
+    });
+
+    if (!dryRun) await touchSource(supabase, source.id);
+  }
+
+  if (dryRun) {
+    console.log(
+      formatDryRunReport({
+        wouldClose: summary.wouldClose,
+        wouldIncrementMiss: summary.wouldIncrementMiss,
+        held: summary.heldClosures.map((h) => ({
+          id: '',
+          slug: h.slug,
+          reason: 'feed_status',
+          deadline: null,
+          missed_feed_count: null,
+          external_id: null,
+          changes: h.changes,
+        })),
+        closeAfter,
+      }),
+    );
+  }
+
+  return summary;
+}
+
+type UpdateExtras = Pick<WouldCloseRow, 'deadline' | 'external_id' | 'missed_feed_count'>;
+
+function extrasFromCandidates(rows: StaleCandidate[]): Map<string, UpdateExtras> {
+  const map = new Map<string, UpdateExtras>();
+  for (const row of rows) {
+    map.set(row.id, {
+      deadline: row.deadline,
+      external_id: row.external_id,
+      missed_feed_count: row.missed_feed_count ?? 0,
+    });
+  }
+  return map;
+}
+
+function existingAsCandidates(rows: ExistingRow[]): StaleCandidate[] {
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    status: row.status,
+    deadline: row.deadline,
+    review_status: row.review_status,
+    source_id: null,
+    external_id: row.external_id,
+    last_seen_at: null,
+    missed_feed_count: 0,
+  }));
+}
+
+async function applyPlanned(
+  supabase: Db,
+  planned: IngestPlan,
+  opts: {
+    summary: IngestSummary;
+    adapterSlug: string;
+    openCount: number;
+    maxShare: number;
+    dryRun: boolean;
+    extrasById: Map<string, UpdateExtras>;
+  },
+): Promise<void> {
+  const { summary, adapterSlug, openCount, maxShare, dryRun, extrasById } = opts;
+  const { plan, held, allowed } = applyCloseBreaker(planned, { openCount, maxShare });
+
+  if (held.length > 0) {
+    summary.held += held.length;
+    summary.heldSlugs.push(...held.map((h) => h.slug));
+    summary.heldClosures.push(
+      ...held.map((h) => ({ source: adapterSlug, slug: h.slug, changes: h.changes })),
+    );
+    for (const line of heldClosureLogLines(adapterSlug, held, { allowed, openCount })) {
+      console.warn(line);
+    }
+  }
+  if (plan.flagged.length > 0) {
+    summary.flagged += plan.flagged.length;
+    console.log(
+      `[pipeline] ${adapterSlug}: ${plan.flagged.length} published rows differ from the feed and were left as they are: ${plan.flagged
+        .slice(0, LOG_LIST_LIMIT)
+        .map((f) => `${f.slug} (${f.fields.join(', ')})`)
+        .join(', ')}`,
+    );
+  }
+
+  for (const row of plan.inserts) {
+    if (dryRun) {
       summary.inserted += 1;
       summary.pending_review += 1;
+      continue;
     }
+    const { error } = await supabase.from('lawsuits').insert(row);
+    if (error) {
+      console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
+      summary.failed += 1;
+      continue;
+    }
+    summary.inserted += 1;
+    summary.pending_review += 1;
+  }
 
-    for (const update of plan.updates) {
+  for (const update of plan.updates) {
+    if (!dryRun) {
       const { error } = await supabase.from('lawsuits').update(update.patch).eq('id', update.id);
       if (error) {
         console.error(`[pipeline] update failed for ${update.slug}: ${error.message}`);
         summary.failed += 1;
         continue;
       }
-      summary.updated += 1;
       if (update.deadlineChange) {
-        summary.deadlineChanges += 1;
         console.log(
           `[pipeline] deadline changed for ${update.slug}: ${update.deadlineChange.from ?? 'none'} -> ${update.deadlineChange.to}`,
         );
       }
       if (update.closes) {
-        summary.closed += 1;
         console.log(`[pipeline] closed ${update.slug}: ${update.changes.join('; ')}`);
       }
       if (update.reopens) {
-        summary.reopened += 1;
         console.log(`[pipeline] reopened ${update.slug}: ${update.changes.join('; ')}`);
       }
     }
-
-    await touchSource(supabase, source.id);
+    summary.updated += 1;
+    recordPlannedUpdate(summary, update, extrasById.get(update.id));
   }
+}
 
-  return summary;
+function recordPlannedUpdate(
+  summary: IngestSummary,
+  update: PlannedUpdate,
+  extras?: UpdateExtras,
+): void {
+  if (update.deadlineChange) summary.deadlineChanges += 1;
+  if (update.reopens) summary.reopened += 1;
+  if (update.closes) {
+    const row = wouldCloseFromUpdate(update, extras);
+    summary.closed += 1;
+    if (row.reason === 'deadline') summary.closedByDeadline += 1;
+    if (row.reason === 'missing_from_feed') summary.closedByMissingFeed += 1;
+    summary.wouldClose.push(row);
+    return;
+  }
+  if (update.changes.some((c) => c.startsWith('missed_feed_count '))) {
+    summary.wouldIncrementMiss.push(wouldCloseFromUpdate(update, extras));
+  }
+}
+
+/** Open or closing-soon rows, or null if they cannot be read. */
+async function loadCloseableRows(supabase: Db): Promise<StaleCandidate[] | null> {
+  const rows: StaleCandidate[] = [];
+  const page = 500;
+  for (let from = 0; ; from += page) {
+    const { data, error } = await supabase
+      .from('lawsuits')
+      .select(STALE_CANDIDATE_COLUMNS)
+      .in('status', ['open', 'closing_soon'])
+      .range(from, from + page - 1);
+    if (error) {
+      console.error('[pipeline] reading open rows failed:', error.message);
+      return null;
+    }
+    rows.push(...((data ?? []) as StaleCandidate[]));
+    if (!data || data.length < page) break;
+  }
+  return rows;
 }
 
 /** Existing rows that share an external_id with the feed, or null if they cannot be read. */

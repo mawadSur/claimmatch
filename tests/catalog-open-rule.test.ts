@@ -54,6 +54,8 @@ function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
     estimated_value_max: null,
     reviewed_by: null,
     reviewed_at: null,
+    last_seen_at: null,
+    missed_feed_count: 0,
     created_at: '2026-10-01T00:00:00Z',
     updated_at: '2026-10-01T00:00:00Z',
     ...overrides,

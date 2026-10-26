@@ -109,6 +109,10 @@ export interface Lawsuit {
   estimated_value_max: number | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  /** Last time this row appeared in a successful, non-empty source feed. */
+  last_seen_at: string | null;
+  /** Consecutive successful feeds this feed-source row was missing from. */
+  missed_feed_count: number;
   created_at: string;
   updated_at: string;
 }
