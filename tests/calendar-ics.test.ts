@@ -49,9 +49,10 @@ describe('buildDeadlineIcs', () => {
     expect(ics).toContain('BEGIN:VEVENT');
     expect(ics).toContain('DTSTART;VALUE=DATE:20261201');
     expect(ics).toContain('DTEND;VALUE=DATE:20261202');
-    expect(ics).toContain('SUMMARY:Claim deadline: Amazon Return Policy Settlement');
-    expect(ics).toContain('Official site: https://www.returnsettlement.com/submit-claim');
-    expect(ics).toContain('Check the official site for the exact cutoff');
+    const unfolded = ics.replace(/\r\n /g, '');
+    expect(unfolded).toContain('SUMMARY:Claim deadline: Amazon Return Policy Settlement');
+    expect(unfolded).toContain('Official site: https://www.returnsettlement.com/submit-claim');
+    expect(unfolded).toContain('Check the official site for the exact cutoff');
     expect(ics).toContain('END:VEVENT');
     expect(ics).toContain('END:VCALENDAR');
     expect(ics?.includes('\r\n')).toBe(true);

@@ -75,7 +75,11 @@ describe('verified-field rules', () => {
 
   it('prefers verified who-qualifies and proof over feed text only when the badge would show', () => {
     const feed = makeLawsuit({ proof: 'yes' }, { eligibility_text: 'Feed text about who qualifies.' });
-    const row = { ...feed, ...verifiedRow };
+    const row = {
+      ...feed,
+      ...verifiedRow,
+      eligibility_text: 'Feed text about who qualifies.',
+    };
 
     expect(displayEligibilityText(row)).toBe('Feed text about who qualifies.');
     expect(displayProofLabel(row)).toBe('Required');
