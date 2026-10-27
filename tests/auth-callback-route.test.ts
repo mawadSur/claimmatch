@@ -26,16 +26,20 @@ describe('/auth/callback', () => {
   it('signs the person in and brings them back to the claim they picked before signing up', async () => {
     const res = await callback('?code=abc', 'cm_next=%2Fclaim%2Freal-settlement');
     expect(m.exchangeCodeForSession).toHaveBeenCalledWith('abc');
-    expect(res.headers.get('location')).toBe(`${ORIGIN}/onboarding?next=%2Fclaim%2Freal-settlement`);
+    expect(res.headers.get('location')).toBe(
+      `${ORIGIN}/onboarding?next=%2Fclaim%2Freal-settlement&confirmed=1`,
+    );
     // The cookie is used up.
     expect(res.headers.get('set-cookie')).toMatch(/cm_next=;/);
   });
 
   it('goes to onboarding when nothing was saved, and never off the site', async () => {
-    expect((await callback('?code=abc')).headers.get('location')).toBe(`${ORIGIN}/onboarding`);
-    expect((await callback('?code=abc&next=%2F%5Cevil.example')).headers.get('location')).toBe(`${ORIGIN}/onboarding`);
+    expect((await callback('?code=abc')).headers.get('location')).toBe(`${ORIGIN}/onboarding?confirmed=1`);
+    expect((await callback('?code=abc&next=%2F%5Cevil.example')).headers.get('location')).toBe(
+      `${ORIGIN}/onboarding?confirmed=1`,
+    );
     expect((await callback('?code=abc', 'cm_next=%2F%2Fevil.example')).headers.get('location')).toBe(
-      `${ORIGIN}/onboarding`,
+      `${ORIGIN}/onboarding?confirmed=1`,
     );
   });
 
@@ -54,6 +58,17 @@ describe('/auth/callback', () => {
     expect(location.pathname).toBe('/login');
     expect(location.searchParams.get('link')).toBe('expired');
     expect(m.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('a confirmation code left on the homepage', () => {
+  it('forwards /?code= to /auth/callback so the session can be started', async () => {
+    const { middleware } = await import('@/middleware');
+    const res = await middleware(new NextRequest(`${ORIGIN}/?code=abc&next=%2Fonboarding`));
+    const location = new URL(res.headers.get('location') ?? '');
+    expect(location.pathname).toBe('/auth/callback');
+    expect(location.searchParams.get('code')).toBe('abc');
+    expect(location.searchParams.get('next')).toBe('/onboarding');
   });
 });
 

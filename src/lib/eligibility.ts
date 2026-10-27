@@ -37,8 +37,9 @@ export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
   },
   {
     key: 'used_banking',
-    label: 'Have you paid overdraft or account fees to a bank in the last 5 years?',
+    label: 'Have you had a bank or credit account, or paid overdraft or account fees, in the last 5 years?',
     type: 'boolean',
+    help: 'Checking, savings, credit cards, or similar accounts.',
   },
   {
     key: 'bought_consumer_goods',

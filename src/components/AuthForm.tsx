@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   Mail,
   Lock,
@@ -16,6 +16,7 @@ import {
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
+import { SITE } from '@/lib/utils';
 import {
   attributionMetadata,
   attributionPersonProperties,
@@ -30,6 +31,29 @@ type Mode = 'login' | 'signup';
 
 /** D44: new passwords are at least 10 characters (set the same in Supabase Auth). */
 const MIN_PASSWORD_LENGTH = 10;
+/** Don't leave the button spinning if Supabase or the next page hangs. */
+const AUTH_TIMEOUT_MS = 12_000;
+const AUTH_TIMEOUT_MESSAGE = 'This is taking too long. Check your connection and try again.';
+
+function emailRedirectTo(): string {
+  return `${SITE.url.replace(/\/+$/, '')}/auth/callback`;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 /**
  * Shared email/password authentication card used by /login and /signup.
@@ -38,7 +62,6 @@ const MIN_PASSWORD_LENGTH = 10;
  * calls useSearchParams().
  */
 export function AuthForm({ mode }: { mode: Mode }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   // Only a path on this site (no "//host", "/\host" or control characters), so
@@ -93,14 +116,20 @@ export function AuthForm({ mode }: { mode: Mode }) {
         document.cookie = next
           ? pendingNextCookie(next, window.location.protocol === 'https:')
           : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName, ...attributionMetadata(attr) },
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
+        const { data, error: signUpError } = await withTimeout(
+          supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { full_name: fullName, ...attributionMetadata(attr) },
+              // Site URL (lawsuitai.org in prod), not this tab's origin, so the
+              // confirmation link always hits /auth/callback on the live site.
+              emailRedirectTo: emailRedirectTo(),
+            },
+          }),
+          AUTH_TIMEOUT_MS,
+          AUTH_TIMEOUT_MESSAGE,
+        );
 
         if (signUpError) {
           setError(signUpError.message);
@@ -112,10 +141,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         if (data.session) {
           identifyOnly(data.session.user.id);
           posthog?.capture('signup_completed');
-          // Onboarding returns people to where they started (for example the
-          // claim page they were on) when given ?next.
-          router.push(onboardingPath(next));
-          router.refresh();
+          // Leave this page immediately so the spinner cannot sit on a slow RSC.
+          window.location.assign(onboardingPath(next));
           return;
         }
 
@@ -124,11 +151,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      // Login
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Login. signInWithPassword already returns the user; do not wait on
+      // another getUser or a server refresh of the destination page.
+      const { data, error: signInError } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        AUTH_TIMEOUT_MS,
+        AUTH_TIMEOUT_MESSAGE,
+      );
 
       if (signInError) {
         setError(signInError.message);
@@ -136,16 +165,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        identifyOnly(userData.user.id);
+      if (data.user) {
+        identifyOnly(data.user.id);
         posthog?.capture('login_completed');
       }
 
-      router.push(next || '/dashboard');
-      router.refresh();
-    } catch {
-      setError('Something went wrong. Please try again.');
+      window.location.assign(next || '/dashboard');
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === AUTH_TIMEOUT_MESSAGE
+          ? AUTH_TIMEOUT_MESSAGE
+          : 'Something went wrong. Please try again.',
+      );
       setStatus('idle');
     }
   }
@@ -292,7 +323,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
           className="btn-primary w-full"
         >
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              {isSignup ? 'Creating your account…' : 'Signing in…'}
+            </>
           ) : (
             <>
               {isSignup ? 'Create my account' : 'Log in'}

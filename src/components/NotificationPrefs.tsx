@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { Loader2, Check, AlertCircle } from 'lucide-react';
 import type { Profile } from '@/lib/types';
+import { answersFromAttributes, type AttributeAnswers } from '@/lib/profile-attributes';
 import { US_STATES } from '@/lib/utils';
+import { ProfileAttributesFields } from './ProfileAttributesFields';
 
 /**
  * Settings form: the user's details and their email choice. There is no SMS
@@ -14,6 +16,9 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
   const [state, setState] = useState(profile.state ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [emailOptIn, setEmailOptIn] = useState(profile.email_opt_in);
+  const [answers, setAnswers] = useState<AttributeAnswers>(() =>
+    answersFromAttributes(profile.attributes),
+  );
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -30,6 +35,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
           state,
           phone,
           email_opt_in: emailOptIn,
+          attributes: answers,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -100,6 +106,16 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
             We’ll only use this to help you fill in claim forms, once that feature is
             ready. We don’t send text messages.
           </p>
+        </div>
+      </div>
+
+      <div className="mt-8 border-t border-gray-100 pt-6">
+        <h3 className="text-base font-bold">Settlements that may apply to you</h3>
+        <p className="mt-1 text-sm text-ink-muted">
+          These answers help us rank open settlements. You can change them anytime.
+        </p>
+        <div className="mt-4">
+          <ProfileAttributesFields idPrefix="settings" answers={answers} onChange={setAnswers} />
         </div>
       </div>
 

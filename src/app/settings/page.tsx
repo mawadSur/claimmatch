@@ -76,7 +76,9 @@ export default async function SettingsPage() {
   return (
     <div className="container-narrow py-12">
       <h1 className="text-3xl font-extrabold">Settings</h1>
-      <p className="mt-2 text-ink-muted">Update your details and choose which emails you get.</p>
+      <p className="mt-2 text-ink-muted">
+        Update your details, the answers we use to find settlements, and which emails you get.
+      </p>
 
       <div className="mt-8 space-y-6">
         <NotificationPrefs profile={profile} />

@@ -264,15 +264,6 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   : proofDetail(lawsuit)}
               </dd>
             </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">
-                Payout, as the listing states it
-              </dt>
-              <dd className="mt-1 text-sm leading-relaxed text-ink">{payout}</dd>
-              <dd className="mt-1 text-sm text-ink-muted">
-                The amount you get depends on the settlement’s rules and how many people file.
-              </dd>
-            </div>
           </dl>
 
           {showAbout && (

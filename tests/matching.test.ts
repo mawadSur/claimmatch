@@ -5,7 +5,9 @@ import {
   UNSTRUCTURED_CATEGORY_SCORE,
   UNSTRUCTURED_KEYWORD_SCORE,
   UNSTRUCTURED_NONE_SCORE,
+  classifyMatch,
   matchProfile,
+  matchStrengthLabel,
   scoreLawsuit,
 } from '@/lib/matching';
 import { makeLawsuit, makeProfile } from './helpers';
@@ -458,5 +460,16 @@ describe('sample profiles — before/after match counts', () => {
     expect(ids(caCar)).toEqual(['rule-auto', 'state-ca', 'soft-auto']);
     expect(ids(caBreach)).not.toContain('expired-breach');
     expect(ids(caCar)).not.toContain('soft-general');
+  });
+});
+
+describe('classifyMatch — labels people see', () => {
+  it('calls a requires/anyOf hit a strong match and state-only or unstructured a possible match', () => {
+    expect(classifyMatch(makeLawsuit({ requires: ['had_data_breach'] }))).toBe('strong');
+    expect(classifyMatch(makeLawsuit({ anyOf: { vehicle_brands: ['Toyota'] } }))).toBe('strong');
+    expect(classifyMatch(makeLawsuit({ states: ['CA'] }))).toBe('possible');
+    expect(classifyMatch(makeLawsuit({}))).toBe('possible');
+    expect(matchStrengthLabel('strong')).toBe('Strong match');
+    expect(matchStrengthLabel('possible')).toBe('Possible match');
   });
 });

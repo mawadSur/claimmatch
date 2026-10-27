@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { applyAttributePatch } from '@/lib/profile-attributes';
 import { parseSettingsInput } from '@/lib/settings-input';
 
 export const runtime = 'nodejs';
@@ -29,7 +30,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const { error } = await supabase.from('profiles').update(parsed.patch).eq('id', user.id);
+  const patch = { ...parsed.patch };
+  if (patch.attributes) {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('attributes')
+      .eq('id', user.id)
+      .maybeSingle();
+    patch.attributes = applyAttributePatch(
+      (existing?.attributes as Record<string, unknown> | null) ?? {},
+      patch.attributes,
+    );
+  }
+
+  const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
   if (error) {
     // Log the code only: Postgres error details can echo row values (PII).
     console.error('[settings] update failed', { code: error.code });
