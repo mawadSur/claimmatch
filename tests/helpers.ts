@@ -1,11 +1,12 @@
 import type { EligibilityCriteria, Lawsuit, Profile } from '@/lib/types';
 
 /**
- * Test fixtures for the matcher, which reads only profile.state,
- * profile.attributes, lawsuit.id and lawsuit.eligibility. Each fixture sets
- * those fields plus a few identifying ones and is cast to the domain type, so
- * adding a column to Profile or Lawsuit does not break every test file. A test
- * that depends on any other field must pass it in `overrides`.
+ * Test fixtures for the matcher, which reads profile.state, profile.attributes,
+ * lawsuit.id, lawsuit.eligibility, lawsuit.deadline, and (when the unstructured
+ * flag is on) title/summary/category. Each fixture sets those fields plus a few
+ * identifying ones and is cast to the domain type, so adding a column to
+ * Profile or Lawsuit does not break every test file. A test that depends on
+ * any other field must pass it in `overrides`.
  */
 export function makeProfile(overrides: Partial<Profile> = {}): Profile {
   return {

@@ -189,7 +189,7 @@ export const SITE = {
   tagline: 'Free claim assistant for class-action settlements',
   description:
     'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://claimmatch.vercel.app',
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://lawsuitai.org',
 };
 
 /** Absolute URL for metadata, sitemap and emails. */

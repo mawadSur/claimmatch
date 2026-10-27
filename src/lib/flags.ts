@@ -66,4 +66,15 @@ export const flags = {
    * C16 / E7: embeddable partner widget. Off until partner discovery calls.
    */
   partnerWidget: () => on('PARTNER_WIDGET_ENABLED'),
+  /**
+   * Match settlements that have no structured rules (no states / requires /
+   * anyOf) via category and keyword overlap with the profile. Off: those rows
+   * stay at 0.35 and drop below matchProfile's 0.4 threshold.
+   */
+  unstructuredMatch: () => on('MATCH_UNSTRUCTURED_ENABLED'),
+  /**
+   * Cap a state-only hit so it is not scored as a strong (1.0) match. Off:
+   * a listed-state row with no other criteria still scores 1.0.
+   */
+  stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
 };
