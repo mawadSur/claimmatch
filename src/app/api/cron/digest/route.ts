@@ -4,6 +4,8 @@ import { authorizeCron } from '@/lib/cron-auth';
 import { flags } from '@/lib/flags';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
 import type { Lawsuit, Profile } from '@/lib/types';
+import { maybeAlertCronFailure } from '@/lib/cron-alert';
+import { recordCronFailure } from '@/lib/jobs';
 import {
   D50_PAUSED,
   buildReport,
@@ -40,6 +42,10 @@ async function handle(req: Request) {
     ? missingConfigStep(configProblem, process.env.NODE_ENV === 'production')
     : await runStep('digest', sendDigest);
   const report = buildReport('digest', { digest: step });
+  if (step.status === 'failed') {
+    await recordCronFailure('cron/digest', step.error);
+  }
+  await maybeAlertCronFailure(report);
   return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 

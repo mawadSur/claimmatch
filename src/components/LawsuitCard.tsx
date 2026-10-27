@@ -76,10 +76,16 @@ export function LawsuitCard({
         </ul>
       )}
 
+      {!lawsuit.deadline && (
+        <p className="mt-3 inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-ink-muted">
+          No deadline listed
+        </p>
+      )}
+
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-gray-50 p-3">
         <Stat
           label="Deadline"
-          value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed'}
+          value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'No deadline listed'}
         />
         <Stat label="Proof" value={proofLabel(lawsuit)} />
         <div className="col-span-2">

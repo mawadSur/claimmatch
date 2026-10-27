@@ -159,8 +159,9 @@ export async function lookupLawsuits(
       .in('status', [...OPEN_STATUSES])
       .or(`deadline.is.null,deadline.gte.${todayInLatestUSZone(now)}`)
       .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
-      .order('is_featured', { ascending: false })
-      .order('deadline', { ascending: true, nullsFirst: false });
+      // Known deadlines first (soonest), then rows with no deadline.
+      .order('deadline', { ascending: true, nullsFirst: false })
+      .order('is_featured', { ascending: false });
 
     const q = cleanSearchTerm(opts?.q);
     if (opts?.category) query = query.eq('category', opts.category);

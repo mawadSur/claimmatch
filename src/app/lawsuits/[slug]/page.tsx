@@ -8,6 +8,7 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react';
+import { isThinSettlement } from '@/lib/catalog-page';
 import { eligibilitySummary } from '@/lib/claim-input';
 import {
   displaySummary,
@@ -47,8 +48,8 @@ export const dynamic = 'force-static';
 
 type Params = { params: Promise<{ slug: string }> };
 
-function deadlineText(lawsuit: Lawsuit): string {
-  return lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed';
+function deadlineText(lawsuit: Lawsuit): string | null {
+  return lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null;
 }
 
 export async function generateStaticParams() {
@@ -73,13 +74,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const description = open
     ? settlementMetaDescription(lawsuit)
     : `${lawsuit.title} is not taking claims.`;
+  // Closed, past-deadline, and thin listings (no deadline, eligibility,
+  // administrator, or payout) stay out of the index.
+  const index = open && !isThinSettlement(lawsuit);
 
   return {
     title,
     description,
     alternates: { canonical: url },
-    // Only settlements open for claims are listed in the sitemap and indexed.
-    robots: open ? { index: true, follow: true } : { index: false, follow: true },
+    robots: index ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title,
       description,
@@ -219,6 +222,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <dl className="grid gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-2">
+            {deadlineText(lawsuit) && (
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
               <dd className="mt-1 text-base font-bold text-ink">{deadlineText(lawsuit)}</dd>
@@ -227,11 +231,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   ? deadlinePassed
                     ? 'This deadline has passed.'
                     : 'Not taking claims.'
-                  : lawsuit.deadline
-                    ? 'Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.'
-                    : 'This listing has no deadline. Check the official site.'}
+                  : 'Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.'}
               </dd>
             </div>
+            )}
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
               <dd className="mt-1 text-base font-bold text-ink">{proofLabel(lawsuit)}</dd>

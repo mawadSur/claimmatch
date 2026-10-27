@@ -99,6 +99,27 @@ export async function recordIngestRun(
   }
 }
 
+/**
+ * Record a failed cron (digest, etc.) as a jobs row so /admin can show it.
+ * Never throws: a run record must not break the cron.
+ */
+export async function recordCronFailure(trigger: string, error: string): Promise<void> {
+  if (!configured()) return;
+  try {
+    const supabase = createServiceClient();
+    const { error: writeError } = await supabase.from('jobs').insert({
+      type: trigger.includes('digest') ? 'notify' : 'pipeline',
+      status: 'failed',
+      payload: { trigger },
+      attempts: 1,
+      error,
+    });
+    if (writeError) console.error('[jobs] could not record the cron failure:', writeError.message);
+  } catch (err) {
+    console.error('[jobs] could not record the cron failure:', err);
+  }
+}
+
 export async function completeJob(id: string, result: Record<string, unknown>): Promise<void> {
   if (!configured()) return;
   const supabase = createServiceClient();

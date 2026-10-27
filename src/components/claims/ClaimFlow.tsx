@@ -248,7 +248,9 @@ function StatusPanel({
                 {countdown && <span className={countdownClass}>{countdown}</span>}
               </>
             ) : (
-              <span className="font-normal text-ink-muted">Not listed. Check the official site.</span>
+              <span className="font-normal text-ink-muted">
+                We don&apos;t have a deadline listed. Check the official notice.
+              </span>
             )}
           </dd>
         </div>

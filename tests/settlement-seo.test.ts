@@ -54,9 +54,12 @@ describe('settlement SEO helpers', () => {
     );
     const facts = settlementAnswerFacts(lawsuit);
     expect(facts.payout).toBe('Not stated');
-    expect(facts.administrator).toContain('Not listed');
-    expect(facts.qualifies).toContain('Not listed');
-    expect(facts.deadline).toBe('Not listed');
+    expect(facts.administrator).toBeNull();
+    expect(facts.qualifies).toBeNull();
+    expect(facts.deadline).toBeNull();
+    expect(facts.missing).toEqual(['who qualifies', 'deadline', 'administrator']);
+    expect(settlementMetaTitle(lawsuit)).toBe('Quiet Settlement: Official Claim Link & What We Know');
+    expect(settlementMetaDescription(lawsuit)).not.toMatch(/Who Qualifies|Claim deadline/i);
 
     const faqs = settlementFaqs(lawsuit);
     const text = faqs.map((f) => f.a).join(' ');
@@ -155,6 +158,13 @@ describe('settlement page source uses the safe JSON-LD helper', () => {
 });
 
 describe('ISR revalidate exports', () => {
+  it('uses a 900s revalidate on the paginated /lawsuits list', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const src = readFileSync(fileURLToPath(new URL('../src/app/lawsuits/page.tsx', import.meta.url)), 'utf8');
+    expect(src).toMatch(/export const revalidate = 900;/);
+  });
+
   it('uses a numeric literal on every SEO route', async () => {
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
