@@ -3,8 +3,7 @@ import { HandCoins, CheckCircle2 } from 'lucide-react';
 import { FeeDisclosure } from './FeeDisclosure';
 
 /**
- * Approved money-disclosure copy (Mohammed, Oct 15 2026). Not legal text —
- * counsel reviews it before any fee is set.
+ * Public money-disclosure copy. Monetization is undecided (D4).
  */
 export function HowWeMakeMoney({
   heading = 'h2',
@@ -23,7 +22,11 @@ export function HowWeMakeMoney({
       <ul className="mt-6 space-y-3 text-sm leading-relaxed text-ink-muted">
         {[
           'Filing a settlement claim is always free on the official administrator’s site. You never need ClaimMatch to file.',
-          'ClaimMatch finds settlements and pre-fills your claim details so you can copy them into the official form. You review and file every claim yourself. ClaimMatch never files and never takes a cut.',
+          'ClaimMatch lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. ClaimMatch never files for you.',
+          'ClaimMatch is free during beta. We don’t run ads or sell paid plans today.',
+          'We don’t sell your personal information.',
+          'We don’t take money from settlement administrators or law firms to rank settlements.',
+          'We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
         ].map((t) => (
           <li key={t} className="flex items-start gap-2">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
@@ -34,29 +37,7 @@ export function HowWeMakeMoney({
       <div className="mt-6">
         <FeeDisclosure />
       </div>
-      <ul className="mt-6 space-y-3 text-sm leading-relaxed text-ink-muted">
-        <li className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
-          <span>
-            We don’t sell your personal information.{' '}
-            <span className="text-ink-soft">(Pending counsel review.)</span>
-          </span>
-        </li>
-        <li className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
-          <span>
-            We don’t take money from settlement administrators or law firms to rank
-            settlements.{' '}
-            <span className="text-ink-soft">(Pending counsel review.)</span>
-          </span>
-        </li>
-        <li className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
-          <span>If we ever add a fee or paid features, we’ll show the price before you use them.</span>
-        </li>
-      </ul>
       <p className="mt-6 text-xs text-ink-soft">
-        Draft for review — not legal text.{' '}
         <Link href="/pricing" className="font-semibold text-brand-700 hover:text-brand-800">
           Pricing
         </Link>

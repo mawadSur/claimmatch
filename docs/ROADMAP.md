@@ -10,8 +10,10 @@ settlements that are open for claims, check whether they qualify on the official
 notice, file on the official administrator's site themselves, and keep track of
 their claims in ClaimMatch.
 
-- ClaimMatch never files or submits a claim for anyone, never handles settlement
-  money, and never takes a cut. Payments go from the administrator to the user.
+- ClaimMatch never files or submits a claim for anyone and never handles
+  settlement money. Payments go from the administrator to the user. Not taking
+  a cut of settlements is an internal position under review, not a public
+  promise; monetization undecided (D4).
 - Claim statuses change only on evidence: "Not filed yet", then "Reported filed
   by you", and "Submitted" only with the administrator's confirmation number.
 - No dollar totals, invented amounts or percentage scores. Payment details are
@@ -32,10 +34,11 @@ their claims in ClaimMatch.
 1. **Verified settlement records.** Each listing is checked against the official
    notice and re-checked on a schedule. Suggestions return only after this, with
    plain-language reasons.
-2. **Claim packet polish and tracking.** Pre-filled claim packets (the user's
-   details, ready to copy into the official form) already ship on the claim
-   page. Next is verified-record tracking: reported filings, confirmation
-   numbers and reminders, after listings are checked against the official notice.
+2. **Claim packet polish and tracking.** Copy-ready claim details (the user's
+   saved name, email, phone, address and state, ready to copy into the official
+   form) already ship on the claim page. Next is verified-record tracking:
+   reported filings, confirmation numbers and reminders, after listings are
+   checked against the official notice.
 
 ## Later, only with approval
 
@@ -45,5 +48,6 @@ their claims in ClaimMatch.
 
 ## Not doing
 
-- Taking a share of any settlement, or holding or routing settlement money.
+- Taking a share of any settlement, or holding or routing settlement money
+  (internal position under review; monetization undecided (D4)).
 - Collecting health information.

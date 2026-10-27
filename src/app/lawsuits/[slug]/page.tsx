@@ -298,7 +298,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   },
                   {
                     title: 'File on the official site yourself',
-                    body: 'Filing is free. ClaimMatch never files for you and never takes a cut of your payment.',
+                    body: 'Filing is free. ClaimMatch never files for you and never handles settlement payments.',
                   },
                   {
                     title: 'Keep track in ClaimMatch',

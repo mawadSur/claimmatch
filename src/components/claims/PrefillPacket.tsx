@@ -138,10 +138,11 @@ export function PrefillPacket({
     <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50/80 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold">Your claim details</h3>
+          <h3 className="text-sm font-bold">Copy-ready details from your profile</h3>
           <p className="mt-1 text-sm text-ink-muted">
-            Pre-filled from your profile. Edit anything that&rsquo;s wrong, then copy
-            into the official form. ClaimMatch never files for you.
+            Name, email, phone, address and state you saved. Edit anything
+            that&rsquo;s wrong, then copy into the official form. ClaimMatch never
+            files for you.
           </p>
         </div>
         <button

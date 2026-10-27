@@ -9,10 +9,10 @@ import { SITE } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'ClaimMatch is free. We never take a cut of your settlement, and you never pay us to file on the official settlement site.',
+    'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You file on the official settlement site.',
   openGraph: {
-    title: 'ClaimMatch pricing: free',
-    description: 'Free. We never take a cut of your settlement.',
+    title: 'ClaimMatch pricing: free during beta',
+    description: 'Free during beta. You file on the official site.',
     url: `${SITE.url}/pricing`,
     siteName: SITE.name,
     type: 'website',
@@ -26,19 +26,19 @@ const FREE = [
 ];
 
 const NEVER = [
-  'Take a share of any settlement payment',
   'Handle your settlement money',
+  'File a claim for you',
   'Charge you to file a claim',
 ];
 
 const FAQ = [
   {
     q: 'Does ClaimMatch cost anything?',
-    a: 'No. ClaimMatch is free to use. We don’t charge you to browse settlements, create an account or keep track of your claims.',
+    a: 'ClaimMatch is free during beta. We don’t charge you to browse settlements, create an account or keep track of your claims. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
   },
   {
-    q: 'Do you take a cut of my settlement?',
-    a: 'No. We never take a share of any settlement payment. If your claim is paid, the settlement administrator pays you directly, and ClaimMatch never handles that money.',
+    q: 'Do you handle my settlement money?',
+    a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly.',
   },
   {
     q: 'Do I have to pay to file a claim?',
@@ -46,7 +46,7 @@ const FAQ = [
   },
   {
     q: 'How does ClaimMatch make money?',
-    a: 'Right now, it doesn’t. We don’t run ads, sell paid plans or sell your personal information. If we ever add a paid option, we will tell you before anything changes, you won’t be charged unless you choose it, and we will never take a cut of your settlement.',
+    a: 'ClaimMatch is free during beta. We don’t run ads or sell paid plans today, and we do not sell your personal information. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
   },
 ];
 
@@ -61,7 +61,8 @@ export default function PricingPage() {
               <BadgeCheck className="h-3.5 w-3.5" aria-hidden /> Pricing
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              Free. <span className="text-brand-600">We never take a cut of your settlement.</span>
+              Free during beta.{' '}
+              <span className="text-brand-600">We may introduce a fee later.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               ClaimMatch is a free claim assistant. You file on the official settlement

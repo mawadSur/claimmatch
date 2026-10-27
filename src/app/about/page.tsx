@@ -40,8 +40,8 @@ const VALUES = [
   },
   {
     icon: HandCoins,
-    title: 'Free, with no cut',
-    body: 'ClaimMatch is free to use. We never take a share of any settlement payment.',
+    title: 'Free during beta',
+    body: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We never handle settlement payments.',
   },
   {
     icon: ShieldCheck,
@@ -141,7 +141,7 @@ export default function AboutPage() {
           ))}
         </ul>
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-muted">
-          Is it really free? Yes.{' '}
+          Is it free during beta? Yes.{' '}
           <Link href="/pricing" className="font-semibold text-brand-700 underline hover:text-brand-800">
             See pricing
           </Link>
