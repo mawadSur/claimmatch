@@ -50,4 +50,20 @@ export const flags = {
    * No match language.
    */
   homeNarrowing: () => on('HOME_NARROWING_ENABLED'),
+  /**
+   * C16 / E3: settlement-specific eligibility questions and any "you qualify"
+   * verdict. Off until counsel and security review (B4). The onboarding
+   * questionnaire in eligibility.ts is unrelated and stays as-is.
+   */
+  eligibilityQuestions: () => on('ELIGIBILITY_QUESTIONS_ENABLED'),
+  /**
+   * C16 / E4: official-form autofill extension or bookmarklet. Off until
+   * counsel and security review (B4). C10 form-field order is copy-ready
+   * packet order only — not this.
+   */
+  formAutofill: () => on('FORM_AUTOFILL_ENABLED'),
+  /**
+   * C16 / E7: embeddable partner widget. Off until partner discovery calls.
+   */
+  partnerWidget: () => on('PARTNER_WIDGET_ENABLED'),
 };

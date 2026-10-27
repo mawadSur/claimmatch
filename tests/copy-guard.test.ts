@@ -67,6 +67,17 @@ const RULES: Rule[] = [
   { id: 'draft for review', pattern: /\bdraft\s+for\s+review\b/gi },
   { id: 'fully pre-fill', pattern: /\bfully\s+pre-?fills?\b/gi },
   { id: 'pre-fills the official', pattern: /\bpre-?fills?\s+(?:the|your)\b/gi },
+  // C16 / E3: a qualify verdict. "Check if you qualify" / "if you qualify" stay allowed.
+  { id: 'you are eligible', pattern: /\byou(?:['’]re|\s+are)\s+eligible\b/gi },
+  {
+    // Verdict form only. "filing a claim you don’t qualify for" (legal warning) is allowed.
+    id: "you don't qualify",
+    pattern: /\byou\s+(?:do\s+not|don['’]t)\s+qualify(?:\s+for\s+this\b|(?!\s+for\b))/gi,
+  },
+  { id: 'you qualify for this', pattern: /\byou\s+qualify\s+for\s+this\b/gi },
+  { id: 'we decided you', pattern: /\bwe\s+(?:determined|decided)\s+(?:that\s+)?you\b/gi },
+  // C16 / E4: filling the official form (C10 copy-ready packet order is fine).
+  { id: 'autofill official', pattern: /\bautofill(?:s|ing)?\s+(?:the\s+)?official\b/gi },
 ];
 
 /**
@@ -224,6 +235,15 @@ describe('copy guard rules', () => {
     ['const a = "fully prefill your claim";', 'fully pre-fill'],
     ['const a = "pre-fills your details";', 'pre-fills the official'],
     ['const a = "pre-fills the official claim form";', 'pre-fills the official'],
+    ['const a = "You are eligible for this settlement";', 'you are eligible'],
+    ["const a = \"You're eligible\";", 'you are eligible'],
+    ['const a = "You don’t qualify";', "you don't qualify"],
+    ['const a = "you do not qualify based on the answers";', "you don't qualify"],
+    ['const a = "You don’t qualify for this settlement";', "you don't qualify"],
+    ['const a = "You qualify for this settlement";', 'you qualify for this'],
+    ['const a = "We determined you meet the rules";', 'we decided you'],
+    ['const a = "We decided that you can file";', 'we decided you'],
+    ['const a = "this bookmarklet autofills the official form";', 'autofill official'],
   ])('flags %s', (text, rule) => {
     expect(flagged(text, text.includes('<') ? 'snippet.tsx' : 'snippet.ts')).toContain(rule);
   });
@@ -265,6 +285,13 @@ describe('copy guard rules', () => {
     'const a = "Free during beta";',
     'const a = profile.prefill_consent_at;',
     '// We never take a cut. Pending counsel. Draft for review.\nconst a = 1;',
+    'const a = "Check if you qualify";',
+    'const a = "Read the official notice to see if you qualify";',
+    'const a = "If you qualify, file on the official site";',
+    'const a = "We can’t tell you if you qualify";',
+    'const a = "A listing does not mean you qualify";',
+    'const a = "copy-ready details in the official form’s order";',
+    'const a = "Filing a claim you don’t qualify for can be against the law.";',
   ])('allows %s', (text) => {
     expect(flagged(text)).toEqual([]);
   });
