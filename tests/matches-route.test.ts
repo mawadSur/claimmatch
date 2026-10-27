@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Profile } from '@/lib/types';
 import { makeLawsuit, makeProfile } from './helpers';
 
 const h = vi.hoisted(() => ({
   user: { id: 'user-a', email: 'a@example.com' } as { id: string; email: string } | null,
-  profile: null as Record<string, unknown> | null,
+  profile: null as Profile | null,
   upserts: [] as Record<string, unknown>[],
   catalog: { lawsuits: [] as ReturnType<typeof makeLawsuit>[], error: false },
   stored: [] as Array<Record<string, unknown>>,
