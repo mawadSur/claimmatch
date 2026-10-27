@@ -113,8 +113,17 @@ begin
   if n <> 0 then
     raise exception '0014: anon inserted % proof_feedback row(s)', n;
   end if;
-  if exists (select 1 from public.proof_feedback) then
-    raise exception '0014: anon must not read proof_feedback';
+  begin
+    if exists (select 1 from public.proof_feedback) then
+      raise exception '0014: anon must not read proof_feedback';
+    end if;
+  exception
+    when insufficient_privilege then
+      null; -- revoke select from anon is also a pass
+  end;
+  if has_table_privilege('anon', 'public.proof_feedback', 'select')
+     or has_table_privilege('anon', 'public.proof_feedback', 'insert') then
+    raise exception '0014: anon still has select or insert on proof_feedback';
   end if;
 end $$;
 reset role;
