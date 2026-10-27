@@ -1,5 +1,6 @@
 import { eligibilitySummary } from '@/lib/claim-input';
 import { cleanSearchTerm, searchCatalog } from '@/lib/lawsuits';
+import { displayProofStatus } from '@/lib/verified-fields';
 import type { Lawsuit } from '@/lib/types';
 
 /** Cards per page on /lawsuits. Keep HTML small enough to cache. */
@@ -32,6 +33,11 @@ export function parseHasDeadline(raw: string | null | undefined): boolean {
   if (raw == null) return false;
   const v = raw.trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes';
+}
+
+/** C17 home entry: only "no" is a supported proof filter. */
+export function parseProofFilter(raw: string | null | undefined): 'no' | undefined {
+  return raw?.trim().toLowerCase() === 'no' ? 'no' : undefined;
 }
 
 /**
@@ -69,12 +75,26 @@ export function paginate<T>(
  * Search, optional "Has a deadline" filter, then deadline-first sort.
  * Open-for-claims membership is decided before this runs.
  */
-export function filterCatalog<T extends Pick<Lawsuit, 'title' | 'summary' | 'category' | 'deadline'>>(
+export function filterCatalog<
+  T extends Pick<Lawsuit, 'title' | 'summary' | 'category' | 'deadline'> &
+    Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text'>>,
+>(
   lawsuits: T[],
-  opts: { q?: string; category?: string; hasDeadline?: boolean },
+  opts: { q?: string; category?: string; hasDeadline?: boolean; proof?: 'no' },
 ): T[] {
   let rows = searchCatalog(lawsuits, { q: cleanSearchTerm(opts.q), category: opts.category });
   if (opts.hasDeadline) rows = rows.filter((l) => Boolean(l.deadline));
+  if (opts.proof === 'no') {
+    rows = rows.filter((l) => displayProofStatus({
+      proof_required: l.proof_required ?? false,
+      eligibility: l.eligibility ?? {},
+      proof_verified: l.proof_verified,
+      verified_at: l.verified_at,
+      eligibility_verified: l.eligibility_verified,
+      administrator: l.administrator ?? null,
+      eligibility_text: l.eligibility_text ?? null,
+    }) === 'no');
+  }
   return sortKnownDeadlineFirst(rows);
 }
 
@@ -82,12 +102,14 @@ export function catalogQueryString(opts: {
   q?: string;
   category?: string;
   hasDeadline?: boolean;
+  proof?: 'no';
   page?: number;
 }): string {
   const params = new URLSearchParams();
   if (opts.q) params.set('q', opts.q);
   if (opts.category) params.set('category', opts.category);
   if (opts.hasDeadline) params.set('hasDeadline', '1');
+  if (opts.proof === 'no') params.set('proof', 'no');
   if (opts.page && opts.page > 1) params.set('page', String(opts.page));
   return params.toString();
 }

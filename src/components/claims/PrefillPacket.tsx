@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Copy } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
+import { flags } from '@/lib/flags';
+import { packetFieldOrder, type PacketFieldKey } from '@/lib/form-field-order';
 import { US_STATES } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
 
@@ -50,10 +52,12 @@ export function PrefillPacket({
   profile,
   lawsuitId,
   lawsuitSlug,
+  formFieldOrder,
 }: {
   profile: Profile | null;
   lawsuitId?: string;
   lawsuitSlug?: string;
+  formFieldOrder?: string[] | null;
 }) {
   const posthog = usePostHog();
   const [fields, setFields] = useState<PacketFields>({
@@ -156,7 +160,7 @@ export function PrefillPacket({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {(Object.keys(FIELD_LABELS) as (keyof PacketFields)[]).map((key) => (
+        {packetFieldOrder(formFieldOrder, flags.formFieldOrder()).map((key: PacketFieldKey) => (
           <label key={key} className={key === 'address_line1' || key === 'email' ? 'sm:col-span-2' : ''}>
             <span className="text-xs font-semibold text-ink-muted">{FIELD_LABELS[key]}</span>
             <span className="mt-1 flex gap-2">

@@ -138,6 +138,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     sourceHost: linkHost(settlement.source_url),
     eligibility: eligibilitySummary(settlement.eligibility_text),
     proof: proofNeed(settlement),
+    formFieldOrder: settlement.form_field_order ?? null,
   };
 
   return (

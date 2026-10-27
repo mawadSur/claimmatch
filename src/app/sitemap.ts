@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { isThinSettlement } from '@/lib/catalog-page';
 import { categoriesOf, getLawsuits } from '@/lib/lawsuits';
 import { newestUpdatedAt } from '@/lib/settlement-hubs';
+import { flags } from '@/lib/flags';
 import {
   categoryHubPath,
   CLOSING_SOON_PATH,
@@ -30,11 +31,15 @@ const PUBLIC_ROUTES = [
   '/terms',
 ];
 
+function publicRoutes(): string[] {
+  return flags.noticeLookup() ? [...PUBLIC_ROUTES, '/check'] : PUBLIC_ROUTES;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lawsuits = await getLawsuits();
   const lastmod = newestUpdatedAt(lawsuits);
 
-  const staticPages: MetadataRoute.Sitemap = PUBLIC_ROUTES.map((path) => ({
+  const staticPages: MetadataRoute.Sitemap = publicRoutes().map((path) => ({
     url: pageUrl(path),
     ...(lastmod ? { lastModified: lastmod } : {}),
   }));

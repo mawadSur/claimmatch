@@ -119,6 +119,25 @@ export interface Lawsuit {
   closed_at?: string | null;
   /** 0004_prefill: last time a human or job verified the official notice. */
   last_verified_at?: string | null;
+  /** 0013: when an admin marked the listing verified. Badge only if also set. */
+  verified_at?: string | null;
+  /** 0013: admin who set verified_at. */
+  verified_by?: string | null;
+  /** 0013: who qualifies, as checked against the official notice. */
+  eligibility_verified?: string | null;
+  /** 0013: proof rule as checked (yes/no/optional/unknown). */
+  proof_verified?: ProofRequired | null;
+  /** 0013: optional official-form field order (C10). */
+  form_field_order?: string[] | null;
+}
+
+/** 0014: signed-in crowd signal. Never shown as a public fact. */
+export interface ProofFeedback {
+  id: string;
+  lawsuit_id: string;
+  user_id: string;
+  answer: 'yes' | 'no' | 'not_sure';
+  created_at: string;
 }
 
 export interface Profile {

@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
+import { flags } from '@/lib/flags';
 import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
-import { proofLabel } from '@/lib/proof';
+import { displayProofLabel, showVerifiedBadge } from '@/lib/verified-fields';
+import { ClosesInChip } from '@/components/settlement/ClosesInChip';
+import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 
 /**
  * The settlement card (server component; brand top border from the original
@@ -36,6 +39,8 @@ export function LawsuitCard({
   const official = officialLinkFor(lawsuit);
   const summary = displaySummary(lawsuit);
   const shownBadge = badge && isAllowedBadge(badge.label) ? badge : undefined;
+  const verified = showVerifiedBadge(lawsuit);
+  const proofShown = displayProofLabel(lawsuit);
 
   const tone = shownBadge?.tone ?? 'brand';
   const badgeClass =
@@ -48,11 +53,15 @@ export function LawsuitCard({
     <article className="settlement-card group h-full">
       <div className="flex items-start justify-between gap-3">
         <span className={badgeClass}>{shownBadge?.label ?? lawsuit.category}</span>
-        {urgency && (
-          <span className="badge-red shrink-0 gap-1">
-            <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
-          </span>
-        )}
+        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+          <VerifiedBadge lawsuit={lawsuit} />
+          <ClosesInChip deadline={lawsuit.deadline} />
+          {!flags.closesInChips() && urgency && (
+            <span className="badge-red shrink-0 gap-1">
+              <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
+            </span>
+          )}
+        </div>
       </div>
 
       <h3 className="mt-3 text-lg font-bold leading-snug">
@@ -87,7 +96,7 @@ export function LawsuitCard({
           label="Deadline"
           value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'No deadline listed'}
         />
-        <Stat label="Proof" value={proofLabel(lawsuit)} />
+        <Stat label="Proof" value={proofShown} />
         <div className="col-span-2">
           <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">
             Payout, as listed
@@ -98,6 +107,7 @@ export function LawsuitCard({
         </div>
       </dl>
 
+      {!verified && (
       <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-800">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
         <span>
@@ -118,6 +128,7 @@ export function LawsuitCard({
           )}
         </span>
       </p>
+      )}
 
       <div className="mt-auto pt-4">
         {open ? (

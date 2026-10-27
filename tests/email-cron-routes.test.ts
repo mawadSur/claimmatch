@@ -212,8 +212,12 @@ describe('/api/cron/digest', () => {
     const { status, body } = await call(digest.GET, '/api/cron/digest');
     expect(status).toBe(200);
     expect(body.skipped).toBe('paused (D50)');
-    expect(body.skippedSteps).toEqual(['digest']);
+    expect(body.skippedSteps).toEqual(['digest', 'closingSoonEmail']);
     expect(body.steps.digest).toMatchObject({ status: 'skipped', reason: 'paused (D50)' });
+    expect(body.steps.closingSoonEmail).toMatchObject({
+      status: 'skipped',
+      reason: 'CLOSING_SOON_EMAIL_ENABLED is off',
+    });
     expect(m.createServiceClient).not.toHaveBeenCalled();
     expect(m.notifyNewMatches).not.toHaveBeenCalled();
   });

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Scale } from 'lucide-react';
 import { NavAuthLinks } from './NavAuthLinks';
 import { getAdminUser } from '@/lib/admin';
+import { flags } from '@/lib/flags';
 
 /**
  * Top navigation. Server component: reads the session to decide whether to
@@ -40,6 +41,11 @@ export async function Nav() {
           <Link href="/lawsuits" className="text-sm font-medium text-ink-muted hover:text-brand-700">
             Browse settlements
           </Link>
+          {flags.noticeLookup() && (
+            <Link href="/check" className="text-sm font-medium text-ink-muted hover:text-brand-700">
+              Check a notice
+            </Link>
+          )}
           <Link href="/how-it-works" className="text-sm font-medium text-ink-muted hover:text-brand-700">
             How it works
           </Link>

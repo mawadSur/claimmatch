@@ -3,6 +3,7 @@
 // configured. Only server code should import this (it reads server env vars).
 import { SITE, formatDeadline } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { closingSoonEmailGate } from '@/lib/closing-soon-email';
 import { legalContact } from '@/lib/legal-contact';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
 
@@ -175,6 +176,97 @@ export async function sendMatchEmail(to: string, opts: MatchEmailOpts): Promise<
     });
   } catch (err) {
     console.error(`[email] Failed to send match email to ${to}:`, err);
+  }
+}
+
+export interface ClosingSoonEmailItem {
+  title: string;
+  slug: string;
+  deadline: string;
+}
+
+export interface ClosingSoonEmailOpts {
+  name?: string;
+  items: ClosingSoonEmailItem[];
+  to?: string;
+}
+
+/** Weekly closing-soon email. Verified rows only; no match language. */
+export function renderClosingSoonEmail(opts: ClosingSoonEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const count = opts.items.length;
+  const countLabel =
+    count === 1 ? '1 settlement closing soon' : `${count} settlements closing soon`;
+  const cards = opts.items
+    .map((item) => {
+      return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+        <tr>
+          <td style="padding:20px 22px;">
+            <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(item.title)}</div>
+            <div style="font-size:13px;color:#6b6480;margin-top:8px;">Listed deadline: ${esc(formatDeadline(item.deadline))}</div>
+            <div style="margin-top:16px;">
+              <a href="${lawsuitUrl(item.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">Review this settlement →</a>
+            </div>
+          </td>
+        </tr>
+      </table>`;
+    })
+    .join('');
+
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(countLabel)}</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(countLabel)}</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} these verified listings have a claim deadline in the next 14 days. Check the official notice and file there yourself if you qualify. ClaimMatch never files for you.</p>
+          ${cards}
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${SITE.name}.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Send the closing-soon email. Refuses unless CLOSING_SOON_EMAIL_ENABLED=1
+ * and a postal address plus verified sender are configured. Tests must mock
+ * Resend — this function never sends when the gate fails.
+ */
+export async function sendClosingSoonEmail(to: string, opts: ClosingSoonEmailOpts): Promise<void> {
+  const gate = closingSoonEmailGate();
+  if (!gate.ok) {
+    console.log(`[email] closing-soon email refused (${gate.reason})`);
+    return;
+  }
+  if (!to || !opts?.items?.length) return;
+  const resend = getResend();
+  if (!resend) {
+    console.log(`[email] RESEND_API_KEY not set — skipping closing-soon email to ${to}.`);
+    return;
+  }
+  const from = process.env.RESEND_FROM || FROM;
+  try {
+    await resend.emails.send({
+      from,
+      to,
+      subject:
+        opts.items.length === 1
+          ? `A settlement closing soon on ${SITE.name}`
+          : `${opts.items.length} settlements closing soon on ${SITE.name}`,
+      html: renderClosingSoonEmail({ ...opts, to }),
+    });
+  } catch (err) {
+    console.error(`[email] Failed to send closing-soon email to ${to}:`, err);
   }
 }
 

@@ -9,7 +9,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { isThinSettlement } from '@/lib/catalog-page';
-import { eligibilitySummary } from '@/lib/claim-input';
 import {
   displaySummary,
   getLawsuits,
@@ -20,7 +19,13 @@ import {
   settleSignalPageFor,
   type CatalogLink,
 } from '@/lib/lawsuits';
-import { proofDetail, proofLabel } from '@/lib/proof';
+import { proofDetail } from '@/lib/proof';
+import {
+  displayEligibilityText,
+  displayProofLabel,
+  overlayVerifiedFacts,
+  showVerifiedBadge,
+} from '@/lib/verified-fields';
 import {
   breadcrumbJsonLd,
   categoryHubPath,
@@ -33,8 +38,13 @@ import {
   settlementMetaTitle,
   settlementPath,
 } from '@/lib/settlement-seo';
+import { flags } from '@/lib/flags';
 import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
+import { AddToCalendarLink } from '@/components/settlement/AddToCalendarLink';
 import { AnswerBlock } from '@/components/settlement/AnswerBlock';
+import { ClosesInChip } from '@/components/settlement/ClosesInChip';
+import { ProofFeedback } from '@/components/settlement/ProofFeedback';
+import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
@@ -117,12 +127,14 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
   const summary = displaySummary(lawsuit);
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
-  const eligibility = eligibilitySummary(lawsuit.eligibility_text);
+  const eligibility = displayEligibilityText(lawsuit);
+  const verified = showVerifiedBadge(lawsuit);
+  const proofShown = displayProofLabel(lawsuit);
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
     lawsuit.description.trim() !== summary;
-  const facts = settlementAnswerFacts(lawsuit);
+  const facts = overlayVerifiedFacts(settlementAnswerFacts(lawsuit), lawsuit);
   const faqs = settlementFaqs(lawsuit);
   const claimHref = `/claim/${lawsuit.slug}`;
   const crumbs = [
@@ -167,11 +179,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
             ) : (
               <span className="badge-gray">Claims closed</span>
             )}
-            {urgency && (
+            {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
                 <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
               </span>
             )}
+            <ClosesInChip deadline={lawsuit.deadline} />
+            <VerifiedBadge lawsuit={lawsuit} />
           </div>
 
           <h1 className="mt-4 max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl">
@@ -198,7 +212,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
         </div>
       </section>
 
-      {/* D50: unverified label with the official link ------------------------ */}
+      {/* D50: unverified label — hidden when this row is verified (C7) ------ */}
+      {!verified && (
       <section className="container-page pb-4" aria-labelledby="unverified-heading">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -217,6 +232,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
           </div>
         </div>
       </section>
+      )}
 
       {/* Body --------------------------------------------------------------- */}
       <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
@@ -226,6 +242,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
               <dd className="mt-1 text-base font-bold text-ink">{deadlineText(lawsuit)}</dd>
+              <AddToCalendarLink slug={lawsuit.slug} deadline={lawsuit.deadline} />
               <dd className="mt-1 text-sm text-ink-muted">
                 {!open
                   ? deadlinePassed
@@ -237,8 +254,15 @@ export default async function LawsuitDetailPage({ params }: Params) {
             )}
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
-              <dd className="mt-1 text-base font-bold text-ink">{proofLabel(lawsuit)}</dd>
-              <dd className="mt-1 text-sm text-ink-muted">{proofDetail(lawsuit)}</dd>
+              <dd className="mt-1 text-base font-bold text-ink">{proofShown}</dd>
+              <dd className="mt-1 text-sm text-ink-muted">
+                {verified
+                  ? proofDetail({
+                      proof_required: false,
+                      eligibility: { proof: lawsuit.proof_verified ?? undefined },
+                    })
+                  : proofDetail(lawsuit)}
+              </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">
@@ -324,6 +348,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </ol>
             </div>
           )}
+
+          {flags.proofFeedback() && <ProofFeedback lawsuitId={lawsuit.id} />}
 
           <SettlementFaq items={faqs} />
 

@@ -72,7 +72,8 @@ end $$;
 --                     share_links and share_link_clicks attribution tables,
 --                     admin/service-role only), referrals and subscribers. Tests 3 and 5 try to write them as anon and
 --                     as a signed-in user and prove that nothing changed.
---   tables_tested_elsewhere  covered by another file in supabase/tests.
+--   tables_tested_elsewhere  covered by another file in supabase/tests
+--                     (proof_feedback: 54_proof_feedback.sql).
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$ select array['profiles', 'claims', 'matches'] $$;
 
@@ -84,7 +85,7 @@ language sql immutable as $$
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
-language sql immutable as $$ select '{}'::text[] $$;
+language sql immutable as $$ select array['proof_feedback'] $$;
 
 -- For each protected table, the row count and an md5 of every row, read as
 -- the superuser. A test saves it before switching to an API role and compares

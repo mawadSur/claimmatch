@@ -23,7 +23,7 @@ import {
 
 /** Settlement columns the claim flow reads (all exist since 0002). */
 export const SETTLEMENT_COLUMNS =
-  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required';
+  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order';
 
 export interface SettlementRecord extends SettlementFacts {
   id: string;
@@ -34,6 +34,8 @@ export interface SettlementRecord extends SettlementFacts {
   eligibility_text: string | null;
   eligibility: Record<string, unknown> | null;
   proof_required: boolean | null;
+  /** 0013: official-form field order (C10). Absent until selected. */
+  form_field_order?: string[] | null;
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

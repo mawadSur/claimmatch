@@ -246,6 +246,38 @@ export async function getCategories(): Promise<string[]> {
   return categoriesOf(await getLawsuits());
 }
 
+/**
+ * Published, non-fictional listings, open or closed. Used by notice lookup and
+ * the recently-closed archive. Never returns sample data.
+ */
+export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
+  if (!supabaseConfigured()) return { lawsuits: [], error: false };
+  try {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from('lawsuits')
+      .select('*')
+      .eq('review_status', 'published')
+      .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
+      .order('deadline', { ascending: true, nullsFirst: false })
+      .limit(1000);
+    if (error) {
+      console.error('[lawsuits] published catalog query failed:', error.message);
+      return { lawsuits: [], error: true };
+    }
+    return {
+      lawsuits: ((data ?? []) as Lawsuit[]).filter(isPublicLawsuit),
+      error: false,
+    };
+  } catch (err) {
+    console.error(
+      '[lawsuits] published catalog query threw:',
+      err instanceof Error ? err.message : err,
+    );
+    return { lawsuits: [], error: true };
+  }
+}
+
 /** Distinct categories of the given rows, A to Z. */
 export function categoriesOf(lawsuits: Pick<Lawsuit, 'category'>[]): string[] {
   return Array.from(new Set(lawsuits.map((l) => l.category).filter(Boolean))).sort();

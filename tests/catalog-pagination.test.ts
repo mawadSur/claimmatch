@@ -7,6 +7,7 @@ import {
   paginate,
   parseHasDeadline,
   parsePage,
+  parseProofFilter,
   sortKnownDeadlineFirst,
 } from '@/lib/catalog-page';
 import { makeLawsuit } from './helpers';
@@ -48,6 +49,17 @@ describe('catalog pagination helpers', () => {
     ];
     expect(filterCatalog(rows, {}).map((r) => r.id)).toEqual(['a', 'b']);
     expect(filterCatalog(rows, { hasDeadline: true }).map((r) => r.id)).toEqual(['a']);
+  });
+
+  it('filters listings whose source says proof is not required', () => {
+    expect(parseProofFilter('no')).toBe('no');
+    expect(parseProofFilter('yes')).toBeUndefined();
+    const rows = [
+      makeLawsuit({ proof: 'no' }, { id: 'none', title: 'None', deadline: '2026-11-01' }),
+      makeLawsuit({ proof: 'yes' }, { id: 'need', title: 'Need', deadline: '2026-11-02' }),
+    ];
+    expect(filterCatalog(rows, { proof: 'no' }).map((r) => r.id)).toEqual(['none']);
+    expect(catalogQueryString({ proof: 'no' })).toBe('proof=no');
   });
 
   it('builds query strings that drop page 1', () => {

@@ -9,6 +9,7 @@ import {
   paginate,
   parseHasDeadline,
   parsePage,
+  parseProofFilter,
 } from '@/lib/catalog-page';
 import {
   categoriesOf,
@@ -57,16 +58,17 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   const q = cleanSearchTerm(firstParam(params.q));
   const category = firstParam(params.category)?.trim() || undefined;
   const hasDeadline = parseHasDeadline(firstParam(params.hasDeadline));
+  const proof = parseProofFilter(firstParam(params.proof));
   const page = parsePage(firstParam(params.page));
 
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it.
   const catalog = await lookupLawsuits();
   const categories = categoriesOf(catalog.lawsuits);
-  const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline });
+  const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline, proof });
   const paged = paginate(filteredList, page, LAWSUITS_PAGE_SIZE);
   const count = paged.total;
-  const filtered = Boolean(q || category || hasDeadline);
+  const filtered = Boolean(q || category || hasDeadline || proof);
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
@@ -142,6 +144,11 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
                   {' '}with a listed deadline
                 </>
               ) : null}
+              {proof === 'no' ? (
+                <>
+                  {' '}that list proof as not required
+                </>
+              ) : null}
             </>
           )}
         </p>
@@ -152,7 +159,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             title="We couldn’t load settlements right now"
             body="This is on our side. Please try again in a few minutes."
             action={
-              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline })}` : '/lawsuits'} className="btn-secondary mt-6">
+              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline, proof })}` : '/lawsuits'} className="btn-secondary mt-6">
                 Try again
               </Link>
             }
@@ -190,6 +197,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
                 q={q}
                 category={category}
                 hasDeadline={hasDeadline}
+                proof={proof}
               />
             )}
           </>
@@ -229,15 +237,17 @@ function Pagination({
   q,
   category,
   hasDeadline,
+  proof,
 }: {
   page: number;
   totalPages: number;
   q?: string;
   category?: string;
   hasDeadline: boolean;
+  proof?: 'no';
 }) {
   const href = (p: number) => {
-    const qs = catalogQueryString({ q, category, hasDeadline, page: p });
+    const qs = catalogQueryString({ q, category, hasDeadline, proof, page: p });
     return qs ? `/lawsuits?${qs}` : '/lawsuits';
   };
   return (

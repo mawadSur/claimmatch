@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { authorizeCron } from '@/lib/cron-auth';
+import { sendClosingSoonEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
+import { closingSoonEmailGate, pickClosingSoonEmailRows } from '@/lib/closing-soon-email';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
 import type { Lawsuit, Profile } from '@/lib/types';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
@@ -14,6 +16,7 @@ import {
   reportHttpStatus,
   runStep,
   serviceConfigProblem,
+  type StepResult,
 } from '../_lib/report';
 
 export const runtime = 'nodejs';
@@ -30,23 +33,45 @@ async function handle(req: Request) {
   }
 
   const gate = digestGate(flags.digest());
+  const steps: Record<string, StepResult> = {};
+
   if (!gate.run) {
-    return NextResponse.json(
-      { ...buildReport('digest', { digest: gate.step }), skipped: D50_PAUSED },
-      { status: 200 },
-    );
+    steps.digest = gate.step;
+  } else {
+    const configProblem = serviceConfigProblem(process.env);
+    steps.digest = configProblem
+      ? missingConfigStep(configProblem, process.env.NODE_ENV === 'production')
+      : await runStep('digest', sendDigest);
   }
 
-  const configProblem = serviceConfigProblem(process.env);
-  const step = configProblem
-    ? missingConfigStep(configProblem, process.env.NODE_ENV === 'production')
-    : await runStep('digest', sendDigest);
-  const report = buildReport('digest', { digest: step });
-  if (step.status === 'failed') {
-    await recordCronFailure('cron/digest', step.error);
+  const closingReady = closingSoonEmailGate();
+  if (!closingReady.ok) {
+    steps.closingSoonEmail = {
+      status: 'skipped',
+      reason:
+        closingReady.reason === 'flag_off'
+          ? 'CLOSING_SOON_EMAIL_ENABLED is off'
+          : closingReady.reason,
+      resume:
+        'Set CLOSING_SOON_EMAIL_ENABLED=1 only after a ClaimMatch inbox, verified sender, and postal address exist (B2/B3).',
+    };
+  } else {
+    const configProblem = serviceConfigProblem(process.env);
+    steps.closingSoonEmail = configProblem
+      ? missingConfigStep(configProblem, process.env.NODE_ENV === 'production')
+      : await runStep('closingSoonEmail', sendClosingSoon);
+  }
+
+  const report = buildReport('digest', steps);
+  if (steps.digest.status === 'failed') {
+    await recordCronFailure('cron/digest', steps.digest.error);
+  }
+  if (steps.closingSoonEmail.status === 'failed') {
+    await recordCronFailure('cron/closing-soon-email', steps.closingSoonEmail.error);
   }
   await maybeAlertCronFailure(report);
-  return NextResponse.json(report, { status: reportHttpStatus(report) });
+  const paused = !gate.run ? { skipped: D50_PAUSED } : {};
+  return NextResponse.json({ ...report, ...paused }, { status: reportHttpStatus(report) });
 }
 
 /**
@@ -100,6 +125,58 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
   }
 
   return { users: profiles.length, emailed };
+}
+
+/**
+ * C15: verified listings closing in 14 days, to email_opt_in users only.
+ * sendClosingSoonEmail refuses again if the flag, postal address, or sender
+ * is missing.
+ */
+async function sendClosingSoon(): Promise<{
+  users: number;
+  emailed: number;
+  listed: number;
+  skipped: string | null;
+}> {
+  const gate = closingSoonEmailGate();
+  if (!gate.ok) {
+    return { users: 0, emailed: 0, listed: 0, skipped: gate.reason };
+  }
+
+  const supabase = createServiceClient();
+  const { data: lawsuitData, error: lawsuitError } = await supabase
+    .from('lawsuits')
+    .select('*')
+    .eq('review_status', 'published');
+  if (lawsuitError) throw new Error(`lawsuits query failed (code ${lawsuitError.code ?? 'unknown'})`);
+
+  const items = pickClosingSoonEmailRows((lawsuitData ?? []) as Lawsuit[]).map((row) => ({
+    title: row.title,
+    slug: row.slug,
+    deadline: row.deadline as string,
+  }));
+  if (items.length === 0) {
+    return { users: 0, emailed: 0, listed: 0, skipped: null };
+  }
+
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email_opt_in', true);
+  if (profileError) throw new Error(`profiles query failed (code ${profileError.code ?? 'unknown'})`);
+  const profiles = (profileData ?? []) as Profile[];
+
+  let emailed = 0;
+  for (const profile of profiles) {
+    if (!profile.email) continue;
+    await sendClosingSoonEmail(profile.email, {
+      name: profile.full_name ?? undefined,
+      items,
+      to: profile.email,
+    });
+    emailed += 1;
+  }
+  return { users: profiles.length, emailed, listed: items.length, skipped: null };
 }
 
 export async function GET(req: Request) {

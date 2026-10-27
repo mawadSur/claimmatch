@@ -17,14 +17,21 @@ import {
 } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { cn, formatDeadline } from '@/lib/utils';
+import {
+  VerifiedFieldsEditor,
+  draftFromLawsuit,
+  parseFormFieldOrderInput,
+  type VerifiedDraft,
+} from './VerifiedFieldsEditor';
 
-type Action = 'publish' | 'reject' | 'update';
+type Action = 'publish' | 'reject' | 'update' | 'verify' | 'unverify';
 type BulkAction = 'bulk_publish' | 'bulk_reject';
 
 interface Row {
   lawsuit: Lawsuit;
   eligibilityText: string;
   eligibilityJson: string;
+  verified: VerifiedDraft;
   busy: Action | null;
   message: { tone: 'success' | 'error'; text: string } | null;
   selected: boolean;
@@ -43,6 +50,7 @@ function makeRow(l: Lawsuit): Row {
     lawsuit: l,
     eligibilityText: l.eligibility_text ?? '',
     eligibilityJson: toJson(l.eligibility),
+    verified: draftFromLawsuit(l),
     busy: null,
     message: null,
     selected: false,
@@ -142,6 +150,17 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
       payloadPatch = {
         eligibility_text: row.eligibilityText,
         eligibility,
+        eligibility_verified: row.verified.eligibilityVerified,
+        proof_verified: row.verified.proofVerified || null,
+        administrator: row.verified.administrator,
+        form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
+      };
+    } else if (action === 'verify') {
+      payloadPatch = {
+        eligibility_verified: row.verified.eligibilityVerified,
+        proof_verified: row.verified.proofVerified || null,
+        administrator: row.verified.administrator,
+        form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
       };
     }
 
@@ -172,14 +191,21 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         return;
       }
 
-      // update — reflect the persisted row + confirm.
+      // update / verify / unverify — reflect the persisted row + confirm.
       const updated = (json.lawsuit as Lawsuit | undefined) ?? row.lawsuit;
+      const saved =
+        action === 'verify'
+          ? 'Marked verified.'
+          : action === 'unverify'
+            ? 'Verification cleared.'
+            : 'Saved.';
       patchRow(id, {
         busy: null,
         lawsuit: updated,
         eligibilityText: updated.eligibility_text ?? row.eligibilityText,
         eligibilityJson: toJson(updated.eligibility),
-        message: { tone: 'success', text: 'Saved.' },
+        verified: draftFromLawsuit(updated),
+        message: { tone: 'success', text: saved },
       });
     } catch {
       patchRow(id, {
@@ -381,6 +407,16 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
                 />
               </div>
             </div>
+
+            <VerifiedFieldsEditor
+              id={l.id}
+              lawsuit={l}
+              draft={row.verified}
+              busy={row.busy !== null}
+              onChange={(verified) => patchRow(l.id, { verified, message: null })}
+              onVerify={() => act(row, 'verify')}
+              onUnverify={() => act(row, 'unverify')}
+            />
 
             {row.message && (
               <div

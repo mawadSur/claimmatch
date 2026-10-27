@@ -8,7 +8,9 @@ import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { LawsuitCard } from '@/components/LawsuitCard';
+import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { flags } from '@/lib/flags';
 
 const STEPS = [
   {
@@ -223,6 +225,8 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {flags.homeNarrowing() && <HomeNarrowing />}
 
       {/* What we do and don't do --------------------------------------------- */}
       <section className="container-page py-16 sm:py-20" aria-labelledby="honest-heading">
