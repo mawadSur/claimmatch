@@ -3,11 +3,18 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CalendarClock, RefreshCw, SearchX } from 'lucide-react';
 import {
+  catalogQueryString,
+  filterCatalog,
+  LAWSUITS_PAGE_SIZE,
+  paginate,
+  parseHasDeadline,
+  parsePage,
+} from '@/lib/catalog-page';
+import {
   categoriesOf,
   cleanSearchTerm,
   isSettleSignalRecord,
   lookupLawsuits,
-  searchCatalog,
 } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
@@ -17,6 +24,9 @@ import { SITE } from '@/lib/utils';
 
 const DESCRIPTION =
   'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by ClaimMatch, so check the official site before you file. Filing is free.';
+
+/** Public catalog: no per-user content. CDN / ISR cache for 15 minutes. */
+export const revalidate = 900;
 
 export const metadata: Metadata = {
   title: 'Open Class Action Settlements',
@@ -46,15 +56,20 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   const params = await searchParams;
   const q = cleanSearchTerm(firstParam(params.q));
   const category = firstParam(params.category)?.trim() || undefined;
+  const hasDeadline = parseHasDeadline(firstParam(params.hasDeadline));
+  const page = parsePage(firstParam(params.page));
 
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it.
   const catalog = await lookupLawsuits();
   const categories = categoriesOf(catalog.lawsuits);
-  const lawsuits = searchCatalog(catalog.lawsuits, { q, category });
-  const count = lawsuits.length;
-  const filtered = Boolean(q || category);
-  const showsSettleSignal = lawsuits.some(isSettleSignalRecord);
+  const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline });
+  const paged = paginate(filteredList, page, LAWSUITS_PAGE_SIZE);
+  const count = paged.total;
+  const filtered = Boolean(q || category || hasDeadline);
+  const showsSettleSignal = paged.items.some(isSettleSignalRecord);
+  const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
+  const rangeEnd = Math.min(count, paged.page * paged.pageSize);
 
   return (
     <>
@@ -109,7 +124,9 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             <>
               {count === 0
                 ? 'No open settlements found'
-                : `Showing ${count} open ${count === 1 ? 'settlement' : 'settlements'}`}
+                : paged.totalPages > 1
+                  ? `Showing ${rangeStart}–${rangeEnd} of ${count} open ${count === 1 ? 'settlement' : 'settlements'}`
+                  : `Showing ${count} open ${count === 1 ? 'settlement' : 'settlements'}`}
               {category ? (
                 <>
                   {' '}in <span className="font-semibold text-ink">{category}</span>
@@ -118,6 +135,11 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               {q ? (
                 <>
                   {' '}matching “<span className="font-semibold text-ink">{q}</span>”
+                </>
+              ) : null}
+              {hasDeadline ? (
+                <>
+                  {' '}with a listed deadline
                 </>
               ) : null}
             </>
@@ -130,7 +152,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             title="We couldn’t load settlements right now"
             body="This is on our side. Please try again in a few minutes."
             action={
-              <Link href={filtered ? `/lawsuits?${toQuery(q, category)}` : '/lawsuits'} className="btn-secondary mt-6">
+              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline })}` : '/lawsuits'} className="btn-secondary mt-6">
                 Try again
               </Link>
             }
@@ -153,13 +175,24 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             }
           />
         ) : (
-          <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {lawsuits.map((l) => (
-              <li key={l.id}>
-                <LawsuitCard lawsuit={l} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {paged.items.map((l) => (
+                <li key={l.id}>
+                  <LawsuitCard lawsuit={l} />
+                </li>
+              ))}
+            </ul>
+            {paged.totalPages > 1 && (
+              <Pagination
+                page={paged.page}
+                totalPages={paged.totalPages}
+                q={q}
+                category={category}
+                hasDeadline={hasDeadline}
+              />
+            )}
+          </>
         )}
 
         {showsSettleSignal && (
@@ -190,11 +223,44 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   );
 }
 
-function toQuery(q: string | undefined, category: string | undefined): string {
-  const params = new URLSearchParams();
-  if (q) params.set('q', q);
-  if (category) params.set('category', category);
-  return params.toString();
+function Pagination({
+  page,
+  totalPages,
+  q,
+  category,
+  hasDeadline,
+}: {
+  page: number;
+  totalPages: number;
+  q?: string;
+  category?: string;
+  hasDeadline: boolean;
+}) {
+  const href = (p: number) => {
+    const qs = catalogQueryString({ q, category, hasDeadline, page: p });
+    return qs ? `/lawsuits?${qs}` : '/lawsuits';
+  };
+  return (
+    <nav className="mt-10 flex flex-wrap items-center justify-center gap-3" aria-label="Pagination">
+      {page > 1 ? (
+        <Link href={href(page - 1)} className="btn-secondary">
+          Previous
+        </Link>
+      ) : (
+        <span className="btn-secondary pointer-events-none opacity-50">Previous</span>
+      )}
+      <p className="text-sm text-ink-muted">
+        Page {page} of {totalPages}
+      </p>
+      {page < totalPages ? (
+        <Link href={href(page + 1)} className="btn-secondary">
+          Next
+        </Link>
+      ) : (
+        <span className="btn-secondary pointer-events-none opacity-50">Next</span>
+      )}
+    </nav>
+  );
 }
 
 function EmptyState({

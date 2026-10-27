@@ -34,6 +34,22 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
   });
 
+  it('omits thin settlements that the detail page noindexes', async () => {
+    listed.lawsuits = [
+      lawsuit(),
+      lawsuit({
+        slug: 'thin-settlement',
+        deadline: null,
+        eligibility_text: null,
+        administrator: null,
+        typical_payout: null,
+      }),
+    ];
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => u.endsWith('/lawsuits/amazon-return-policy-settlement'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/lawsuits/thin-settlement'))).toBe(false);
+  });
+
   it('omits closed and expired rows because getLawsuits already dropped them', async () => {
     listed.lawsuits = [];
     const urls = (await sitemap()).map((e) => e.url);

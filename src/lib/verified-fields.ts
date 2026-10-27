@@ -88,17 +88,28 @@ export function displayProofLabel(row: VerifiedFieldSource): string {
 }
 
 /** Overlay verified who-qualifies / proof / administrator onto answer facts. */
-export function overlayVerifiedFacts<T extends { qualifies: string; proof: string; administrator: string }>(
-  facts: T,
-  row: VerifiedFieldSource,
-): T {
+export function overlayVerifiedFacts<
+  T extends {
+    qualifies: string | null;
+    proof: string;
+    administrator: string | null;
+    missing?: string[];
+  },
+>(facts: T, row: VerifiedFieldSource): T {
   if (!showVerifiedBadge(row)) return facts;
-  const who = row.eligibility_verified?.trim();
-  const admin = row.administrator?.trim();
+  const who = row.eligibility_verified?.trim() || facts.qualifies;
+  const admin = row.administrator?.trim() || facts.administrator;
+  const proof = isProofVerified(row.proof_verified) ? displayProofLabel(row) : facts.proof;
+  const missing = facts.missing?.filter((label) => {
+    if (label === 'who qualifies' && who) return false;
+    if (label === 'administrator' && admin) return false;
+    return true;
+  });
   return {
     ...facts,
-    qualifies: who || facts.qualifies,
-    proof: isProofVerified(row.proof_verified) ? displayProofLabel(row) : facts.proof,
-    administrator: admin || facts.administrator,
+    qualifies: who,
+    proof,
+    administrator: admin,
+    ...(missing ? { missing } : {}),
   };
 }

@@ -24,7 +24,7 @@ export function Footer() {
             </Link>
             <p className="mt-3 max-w-sm text-sm text-ink-muted">
               A free claim assistant. Find open class-action settlements, file on the
-              official site, and keep track of your claims. We never take a cut.
+              official site, and keep track of your claims. Free during beta.
             </p>
           </div>
 

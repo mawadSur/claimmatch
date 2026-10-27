@@ -104,6 +104,7 @@ export default async function AdminOverviewPage() {
     count('jobs', (q) => q.eq('status', 'failed')),
   ]);
   const lastIngest = await loadLastIngestRun(svc);
+  const lastDigestFailure = await loadLastDigestFailure(svc);
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -129,6 +130,8 @@ export default async function AdminOverviewPage() {
           claims or handles settlement money. Counts refresh on each load.
         </p>
       </header>
+
+      <CronFailureBanners ingest={lastIngest} digest={lastDigestFailure} />
 
       {/* Quick-action cards */}
       <section className="grid gap-4 sm:grid-cols-2">
@@ -285,6 +288,71 @@ interface IngestRun {
   status: string;
   error: string | null;
   summary: Partial<IngestSummary>;
+}
+
+interface DigestFailure {
+  at: string;
+  error: string;
+}
+
+/** Latest failed digest (recordCronFailure), or null. */
+async function loadLastDigestFailure(
+  svc: ReturnType<typeof createServiceClient>,
+): Promise<DigestFailure | null> {
+  try {
+    const { data, error } = await svc
+      .from('jobs')
+      .select('created_at, error, payload')
+      .eq('type', 'notify')
+      .eq('status', 'failed')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error || !data) return null;
+    const row = (data as Array<{ created_at: string; error: string | null; payload: unknown }>).find(
+      (r) => {
+        const payload = r.payload && typeof r.payload === 'object' ? (r.payload as { trigger?: string }) : {};
+        return payload.trigger === 'cron/digest';
+      },
+    );
+    if (!row || !row.error) return null;
+    return { at: String(row.created_at), error: row.error };
+  } catch {
+    return null;
+  }
+}
+
+function CronFailureBanners({
+  ingest,
+  digest,
+}: {
+  ingest: IngestRun | null;
+  digest: DigestFailure | null;
+}) {
+  const ingestFailed = ingest && ingest.status === 'failed';
+  const ingestReason = ingestFailed ? ingest.error ?? (ingestProblems(ingest.summary).join('; ') || 'unknown error') : null;
+  if (!ingestFailed && !digest) return null;
+  return (
+    <div className="space-y-3">
+      {ingestFailed && ingestReason && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" aria-hidden />
+          Last ingest failed: {ingestReason}, {new Date(ingest.at).toUTCString()}
+        </p>
+      )}
+      {digest && (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" aria-hidden />
+          Last digest failed: {digest.error}, {new Date(digest.at).toUTCString()}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** The latest ingest run record (src/lib/jobs.ts recordIngestRun), or null. */

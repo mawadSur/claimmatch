@@ -47,6 +47,8 @@ describe('buildDeadlineIcs', () => {
     expect(ics).toContain('BEGIN:VCALENDAR');
     expect(ics).toContain('VERSION:2.0');
     expect(ics).toContain('BEGIN:VEVENT');
+    expect(ics).toEqual(expect.any(String));
+    if (ics === null) throw new Error('expected an ICS payload for a readable deadline');
     expect(ics).toContain('DTSTART;VALUE=DATE:20261201');
     expect(ics).toContain('DTEND;VALUE=DATE:20261202');
     const unfolded = ics.replace(/\r\n /g, '');
@@ -55,7 +57,7 @@ describe('buildDeadlineIcs', () => {
     expect(unfolded).toContain('Check the official site for the exact cutoff');
     expect(ics).toContain('END:VEVENT');
     expect(ics).toContain('END:VCALENDAR');
-    expect(ics?.includes('\r\n')).toBe(true);
+    expect(ics.includes('\r\n')).toBe(true);
   });
 
   it('returns null without a readable deadline', () => {

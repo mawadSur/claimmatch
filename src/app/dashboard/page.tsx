@@ -64,7 +64,8 @@ export default async function DashboardPage({
           </h1>
           <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
             Track the claims you file on official settlement sites. ClaimMatch is
-            free. It doesn&rsquo;t file for you and never takes a cut of your payment.
+            free during beta. It doesn&rsquo;t file for you and never handles
+            settlement payments.
           </p>
         </header>
 

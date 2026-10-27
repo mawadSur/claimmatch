@@ -83,8 +83,11 @@ describe('public pages', () => {
     }
   });
 
-  it('pricing says it is free and never takes a cut', () => {
-    expect(read('src/app/pricing/page.tsx')).toMatch(/Free\.[\s\S]*We never take a cut of your settlement\./);
+  it('pricing says it is free during beta and does not promise no cut', () => {
+    const pricing = read('src/app/pricing/page.tsx');
+    expect(pricing).toMatch(/Free during beta/);
+    expect(pricing).toMatch(/We may introduce a fee later/);
+    expect(pricing).not.toMatch(/never take a cut|take a cut|doesn['’]t make money/i);
   });
 
   it('trust page credits SettleSignal as a data source, not an official one', () => {

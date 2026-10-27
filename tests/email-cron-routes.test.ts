@@ -20,6 +20,7 @@ const m = vi.hoisted(() => {
     completeJob: vi.fn(),
     failJob: vi.fn(),
     recordIngestRun: vi.fn(),
+    recordCronFailure: vi.fn(),
     tables: {} as Record<string, unknown>,
     createServiceClient: vi.fn(),
     thenable,
@@ -35,6 +36,7 @@ vi.mock('@/lib/jobs', () => ({
   completeJob: m.completeJob,
   failJob: m.failJob,
   recordIngestRun: m.recordIngestRun,
+  recordCronFailure: m.recordCronFailure,
 }));
 vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: m.createServiceClient,

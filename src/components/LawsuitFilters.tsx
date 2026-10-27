@@ -22,11 +22,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
 
   const activeCategory = searchParams.get('category') ?? '';
   const activeQ = searchParams.get('q') ?? '';
+  const activeHasDeadline = searchParams.get('hasDeadline') === '1';
   const [q, setQ] = useState(activeQ);
   const [isPending, startTransition] = useTransition();
 
   const commit = useCallback(
-    (next: { q?: string; category?: string }) => {
+    (next: { q?: string; category?: string; hasDeadline?: boolean }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (next.q !== undefined) {
         if (next.q.trim()) params.set('q', next.q.trim());
@@ -36,6 +37,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
         if (next.category) params.set('category', next.category);
         else params.delete('category');
       }
+      if (next.hasDeadline !== undefined) {
+        if (next.hasDeadline) params.set('hasDeadline', '1');
+        else params.delete('hasDeadline');
+      }
+      // Filters apply across pages; start again at page 1.
+      params.delete('page');
       const qs = params.toString();
       startTransition(() => {
         router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -63,7 +70,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
     return () => clearTimeout(t);
   }, [q, activeQ, commit, posthog]);
 
-  const hasFilters = Boolean(activeQ || activeCategory);
+  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline);
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-card sm:p-5">
@@ -102,7 +109,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
       </div>
 
       {/* Category pills */}
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter settlements">
         <Pill active={!activeCategory} onClick={() => commit({ category: '' })}>
           All
         </Pill>
@@ -115,6 +122,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
             {c}
           </Pill>
         ))}
+        <Pill
+          active={activeHasDeadline}
+          onClick={() => commit({ hasDeadline: !activeHasDeadline })}
+        >
+          Has a deadline
+        </Pill>
       </div>
 
       {hasFilters && (
@@ -122,7 +135,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
           type="button"
           onClick={() => {
             setQ('');
-            commit({ q: '', category: '' });
+            commit({ q: '', category: '', hasDeadline: false });
           }}
           className="mt-3 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         >

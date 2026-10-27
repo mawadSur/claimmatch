@@ -37,12 +37,12 @@ const WE_DO = [
   'List settlements that are open for claims, with their deadlines',
   'Link to the official settlement site so you can check details and file',
   'Keep track of the claims you tell us you filed',
-  'Stay free to use',
+  'Stay free during beta',
 ];
 
 const WE_DO_NOT = [
   'File or submit claims for you',
-  'Touch your settlement money or take a cut',
+  'Handle settlement payments',
   'Give legal advice or decide whether you qualify',
   'Sell your personal information',
 ];
@@ -91,7 +91,9 @@ export default async function HomePage() {
                 className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-muted lg:mx-0"
               >
                 Check if you qualify on the official notice, file your claim on the
-                settlement’s own website, then keep track of it here.
+                settlement’s own website, then keep track of it here. Over the official
+                site alone, ClaimMatch adds the official link, the deadline we have, a
+                note on what we could not verify, copy-ready details, and a claim tracker.
               </p>
 
               <div
@@ -111,8 +113,8 @@ export default async function HomePage() {
                 className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-muted lg:justify-start"
               >
                 {[
-                  { icon: CheckCircle2, text: 'Free to use' },
-                  { icon: HandCoins, text: 'We never take a cut' },
+                  { icon: CheckCircle2, text: 'Free during beta' },
+                  { icon: HandCoins, text: 'We never handle settlement payments' },
                   { icon: Scale, text: 'Not a law firm' },
                 ].map(({ icon: Icon, text }) => (
                   <li key={text} className="inline-flex items-center gap-1.5">

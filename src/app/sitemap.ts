@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { isThinSettlement } from '@/lib/catalog-page';
 import { categoriesOf, getLawsuits } from '@/lib/lawsuits';
 import { newestUpdatedAt } from '@/lib/settlement-hubs';
 import {
@@ -52,10 +53,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  const lawsuitPages: MetadataRoute.Sitemap = lawsuits.map((lawsuit) => ({
-    url: pageUrl(`/lawsuits/${lawsuit.slug}`),
-    lastModified: new Date(lawsuit.updated_at),
-  }));
+  const lawsuitPages: MetadataRoute.Sitemap = lawsuits
+    .filter((lawsuit) => !isThinSettlement(lawsuit))
+    .map((lawsuit) => ({
+      url: pageUrl(`/lawsuits/${lawsuit.slug}`),
+      lastModified: new Date(lawsuit.updated_at),
+    }));
 
   return [...staticPages, ...hubs, ...lawsuitPages];
 }

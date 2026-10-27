@@ -51,7 +51,7 @@ export default async function OnboardingPage({
             <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">Welcome to ClaimMatch</h1>
             <p className="mt-3 leading-relaxed text-ink-muted">
               ClaimMatch is a free claim assistant. It never files for you and never
-              takes a cut. Here&rsquo;s how it works:
+              handles settlement payments. Here&rsquo;s how it works:
             </p>
           </div>
 

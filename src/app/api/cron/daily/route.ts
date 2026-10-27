@@ -4,6 +4,7 @@ import { flags } from '@/lib/flags';
 import { recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
+import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import {
   buildReport,
   checkIngestStep,
@@ -58,6 +59,7 @@ async function handle(req: Request) {
   }
 
   const report = buildReport('daily', steps);
+  await maybeAlertCronFailure(report);
   return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 

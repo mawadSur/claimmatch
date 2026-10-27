@@ -5,15 +5,17 @@ settlements that are open for claims, check whether they qualify on the official
 notice, file on the official administrator's site themselves, and keep track of
 their claims in ClaimMatch.
 
-- ClaimMatch never files or submits a claim for anyone, never handles settlement
-  money, and never takes a cut.
+- ClaimMatch never files or submits a claim for anyone and never handles
+  settlement money. Not taking a cut is an internal position under review, not
+  a public promise; monetization undecided (D4).
 - A claim reads "Submitted" only with the administrator's confirmation number.
   Before that it reads "Not filed yet" or "Reported filed by you".
 - Settlement listings come from [SettleSignal](https://settlesignal.com/data/)
   (CC BY 4.0) and are labeled "Unverified: check the official site" until each
   record is verified.
-- Pre-filled claim packets (the user's details, ready to copy into the official
-  form) are offered in every state. The user still reviews and submits the claim.
+- Copy-ready claim details (the user's saved name, email, phone, address and
+  state, ready to copy into the official form) are offered in every state. The
+  user still reviews and submits the claim.
 - Filing as the user's agent may come only in a later phase, with counsel review
   and written permission from each settlement administrator.
 
@@ -142,7 +144,7 @@ src/
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/                0001–0011: schema, RLS, grants, trust reset, feed presence, attribution
+  migrations/                0001–0012: schema, RLS, grants, trust reset, feed presence, attribution
   tests/                     SQL tests run by scripts/db-test.sh
 tests/                       vitest
 ```

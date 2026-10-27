@@ -8,12 +8,12 @@ import { SITE, canonicalUrl } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'How ClaimMatch makes money',
   description:
-    'Filing a settlement claim is always free on the official site. ClaimMatch pre-fills your details so you can submit faster. Using ClaimMatch is free during beta.',
+    'ClaimMatch is free during beta; copy-ready details; you file on the official site.',
   alternates: { canonical: canonicalUrl('/how-we-make-money') },
   openGraph: {
     title: 'How ClaimMatch makes money',
     description:
-      'You review and submit every claim yourself. Our fee is being finalized. Using ClaimMatch is free during beta.',
+      'Free during beta; copy-ready details; you file on the official site.',
     url: canonicalUrl('/how-we-make-money'),
     siteName: SITE.name,
     type: 'website',

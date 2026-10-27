@@ -21,12 +21,15 @@ export function AnswerBlock({
         From our listing. Confirm every detail on the official notice before you file.
       </p>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Fact label="Who qualifies" value={facts.qualifies} wide />
+        {facts.qualifies && <Fact label="Who qualifies" value={facts.qualifies} wide />}
         <Fact label="Listed payout" value={facts.payout} />
-        <Fact label="Claim deadline" value={facts.deadline} />
+        {facts.deadline && <Fact label="Claim deadline" value={facts.deadline} />}
         <Fact label="Proof needed" value={facts.proof} />
-        <Fact label="Administrator" value={facts.administrator} />
+        {facts.administrator && <Fact label="Administrator" value={facts.administrator} />}
       </dl>
+      {facts.missing.length > 0 && (
+        <MissingDetailsBlock missing={facts.missing} official={official} />
+      )}
       {open && (
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link href={claimHref} className="btn-primary justify-center">
@@ -46,6 +49,42 @@ export function AnswerBlock({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+export function MissingDetailsBlock({
+  missing,
+  official,
+}: {
+  missing: string[];
+  official: CatalogLink | null;
+}) {
+  if (missing.length === 0) return null;
+  const list = missing.join(', ');
+  return (
+    <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-ink">
+      <p>
+        We don&apos;t have these details yet: {list}. Check the official notice
+        {official ? (
+          <>
+            {' '}
+            (
+            <a
+              href={official.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+            >
+              {official.kind === 'official' ? official.host : official.label}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            )
+          </>
+        ) : (
+          '.'
+        )}
+      </p>
     </div>
   );
 }

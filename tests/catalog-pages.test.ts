@@ -232,6 +232,12 @@ describe('LawsuitCard', () => {
     expect(html).not.toMatch(/>None</);
   });
 
+  it('labels cards with no deadline instead of "Not listed"', () => {
+    const html = render({ lawsuit: lawsuit({ deadline: null }) });
+    expect(html).toContain('No deadline listed');
+    expect(html).not.toContain('Not listed');
+  });
+
   it('drops match scores and "Matched" badges', () => {
     const html = render({ lawsuit: lawsuit(), badge: { label: 'Matched 100%' } });
     expect(html).not.toContain('Matched');
@@ -259,8 +265,11 @@ describe('settlement page', () => {
     expect(html).toContain('Start your claim');
     expect(html).toContain('Check if you qualify');
     expect(html).toContain('The short answer');
-    expect(html).toContain('Who qualifies');
-    expect(html).toContain('Administrator');
+    expect(html).toContain('have these details yet');
+    expect(html).toContain('who qualifies');
+    expect(html).toContain('administrator');
+    expect(html).not.toMatch(/Who qualifies[\s\S]*Not listed/);
+    expect(html).not.toMatch(/Claim deadline[\s\S]*Not listed/);
     expect(html).toContain('Frequently asked questions');
     expect(html).toContain('FAQPage');
     expect(html).toContain('BreadcrumbList');
@@ -271,8 +280,9 @@ describe('settlement page', () => {
     expectHonest(html);
 
     const meta = await generateMetadata(page('amazon-return-policy-settlement'));
-    expect(meta.title).toContain('Who Qualifies');
-    expect(meta.title).toContain('Claim Deadline');
+    expect(meta.title).toBe('Amazon Return Policy Settlement: Official Claim Link & What We Know');
+    expect(String(meta.title)).not.toContain('Who Qualifies');
+    expect(String(meta.title)).not.toContain('Claim Deadline');
     expect(meta.alternates).toMatchObject({
       canonical: expect.stringContaining('/lawsuits/amazon-return-policy-settlement'),
     });
@@ -353,6 +363,44 @@ describe('settlement page', () => {
     expect(html).toContain('href="https://www.court.gov/notice"');
   });
 
+  it('indexes a full listing and noindexes a thin one', async () => {
+    db.single = {
+      data: lawsuit({
+        eligibility_text: 'Anyone who returned an item to Amazon in 2023.',
+        administrator: 'Angeion Group',
+        typical_payout: 'Up to $40',
+        deadline: '2099-12-01',
+      }),
+      error: null,
+    };
+    const full = await generateMetadata(page('amazon-return-policy-settlement'));
+    expect(full.title).toContain('Who Qualifies');
+    expect(full.title).toContain('Claim Deadline');
+    expect(full.robots).toMatchObject({ index: true });
+    const fullHtml = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(fullHtml).toContain('Who qualifies');
+    expect(fullHtml).toContain('Anyone who returned an item to Amazon in 2023.');
+    expect(fullHtml).toContain('Angeion Group');
+    expect(fullHtml).not.toContain("We don't have these details yet");
+
+    db.single = {
+      data: lawsuit({
+        deadline: null,
+        eligibility_text: null,
+        administrator: null,
+        typical_payout: null,
+      }),
+      error: null,
+    };
+    const thin = await generateMetadata(page('amazon-return-policy-settlement'));
+    expect(thin.title).toBe('Amazon Return Policy Settlement: Official Claim Link & What We Know');
+    expect(String(thin.description)).not.toMatch(/Who Qualifies|Claim deadline/i);
+    expect(thin.robots).toMatchObject({ index: false, follow: true });
+    const thinHtml = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(thinHtml).toContain('have these details yet');
+    expect(thinHtml).not.toContain('Not listed');
+  });
+
   it('returns 404 for fictional settlements', async () => {
     await expect(LawsuitDetailPage(page('robocall-tcpa-settlement'))).rejects.toThrow();
     const meta = await generateMetadata(page('robocall-tcpa-settlement'));
@@ -382,6 +430,35 @@ describe('catalog page', () => {
     const html = renderToStaticMarkup(await LawsuitsPage(searchParams({ q: 'zzz' })));
     expect(html).toContain('No open settlements match your search');
     expect(html).toContain('Clear filters');
+  });
+
+  it('paginates 24 per page and keeps filters on page links', async () => {
+    db.list = {
+      data: Array.from({ length: 30 }, (_, i) =>
+        lawsuit({
+          id: `id-${i}`,
+          slug: `settlement-${i}`,
+          title: `Settlement ${i}`,
+          deadline: i < 5 ? null : `2099-12-${String(((i - 5) % 28) + 1).padStart(2, '0')}`,
+        }),
+      ),
+      error: null,
+    };
+    const page1 = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
+    expect(page1).toContain('Showing 1–24 of 30 open settlements');
+    expect(page1).toContain('Page 1 of 2');
+    expect(page1).toContain('href="/lawsuits?page=2"');
+    // Known deadlines sort first, so page 1 is all dated.
+    expect(page1).not.toContain('No deadline listed');
+
+    const page2 = renderToStaticMarkup(await LawsuitsPage(searchParams({ page: '2' })));
+    expect(page2).toContain('Showing 25–30 of 30 open settlements');
+    expect(page2).toContain('No deadline listed');
+
+    const dated = renderToStaticMarkup(await LawsuitsPage(searchParams({ hasDeadline: '1' })));
+    expect(dated).toContain('with a listed deadline');
+    expect(dated).toContain('Showing 1–24 of 25 open settlements');
+    expect(dated).not.toContain('No deadline listed');
   });
 
   it('shows an error state, not sample data, when the database fails', async () => {

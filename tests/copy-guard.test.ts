@@ -59,6 +59,14 @@ const RULES: Rule[] = [
   },
   { id: 'N% match', pattern: /(?:\d{1,3}|\})\s?%\s*match/gi },
   { id: 'you are owed', pattern: /\byou\s+(?:are|could\s+be|may\s+be|might\s+be)\s+owed\b/gi },
+  { id: 'never take a cut', pattern: /\bnever\s+takes?\s+a\s+cut\b/gi },
+  // Negation-free: even "we don't take a cut" is a public no-cut promise.
+  { id: 'take a cut', pattern: /\btakes?\s+a\s+cut\b/gi },
+  { id: "doesn't make money", pattern: /\bdoesn['’]t\s+make\s+money\b/gi },
+  { id: 'pending counsel', pattern: /\bpending\s+counsel\b/gi },
+  { id: 'draft for review', pattern: /\bdraft\s+for\s+review\b/gi },
+  { id: 'fully pre-fill', pattern: /\bfully\s+pre-?fills?\b/gi },
+  { id: 'pre-fills the official', pattern: /\bpre-?fills?\s+(?:the|your)\b/gi },
 ];
 
 /**
@@ -204,6 +212,18 @@ describe('copy guard rules', () => {
     ['const a = <b>{pct}% match</b>;', 'N% match'],
     ['const a = "You are owed $180";', 'you are owed'],
     ['const a = "you may be owed money";', 'you are owed'],
+    ['const a = "We never take a cut";', 'never take a cut'],
+    ['const a = "ClaimMatch never takes a cut";', 'never take a cut'],
+    ['const a = "take a cut of a settlement";', 'take a cut'],
+    ['const a = "Touch your settlement money or take a cut";', 'take a cut'],
+    ["const a = \"Right now, it doesn't make money\";", "doesn't make money"],
+    ['const a = "it doesn’t make money today";', "doesn't make money"],
+    ['const a = "(Pending counsel review.)";', 'pending counsel'],
+    ['const a = "Draft for review — not legal text.";', 'draft for review'],
+    ['const a = "we fully pre-fill the official form";', 'fully pre-fill'],
+    ['const a = "fully prefill your claim";', 'fully pre-fill'],
+    ['const a = "pre-fills your details";', 'pre-fills the official'],
+    ['const a = "pre-fills the official claim form";', 'pre-fills the official'],
   ])('flags %s', (text, rule) => {
     expect(flagged(text, text.includes('<') ? 'snippet.tsx' : 'snippet.ts')).toContain(rule);
   });
@@ -239,6 +259,12 @@ describe('copy guard rules', () => {
     'const a = "https://example.com/we-file";',
     '// We file on your behalf. No win, no fee. 15% contingency.\nconst a = 1;',
     '/* You’re owed $50B */ const a = 1;',
+    'const a = "copy-ready details";',
+    'const a = "We never handle settlement payments";',
+    'const a = "ClaimMatch never files for you";',
+    'const a = "Free during beta";',
+    'const a = profile.prefill_consent_at;',
+    '// We never take a cut. Pending counsel. Draft for review.\nconst a = 1;',
   ])('allows %s', (text) => {
     expect(flagged(text)).toEqual([]);
   });
