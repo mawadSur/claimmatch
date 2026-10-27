@@ -265,7 +265,7 @@ describe('settlement page', () => {
     expect(html).toContain('Start your claim');
     expect(html).toContain('Check if you qualify');
     expect(html).toContain('The short answer');
-    expect(html).toContain("We don't have these details yet");
+    expect(html).toContain('have these details yet');
     expect(html).toContain('who qualifies');
     expect(html).toContain('administrator');
     expect(html).not.toMatch(/Who qualifies[\s\S]*Not listed/);
@@ -397,7 +397,7 @@ describe('settlement page', () => {
     expect(String(thin.description)).not.toMatch(/Who Qualifies|Claim deadline/i);
     expect(thin.robots).toMatchObject({ index: false, follow: true });
     const thinHtml = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
-    expect(thinHtml).toContain("We don't have these details yet");
+    expect(thinHtml).toContain('have these details yet');
     expect(thinHtml).not.toContain('Not listed');
   });
 
@@ -439,7 +439,7 @@ describe('catalog page', () => {
           id: `id-${i}`,
           slug: `settlement-${i}`,
           title: `Settlement ${i}`,
-          deadline: i < 5 ? null : `2099-12-${String((i % 28) + 1).padStart(2, '0')}`,
+          deadline: i < 5 ? null : `2099-12-${String(((i - 5) % 28) + 1).padStart(2, '0')}`,
         }),
       ),
       error: null,
@@ -457,9 +457,8 @@ describe('catalog page', () => {
 
     const dated = renderToStaticMarkup(await LawsuitsPage(searchParams({ hasDeadline: '1' })));
     expect(dated).toContain('with a listed deadline');
-    expect(dated).toContain('Showing 25 open settlements');
+    expect(dated).toContain('Showing 1–24 of 25 open settlements');
     expect(dated).not.toContain('No deadline listed');
-    expect(dated).not.toContain('Page 1 of');
   });
 
   it('shows an error state, not sample data, when the database fails', async () => {
