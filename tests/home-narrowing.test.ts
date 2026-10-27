@@ -24,12 +24,12 @@ describe('C17 home narrowing', () => {
   });
 
   it('stays off the home page unless the flag is exactly 1', async () => {
-    const off = renderToStaticMarkup(createElement(await HomePage()));
+    const off = renderToStaticMarkup(await HomePage());
     expect(off).not.toContain('No proof required');
     expect(off).not.toContain('Start with a type of settlement');
 
     vi.stubEnv('HOME_NARROWING_ENABLED', '1');
-    const on = renderToStaticMarkup(createElement(await HomePage()));
+    const on = renderToStaticMarkup(await HomePage());
     expect(on).toContain('Start with a type of settlement');
     expect(on).toContain('No proof required');
     expect(on).not.toMatch(/\bmatch(?:ed|es|ing)?\b/i);

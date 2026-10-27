@@ -23,16 +23,19 @@ describe('closing-soon email gate', () => {
   it('refuses unless the flag is exactly 1, with a postal address and verified sender', () => {
     expect(isVerifiedSender('ClaimMatch <onboarding@resend.dev>')).toBe(false);
     expect(isVerifiedSender('ClaimMatch <hello@claimmatch.com>')).toBe(true);
-    expect(closingSoonEmailGate({}).reason).toBe('flag_off');
-    expect(closingSoonEmailGate({ CLOSING_SOON_EMAIL_ENABLED: 'true' }).reason).toBe('flag_off');
+    expect(closingSoonEmailGate({})).toEqual({ ok: false, reason: 'flag_off' });
+    expect(closingSoonEmailGate({ CLOSING_SOON_EMAIL_ENABLED: 'true' })).toEqual({
+      ok: false,
+      reason: 'flag_off',
+    });
 
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St, City, ST 00000');
     expect(
       closingSoonEmailGate({
         CLOSING_SOON_EMAIL_ENABLED: '1',
         RESEND_FROM: 'ClaimMatch <hello@claimmatch.com>',
-      }).reason,
-    ).toBe('missing_resend_key');
+      }),
+    ).toEqual({ ok: false, reason: 'missing_resend_key' });
 
     expect(
       closingSoonEmailGate({

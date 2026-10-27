@@ -91,8 +91,8 @@ export function filterCatalog<
       proof_verified: l.proof_verified,
       verified_at: l.verified_at,
       eligibility_verified: l.eligibility_verified,
-      administrator: l.administrator,
-      eligibility_text: l.eligibility_text,
+      administrator: l.administrator ?? null,
+      eligibility_text: l.eligibility_text ?? null,
     }) === 'no');
   }
   return sortKnownDeadlineFirst(rows);

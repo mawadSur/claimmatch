@@ -9,7 +9,7 @@ export const NOTICE_NOT_FOUND =
 export const NOTICE_LOOKUP_PROMPT =
   'Settlement name, administrator, or claim ID from your notice';
 
-type Scored = { row: Lawsuit; score: number };
+type Scored<T> = { row: T; score: number };
 
 /**
  * Rank catalog rows for a pasted notice. Internal ranking only — callers never
@@ -25,7 +25,7 @@ export function rankNoticeMatches<T extends Pick<Lawsuit, 'title' | 'administrat
   if (!term) return [];
   const needle = term.toLowerCase();
   const words = needle.split(' ').filter(Boolean);
-  const scored: Scored[] = [];
+  const scored: Scored<T>[] = [];
 
   for (const row of rows) {
     const title = row.title.toLowerCase();
@@ -43,9 +43,9 @@ export function rankNoticeMatches<T extends Pick<Lawsuit, 'title' | 'administrat
     if (admin && (admin === needle || admin.includes(needle))) score += 30;
     if (words.length > 0 && words.every((w) => haystack.includes(w))) score += 10;
     if (score <= 0) continue;
-    scored.push({ row: row as Lawsuit, score });
+    scored.push({ row, score });
   }
 
   scored.sort((a, b) => b.score - a.score || a.row.title.localeCompare(b.row.title));
-  return scored.slice(0, Math.max(0, limit)).map((entry) => entry.row as T);
+  return scored.slice(0, Math.max(0, limit)).map((entry) => entry.row);
 }
