@@ -424,7 +424,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
                   {[
                     'You file on the official site yourself',
-                    'ClaimMatch never files for you or takes a cut',
+                    'ClaimMatch never files for you or handles settlement payments',
                     'Save your confirmation number in one place',
                   ].map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
