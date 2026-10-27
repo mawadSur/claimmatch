@@ -68,8 +68,9 @@ end $$;
 -- adding probes for it.
 --   user_tables       rows a signed-in user owns and may change through the
 --                     API; tests 4 to 6 check them row by row.
---   protected_tables  the catalog, the server-only tables, referrals and
---                     subscribers. Tests 3 and 5 try to write them as anon and
+--   protected_tables  the catalog, the server-only tables (including the
+--                     share_links and share_link_clicks attribution tables,
+--                     admin/service-role only), referrals and subscribers. Tests 3 and 5 try to write them as anon and
 --                     as a signed-in user and prove that nothing changed.
 --   tables_tested_elsewhere  covered by another file in supabase/tests.
 create function pg_temp.user_tables() returns text[]
@@ -78,7 +79,8 @@ language sql immutable as $$ select array['profiles', 'claims', 'matches'] $$;
 create function pg_temp.protected_tables() returns text[]
 language sql immutable as $$
   select array['lawsuits', 'sources', 'jobs', 'notifications', 'recoveries',
-               'referrals', 'subscribers', 'claim_events']
+               'referrals', 'subscribers', 'claim_events',
+               'share_links', 'share_link_clicks']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -180,6 +182,10 @@ begin
     ('a0000000-0000-4000-8000-00000000000a', 'c0000000-0000-4000-8000-00000000000a'),
     ('b0000000-0000-4000-8000-00000000000b', 'c0000000-0000-4000-8000-00000000000b');
   insert into public.jobs (type) values ('match');
+  -- Attribution tables (0011): admin / service-role only.
+  insert into public.share_links (id, code, destination, label) values
+    ('30000000-0000-4000-8000-000000000001', 'rls-test-share', '/', 'RLS test share link');
+  insert into public.share_link_clicks (code) values ('rls-test-share');
   -- The claim_events_set_user trigger copies the claim's user onto the event.
   insert into public.claim_events (claim_id, user_id, to_status, actor) values
     ('c0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a', 'self_file', 'user'),
@@ -193,7 +199,7 @@ begin
   end if;
   foreach t in array array['claims', 'matches', 'subscribers', 'notifications',
                            'referrals', 'recoveries', 'jobs', 'sources',
-                           'claim_events'] loop
+                           'claim_events', 'share_links', 'share_link_clicks'] loop
     if pg_temp.visible_rows(format('select 1 from public.%I', t)) = 0 then
       raise exception 'fixtures: public.% has no rows', t;
     end if;
@@ -282,7 +288,7 @@ declare
 begin
   foreach t in array array['claims', 'profiles', 'subscribers', 'matches',
                            'notifications', 'referrals', 'recoveries', 'jobs',
-                           'claim_events'] loop
+                           'claim_events', 'share_links', 'share_link_clicks'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'anon can read % row(s) of public.%', n, t;
@@ -337,7 +343,15 @@ begin
        values ('c0000000-0000-4000-8000-00000000000a',
                'a0000000-0000-4000-8000-00000000000a', 'submitted', 'user')$q$,
     $q$update public.claim_events set to_status = 'submitted'$q$,
-    $q$delete from public.claim_events$q$
+    $q$delete from public.claim_events$q$,
+    -- Attribution tables: admin / service-role only.
+    $q$insert into public.share_links (code, destination, label)
+       values ('rls-test-by-anon', 'https://evil.example', 'inserted by anon')$q$,
+    $q$update public.share_links set destination = 'https://evil.example'$q$,
+    $q$delete from public.share_links$q$,
+    $q$insert into public.share_link_clicks (code) values ('rls-test-by-anon')$q$,
+    $q$update public.share_link_clicks set code = 'changed by anon'$q$,
+    $q$delete from public.share_link_clicks$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -401,7 +415,7 @@ begin
     end if;
   end loop;
 
-  foreach t in array array['subscribers', 'jobs'] loop
+  foreach t in array array['subscribers', 'jobs', 'share_links', 'share_link_clicks'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'user A can read % row(s) of public.%', n, t;
@@ -481,7 +495,14 @@ begin
        values ('c0000000-0000-4000-8000-00000000000a',
                'a0000000-0000-4000-8000-00000000000a', 'submitted', 'user')$q$,
     $q$update public.claim_events set to_status = 'submitted'$q$,
-    $q$delete from public.claim_events$q$
+    $q$delete from public.claim_events$q$,
+    $q$insert into public.share_links (code, destination, label)
+       values ('rls-test-by-a', 'https://evil.example', 'inserted by A')$q$,
+    $q$update public.share_links set destination = 'https://evil.example'$q$,
+    $q$delete from public.share_links$q$,
+    $q$insert into public.share_link_clicks (code) values ('rls-test-by-a')$q$,
+    $q$update public.share_link_clicks set code = 'changed by A'$q$,
+    $q$delete from public.share_link_clicks$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then

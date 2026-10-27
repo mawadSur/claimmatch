@@ -47,8 +47,12 @@ begin
 end $$;
 
 -- Later values must not overwrite first-touch.
+-- set_config(..., true) lasts only for the current transaction, and psql
+-- autocommits each statement, so the claim and the call share one transaction.
+begin;
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000011', true);
 select public.persist_first_attribution('facebook', 'cpc', 'later', 'ad', 'fb1');
+commit;
 
 do $$
 declare src text;
