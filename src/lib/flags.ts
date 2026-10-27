@@ -15,4 +15,18 @@ export const flags = {
   adminRecoveries: () => on('ADMIN_RECOVERIES_ENABLED'),
   /** The fictional sample adapter. Never runs in production, even if set. */
   sampleSource: () => on('ENABLE_SAMPLE_SOURCE') && process.env.NODE_ENV !== 'production',
+  /**
+   * C7: public "Verified on {date}" badge and preferring verified who-qualifies
+   * / proof over feed text. Off until "verified" is defined (checklist B9).
+   */
+  verifiedFields: () => on('VERIFIED_FIELDS_ENABLED'),
+  /** C9: add-to-calendar .ics on settlement pages that have a deadline. */
+  calendarIcs: () => on('CALENDAR_ICS_ENABLED'),
+  /** C11: "Closes in N days" chips on cards and detail pages. Real dates only. */
+  closesInChips: () => on('CLOSES_IN_CHIPS_ENABLED'),
+  /**
+   * C13: per-settlement Open Graph share card (title + deadline if any).
+   * Off: the slug OG image falls back to the site-wide card.
+   */
+  settlementOg: () => on('SETTLEMENT_OG_ENABLED'),
 };

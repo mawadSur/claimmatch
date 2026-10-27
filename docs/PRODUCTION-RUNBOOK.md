@@ -13,8 +13,9 @@ in this order. Every file is additive: nothing is deleted.
 6. `0009_unpublish_fictional.sql` — unpublish all 22 fictional rows (16 seed slugs + 6 sample-aggregator), never a DELETE
 7. `0010_feed_presence.sql` — `last_seen_at` and `missed_feed_count` so the nightly ingest can close rows missing from consecutive successful feeds (additive; no status changes here)
 8. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Additive; apply any time after 0010.
+9. `0013_verified_fields.sql` — `verified_at` / `verified_by`, `eligibility_verified`, `proof_verified`, `form_field_order`. Additive. Numbered 0013 so 0012 stays free for the thin-data PR. Public "Verified on" badge stays off until `VERIFIED_FIELDS_ENABLED=1`.
 
-CI applies 0001–0011 in that filename order on an empty database.
+CI applies every file in `supabase/migrations/` in filename order on an empty database (0001–0011 plus 0013 on this branch).
 
 ## Production order
 
@@ -22,7 +23,7 @@ CI applies 0001–0011 in that filename order on an empty database.
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED` and `ENABLE_SAMPLE_SOURCE`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED` and `SETTLEMENT_OG_ENABLED`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
