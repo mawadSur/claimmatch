@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
+import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { recordIngestRun } from '@/lib/jobs';
 import {
   buildReport,
@@ -36,6 +37,7 @@ async function handle(req: Request) {
     await recordIngestRun('cron/pipeline', step);
   }
   const report = buildReport('pipeline', { ingest: step });
+  await maybeAlertCronFailure(report);
   return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 

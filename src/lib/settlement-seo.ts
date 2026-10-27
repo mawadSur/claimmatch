@@ -12,11 +12,16 @@ export interface FaqItem {
 }
 
 export interface AnswerFacts {
-  qualifies: string;
+  /** Listing text, or null when we have no real eligibility rule. */
+  qualifies: string | null;
   payout: string;
-  deadline: string;
+  /** Formatted deadline, or null when the listing has none. */
+  deadline: string | null;
   proof: string;
-  administrator: string;
+  /** Administrator name, or null when the listing has none. */
+  administrator: string | null;
+  /** Human labels for empty who-qualifies / deadline / administrator. */
+  missing: string[];
 }
 
 /** Absolute URL for a site path (`/` → origin). */
@@ -68,20 +73,49 @@ export function categoryHubPath(category: string): string {
 export const CLOSING_SOON_PATH = '/settlements/closing-soon';
 export const NEW_SETTLEMENTS_PATH = '/settlements/new';
 
-export function settlementMetaTitle(lawsuit: Pick<Lawsuit, 'title'>): string {
-  return `${lawsuit.title.trim()}: Who Qualifies, Claim Deadline & Payout`;
+const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
+
+function hasQualifies(
+  lawsuit: Pick<Lawsuit, 'eligibility_text'>,
+): boolean {
+  return Boolean(eligibilitySummary(lawsuit.eligibility_text));
+}
+
+function hasDeadline(lawsuit: Pick<Lawsuit, 'deadline'>): boolean {
+  return Boolean(lawsuit.deadline);
+}
+
+/** Title never names Who Qualifies or Deadline unless those fields exist. */
+export function settlementMetaTitle(
+  lawsuit: Pick<Lawsuit, 'title' | 'deadline' | 'eligibility_text'>,
+): string {
+  const title = lawsuit.title.trim();
+  if (hasDeadline(lawsuit) && hasQualifies(lawsuit)) {
+    return `${title}: Who Qualifies, Claim Deadline & Payout`;
+  }
+  return `${title}: ${FALLBACK_META_SUFFIX}`;
 }
 
 export function settlementMetaDescription(lawsuit: Lawsuit): string {
-  const deadline = lawsuit.deadline
-    ? `Claim deadline ${formatDeadline(lawsuit.deadline)}.`
-    : 'Check the official notice for the claim deadline.';
+  const title = lawsuit.title.trim();
+  const qualifies = hasQualifies(lawsuit);
+  const dated = hasDeadline(lawsuit);
+  if (!qualifies || !dated) {
+    const payout = lawsuit.typical_payout?.trim()
+      ? ` Listed payout: ${lawsuit.typical_payout.trim()}.`
+      : '';
+    return truncateAtWord(
+      `${title}: official claim link and what we know.${payout} File free on the official site.`,
+      155,
+    );
+  }
+  const deadline = `Claim deadline ${formatDeadline(lawsuit.deadline)}.`;
   const payout = lawsuit.typical_payout?.trim()
     ? `Listed payout: ${lawsuit.typical_payout.trim()}.`
     : '';
   const proof = `Proof: ${proofLabel(lawsuit)}.`;
   const raw = [
-    `See who may qualify for the ${lawsuit.title.trim()}.`,
+    `See who may qualify for the ${title}.`,
     deadline,
     proof,
     payout,
@@ -97,15 +131,28 @@ export function listedOrFallback(value: string | null | undefined, fallback: str
   return trimmed || fallback;
 }
 
+/** Empty who-qualifies / deadline / administrator labels for the honest block. */
+export function missingAnswerDetails(
+  lawsuit: Pick<Lawsuit, 'eligibility_text' | 'deadline' | 'administrator'>,
+): string[] {
+  const missing: string[] = [];
+  if (!eligibilitySummary(lawsuit.eligibility_text)) missing.push('who qualifies');
+  if (!lawsuit.deadline) missing.push('deadline');
+  if (!lawsuit.administrator?.trim()) missing.push('administrator');
+  return missing;
+}
+
 /** Facts shown in the plain-language answer block. Only catalog fields. */
 export function settlementAnswerFacts(lawsuit: Lawsuit): AnswerFacts {
   const qualifies = eligibilitySummary(lawsuit.eligibility_text);
+  const administrator = lawsuit.administrator?.trim() || null;
   return {
-    qualifies: qualifies ?? 'Not listed — check the official notice for who qualifies.',
+    qualifies,
     payout: listedOrFallback(lawsuit.typical_payout, 'Not stated'),
-    deadline: lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'Not listed',
+    deadline: lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
     proof: proofLabel(lawsuit),
-    administrator: listedOrFallback(lawsuit.administrator, 'Not listed — check the official notice.'),
+    administrator,
+    missing: missingAnswerDetails(lawsuit),
   };
 }
 
@@ -206,12 +253,14 @@ export function settlementArticleJsonLd(lawsuit: Lawsuit) {
       '@type': 'Thing',
       name: lawsuit.title,
       description: [
-        `Who qualifies: ${facts.qualifies}`,
-        `Claim deadline: ${facts.deadline}`,
+        facts.qualifies ? `Who qualifies: ${facts.qualifies}` : null,
+        facts.deadline ? `Claim deadline: ${facts.deadline}` : null,
         `Listed payout: ${facts.payout}`,
         `Proof: ${facts.proof}`,
-        `Administrator: ${facts.administrator}`,
-      ].join(' '),
+        facts.administrator ? `Administrator: ${facts.administrator}` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
       ...(official ? { url: official.href } : {}),
     },
     ...(official ? { isBasedOn: official.href } : {}),

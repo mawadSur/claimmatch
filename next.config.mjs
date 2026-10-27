@@ -1,3 +1,5 @@
+import { LAWSUITS_CACHE_CONTROL, SECURITY_HEADERS } from './src/lib/security-headers.mjs';
+
 /** @type {import('next').NextConfig} */
 const POSTHOG_HOST = (process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com').replace(
   /\/$/,
@@ -24,6 +26,15 @@ const nextConfig = {
     return [
       { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },
       { source: '/ingest/:path*', destination: `${POSTHOG_API}/:path*` },
+    ];
+  },
+  async headers() {
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      {
+        source: '/lawsuits',
+        headers: [{ key: 'Cache-Control', value: LAWSUITS_CACHE_CONTROL }],
+      },
     ];
   },
 };

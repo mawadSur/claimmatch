@@ -144,7 +144,7 @@ src/
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/                0001–0011: schema, RLS, grants, trust reset, feed presence, attribution
+  migrations/                0001–0012: schema, RLS, grants, trust reset, feed presence, attribution
   tests/                     SQL tests run by scripts/db-test.sh
 tests/                       vitest
 ```

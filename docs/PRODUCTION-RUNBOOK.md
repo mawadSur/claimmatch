@@ -12,9 +12,10 @@ in this order. Every file is additive: nothing is deleted.
 5. `0008_claims_server_writes.sql` — revoke browser writes to `claims`
 6. `0009_unpublish_fictional.sql` — unpublish all 22 fictional rows (16 seed slugs + 6 sample-aggregator), never a DELETE
 7. `0010_feed_presence.sql` — `last_seen_at` and `missed_feed_count` so the nightly ingest can close rows missing from consecutive successful feeds (additive; no status changes here)
-8. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Additive; apply any time after 0010.
+8. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Additive; apply after 0010.
+9. `0012_revoke_attribution_anon.sql` — revoke `persist_first_attribution` execute from `public` and `anon`; keep grant to `authenticated`. Additive; apply after 0011.
 
-CI applies 0001–0011 in that filename order on an empty database.
+CI applies 0001–0012 in that filename order on an empty database. Run 0010 and 0011 (then 0012) BEFORE merging or deploying code that needs them. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -23,7 +24,7 @@ CI applies 0001–0011 in that filename order on an empty database.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
    - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED` and `ENABLE_SAMPLE_SOURCE`.
-   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing).
+   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
    1. `0004_prefill.sql` (any time).
@@ -39,11 +40,14 @@ CI applies 0001–0011 in that filename order on an empty database.
 
 5. **After the read-only snapshot the private plan requires**, run `0009_unpublish_fictional.sql` in one session that starts with `set claimmatch.d38_export_done = 'yes';`. The app already hides these slugs in code.
 
-6. **Run `0010_feed_presence.sql` any time.** It only adds columns and an index. The next nightly ingest starts the miss clock from zero; nothing closes on the first run after it lands. Optional: `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) and `INGEST_DRY_RUN=1` / `npm run scrape:dry-run` to preview closures.
+6. **Run 0010 and 0011 (then 0012) BEFORE merging or deploying code that needs them.** Do not treat 0010 as “any time after the app is live”: ingest writes `last_seen_at` / `missed_feed_count`, and `/r` attribution writes first-touch columns. Apply in the SQL editor in this order:
+   1. `0010_feed_presence.sql` — columns and an index only. The next nightly ingest starts the miss clock from zero; nothing closes on the first run after it lands. Optional: `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) and `INGEST_DRY_RUN=1` / `npm run scrape:dry-run` to preview closures.
+   2. `0011_attribution.sql` — profile columns, share-link tables, and `persist_first_attribution`. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+   3. `0012_revoke_attribution_anon.sql` — revoke execute from `anon` / `public`. Re-granting to anon is not recommended.
 
-7. **Run `0011_attribution.sql` any time.** It only adds profile columns, share-link tables, and a function. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+7. **Set the Vercel rollback floor** at this deployment.
 
-8. **Set the Vercel rollback floor** at this deployment.
+Optional after deploy: `GET /api/health/schema` with `Authorization: Bearer $CRON_SECRET` should return 200. `ALERT_WEBHOOK_URL` (if set) receives `{job, error, at}` when the daily ingest or digest fails.
 
 ## Smoke checks after the deploy
 
