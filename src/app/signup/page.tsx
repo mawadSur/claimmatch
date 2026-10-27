@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 const BULLETS = [
-  'Free to use. We never take a cut of your settlement.',
+  'Free during beta. We may introduce a fee later.',
   'Browse settlements that are open for claims.',
   'Keep track of the claims you file on official sites.',
 ];

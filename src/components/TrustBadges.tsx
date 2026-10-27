@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
  * badge must stay literally true; add one only when the product does it.
  */
 const BADGES = [
-  { icon: BadgeCheck, label: 'Free to use' },
-  { icon: HandCoins, label: 'We never take a cut' },
+  { icon: BadgeCheck, label: 'Free during beta' },
+  { icon: HandCoins, label: 'We never handle settlement payments' },
   { icon: ExternalLink, label: 'You file on the official site' },
   { icon: Scale, label: 'Not a law firm' },
 ] as const;

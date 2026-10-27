@@ -11,7 +11,7 @@ export const revalidate = 3600;
 export function GET() {
   const body = `# ClaimMatch
 
-> US class-action settlement finder. ClaimMatch finds open settlements you may qualify for, links the official claim form, and pre-fills your claim details. You review and submit every claim yourself on the administrator’s site. Filing there is always free.
+> US class-action settlement finder. ClaimMatch finds open settlements you may qualify for, links the official claim form, and gives you copy-ready details. You review and submit every claim yourself on the administrator’s site. Filing there is always free.
 
 ClaimMatch is an information and matching service, not a law firm, and is not the settlement administrator.
 

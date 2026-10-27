@@ -19,7 +19,7 @@ CI applies 0001–0011 in that filename order on an empty database.
 ## Production order
 
 1. **Set env vars in Vercel.**
-   - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set.
+   - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
    - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED` and `ENABLE_SAMPLE_SOURCE`.
@@ -61,7 +61,7 @@ Signed in as yourself:
 - The dashboard groups your claims by next step and shows no dollar amounts.
 - Settings shows your `/r/<code>` referral link. Admins can open `/admin/share-links` and create a campaign URL.
 - Any older "filed" claim reads "Not filed" with the notice.
-- The claim page shows a pre-fill packet (name, address, email) to copy into the official form.
+- The claim page shows copy-ready details (name, address, email) to copy into the official form.
 
 ## First nightly ingest after the deploy
 

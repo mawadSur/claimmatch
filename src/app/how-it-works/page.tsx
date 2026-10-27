@@ -275,7 +275,7 @@ export default function HowItWorksPage() {
         <div className="container-narrow text-center">
           <h2 className="text-3xl font-extrabold">Ready to look?</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            It’s free. We never take a cut of your settlement.
+            It’s free during beta. We may introduce a fee later.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">

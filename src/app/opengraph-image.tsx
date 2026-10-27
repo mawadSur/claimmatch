@@ -24,7 +24,7 @@ export default function OpenGraphImage() {
           Find settlements you qualify for
         </div>
         <div style={{ fontSize: 28, marginTop: 24, opacity: 0.9, maxWidth: 900 }}>
-          Official claim links. Pre-filled details. You submit on the official site.
+          Official claim links. Copy-ready details. You submit on the official site.
         </div>
       </div>
     ),

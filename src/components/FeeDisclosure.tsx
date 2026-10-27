@@ -13,8 +13,8 @@ export function FeeDisclosure({
   className?: string;
 }) {
   const body = isFeeTbd()
-    ? 'ClaimMatch is free. We never take a cut of a settlement. You file on the official site.'
-    : `If a price is ever added it will be ${FEE_DISPLAY}, shown before you use it. ClaimMatch never takes a cut of a settlement.`;
+    ? 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You always file on the official site, and ClaimMatch never files for you.'
+    : `The price is ${FEE_DISPLAY}. You’ll see the price before you use anything paid. You always file on the official site, and ClaimMatch never files for you.`;
 
   if (compact) {
     return (
@@ -29,7 +29,7 @@ export function FeeDisclosure({
 
   return (
     <div className={className || 'rounded-2xl border border-brand-100 bg-brand-50/60 p-5'}>
-      <p className="text-sm font-semibold text-ink">Our fee</p>
+      <p className="text-sm font-semibold text-ink">Cost</p>
       <p className="mt-1 text-sm leading-relaxed text-ink-muted">{body}</p>
       <Link
         href="/how-we-make-money"

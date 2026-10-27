@@ -33,12 +33,12 @@ const FACTS = [
   {
     icon: HandCoins,
     title: 'We never touch your money',
-    body: 'If your claim is paid, the settlement administrator pays you directly. We never handle settlement payments and never take a cut.',
+    body: 'If your claim is paid, the settlement administrator pays you directly. We never handle settlement payments.',
   },
   {
     icon: BadgeCheck,
-    title: 'It’s free',
-    body: 'ClaimMatch is free to use, and we will never ask you to pay to file a claim.',
+    title: 'It’s free during beta',
+    body: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We will never ask you to pay to file a claim.',
   },
   {
     icon: Database,
@@ -93,7 +93,7 @@ const FAQ = [
   },
   {
     q: 'What does ClaimMatch cost?',
-    a: 'Nothing. ClaimMatch is free to use, and we never take a cut of your settlement.',
+    a: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We never handle settlement payments.',
   },
   {
     q: 'Where does your settlement information come from?',
