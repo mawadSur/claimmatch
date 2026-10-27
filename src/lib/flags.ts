@@ -50,4 +50,31 @@ export const flags = {
    * No match language.
    */
   homeNarrowing: () => on('HOME_NARROWING_ENABLED'),
+  /**
+   * C16 / E3: settlement-specific eligibility questions and any "you qualify"
+   * verdict. Off until counsel and security review (B4). The onboarding
+   * questionnaire in eligibility.ts is unrelated and stays as-is.
+   */
+  eligibilityQuestions: () => on('ELIGIBILITY_QUESTIONS_ENABLED'),
+  /**
+   * C16 / E4: official-form autofill extension or bookmarklet. Off until
+   * counsel and security review (B4). C10 form-field order is copy-ready
+   * packet order only — not this.
+   */
+  formAutofill: () => on('FORM_AUTOFILL_ENABLED'),
+  /**
+   * C16 / E7: embeddable partner widget. Off until partner discovery calls.
+   */
+  partnerWidget: () => on('PARTNER_WIDGET_ENABLED'),
+  /**
+   * Match settlements that have no structured rules (no states / requires /
+   * anyOf) via category and keyword overlap with the profile. Off: those rows
+   * stay at 0.35 and drop below matchProfile's 0.4 threshold.
+   */
+  unstructuredMatch: () => on('MATCH_UNSTRUCTURED_ENABLED'),
+  /**
+   * Cap a state-only hit so it is not scored as a strong (1.0) match. Off:
+   * a listed-state row with no other criteria still scores 1.0.
+   */
+  stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
 };

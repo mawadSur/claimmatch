@@ -1,6 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { matchProfile, scoreLawsuit } from '@/lib/matching';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  STATE_ONLY_SCORE_CAP,
+  UNSTRUCTURED_BOTH_SCORE,
+  UNSTRUCTURED_CATEGORY_SCORE,
+  UNSTRUCTURED_KEYWORD_SCORE,
+  UNSTRUCTURED_NONE_SCORE,
+  matchProfile,
+  scoreLawsuit,
+} from '@/lib/matching';
 import { makeLawsuit, makeProfile } from './helpers';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 // These tests pin the rule-based scorer in src/lib/matching.ts as it works
 // today. They do not describe the product we want: until Phase 1 (D50) no
@@ -186,5 +198,265 @@ describe('matchProfile', () => {
     const lawsuit = makeLawsuit({ states: ['CA'], anyOf: { vehicle_brands: ['Toyota'] } });
     expect(matchProfile(profile, [lawsuit], 0.8)).toHaveLength(0);
     expect(matchProfile(profile, [lawsuit], 0.7)).toHaveLength(1);
+  });
+
+  it('drops an empty profile because unstructured rows score below the default threshold', () => {
+    const results = matchProfile(makeProfile(), [
+      makeLawsuit({}, { id: 'no-rules' }),
+      makeLawsuit({ states: ['CA'] }, { id: 'state-only' }),
+    ]);
+    expect(results).toEqual([]);
+  });
+});
+
+describe('scoreLawsuit — past deadline', () => {
+  const now = new Date('2026-10-27T12:00:00Z');
+
+  it('never matches a settlement whose deadline has passed, even with a perfect rule hit', () => {
+    const result = scoreLawsuit(
+      makeProfile({ state: 'CA', attributes: { had_data_breach: true } }),
+      makeLawsuit(
+        { states: ['CA'], requires: ['had_data_breach'] },
+        { deadline: '2026-10-15' },
+      ),
+      now,
+    );
+    expect(result.eligible).toBe(false);
+    expect(result.score).toBe(0);
+    expect(result.reasons).toEqual([]);
+  });
+
+  it('still matches a future or missing deadline', () => {
+    const profile = makeProfile({ attributes: { had_data_breach: true } });
+    expect(
+      scoreLawsuit(profile, makeLawsuit({ requires: ['had_data_breach'] }, { deadline: null }), now)
+        .eligible,
+    ).toBe(true);
+    expect(
+      scoreLawsuit(
+        profile,
+        makeLawsuit({ requires: ['had_data_breach'] }, { deadline: '2026-12-01' }),
+        now,
+      ).eligible,
+    ).toBe(true);
+  });
+});
+
+describe('matchProfile — past deadline', () => {
+  const now = new Date('2026-10-27T12:00:00Z');
+
+  it('skips past-deadline rows even when the caller forgot to filter the catalog', () => {
+    const profile = makeProfile({ attributes: { had_data_breach: true } });
+    const open = makeLawsuit({ requires: ['had_data_breach'] }, { id: 'open', deadline: '2026-12-01' });
+    const expired = makeLawsuit(
+      { requires: ['had_data_breach'] },
+      { id: 'expired', deadline: '2026-10-15' },
+    );
+    expect(matchProfile(profile, [open, expired], 0.4, now).map((r) => r.lawsuit_id)).toEqual([
+      'open',
+    ]);
+  });
+});
+
+describe('scoreLawsuit — state-only cap (flagged)', () => {
+  it('keeps a state-only match at 1.0 when the cap flag is off', () => {
+    const result = scoreLawsuit(
+      makeProfile({ state: 'CA' }),
+      makeLawsuit({ states: ['CA'] }),
+    );
+    expect(result.eligible).toBe(true);
+    expect(result.score).toBe(1);
+  });
+
+  it('caps a state-only match so it is not a strong match', () => {
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ state: 'CA' }),
+      makeLawsuit({ states: ['CA', 'NY'] }),
+    );
+    expect(result.eligible).toBe(true);
+    expect(result.score).toBe(STATE_ONLY_SCORE_CAP);
+    expect(result.score).toBeLessThan(0.75);
+  });
+
+  it('does not cap a state match that also has an attribute rule', () => {
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ state: 'CA', attributes: { had_data_breach: true } }),
+      makeLawsuit({ states: ['CA'], requires: ['had_data_breach'] }),
+    );
+    expect(result.score).toBe(1);
+  });
+});
+
+describe('scoreLawsuit — unstructured category/keyword (flagged)', () => {
+  it('keeps the 0.35 placeholder when the unstructured flag is off', () => {
+    const result = scoreLawsuit(
+      makeProfile({ attributes: { had_data_breach: true } }),
+      makeLawsuit({}, { category: 'Data Breach', title: 'Retailer Data Breach Settlement' }),
+    );
+    expect(result.score).toBe(UNSTRUCTURED_NONE_SCORE);
+    expect(result.eligible).toBe(true);
+  });
+
+  it('matches a no-rule Data Breach row to a breach attribute, below rule-verified scores', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ attributes: { had_data_breach: true } }),
+      makeLawsuit(
+        {},
+        {
+          category: 'Data Breach',
+          title: 'Retailer Data Breach Settlement',
+          summary: 'A retailer exposed customer emails.',
+        },
+      ),
+    );
+    expect(result.eligible).toBe(true);
+    expect(result.score).toBe(UNSTRUCTURED_BOTH_SCORE);
+    expect(result.score).toBeLessThan(0.5);
+    expect(result.reasons).toContain('Related to Data Breach');
+    expect(result.reasons).toContain('May relate to your profile');
+    expect(result.reasons.join(' ')).not.toMatch(/medic/i);
+  });
+
+  it('scores a category-only overlap below a category+keyword overlap', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ attributes: { used_banking: true } }),
+      makeLawsuit({}, { category: 'Financial & Banking', title: 'Merchant Cash Advance Settlement' }),
+    );
+    expect(result.score).toBe(UNSTRUCTURED_CATEGORY_SCORE);
+    expect(result.reasons).toContain('Related to Financial & Banking');
+  });
+
+  it('scores a keyword-only overlap at the default threshold', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ attributes: { owns_vehicle: true, vehicle_brands: ['Toyota'] } }),
+      makeLawsuit({}, { category: 'General', title: 'Toyota Brake Settlement' }),
+    );
+    expect(result.score).toBe(UNSTRUCTURED_KEYWORD_SCORE);
+    expect(result.reasons).toContain('May relate to your profile');
+  });
+
+  it('does not raise the score for an empty profile even when the flag is on', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile(),
+      makeLawsuit({}, { category: 'Data Breach', title: 'Retailer Data Breach Settlement' }),
+    );
+    expect(result.score).toBe(UNSTRUCTURED_NONE_SCORE);
+  });
+
+  it('never uses a leftover medication answer as a keyword or category hit', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    const result = scoreLawsuit(
+      makeProfile({ attributes: { took_medication: true } }),
+      makeLawsuit(
+        {},
+        { category: 'Health & Pharma', title: 'Prescription Device Settlement' },
+      ),
+    );
+    expect(result.score).toBe(UNSTRUCTURED_NONE_SCORE);
+    expect(result.reasons.join(' ')).not.toMatch(/medic/i);
+  });
+});
+
+describe('matchProfile — ranking with both match flags on', () => {
+  it('ranks rule-verified matches above a capped state-only hit, then heuristics', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', '1');
+    const profile = makeProfile({
+      state: 'CA',
+      attributes: { had_data_breach: true },
+    });
+    const rule = makeLawsuit(
+      { states: ['CA'], requires: ['had_data_breach'] },
+      { id: 'rule' },
+    );
+    const stateOnly = makeLawsuit({ states: ['CA'] }, { id: 'state' });
+    const heuristic = makeLawsuit(
+      {},
+      { id: 'soft', category: 'Data Breach', title: 'Retailer Data Breach Settlement' },
+    );
+    const ids = matchProfile(profile, [heuristic, stateOnly, rule]).map((r) => r.lawsuit_id);
+    expect(ids).toEqual(['rule', 'state', 'soft']);
+    const [ruleHit, stateHit, softHit] = matchProfile(profile, [heuristic, stateOnly, rule]);
+    expect(ruleHit.score).toBeGreaterThan(stateHit.score);
+    expect(stateHit.score).toBeGreaterThan(softHit.score);
+    expect(softHit.score).toBeLessThan(0.5);
+  });
+});
+
+describe('sample profiles — before/after match counts', () => {
+  const now = new Date('2026-10-27T12:00:00Z');
+  const catalog = [
+    makeLawsuit({ requires: ['had_data_breach'] }, { id: 'rule-breach', category: 'Data Breach' }),
+    makeLawsuit({ requires: ['owns_vehicle'] }, { id: 'rule-auto', category: 'Auto & Vehicles' }),
+    makeLawsuit(
+      { states: ['CA'], requires: ['had_data_breach'] },
+      { id: 'rule-ca-breach', category: 'Data Breach' },
+    ),
+    makeLawsuit({ states: ['CA'] }, { id: 'state-ca' }),
+    makeLawsuit({ states: ['NY'] }, { id: 'state-ny' }),
+    makeLawsuit(
+      {},
+      { id: 'soft-breach', category: 'Data Breach', title: 'Retailer Data Breach Settlement' },
+    ),
+    makeLawsuit({}, { id: 'soft-auto', category: 'Auto & Vehicles', title: 'Toyota Brake Settlement' }),
+    makeLawsuit(
+      {},
+      { id: 'soft-bank', category: 'Financial & Banking', title: 'Overdraft Fee Settlement' },
+    ),
+    makeLawsuit({}, { id: 'soft-general', category: 'General', title: 'Miscellaneous Consumer Settlement' }),
+    makeLawsuit(
+      { requires: ['had_data_breach'] },
+      { id: 'expired-breach', deadline: '2026-10-15' },
+    ),
+    makeLawsuit(
+      {},
+      {
+        id: 'expired-soft',
+        category: 'Data Breach',
+        title: 'Closed Data Breach Settlement',
+        deadline: '2026-10-15',
+      },
+    ),
+  ];
+
+  const empty = makeProfile();
+  const caOnly = makeProfile({ state: 'CA' });
+  const caBreach = makeProfile({ state: 'CA', attributes: { had_data_breach: true } });
+  const caCar = makeProfile({
+    state: 'CA',
+    attributes: { owns_vehicle: true, vehicle_brands: ['Toyota'] },
+  });
+
+  function ids(profile: ReturnType<typeof makeProfile>) {
+    return matchProfile(profile, catalog, 0.4, now).map((r) => r.lawsuit_id);
+  }
+
+  it('before flags: empty=0, CA-only=1 (state), CA+breach=3, CA+car=2; expired never match', () => {
+    expect(ids(empty)).toEqual([]);
+    expect(ids(caOnly)).toEqual(['state-ca']);
+    expect(ids(caBreach)).toEqual(['rule-breach', 'rule-ca-breach', 'state-ca']);
+    expect(ids(caCar)).toEqual(['rule-auto', 'state-ca']);
+    expect(ids(caBreach)).not.toContain('expired-breach');
+    expect(ids(caBreach)).not.toContain('expired-soft');
+  });
+
+  it('after flags: empty stays 0; CA+breach adds the soft breach; state-only is capped', () => {
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', '1');
+
+    expect(ids(empty)).toEqual([]);
+    expect(ids(caOnly)).toEqual(['state-ca']);
+    expect(matchProfile(caOnly, catalog, 0.4, now)[0].score).toBe(STATE_ONLY_SCORE_CAP);
+
+    expect(ids(caBreach)).toEqual(['rule-breach', 'rule-ca-breach', 'state-ca', 'soft-breach']);
+    expect(ids(caCar)).toEqual(['rule-auto', 'state-ca', 'soft-auto']);
+    expect(ids(caBreach)).not.toContain('expired-breach');
+    expect(ids(caCar)).not.toContain('soft-general');
   });
 });

@@ -22,6 +22,17 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/settlements', destination: '/lawsuits', statusCode: 308 },
+      // Hub pages stay on /settlements/* (category, closing-soon, new, recently-closed).
+      {
+        source: '/settlements/:slug((?!category|closing-soon|new|recently-closed)[^/]+)',
+        destination: '/lawsuits/:slug',
+        statusCode: 308,
+      },
+    ];
+  },
   async rewrites() {
     return [
       { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },

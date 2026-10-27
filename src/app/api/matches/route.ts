@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
 import type { Lawsuit, Match, Profile } from '@/lib/types';
+import { isDeadlinePassed } from '@/lib/utils';
 
 /**
  * POST /api/matches — recompute the current user's matches and upsert them.
@@ -51,7 +52,8 @@ export async function POST() {
     );
   }
 
-  const results = matchProfile(profile, catalog.lawsuits);
+  const open = catalog.lawsuits.filter((l) => !isDeadlinePassed(l.deadline));
+  const results = matchProfile(profile, open);
   const rows = results.map((r) => ({
     user_id: user.id,
     lawsuit_id: r.lawsuit_id,

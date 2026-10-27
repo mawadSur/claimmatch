@@ -17,6 +17,11 @@ describe('brief 3 feature flags', () => {
     expect(flags.closedArchive()).toBe(false);
     expect(flags.closingSoonEmail()).toBe(false);
     expect(flags.homeNarrowing()).toBe(false);
+    expect(flags.eligibilityQuestions()).toBe(false);
+    expect(flags.formAutofill()).toBe(false);
+    expect(flags.partnerWidget()).toBe(false);
+    expect(flags.unstructuredMatch()).toBe(false);
+    expect(flags.stateOnlyCap()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -28,6 +33,11 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('CLOSED_ARCHIVE_ENABLED', '');
     vi.stubEnv('CLOSING_SOON_EMAIL_ENABLED', 'true');
     vi.stubEnv('HOME_NARROWING_ENABLED', 'on');
+    vi.stubEnv('ELIGIBILITY_QUESTIONS_ENABLED', 'true');
+    vi.stubEnv('FORM_AUTOFILL_ENABLED', 'yes');
+    vi.stubEnv('PARTNER_WIDGET_ENABLED', 'on');
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', 'true');
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', 'yes');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -38,6 +48,11 @@ describe('brief 3 feature flags', () => {
     expect(flags.closedArchive()).toBe(false);
     expect(flags.closingSoonEmail()).toBe(false);
     expect(flags.homeNarrowing()).toBe(false);
+    expect(flags.eligibilityQuestions()).toBe(false);
+    expect(flags.formAutofill()).toBe(false);
+    expect(flags.partnerWidget()).toBe(false);
+    expect(flags.unstructuredMatch()).toBe(false);
+    expect(flags.stateOnlyCap()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -49,6 +64,11 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('CLOSED_ARCHIVE_ENABLED', '1');
     vi.stubEnv('CLOSING_SOON_EMAIL_ENABLED', '1');
     vi.stubEnv('HOME_NARROWING_ENABLED', '1');
+    vi.stubEnv('ELIGIBILITY_QUESTIONS_ENABLED', '1');
+    vi.stubEnv('FORM_AUTOFILL_ENABLED', '1');
+    vi.stubEnv('PARTNER_WIDGET_ENABLED', '1');
+    vi.stubEnv('MATCH_UNSTRUCTURED_ENABLED', '1');
+    vi.stubEnv('MATCH_STATE_ONLY_CAP_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -59,5 +79,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.closedArchive()).toBe(true);
     expect(flags.closingSoonEmail()).toBe(true);
     expect(flags.homeNarrowing()).toBe(true);
+    expect(flags.eligibilityQuestions()).toBe(true);
+    expect(flags.formAutofill()).toBe(true);
+    expect(flags.partnerWidget()).toBe(true);
+    expect(flags.unstructuredMatch()).toBe(true);
+    expect(flags.stateOnlyCap()).toBe(true);
   });
 });

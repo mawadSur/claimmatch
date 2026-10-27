@@ -24,7 +24,7 @@ import type { SourceAdapter } from './index';
  */
 
 const FEED_URL = 'https://settlesignal.com/data/settlements.json';
-const USER_AGENT = 'ClaimMatchBot/1.0 (+https://claimmatch.vercel.app)';
+const USER_AGENT = 'ClaimMatchBot/1.0 (+https://lawsuitai.org)';
 const FETCH_TIMEOUT_MS = 20_000;
 const STALE_FEED_DAYS = 7;
 
