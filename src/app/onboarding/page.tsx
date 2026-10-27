@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { Clock } from 'lucide-react';
+import { CheckCircle2, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -23,9 +23,9 @@ const HOW_IT_WORKS = [
 export default async function OnboardingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string | string[] }>;
+  searchParams: Promise<{ next?: string | string[]; confirmed?: string | string[] }>;
 }) {
-  const { next } = await searchParams;
+  const { next, confirmed } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,10 +33,11 @@ export default async function OnboardingPage({
   if (!user) redirect('/login?next=/onboarding');
   // Only a path on this site, so the redirect after onboarding can't leave it.
   const destination = safeNextOr(next, '/dashboard?welcome=1');
+  const emailConfirmed = confirmed === '1' || (Array.isArray(confirmed) && confirmed[0] === '1');
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, state')
+    .select('full_name, state, attributes')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -69,11 +70,25 @@ export default async function OnboardingPage({
             ))}
           </ol>
 
+          {emailConfirmed && (
+            <div
+              role="status"
+              className="mt-6 flex items-start gap-2 rounded-2xl border border-success-100 bg-success-50 px-4 py-3 text-sm text-success-800"
+            >
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <span>
+                <span className="font-semibold">Email confirmed.</span> Finish a couple of
+                optional details so we can find settlements that may apply to you.
+              </span>
+            </div>
+          )}
+
           <div className="mt-6">
             <OnboardingWizard
               initial={{
                 fullName: profile?.full_name ?? '',
                 state: profile?.state ?? '',
+                attributes: (profile?.attributes as Record<string, unknown> | null) ?? {},
               }}
               email={user.email ?? null}
               next={destination}

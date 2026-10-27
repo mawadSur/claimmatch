@@ -8,8 +8,15 @@ import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
 import { ClaimList } from '@/components/claims/ClaimList';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
 import { CorrectiveNoticeList } from '@/components/claims/CorrectiveNoticeList';
-import { buildClosingSoon, buildDashboard } from '@/components/claims/dashboard-model';
+import { YourMatches } from '@/components/claims/YourMatches';
+import {
+  buildClosingSoon,
+  buildDashboard,
+  buildDashboardMatches,
+  dashboardNeedsProfile,
+} from '@/components/claims/dashboard-model';
 import { Disclaimer } from '@/components/Disclaimer';
+import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
   title: 'Your claims',
@@ -19,9 +26,8 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 /**
- * The dashboard (D50 interim): the user's claims grouped by next step, the
- * corrective notice (D42) for claims the old flow showed as filed, and a
- * "Closing soon" catalog module. No match list, no scores, no dollar totals.
+ * The dashboard: ranked matches from the matcher, the user's claims grouped
+ * by next step, the corrective notice, and a secondary "Closing soon" list.
  */
 export default async function DashboardPage({
   searchParams,
@@ -38,7 +44,11 @@ export default async function DashboardPage({
   const now = new Date();
 
   const [{ data: profile }, claims, catalog] = await Promise.all([
-    supabase.from('profiles').select('full_name, onboarded').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('full_name, onboarded, state, attributes')
+      .eq('id', user.id)
+      .maybeSingle(),
     loadUserClaims(user.id),
     // Only settlements open for claims (the shared rule); buildClosingSoon
     // applies the same rule again and drops tracked ones. A failed query is
@@ -49,6 +59,15 @@ export default async function DashboardPage({
   const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
   const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
   const closingSoon = buildClosingSoon(catalog.lawsuits, tracked, now, isFictionalSettlementSlug);
+  const matchProfile = {
+    state: (profile?.state as string | null) ?? null,
+    attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],
+    onboarded: Boolean(profile?.onboarded),
+  };
+  const matches = catalog.error
+    ? []
+    : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
+  const needsProfile = dashboardNeedsProfile(matchProfile);
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
 
@@ -84,8 +103,9 @@ export default async function DashboardPage({
               <div>
                 <h2 className="text-base font-bold text-ink">Finish your profile</h2>
                 <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink-muted">
-                  Add your name and state. It takes a minute. Some settlements
-                  are only for people in certain states.
+                  Add your name, state, and a few optional details (vehicles,
+                  accounts, shopping). We use those to find settlements that may
+                  apply to you.
                 </p>
               </div>
             </div>
@@ -94,6 +114,8 @@ export default async function DashboardPage({
             </Link>
           </div>
         )}
+
+        <YourMatches items={matches} failed={catalog.error} needsProfile={needsProfile} />
 
         <section aria-labelledby="your-claims-title">
           <h2 id="your-claims-title" className="text-2xl font-extrabold">

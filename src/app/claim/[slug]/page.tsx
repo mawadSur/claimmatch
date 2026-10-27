@@ -14,7 +14,6 @@ import {
 import { UUID_RE, claimContext, loadSettlementBySlug, logClaimsError } from '@/lib/claims-server';
 import { formatDeadline } from '@/lib/utils';
 import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
-import { UnverifiedLabel } from '@/components/claims/UnverifiedLabel';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { Profile } from '@/lib/types';
 
@@ -71,7 +70,6 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
       </Link>
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {settlement.category && <span className="badge-brand">{settlement.category}</span>}
-        {!context.fictional && <UnverifiedLabel />}
       </div>
       <h1 className="mt-3 text-2xl font-extrabold leading-tight sm:text-3xl">{settlement.title}</h1>
     </>

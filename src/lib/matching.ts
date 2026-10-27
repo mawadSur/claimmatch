@@ -168,6 +168,27 @@ export function matchProfile(
     .sort((a, b) => b.score - a.score);
 }
 
+/** Rule-verified hits vs heuristic / state-only. Never shown as a percentage. */
+export type MatchStrength = 'strong' | 'possible';
+
+export function matchStrengthLabel(strength: MatchStrength): string {
+  return strength === 'strong' ? 'Strong match' : 'Possible match';
+}
+
+/**
+ * Strong = structured requires/anyOf rules (attribute-verified).
+ * Possible = state-only or unstructured category/keyword overlap.
+ */
+export function classifyMatch(lawsuit: Pick<Lawsuit, 'eligibility'>): MatchStrength {
+  const criteria: EligibilityCriteria = lawsuit.eligibility || {};
+  if (isStateOnlyCriteria(criteria)) return 'possible';
+  const hasRequires = !!(criteria.requires && criteria.requires.length > 0);
+  const hasAnyOf =
+    !!criteria.anyOf &&
+    Object.keys(criteria.anyOf).some((key) => !HEALTH_ATTRIBUTE_KEYS.has(key));
+  return hasRequires || hasAnyOf ? 'strong' : 'possible';
+}
+
 function unstructuredMatch(
   profile: Profile,
   lawsuit: Lawsuit,

@@ -27,7 +27,13 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) target = toLogin('confirmed=1');
+    if (error) {
+      target = toLogin('confirmed=1');
+    } else {
+      const landed = new URL(target);
+      landed.searchParams.set('confirmed', '1');
+      target = landed.toString();
+    }
   } else if (searchParams.get('error') || searchParams.get('error_code')) {
     target = toLogin('link=expired');
   }

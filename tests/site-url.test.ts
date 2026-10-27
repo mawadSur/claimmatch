@@ -12,5 +12,7 @@ describe('public site URL leftovers', () => {
       'ClaimMatchBot/1.0 (+https://lawsuitai.org)',
     );
     expect(read('src/lib/scraper/sources/settlesignal.ts')).not.toContain('claimmatch.vercel.app');
+    expect(read('src/components/AuthForm.tsx')).toContain('SITE.url');
+    expect(read('src/components/AuthForm.tsx')).toContain('/auth/callback');
   });
 });

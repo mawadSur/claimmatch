@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildClosingSoon,
   buildDashboard,
+  buildDashboardMatches,
+  dashboardNeedsProfile,
   type DashboardSettlement,
 } from '@/components/claims/dashboard-model';
 import type { ClaimView } from '@/lib/claims';
+import { makeLawsuit, makeProfile } from './helpers';
 
 const NOW = new Date('2026-10-16T18:00:00Z');
 const isFictional = (slug: string) => slug.startsWith('fake-');
@@ -195,5 +198,54 @@ describe('buildClosingSoon', () => {
     expect(items.map((i) => i.slug)).toEqual(['soon', 'later']);
     expect(items[0]).toMatchObject({ deadlineText: 'Deadline Oct 25, 2026 · 9 days left' });
     expect(buildClosingSoon(list, new Set(), NOW, isFictional, 1).map((i) => i.slug)).toEqual(['tracked']);
+  });
+});
+
+describe('buildDashboardMatches', () => {
+  it('ranks open matches, labels strong vs possible, and drops past deadlines', () => {
+    const profile = makeProfile({
+      state: 'CA',
+      attributes: { had_data_breach: true },
+    });
+    const items = buildDashboardMatches(
+      profile,
+      [
+        makeLawsuit(
+          { states: ['CA'], requires: ['had_data_breach'] },
+          { id: uuid(), slug: 'breach', title: 'Breach', deadline: '2026-12-01' },
+        ),
+        makeLawsuit(
+          { states: ['CA'] },
+          { id: uuid(), slug: 'state-only', title: 'State only', deadline: '2026-11-01' },
+        ),
+        makeLawsuit(
+          { states: ['CA'], requires: ['had_data_breach'] },
+          { id: uuid(), slug: 'expired', title: 'Expired', deadline: '2026-10-01' },
+        ),
+        makeLawsuit(
+          { states: ['CA'], requires: ['had_data_breach'] },
+          { id: uuid(), slug: 'fake-x', title: 'Fake', deadline: '2026-12-01' },
+        ),
+      ],
+      NOW,
+      isFictional,
+    );
+    expect(items.map((i) => i.slug).sort()).toEqual(['breach', 'state-only']);
+    expect(items.find((i) => i.slug === 'breach')).toMatchObject({
+      label: 'Strong match',
+      strength: 'strong',
+    });
+    expect(items.find((i) => i.slug === 'state-only')).toMatchObject({
+      label: 'Possible match',
+      strength: 'possible',
+    });
+    expect(JSON.stringify(items)).not.toMatch(/%|matched \d/i);
+  });
+
+  it('asks for a profile when there are no match signals', () => {
+    expect(dashboardNeedsProfile({ state: null, attributes: {}, onboarded: false })).toBe(true);
+    expect(dashboardNeedsProfile({ state: 'CA', attributes: { had_data_breach: true }, onboarded: true })).toBe(
+      false,
+    );
   });
 });

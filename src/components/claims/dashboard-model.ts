@@ -1,7 +1,7 @@
 /**
- * The dashboard's view model (D50): the user's claims grouped by next step,
- * the corrective notices, and a "Closing soon" catalog module. Pure, so the
- * decisions are tested in tests/claims-dashboard.test.ts.
+ * The dashboard's view model: ranked matches, the user's claims grouped by
+ * next step, the corrective notices, and a "Closing soon" catalog module.
+ * Pure, so the decisions are tested in tests/claims-dashboard.test.ts.
  */
 import {
   claimActionAvailability,
@@ -21,6 +21,14 @@ import {
   type SettlementFacts,
 } from '@/lib/claims';
 import { pickClosingSoon } from '@/lib/closing-soon';
+import {
+  classifyMatch,
+  matchProfile,
+  matchStrengthLabel,
+  type MatchStrength,
+} from '@/lib/matching';
+import { profileHasMatchSignals } from '@/lib/profile-attributes';
+import type { Lawsuit, Profile } from '@/lib/types';
 import { formatDeadline } from '@/lib/utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -201,6 +209,17 @@ export function buildDashboard(
   return { rows, notices: sortNotices(notices) };
 }
 
+export interface DashboardMatch {
+  id: string;
+  slug: string;
+  title: string;
+  deadlineText: string;
+  reasons: string[];
+  strength: MatchStrength;
+  label: string;
+  officialUrl: string | null;
+}
+
 export interface ClosingSoonItem {
   id: string;
   slug: string;
@@ -208,6 +227,46 @@ export interface ClosingSoonItem {
   deadline: string;
   deadlineText: string;
   officialUrl: string | null;
+}
+
+/**
+ * Ranked matches for the signed-in profile. Past-deadline, fictional, and
+ * unpublished rows never appear. Strong = rule-verified; Possible =
+ * heuristic or state-only.
+ */
+export function buildDashboardMatches(
+  profile: Pick<Profile, 'state' | 'attributes'>,
+  lawsuits: Lawsuit[],
+  now: Date,
+  isFictional: IsFictional,
+): DashboardMatch[] {
+  const open = lawsuits.filter(
+    (lawsuit) => UUID_RE.test(lawsuit.id) && !isFictional(lawsuit.slug) && isOpenForClaims(lawsuit, now),
+  );
+  const byId = new Map(open.map((lawsuit) => [lawsuit.id, lawsuit]));
+  return matchProfile(profile as Profile, open, 0.4, now).flatMap((result) => {
+    const lawsuit = byId.get(result.lawsuit_id);
+    if (!lawsuit) return [];
+    const strength = classifyMatch(lawsuit);
+    return [
+      {
+        id: lawsuit.id,
+        slug: lawsuit.slug,
+        title: lawsuit.title,
+        deadlineText: deadlineText(lawsuit.deadline, now),
+        reasons: result.reasons,
+        strength,
+        label: matchStrengthLabel(strength),
+        officialUrl: safeExternalUrl(lawsuit.claim_url),
+      },
+    ];
+  });
+}
+
+export function dashboardNeedsProfile(
+  profile: Pick<Profile, 'state' | 'attributes' | 'onboarded'>,
+): boolean {
+  return !profile.onboarded || !profileHasMatchSignals(profile);
 }
 
 /**

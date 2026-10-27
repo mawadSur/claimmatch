@@ -160,4 +160,21 @@ describe('parseSettingsInput', () => {
     });
     expect(parseSettingsInput({ prefill_consent_at: '' })).toEqual({ ok: true, patch: {} });
   });
+
+  it('accepts matcher attributes and drops unknown keys', () => {
+    expect(
+      parseSettingsInput({
+        attributes: {
+          had_data_breach: true,
+          vehicle_brands: ['Toyota', 'NotABrand'],
+          is_admin: true,
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      patch: {
+        attributes: { had_data_breach: true, vehicle_brands: ['Toyota'] },
+      },
+    });
+  });
 });

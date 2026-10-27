@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseAttributeAnswers } from './profile-attributes';
 import { US_STATES } from './utils';
 
 const STATE_CODES = new Set(US_STATES.map((s) => s.code));
@@ -38,6 +39,7 @@ export interface SettingsPatch {
   address_line2?: string | null;
   city?: string | null;
   prefill_consent_at?: string | null;
+  attributes?: Record<string, unknown>;
 }
 
 export type SettingsParseResult =
@@ -67,5 +69,11 @@ export function parseSettingsInput(body: unknown): SettingsParseResult {
   if (city !== undefined) patch.city = city || null;
   // Consent is sticky: once set, an empty string does not clear it.
   if (prefill_consent_at) patch.prefill_consent_at = prefill_consent_at;
+
+  if ('attributes' in body) {
+    const attrs = parseAttributeAnswers((body as { attributes?: unknown }).attributes);
+    if (!attrs.ok) return { ok: false, error: attrs.error };
+    patch.attributes = attrs.attributes;
+  }
   return { ok: true, patch };
 }
