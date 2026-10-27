@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { getAdminUser } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { VerifyQueue } from '@/components/admin/VerifyQueue';
+import { tallyProofFeedback, type ProofFeedbackCounts } from '@/lib/proof-feedback';
 
 export const metadata: Metadata = { title: 'Verify listings' };
 
@@ -19,6 +20,7 @@ export default async function AdminVerifyPage() {
   const svc = createServiceClient();
 
   let items: Lawsuit[] = [];
+  let feedbackCounts = new Map<string, ProofFeedbackCounts>();
   try {
     const { data } = await svc
       .from('lawsuits')
@@ -28,6 +30,14 @@ export default async function AdminVerifyPage() {
       .order('title', { ascending: true })
       .limit(100);
     items = (data ?? []) as Lawsuit[];
+    const ids = items.map((item) => item.id);
+    if (ids.length > 0) {
+      const { data: feedback } = await svc
+        .from('proof_feedback')
+        .select('lawsuit_id, answer')
+        .in('lawsuit_id', ids);
+      feedbackCounts = tallyProofFeedback(feedback ?? []);
+    }
   } catch {
     items = [];
   }
@@ -46,7 +56,10 @@ export default async function AdminVerifyPage() {
         </p>
       </header>
 
-      <VerifyQueue items={items} />
+      <VerifyQueue
+        items={items}
+        feedbackCounts={Object.fromEntries(feedbackCounts)}
+      />
     </div>
   );
 }

@@ -23,11 +23,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
   const activeCategory = searchParams.get('category') ?? '';
   const activeQ = searchParams.get('q') ?? '';
   const activeHasDeadline = searchParams.get('hasDeadline') === '1';
+  const activeProofNo = searchParams.get('proof') === 'no';
   const [q, setQ] = useState(activeQ);
   const [isPending, startTransition] = useTransition();
 
   const commit = useCallback(
-    (next: { q?: string; category?: string; hasDeadline?: boolean }) => {
+    (next: { q?: string; category?: string; hasDeadline?: boolean; proofNo?: boolean }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (next.q !== undefined) {
         if (next.q.trim()) params.set('q', next.q.trim());
@@ -40,6 +41,10 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
       if (next.hasDeadline !== undefined) {
         if (next.hasDeadline) params.set('hasDeadline', '1');
         else params.delete('hasDeadline');
+      }
+      if (next.proofNo !== undefined) {
+        if (next.proofNo) params.set('proof', 'no');
+        else params.delete('proof');
       }
       // Filters apply across pages; start again at page 1.
       params.delete('page');
@@ -70,7 +75,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
     return () => clearTimeout(t);
   }, [q, activeQ, commit, posthog]);
 
-  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline);
+  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline || activeProofNo);
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-card sm:p-5">
@@ -128,6 +133,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
         >
           Has a deadline
         </Pill>
+        <Pill
+          active={activeProofNo}
+          onClick={() => commit({ proofNo: !activeProofNo })}
+        >
+          No proof required
+        </Pill>
       </div>
 
       {hasFilters && (
@@ -135,7 +146,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
           type="button"
           onClick={() => {
             setQ('');
-            commit({ q: '', category: '', hasDeadline: false });
+            commit({ q: '', category: '', hasDeadline: false, proofNo: false });
           }}
           className="mt-3 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
         >

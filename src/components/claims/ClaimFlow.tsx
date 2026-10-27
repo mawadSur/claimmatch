@@ -39,6 +39,8 @@ export interface ClaimFlowSettlement {
   /** The listing's eligibility text, or null when it is only a placeholder. */
   eligibility: string | null;
   proof: ProofNeed;
+  /** C10: official-form field order when stored. */
+  formFieldOrder?: string[] | null;
 }
 
 const PROOF_TEXT: Record<ProofNeed, string> = {
@@ -423,7 +425,12 @@ function FilingSteps({
           Filing is free. If a site asks you to pay to file a claim, stop. That is not
           the official site.
         </p>
-        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} />
+        <PrefillPacket
+          profile={profile}
+          lawsuitId={settlement.id}
+          lawsuitSlug={settlement.slug}
+          formFieldOrder={settlement.formFieldOrder}
+        />
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">

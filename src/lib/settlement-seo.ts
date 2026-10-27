@@ -72,6 +72,7 @@ export function categoryHubPath(category: string): string {
 
 export const CLOSING_SOON_PATH = '/settlements/closing-soon';
 export const NEW_SETTLEMENTS_PATH = '/settlements/new';
+export { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
 
 const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
 

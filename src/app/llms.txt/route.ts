@@ -18,6 +18,7 @@ ClaimMatch is an information and matching service, not a law firm, and is not th
 ## Hubs
 
 - [Open settlements](${pageUrl('/lawsuits')})
+- [Check a settlement notice](${pageUrl('/check')})
 - [Settlements closing soon](${pageUrl(CLOSING_SOON_PATH)})
 - [New settlements](${pageUrl(NEW_SETTLEMENTS_PATH)})
 - [Data breach settlements](${pageUrl('/settlements/category/data-breach')})

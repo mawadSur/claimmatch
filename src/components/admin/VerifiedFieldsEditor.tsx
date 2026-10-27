@@ -16,13 +16,23 @@ export type VerifiedDraft = {
   eligibilityVerified: string;
   proofVerified: '' | ProofRequired;
   administrator: string;
+  formFieldOrder: string;
 };
+
+export function parseFormFieldOrderInput(raw: string): string[] | null {
+  const keys = raw
+    .split(/[,\n]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return keys.length > 0 ? keys : null;
+}
 
 export function draftFromLawsuit(l: Lawsuit): VerifiedDraft {
   return {
     eligibilityVerified: l.eligibility_verified ?? '',
     proofVerified: l.proof_verified ?? '',
     administrator: l.administrator ?? '',
+    formFieldOrder: (l.form_field_order ?? []).join(', '),
   };
 }
 
@@ -115,6 +125,24 @@ export function VerifiedFieldsEditor({
               onChange({ ...draft, administrator: e.target.value })
             }
           />
+        </div>
+        <div className="lg:col-span-2">
+          <label className="field-label" htmlFor={`form-order-${id}`}>
+            Official form field order
+          </label>
+          <input
+            id={`form-order-${id}`}
+            className="field-input"
+            placeholder="full_name, email, phone, address_line1, address_line2, city, state"
+            value={draft.formFieldOrder}
+            onChange={(e) =>
+              onChange({ ...draft, formFieldOrder: e.target.value })
+            }
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            Optional. Comma-separated packet fields in the official form&apos;s
+            order. Leave blank for the default order.
+          </p>
         </div>
       </div>
 

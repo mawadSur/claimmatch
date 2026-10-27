@@ -43,6 +43,7 @@ import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/
 import { AddToCalendarLink } from '@/components/settlement/AddToCalendarLink';
 import { AnswerBlock } from '@/components/settlement/AnswerBlock';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
+import { ProofFeedback } from '@/components/settlement/ProofFeedback';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { JsonLd } from '@/components/settlement/JsonLd';
@@ -347,6 +348,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </ol>
             </div>
           )}
+
+          {flags.proofFeedback() && <ProofFeedback lawsuitId={lawsuit.id} />}
 
           <SettlementFaq items={faqs} />
 

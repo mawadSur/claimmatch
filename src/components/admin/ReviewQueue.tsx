@@ -20,6 +20,7 @@ import { cn, formatDeadline } from '@/lib/utils';
 import {
   VerifiedFieldsEditor,
   draftFromLawsuit,
+  parseFormFieldOrderInput,
   type VerifiedDraft,
 } from './VerifiedFieldsEditor';
 
@@ -152,12 +153,14 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         eligibility_verified: row.verified.eligibilityVerified,
         proof_verified: row.verified.proofVerified || null,
         administrator: row.verified.administrator,
+        form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
       };
     } else if (action === 'verify') {
       payloadPatch = {
         eligibility_verified: row.verified.eligibilityVerified,
         proof_verified: row.verified.proofVerified || null,
         administrator: row.verified.administrator,
+        form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
       };
     }
 

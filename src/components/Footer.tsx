@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Scale } from 'lucide-react';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
+import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
 
 const LINK = 'rounded hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
 const INLINE_LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
@@ -32,7 +34,13 @@ export function Footer() {
             <h2 className="text-sm font-semibold text-ink">Product</h2>
             <ul className="mt-3 space-y-2 text-sm text-ink-muted">
               <li><Link href="/lawsuits" className={LINK}>Browse settlements</Link></li>
+              {flags.noticeLookup() && (
+                <li><Link href="/check" className={LINK}>Check a notice</Link></li>
+              )}
               <li><Link href="/settlements/closing-soon" className={LINK}>Closing soon</Link></li>
+              {flags.closedArchive() && (
+                <li><Link href={RECENTLY_CLOSED_PATH} className={LINK}>Recently closed</Link></li>
+              )}
               <li><Link href="/settlements/new" className={LINK}>New settlements</Link></li>
               <li><Link href="/settlements/category/data-breach" className={LINK}>Data breach settlements</Link></li>
               <li><Link href="/how-it-works" className={LINK}>How it works</Link></li>

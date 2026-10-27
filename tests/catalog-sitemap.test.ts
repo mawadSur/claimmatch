@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Lawsuit } from '@/lib/types';
 
 const listed = vi.hoisted(() => ({ lawsuits: [] as Lawsuit[] }));
@@ -10,6 +10,10 @@ vi.mock('@/lib/lawsuits', () => ({
 }));
 
 import sitemap from '@/app/sitemap';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   return {
@@ -32,6 +36,16 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.endsWith('/lawsuits'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/settlements/closing-soon'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
+    expect(urls.some((u) => u.includes('/settlements/recently-closed'))).toBe(false);
+    expect(urls.some((u) => u.endsWith('/check'))).toBe(false);
+  });
+
+  it('includes /check only when the notice-lookup flag is on', async () => {
+    listed.lawsuits = [lawsuit()];
+    vi.stubEnv('NOTICE_LOOKUP_ENABLED', '1');
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => u.endsWith('/check'))).toBe(true);
+    expect(urls.some((u) => u.includes('/settlements/recently-closed'))).toBe(false);
   });
 
   it('omits thin settlements that the detail page noindexes', async () => {

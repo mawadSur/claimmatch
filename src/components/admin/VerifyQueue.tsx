@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { Building2, CalendarClock, CheckCircle2, ShieldAlert, Tag } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
+import { formatProofFeedbackCounts, type ProofFeedbackCounts } from '@/lib/proof-feedback';
 import { cn, formatDeadline } from '@/lib/utils';
 import {
   VerifiedFieldsEditor,
   draftFromLawsuit,
+  parseFormFieldOrderInput,
   type VerifiedDraft,
 } from './VerifiedFieldsEditor';
 
@@ -23,7 +25,13 @@ function makeRow(l: Lawsuit): Row {
   return { lawsuit: l, verified: draftFromLawsuit(l), busy: null, message: null };
 }
 
-export function VerifyQueue({ items }: { items: Lawsuit[] }) {
+export function VerifyQueue({
+  items,
+  feedbackCounts = {},
+}: {
+  items: Lawsuit[];
+  feedbackCounts?: Record<string, ProofFeedbackCounts>;
+}) {
   const [rows, setRows] = useState<Row[]>(() => items.map(makeRow));
 
   function patchRow(id: string, patch: Partial<Row>) {
@@ -36,6 +44,7 @@ export function VerifyQueue({ items }: { items: Lawsuit[] }) {
       eligibility_verified: row.verified.eligibilityVerified,
       proof_verified: row.verified.proofVerified || null,
       administrator: row.verified.administrator,
+      form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
     };
 
     patchRow(id, { busy: action, message: null });
@@ -89,6 +98,7 @@ export function VerifyQueue({ items }: { items: Lawsuit[] }) {
     <div className="space-y-6">
       {rows.map((row) => {
         const l = row.lawsuit;
+        const counts = feedbackCounts[l.id];
         return (
           <article
             key={l.id}
@@ -110,6 +120,9 @@ export function VerifyQueue({ items }: { items: Lawsuit[] }) {
                 <CalendarClock className="h-3.5 w-3.5" />
                 Deadline {formatDeadline(l.deadline)}
               </span>
+              {counts && counts.total > 0 ? (
+                <span>{formatProofFeedbackCounts(counts)}</span>
+              ) : null}
             </div>
 
             <VerifiedFieldsEditor
