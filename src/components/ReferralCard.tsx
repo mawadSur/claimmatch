@@ -4,7 +4,15 @@ import { useState } from 'react';
 import { Copy, Check, Gift } from 'lucide-react';
 import { SITE } from '@/lib/utils';
 
-export function ReferralCard({ code }: { code: string | null }) {
+export function ReferralCard({
+  code,
+  clicks = 0,
+  signups = 0,
+}: {
+  code: string | null;
+  clicks?: number;
+  signups?: number;
+}) {
   const [copied, setCopied] = useState(false);
   const link = code ? `${SITE.url}/r/${code}` : null;
 
@@ -26,27 +34,35 @@ export function ReferralCard({ code }: { code: string | null }) {
         <h2 className="text-lg font-bold">Share ClaimMatch</h2>
       </div>
       <p className="mt-1 text-sm text-ink-muted">
-        Know someone who might qualify for a settlement? Send them your link. ClaimMatch
-        is free for them too, and they file on the official site themselves.
+        Know someone who might qualify for a settlement? Send them your personal
+        referral link. It keeps a ref code (and any UTMs) through signup.
+        ClaimMatch is free for them too, and they file on the official site themselves.
       </p>
 
       {link ? (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <input
-            readOnly
-            value={link}
-            onFocus={(e) => e.currentTarget.select()}
-            className="field-input flex-1 bg-white font-mono text-xs"
-            aria-label="Your referral link"
-          />
-          <button onClick={copy} className="btn-primary shrink-0">
-            {copied ? (
-              <><Check className="h-4 w-4" /> Copied</>
-            ) : (
-              <><Copy className="h-4 w-4" /> Copy link</>
-            )}
-          </button>
-        </div>
+        <>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              readOnly
+              value={link}
+              onFocus={(e) => e.currentTarget.select()}
+              className="field-input flex-1 bg-white font-mono text-xs"
+              aria-label="Your referral link"
+            />
+            <button onClick={copy} className="btn-primary shrink-0">
+              {copied ? (
+                <><Check className="h-4 w-4" /> Copied</>
+              ) : (
+                <><Copy className="h-4 w-4" /> Copy link</>
+              )}
+            </button>
+          </div>
+          <p className="mt-3 text-sm text-ink-muted">
+            <span className="font-semibold text-ink tabular-nums">{clicks}</span> clicks
+            {' · '}
+            <span className="font-semibold text-ink tabular-nums">{signups}</span> signups
+          </p>
+        </>
       ) : (
         <p className="mt-4 text-sm text-ink-muted">
           Your link will appear here once your account finishes setting up.

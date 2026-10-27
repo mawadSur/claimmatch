@@ -37,6 +37,8 @@ describe('Terms and Privacy', () => {
     expect(privacy).toMatch(/Sign-in cookies/);
     expect(privacy).toMatch(/PostHog stores a\s+random ID in a cookie/);
     expect(privacy).toMatch(/invite code in a cookie for 30 days/);
+    expect(privacy).toMatch(/First-touch campaign cookie/);
+    expect(privacy).toMatch(/Do Not Track/);
     expect(privacy).toMatch(/Vercel Web Analytics does not use cookies/);
     expect(privacy).not.toMatch(/only to keep you signed in|necessary to keep you signed in/i);
   });

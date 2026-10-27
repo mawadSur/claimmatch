@@ -12,8 +12,9 @@ in this order. Every file is additive: nothing is deleted.
 5. `0008_claims_server_writes.sql` — revoke browser writes to `claims`
 6. `0009_unpublish_fictional.sql` — unpublish all 22 fictional rows (16 seed slugs + 6 sample-aggregator), never a DELETE
 7. `0010_feed_presence.sql` — `last_seen_at` and `missed_feed_count` so the nightly ingest can close rows missing from consecutive successful feeds (additive; no status changes here)
+8. `0011_attribution.sql` — first-touch UTM/ref columns on profiles, `share_links` + `share_link_clicks`, `persist_first_attribution`. Additive; apply any time after 0010.
 
-CI applies 0001–0010 in that filename order on an empty database.
+CI applies 0001–0011 in that filename order on an empty database.
 
 ## Production order
 
@@ -40,7 +41,9 @@ CI applies 0001–0010 in that filename order on an empty database.
 
 6. **Run `0010_feed_presence.sql` any time.** It only adds columns and an index. The next nightly ingest starts the miss clock from zero; nothing closes on the first run after it lands. Optional: `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) and `INGEST_DRY_RUN=1` / `npm run scrape:dry-run` to preview closures.
 
-7. **Set the Vercel rollback floor** at this deployment.
+7. **Run `0011_attribution.sql` any time.** It only adds profile columns, share-link tables, and a function. Existing users keep a null first-touch until they next arrive with UTMs or a ref.
+
+8. **Set the Vercel rollback floor** at this deployment.
 
 ## Smoke checks after the deploy
 
@@ -56,6 +59,7 @@ Signed out (read-only):
 Signed in as yourself:
 
 - The dashboard groups your claims by next step and shows no dollar amounts.
+- Settings shows your `/r/<code>` referral link. Admins can open `/admin/share-links` and create a campaign URL.
 - Any older "filed" claim reads "Not filed" with the notice.
 - The claim page shows a pre-fill packet (name, address, email) to copy into the official form.
 

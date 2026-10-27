@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library, Wallet } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AdminNavCounts } from './AdminNav';
 
@@ -10,6 +10,7 @@ const BASE_LINKS = [
   { href: '/admin', label: 'Overview', Icon: LayoutDashboard, exact: true, countKey: null },
   { href: '/admin/review', label: 'Review', Icon: ClipboardCheck, exact: false, countKey: 'pendingReview' as const },
   { href: '/admin/catalog', label: 'Catalog', Icon: Library, exact: false, countKey: null },
+  { href: '/admin/share-links', label: 'Share links', Icon: Link2, exact: false, countKey: null },
 ];
 
 const RECOVERIES_LINK = {

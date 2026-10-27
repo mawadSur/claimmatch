@@ -68,6 +68,16 @@ export function ClaimFlow({
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
+  const viewed = useRef(false);
+  useEffect(() => {
+    if (viewed.current || !posthog) return;
+    viewed.current = true;
+    posthog.capture('match_viewed', {
+      lawsuit_id: settlement.id,
+      slug: settlement.slug,
+      title: settlement.title,
+    });
+  }, [posthog, settlement.id, settlement.slug, settlement.title]);
   const [claim, setClaim] = useState<ClaimView | null>(initialClaim);
   const [announcement, setAnnouncement] = useState('');
 
@@ -411,7 +421,7 @@ function FilingSteps({
           Filing is free. If a site asks you to pay to file a claim, stop. That is not
           the official site.
         </p>
-        <PrefillPacket profile={profile} />
+        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} />
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">

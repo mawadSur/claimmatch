@@ -39,6 +39,7 @@ import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { SettlementFaq } from '@/components/settlement/SettlementFaq';
 import { Disclaimer } from '@/components/Disclaimer';
+import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import type { Lawsuit } from '@/lib/types';
 
 export const revalidate = 3600;
@@ -130,6 +131,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
   return (
     <>
+      <CaptureOnce
+        event="settlement_viewed"
+        properties={{ lawsuit_id: lawsuit.id, slug: lawsuit.slug }}
+      />
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit)} />

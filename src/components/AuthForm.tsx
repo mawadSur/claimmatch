@@ -16,6 +16,15 @@ import {
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
+import {
+  attributionMetadata,
+  attributionPersonProperties,
+  attributionQuery,
+  firstTouch,
+  parseAttribution,
+  readBrowserCookies,
+  writeBrowserCookies,
+} from '@/lib/attribution';
 
 type Mode = 'login' | 'signup';
 
@@ -41,14 +50,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const linkExpired = searchParams.get('link') === 'expired';
   const toClaim = next?.startsWith('/claim/') ?? false;
 
-  // Referral code from ?ref (set by /r/[code]) or the cm_ref cookie fallback.
-  function readRefCookie(): string | null {
-    if (typeof document === 'undefined') return null;
-    const m = document.cookie.match(/(?:^|;\s*)cm_ref=([^;]+)/);
-    return m ? decodeURIComponent(m[1]) : null;
-  }
-  const rawRef = searchParams.get('ref') || readRefCookie();
-  const ref = rawRef ? rawRef.replace(/[^a-zA-Z0-9]/g, '').slice(0, 32) || null : null;
+  // First-touch UTMs + ref from ?utm_* / ?ref (set by /r/[code]) or cookies.
+  const attr = firstTouch(readBrowserCookies(), parseAttribution(searchParams));
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -57,9 +60,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [error, setError] = useState('');
 
   const isSignup = mode === 'signup';
-  const switchHref = `${isSignup ? '/login' : '/signup'}${
-    next ? `?next=${encodeURIComponent(next)}` : ''
-  }`;
+  const switchParams = attributionQuery(attr);
+  if (next) switchParams.set('next', next);
+  const switchQuery = switchParams.toString();
+  const switchHref = `${isSignup ? '/login' : '/signup'}${switchQuery ? `?${switchQuery}` : ''}`;
+
+  function identifyOnly(userId: string) {
+    writeBrowserCookies(attr);
+    // The account id only: no email, name or other PII in analytics.
+    posthog?.identify(userId);
+    const once = attributionPersonProperties(attr);
+    if (Object.keys(once).length > 0) posthog?.setPersonProperties({}, once);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,7 +97,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           email,
           password,
           options: {
-            data: { full_name: fullName, ...(ref ? { ref } : {}) },
+            data: { full_name: fullName, ...attributionMetadata(attr) },
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
@@ -98,8 +110,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
-          // The account id only: no email, name or other PII in analytics.
-          posthog?.identify(data.session.user.id);
+          identifyOnly(data.session.user.id);
           posthog?.capture('signup_completed');
           // Onboarding returns people to where they started (for example the
           // claim page they were on) when given ?next.
@@ -127,7 +138,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
-        posthog?.identify(userData.user.id);
+        identifyOnly(userData.user.id);
         posthog?.capture('login_completed');
       }
 

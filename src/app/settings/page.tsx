@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/types';
 import { legalContact } from '@/lib/legal-contact';
 import { NotificationPrefs } from '@/components/NotificationPrefs';
@@ -45,6 +45,34 @@ export default async function SettingsPage() {
 
   const contact = legalContact();
 
+  let referralClicks = 0;
+  let referralSignups = 0;
+  if (profile.referral_code) {
+    try {
+      const svc = createServiceClient();
+      const [{ count: clickCount }, { count: signupCount }, { count: referredCount }] = await Promise.all([
+        svc
+          .from('share_link_clicks')
+          .select('*', { count: 'exact', head: true })
+          .eq('code', profile.referral_code),
+        svc
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('first_ref', profile.referral_code),
+        supabase
+          .from('referrals')
+          .select('*', { count: 'exact', head: true })
+          .eq('referrer_id', user.id)
+          .eq('status', 'signed_up'),
+      ]);
+      referralClicks = clickCount ?? 0;
+      referralSignups = Math.max(signupCount ?? 0, referredCount ?? 0);
+    } catch {
+      referralClicks = 0;
+      referralSignups = 0;
+    }
+  }
+
   return (
     <div className="container-narrow py-12">
       <h1 className="text-3xl font-extrabold">Settings</h1>
@@ -80,7 +108,11 @@ export default async function SettingsPage() {
           </p>
         </section>
 
-        <ReferralCard code={profile.referral_code} />
+        <ReferralCard
+          code={profile.referral_code}
+          clicks={referralClicks}
+          signups={referralSignups}
+        />
       </div>
     </div>
   );
