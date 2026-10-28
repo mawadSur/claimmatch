@@ -77,7 +77,7 @@ function IdentifySession() {
     if (ran.current || !ph) return;
     ran.current = true;
     void fetch('/api/session-flags', { method: 'POST' })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.status === 200 ? res.json() : null))
       .then((json: { internal?: boolean } | null) => {
         if (!json) return;
         if (json.internal) {

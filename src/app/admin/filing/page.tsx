@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Send } from 'lucide-react';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { flags } from '@/lib/flags';
 import { filingStatusLabel, listAdminFilingJobs } from '@/lib/filing/queue';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -11,7 +10,7 @@ export const metadata: Metadata = { title: 'Assisted filing' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminFilingPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/filing');
+  await requireAdmin('/admin/filing');
 
   if (!flags.assistedFiling()) {
     return (

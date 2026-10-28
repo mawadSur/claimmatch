@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { ClipboardCheck } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { ReviewQueue } from '@/components/admin/ReviewQueue';
 
@@ -16,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * live to the public.
  */
 export default async function AdminReviewPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/review');
+  await requireAdmin('/admin/review');
   const svc = createServiceClient();
 
   let items: Lawsuit[] = [];

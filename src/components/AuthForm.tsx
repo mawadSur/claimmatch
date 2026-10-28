@@ -95,9 +95,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
     const once = attributionPersonProperties(attr);
     if (Object.keys(once).length > 0) posthog?.setPersonProperties({}, once);
     void fetch('/api/session-flags', { method: 'POST' })
-      .then((res) => res.json())
-      .then((json: { internal?: boolean }) => {
-        if (json.internal) {
+      .then((res) => (res.status === 200 ? res.json() : null))
+      .then((json: { internal?: boolean } | null) => {
+        if (json?.internal) {
           posthog?.identify(userId, { internal: true });
           posthog?.opt_out_capturing();
         }
@@ -324,6 +324,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
               className="field-input pl-10"
             />
           </div>
+          {!isSignup && (
+            <p className="mt-2 text-right text-sm">
+              <Link href="/forgot-password" className="font-semibold text-brand-700 hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+          )}
         </div>
 
         <button
