@@ -25,6 +25,7 @@ import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
 import { UnverifiedLabel } from './UnverifiedLabel';
+import { AuthorizeFiling } from './AuthorizeFiling';
 
 export interface ClaimFlowSettlement {
   id: string;
@@ -41,6 +42,8 @@ export interface ClaimFlowSettlement {
   proof: ProofNeed;
   /** C10: official-form field order when stored. */
   formFieldOrder?: string[] | null;
+  /** Stage 2: settlement is on the assisted-filing allowlist and the flag is on. */
+  assistedFilingAllowed?: boolean;
 }
 
 const PROOF_TEXT: Record<ProofNeed, string> = {
@@ -431,6 +434,9 @@ function FilingSteps({
           lawsuitSlug={settlement.slug}
           formFieldOrder={settlement.formFieldOrder}
         />
+        {settlement.assistedFilingAllowed && (
+          <AuthorizeFiling lawsuitId={settlement.id} claimId={claim?.id ?? null} />
+        )}
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">

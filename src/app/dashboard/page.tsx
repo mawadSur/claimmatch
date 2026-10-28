@@ -16,6 +16,9 @@ import {
   dashboardNeedsProfile,
 } from '@/components/claims/dashboard-model';
 import { Disclaimer } from '@/components/Disclaimer';
+import { FilingStatusList } from '@/components/claims/FilingStatus';
+import { flags } from '@/lib/flags';
+import { listUserFilingJobs } from '@/lib/filing/queue';
 import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
@@ -43,7 +46,7 @@ export default async function DashboardPage({
   const { welcome } = await searchParams;
   const now = new Date();
 
-  const [{ data: profile }, claims, catalog] = await Promise.all([
+  const [{ data: profile }, claims, catalog, filingJobs] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, onboarded, state, attributes')
@@ -54,6 +57,7 @@ export default async function DashboardPage({
     // applies the same rule again and drops tracked ones. A failed query is
     // shown as an error, never as "no deadlines coming up".
     lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
+    flags.assistedFiling() ? listUserFilingJobs(user.id) : Promise.resolve([]),
   ]);
 
   const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
@@ -115,7 +119,19 @@ export default async function DashboardPage({
           </div>
         )}
 
-        <YourMatches items={matches} failed={catalog.error} needsProfile={needsProfile} />
+        <YourMatches
+          items={matches}
+          failed={catalog.error}
+          needsProfile={needsProfile}
+          metricsEnabled={flags.matchMetrics()}
+        />
+
+        {flags.assistedFiling() && (
+          <FilingStatusList
+            jobs={filingJobs}
+            titles={Object.fromEntries(catalog.lawsuits.map((l) => [l.id, l.title]))}
+          />
+        )}
 
         <section aria-labelledby="your-claims-title">
           <h2 id="your-claims-title" className="text-2xl font-extrabold">

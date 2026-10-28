@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  POSSIBLE_MATCH_CAP,
   buildClosingSoon,
   buildDashboard,
   buildDashboardMatches,
   dashboardNeedsProfile,
+  groupDashboardMatches,
   type DashboardSettlement,
 } from '@/components/claims/dashboard-model';
 import type { ClaimView } from '@/lib/claims';
@@ -240,6 +242,38 @@ describe('buildDashboardMatches', () => {
       strength: 'possible',
     });
     expect(JSON.stringify(items)).not.toMatch(/%|matched \d/i);
+    expect(items[0].strength).toBe('strong');
+    expect(items.map((i) => i.strength)).toEqual(['strong', 'possible']);
+  });
+
+  it('puts Strong first, caps Possible around 20, and reports an empty Strong group', () => {
+    const strong = {
+      id: 's1',
+      slug: 'strong',
+      title: 'Strong',
+      deadlineText: 'soon',
+      reasons: ['rule'],
+      strength: 'strong' as const,
+      label: 'Strong match',
+      officialUrl: null,
+      score: 0.9,
+    };
+    const possible = Array.from({ length: 22 }, (_, i) => ({
+      id: `p${i}`,
+      slug: `p-${i}`,
+      title: `Possible ${i}`,
+      deadlineText: 'later',
+      reasons: ['state'],
+      strength: 'possible' as const,
+      label: 'Possible match',
+      officialUrl: null,
+      score: 0.4,
+    }));
+    const grouped = groupDashboardMatches([possible[0], strong, ...possible.slice(1)]);
+    expect(grouped.strong.map((i) => i.slug)).toEqual(['strong']);
+    expect(grouped.possible).toHaveLength(POSSIBLE_MATCH_CAP);
+    expect(grouped.possibleHidden).toBe(2);
+    expect(groupDashboardMatches(possible).strong).toEqual([]);
   });
 
   it('asks for a profile when there are no match signals', () => {

@@ -77,4 +77,30 @@ export const flags = {
    * a listed-state row with no other criteria still scores 1.0.
    */
   stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
+  /**
+   * Stage 2: authorized assisted filing. Off: no e-sign, queue, worker or
+   * filing UI. Even when on, a settlement must also have
+   * assisted_filing_allowed = true.
+   */
+  assistedFiling: () => on('ASSISTED_FILING_ENABLED'),
+  /**
+   * Stage 3: administrator API adapters and bulk export of authorized claims.
+   * Off: the registry is readable but no adapter or export runs.
+   */
+  directFiling: () => on('DIRECT_FILING_ENABLED'),
+  /**
+   * Structured match events, feature snapshots, labels, and related PostHog
+   * events. Off: nothing is written to match_events / match_labels.
+   */
+  matchMetrics: () => on('MATCH_METRICS_ENABLED'),
+  /**
+   * Eligibility-rule draft script and the admin approve UI. Off: no drafts
+   * are written or published. Drafts never auto-apply to lawsuits.eligibility.
+   */
+  eligibilityDrafts: () => on('ELIGIBILITY_DRAFTS_ENABLED'),
+  /**
+   * Email admins via Resend when the nightly ingest fails or updates 0 rows.
+   * Alert rows are still recorded either way. Off: no email.
+   */
+  ingestAlertEmails: () => on('INGEST_ALERT_EMAILS_ENABLED'),
 };

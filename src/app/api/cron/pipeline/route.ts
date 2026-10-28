@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
+import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { recordIngestRun } from '@/lib/jobs';
 import {
   buildReport,
@@ -35,6 +36,7 @@ async function handle(req: Request) {
   } else {
     step = checkIngestStep(await runStep('pipeline/ingest', ingestAndExtract));
     await recordIngestRun('cron/pipeline', step);
+    await maybeRecordIngestAlert('pipeline', step);
   }
   const report = buildReport('pipeline', { ingest: step });
   await maybeAlertCronFailure(report);

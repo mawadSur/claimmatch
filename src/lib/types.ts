@@ -129,6 +129,10 @@ export interface Lawsuit {
   proof_verified?: ProofRequired | null;
   /** 0013: optional official-form field order (C10). */
   form_field_order?: string[] | null;
+  /** 0015: per-settlement allowlist for assisted filing. Default false. */
+  assisted_filing_allowed?: boolean;
+  /** 0016: optional FK to public.administrators. */
+  administrator_id?: string | null;
 }
 
 /** 0014: signed-in crowd signal. Never shown as a public fact. */
@@ -165,6 +169,8 @@ export interface Profile {
   first_utm_campaign?: string | null;
   first_utm_content?: string | null;
   first_ref?: string | null;
+  /** 0017: when the user agreed to privacy-safe match-quality logging. */
+  match_metrics_consent_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -322,6 +328,153 @@ export interface ScrapedLawsuit {
    * which counts as open for new rows and never changes an existing row.
    */
   status?: FeedStatus;
+}
+
+export type FilingJobStatus = 'queued' | 'needs_user' | 'submitted' | 'confirmed' | 'failed';
+
+export type FilingMethod = 'manual' | 'browser' | 'api';
+
+export type MatchEventType =
+  | 'impression'
+  | 'view'
+  | 'save'
+  | 'dismiss'
+  | 'open_form'
+  | 'filed'
+  | 'user_reported_payout';
+
+export type MatchLabelKind = 'not_relevant' | 'filed' | 'paid';
+
+export type EligibilityDraftStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ClaimAuthorization {
+  id: string;
+  claim_id: string;
+  user_id: string;
+  lawsuit_id: string;
+  text_version: string;
+  full_text: string;
+  signed_at: string;
+  ip: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface FilingJob {
+  id: string;
+  claim_id: string;
+  user_id: string;
+  lawsuit_id: string;
+  authorization_id: string | null;
+  status: FilingJobStatus;
+  needs_user_reason: string | null;
+  administrator_claim_id: string | null;
+  screenshot_url: string | null;
+  error: string | null;
+  attempts: number;
+  max_attempts: number;
+  run_after: string;
+  started_at: string | null;
+  finished_at: string | null;
+  result: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Administrator {
+  id: string;
+  slug: string;
+  name: string;
+  filing_method: FilingMethod;
+  homepage_url: string | null;
+  notes: string | null;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdministratorFormMapping {
+  id: string;
+  administrator_id: string;
+  lawsuit_id: string | null;
+  mapping: FormFieldMapping;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Official-form field mapping used by the browser worker. */
+export interface FormFieldMapping {
+  claimUrl?: string;
+  submitSelector?: string;
+  fields?: Array<{
+    profileKey: string;
+    selector: string;
+    type?: 'text' | 'select' | 'checkbox';
+  }>;
+}
+
+export interface MatchEvent {
+  id: string;
+  user_id: string;
+  lawsuit_id: string;
+  match_id: string | null;
+  event_type: MatchEventType;
+  score: number | null;
+  rank: number | null;
+  matched_signals: string[];
+  model_version: string;
+  payout_amount: number | null;
+  created_at: string;
+}
+
+export interface MatchFeatureSnapshot {
+  id: string;
+  user_id: string;
+  lawsuit_id: string;
+  match_event_id: string | null;
+  attribute_overlap: string[];
+  state: string | null;
+  category: string | null;
+  deadline_days: number | null;
+  proof_required: string | null;
+  payout_size: number | null;
+  model_version: string;
+  created_at: string;
+}
+
+export interface MatchLabel {
+  id: string;
+  user_id: string;
+  lawsuit_id: string;
+  label: MatchLabelKind;
+  payout_amount: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EligibilityRuleDraft {
+  id: string;
+  lawsuit_id: string;
+  eligibility: EligibilityCriteria;
+  eligibility_text: string | null;
+  source_excerpt: string | null;
+  rationale: Record<string, unknown>;
+  status: EligibilityDraftStatus;
+  created_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
+}
+
+export interface IngestAlert {
+  id: string;
+  job: string;
+  reason: 'failed' | 'zero_updates';
+  error: string | null;
+  summary: Record<string, unknown>;
+  emailed_at: string | null;
+  created_at: string;
 }
 
 export const LAWSUIT_CATEGORIES = [

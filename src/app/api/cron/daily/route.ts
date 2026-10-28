@@ -5,6 +5,9 @@ import { recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { runMatchSweep } from '@/lib/match-sweep';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
+import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
+import { processFilingQueue } from '@/lib/filing/queue';
+import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import {
   buildReport,
   checkIngestStep,
@@ -46,6 +49,7 @@ async function handle(req: Request) {
   } else {
     steps.ingest = checkIngestStep(await runStep('daily/ingest', ingestAndExtract));
     await recordIngestRun('cron/daily', steps.ingest);
+    await maybeRecordIngestAlert('daily', steps.ingest);
   }
 
   const gate = matchSweepGate(flags.matchEmails());
@@ -60,6 +64,12 @@ async function handle(req: Request) {
 
   const report = buildReport('daily', steps);
   await maybeAlertCronFailure(report);
+  if (flags.assistedFiling()) {
+    await runStep('daily/filing', () => processFilingQueue());
+  }
+  if (flags.eligibilityDrafts()) {
+    await runStep('daily/eligibilityDrafts', () => persistEligibilityDrafts());
+  }
   return NextResponse.json(report, { status: reportHttpStatus(report) });
 }
 

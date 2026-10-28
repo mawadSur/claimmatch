@@ -12,6 +12,7 @@
     "seed": "tsx scripts/seed.ts",
     "scrape": "tsx scripts/run-scrape.ts",
     "scrape:dry-run": "tsx scripts/run-scrape.ts --dry-run",
+    "draft-eligibility": "tsx scripts/draft-eligibility-rules.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "db:test": "scripts/db-test.sh"

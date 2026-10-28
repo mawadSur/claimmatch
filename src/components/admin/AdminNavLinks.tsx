@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck, Send, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AdminNavCounts } from './AdminNav';
 
@@ -26,15 +26,40 @@ const RECOVERIES_LINK = {
  * Admin section links. Client component only to highlight the current route;
  * whether the legacy Recoveries link shows is decided on the server (AdminNav).
  */
+const FILING_LINK = {
+  href: '/admin/filing',
+  label: 'Filing',
+  Icon: Send,
+  exact: false,
+  countKey: null,
+};
+
+const ELIGIBILITY_LINK = {
+  href: '/admin/eligibility',
+  label: 'Eligibility',
+  Icon: ListChecks,
+  exact: false,
+  countKey: null,
+};
+
 export function AdminNavLinks({
   counts,
   showRecoveries,
+  showFiling = false,
+  showEligibilityDrafts = false,
 }: {
   counts?: AdminNavCounts;
   showRecoveries: boolean;
+  showFiling?: boolean;
+  showEligibilityDrafts?: boolean;
 }) {
   const pathname = usePathname();
-  const links = showRecoveries ? [...BASE_LINKS, RECOVERIES_LINK] : BASE_LINKS;
+  const links = [
+    ...BASE_LINKS,
+    ...(showEligibilityDrafts ? [ELIGIBILITY_LINK] : []),
+    ...(showFiling ? [FILING_LINK] : []),
+    ...(showRecoveries ? [RECOVERIES_LINK] : []),
+  ];
 
   return (
     <nav aria-label="Admin" className="flex flex-wrap items-center gap-1.5">

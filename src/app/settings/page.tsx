@@ -108,6 +108,10 @@ export default async function SettingsPage() {
             ) : null}
             .
           </p>
+          <p className="mt-3 text-sm text-ink-muted">
+            Match-quality logging is optional. It never includes optional health
+            answers. You can turn it on or off in the form above.
+          </p>
         </section>
 
         <ReferralCard
