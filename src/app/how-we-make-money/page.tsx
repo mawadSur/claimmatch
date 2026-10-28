@@ -3,22 +3,30 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
 import { Disclaimer } from '@/components/Disclaimer';
+import { feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { SITE, canonicalUrl } from '@/lib/utils';
 
-export const metadata: Metadata = {
-  title: 'How ClaimMatch makes money',
-  description:
-    'ClaimMatch is free during beta; copy-ready details; you file on the official site.',
-  alternates: { canonical: canonicalUrl('/how-we-make-money') },
-  openGraph: {
+export function generateMetadata(): Metadata {
+  const disclose = flags.feeDisclosure();
+  const description = disclose
+    ? feeEveryClaimCopy()
+    : 'ClaimMatch is free during beta; copy-ready details; you file on the official site.';
+  return {
     title: 'How ClaimMatch makes money',
-    description:
-      'Free during beta; copy-ready details; you file on the official site.',
-    url: canonicalUrl('/how-we-make-money'),
-    siteName: SITE.name,
-    type: 'website',
-  },
-};
+    description,
+    alternates: { canonical: canonicalUrl('/how-we-make-money') },
+    openGraph: {
+      title: 'How ClaimMatch makes money',
+      description: disclose
+        ? description
+        : 'Free during beta; copy-ready details; you file on the official site.',
+      url: canonicalUrl('/how-we-make-money'),
+      siteName: SITE.name,
+      type: 'website',
+    },
+  };
+}
 
 export default function HowWeMakeMoneyPage() {
   return (

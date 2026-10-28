@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
+import { flags } from '@/lib/flags';
 
 export const metadata: Metadata = {
   title: 'Create your free account',
@@ -10,8 +11,14 @@ export const metadata: Metadata = {
     'Create a free ClaimMatch account to keep track of the settlement claims you file on official settlement websites.',
 };
 
-const BULLETS = [
+const BETA_BULLETS = [
   'Free during beta. We may introduce a fee later.',
+  'Browse settlements that are open for claims.',
+  'Keep track of the claims you file on official sites.',
+];
+
+const DISCLOSED_BULLETS = [
+  'Official filing on the administrator’s site stays free.',
   'Browse settlements that are open for claims.',
   'Keep track of the claims you file on official sites.',
 ];
@@ -26,6 +33,8 @@ const LEGAL_LINK =
   'font-semibold text-brand-700 underline hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
 
 export default function SignupPage() {
+  const bullets = flags.feeDisclosure() ? DISCLOSED_BULLETS : BETA_BULLETS;
+
   return (
     <section className="bg-gradient-to-b from-brand-50 via-white to-white">
       <div className="container-narrow py-16 sm:py-24">
@@ -44,7 +53,7 @@ export default function SignupPage() {
           </div>
 
           <ul className="mx-auto mt-6 max-w-sm space-y-2.5">
-            {BULLETS.map((t) => (
+            {bullets.map((t) => (
               <li key={t} className="flex items-center gap-2.5 text-sm text-ink-muted">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-success-600" aria-hidden />
                 {t}

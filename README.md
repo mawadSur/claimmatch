@@ -82,7 +82,8 @@ See [`.env.example`](./.env.example). Summary:
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail. **Required in Production:** a production build (`VERCEL_ENV=production`) stops without a working address |
 | `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
 | `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
-| `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
+| `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` / `ASSISTED_FILING_ENABLED` / `DIRECT_FILING_ENABLED` / `MATCH_METRICS_ENABLED` / `ELIGIBILITY_DRAFTS_ENABLED` / `INGEST_ALERT_EMAILS_ENABLED` / `LINK_CHECK_ENABLED` / `PAYOUT_REPORT_ENABLED` / `FEE_DISCLOSURE_ENABLED` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production |
+| `INTERNAL_EMAILS` | Comma-separated tester emails tagged `internal` and excluded from traction |
 | `INGEST_MAX_CLOSE_SHARE` | Share of open settlements one ingest run may close before closures are held for review (default `0.2`). A run that holds closures fails the cron (500) and lists every held row under "Last catalog ingest" in /admin; raise this for one run only after checking them |
 | `CLAIMMATCH_ENV` | `local` or `staging`; required by `npm run seed` and `npm run scrape` |
 
@@ -144,7 +145,7 @@ src/
     supabase/                client / server / middleware
     email.ts                 Resend wrapper + templates
 supabase/
-  migrations/                0001–0012: schema, RLS, grants, trust reset, feed presence, attribution
+  migrations/                0001–0024: schema, RLS, grants, trust reset, filing, match events
   tests/                     SQL tests run by scripts/db-test.sh
 tests/                       vitest
 ```

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminUser } from '@/lib/admin';
 import { createServiceClient } from '@/lib/supabase/server';
+import { isThirdPartyFeeStatus } from '@/lib/third-party-fee';
 import { isProofVerified } from '@/lib/verified-fields';
 
 export const runtime = 'nodejs';
@@ -25,6 +26,8 @@ const ALLOWED_KEYS = new Set([
   'proof_required',
   'is_featured',
   'review_status',
+  'assisted_filing_allowed',
+  'third_party_fee_status',
 ]);
 
 const SingleAction = z.enum(['publish', 'reject', 'update', 'verify', 'unverify']);
@@ -195,6 +198,17 @@ function pickAllowedPatch(
     }
     if (key === 'eligibility_verified') {
       updates[key] = typeof value === 'string' ? value : value == null ? null : String(value);
+      continue;
+    }
+    if (key === 'assisted_filing_allowed') {
+      updates[key] = value === true;
+      continue;
+    }
+    if (key === 'third_party_fee_status') {
+      if (!isThirdPartyFeeStatus(value)) {
+        return { updates: {}, error: 'Fee status must be unknown, allowed, or barred.' };
+      }
+      updates[key] = value;
       continue;
     }
     updates[key] = value;

@@ -13,6 +13,8 @@ import {
 } from '@/lib/claims';
 import { UUID_RE, claimContext, loadSettlementBySlug, logClaimsError } from '@/lib/claims-server';
 import { formatDeadline } from '@/lib/utils';
+import { flags } from '@/lib/flags';
+import { assistedFilingAllowed } from '@/lib/filing/queue';
 import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { Profile } from '@/lib/types';
@@ -137,6 +139,11 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     eligibility: eligibilitySummary(settlement.eligibility_text),
     proof: proofNeed(settlement),
     formFieldOrder: settlement.form_field_order ?? null,
+    assistedFilingAllowed: assistedFilingAllowed(
+      { assisted_filing_allowed: Boolean((settlement as { assisted_filing_allowed?: boolean }).assisted_filing_allowed) },
+      flags.assistedFiling(),
+    ),
+    payoutReportEnabled: flags.payoutReport(),
   };
 
   return (

@@ -16,6 +16,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
   const [state, setState] = useState(profile.state ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [emailOptIn, setEmailOptIn] = useState(profile.email_opt_in);
+  const [metricsConsent, setMetricsConsent] = useState(Boolean(profile.match_metrics_consent_at));
   const [answers, setAnswers] = useState<AttributeAnswers>(() =>
     answersFromAttributes(profile.attributes),
   );
@@ -35,6 +36,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
           state,
           phone,
           email_opt_in: emailOptIn,
+          match_metrics_consent: metricsConsent,
           attributes: answers,
         }),
       });
@@ -119,13 +121,20 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 space-y-3">
         <Toggle
           id="email-opt-in"
           checked={emailOptIn}
           onChange={setEmailOptIn}
           label="Email me about new settlements"
           hint="These emails are paused for now. Leave this on to get them when they restart. Account emails and important notices about your claims come either way."
+        />
+        <Toggle
+          id="match-metrics-consent"
+          checked={metricsConsent}
+          onChange={setMetricsConsent}
+          label="Help improve matching (optional)"
+          hint="If you turn this on, we log which suggestions you open, save, dismiss, or mark as submitted or paid. We store the score, rank, and non-health signals only. Optional health answers are never included."
         />
       </div>
 

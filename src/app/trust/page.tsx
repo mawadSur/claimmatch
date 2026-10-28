@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
+import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { legalContact } from '@/lib/legal-contact';
 import { SITE } from '@/lib/utils';
@@ -38,7 +40,7 @@ const FACTS = [
   {
     icon: BadgeCheck,
     title: 'It’s free during beta',
-    body: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We will never ask you to pay to file a claim.',
+    body: `${BETA_FEE_COPY} We will never ask you to pay to file a claim.`,
   },
   {
     icon: Database,
@@ -93,7 +95,7 @@ const FAQ = [
   },
   {
     q: 'What does ClaimMatch cost?',
-    a: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We never handle settlement payments.',
+    a: `${BETA_FEE_COPY} We never handle settlement payments.`,
   },
   {
     q: 'Where does your settlement information come from?',
@@ -111,6 +113,25 @@ const FAQ = [
 
 export default function TrustPage() {
   const contact = legalContact();
+  const disclose = flags.feeDisclosure();
+  const facts = disclose
+    ? FACTS.map((f) =>
+        f.title === 'It’s free during beta'
+          ? {
+              ...f,
+              title: 'Official filing stays free',
+              body: `${feeEveryClaimCopy()} We will never ask you to pay to file a claim.`,
+            }
+          : f,
+      )
+    : FACTS;
+  const faq = disclose
+    ? FAQ.map((f) =>
+        f.q === 'What does ClaimMatch cost?'
+          ? { ...f, a: `${feeEveryClaimCopy()} We never handle settlement payments.` }
+          : f,
+      )
+    : FAQ;
 
   return (
     <>
@@ -151,7 +172,7 @@ export default function TrustPage() {
           <p className="mt-3 text-ink-muted">Each one is true today, and you can check it.</p>
         </div>
         <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {FACTS.map((f) => (
+          {facts.map((f) => (
             <li key={f.title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
                 <f.icon className="h-5 w-5" aria-hidden />
@@ -263,7 +284,7 @@ export default function TrustPage() {
           <h2 id="trust-faq" className="text-3xl font-extrabold">Common questions</h2>
         </div>
         <div className="mx-auto mt-10 max-w-3xl space-y-4">
-          {FAQ.map((f) => (
+          {faq.map((f) => (
             <div key={f.q} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <h3 className="flex items-start gap-2 text-base font-bold">
                 <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" aria-hidden />
@@ -279,7 +300,7 @@ export default function TrustPage() {
             __html: jsonLd({
               '@context': 'https://schema.org',
               '@type': 'FAQPage',
-              mainEntity: FAQ.map((f) => ({
+              mainEntity: faq.map((f) => ({
                 '@type': 'Question',
                 name: f.q,
                 acceptedAnswer: { '@type': 'Answer', text: f.a },

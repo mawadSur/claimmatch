@@ -25,6 +25,9 @@ import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
 import { UnverifiedLabel } from './UnverifiedLabel';
+import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
+import { AuthorizeFiling } from './AuthorizeFiling';
+import { ReportPayout } from './ReportPayout';
 
 export interface ClaimFlowSettlement {
   id: string;
@@ -41,6 +44,10 @@ export interface ClaimFlowSettlement {
   proof: ProofNeed;
   /** C10: official-form field order when stored. */
   formFieldOrder?: string[] | null;
+  /** Full-service filing is on (ASSISTED_FILING_ENABLED=1). */
+  assistedFilingAllowed?: boolean;
+  /** C4: show "I got paid" amount form when the claim is already submitted. */
+  payoutReportEnabled?: boolean;
 }
 
 const PROOF_TEXT: Record<ProofNeed, string> = {
@@ -146,6 +153,13 @@ export function ClaimFlow({
         </h2>
         <div className="mt-4">
           <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+          {settlement.payoutReportEnabled ? (
+            <ReportPayout
+              claimId={claim.id}
+              lawsuitId={settlement.id}
+              enabled={settlement.payoutReportEnabled}
+            />
+          ) : null}
         </div>
         {settlement.officialUrl && (
           <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">
@@ -390,7 +404,10 @@ function FilingSteps({
         </div>
       </Step>
 
-      <Step n={2} title="File on the official site">
+      <Step n={2} title={settlement.assistedFilingAllowed ? FILE_FOR_YOU_CTA : 'File on the official site'}>
+        {settlement.assistedFilingAllowed && (
+          <AuthorizeFiling lawsuitId={settlement.id} claimId={claim?.id ?? null} />
+        )}
         {settlement.officialUrl ? (
           <>
             <a
@@ -398,16 +415,22 @@ function FilingSteps({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onOpenOfficialForm}
-              className="btn-primary mt-4 w-full sm:w-auto"
+              className={
+                settlement.assistedFilingAllowed
+                  ? 'mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800'
+                  : 'btn-primary mt-4 w-full sm:w-auto'
+              }
             >
-              Open the official claim form
+              {settlement.assistedFilingAllowed ? SELF_FILE_SECONDARY : 'Open the official claim form'}
               <ExternalLink className="h-4 w-4" aria-hidden />
               <span className="sr-only">(opens in a new tab)</span>
             </a>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-              It opens in a new tab. Keep this page open so you can come back for
-              step 3.
-            </p>
+            {!settlement.assistedFilingAllowed && (
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                It opens in a new tab. Keep this page open so you can come back for
+                step 3.
+              </p>
+            )}
           </>
         ) : (
           <NoOfficialLink settlement={settlement} />

@@ -51,7 +51,7 @@ import ClaimPage from '@/app/claim/[slug]/page';
 import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
 import { settlementContext, type ClaimView } from '@/lib/claims';
 
-// 2026-10-16 18:00 UTC is 08:00 in Honolulu.
+// 2026-10-16 18:00 UTC is 14:00 in America/New_York.
 const NOW = new Date('2026-10-16T18:00:00Z');
 const LAWSUIT_ID = '00000000-0000-4000-8000-0000000000d1';
 const OFFICIAL = 'https://www.real-admin.com/file';
@@ -70,7 +70,7 @@ const SETTLEMENT: ClaimFlowSettlement = {
 
 function renderFlow(
   facts: { status?: string; deadline?: string | null },
-  opts: { claim?: ClaimView | null; officialUrl?: string | null } = {},
+  opts: { claim?: ClaimView | null; officialUrl?: string | null; assistedFilingAllowed?: boolean } = {},
 ): string {
   const deadline = facts.deadline === undefined ? '2026-11-30' : facts.deadline;
   const context = settlementContext(
@@ -82,6 +82,7 @@ function renderFlow(
     ...SETTLEMENT,
     deadline,
     officialUrl: opts.officialUrl === undefined ? OFFICIAL : opts.officialUrl,
+    assistedFilingAllowed: opts.assistedFilingAllowed,
   };
   return renderToStaticMarkup(
     createElement(ClaimFlow, { settlement, context, initialClaim: opts.claim ?? null, nowIso: NOW.toISOString() }),
@@ -164,6 +165,26 @@ describe('ClaimFlow with a tracked claim', () => {
     const html = renderFlow({ deadline: '2026-10-15' }, { claim: claim() });
     expect(html).toContain('Tell us by Nov 14, 2026.');
     expect(html).toContain(REPORT);
+  });
+});
+
+describe('ClaimFlow when full-service filing is on', () => {
+  it('makes authorization the primary action and keeps self-file as a link', async () => {
+    const { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } = await import('@/lib/copy');
+    const html = renderFlow({}, { assistedFilingAllowed: true });
+    expect(html).toContain(FILE_FOR_YOU_CTA);
+    expect(html).toContain('id="authorize"');
+    expect(html).toContain(SELF_FILE_SECONDARY);
+    expect(html).toContain(`href="${OFFICIAL}"`);
+    expect(html).not.toContain('Open the official claim form');
+    expect(html).toContain('goes to the filing queue');
+  });
+
+  it('keeps the official-form primary button when the flag is off', () => {
+    const html = renderFlow({});
+    expect(html).toContain('Open the official claim form');
+    expect(html).not.toContain('id="authorize"');
+    expect(html).not.toContain('Copy details and file yourself');
   });
 });
 

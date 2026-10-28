@@ -10,6 +10,7 @@ import { pickClosingSoon } from '@/lib/closing-soon';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { publicCostNote } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 const STEPS = [
@@ -64,6 +65,14 @@ async function loadClosingSoon(): Promise<{ rows: Lawsuit[]; failed: boolean }> 
 
 export default async function HomePage() {
   const closing = await loadClosingSoon();
+  const disclose = flags.feeDisclosure();
+  const weDo = disclose
+    ? WE_DO.map((t) =>
+        t === 'Stay free during beta'
+          ? 'Official filing on the administrator’s site stays free'
+          : t,
+      )
+    : WE_DO;
 
   return (
     <>
@@ -115,7 +124,10 @@ export default async function HomePage() {
                 className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-muted lg:justify-start"
               >
                 {[
-                  { icon: CheckCircle2, text: 'Free during beta' },
+                  {
+                    icon: CheckCircle2,
+                    text: disclose ? 'Official filing stays free' : 'Free during beta',
+                  },
                   { icon: HandCoins, text: 'We never handle settlement payments' },
                   { icon: Scale, text: 'Not a law firm' },
                 ].map(({ icon: Icon, text }) => (
@@ -152,8 +164,7 @@ export default async function HomePage() {
                 ))}
               </ol>
               <p className="mt-6 rounded-xl bg-gray-50 p-3 text-sm text-ink-muted">
-                You should never have to pay to file a settlement claim. If someone
-                asks you for a fee, be careful.
+                {publicCostNote(disclose)}
               </p>
             </div>
           </div>
@@ -235,7 +246,9 @@ export default async function HomePage() {
             What ClaimMatch does, and doesn’t do
           </h2>
           <p className="mt-3 text-ink-muted">
-            ClaimMatch is a free claim assistant. You stay in charge of every claim.
+            {disclose
+              ? 'ClaimMatch is a claim assistant. You stay in charge of every claim.'
+              : 'ClaimMatch is a free claim assistant. You stay in charge of every claim.'}
           </p>
         </div>
 
@@ -243,7 +256,7 @@ export default async function HomePage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h3 className="text-lg font-bold">We do</h3>
             <ul className="mt-4 space-y-3">
-              {WE_DO.map((t) => (
+              {weDo.map((t) => (
                 <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-600" aria-hidden />
                   {t}

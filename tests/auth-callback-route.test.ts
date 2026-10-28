@@ -3,6 +3,10 @@ import { NextRequest } from 'next/server';
 
 const m = vi.hoisted(() => ({ exchangeCodeForSession: vi.fn() }));
 
+vi.mock('@/lib/session-flags', () => ({
+  applySessionFlags: vi.fn().mockResolvedValue({ internal: false, cohort: null }),
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { exchangeCodeForSession: m.exchangeCodeForSession } }),
 }));

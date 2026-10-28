@@ -26,19 +26,19 @@ export function formatDeadline(iso: string | null | undefined): string {
 
 /**
  * Whole days until a deadline; negative if passed, null if no deadline.
- * Compared as UTC calendar days so "days left" doesn't drift by one with the
- * viewer's timezone. For "is this still open?" use isDeadlinePassed instead:
- * UTC days flip to "passed" while the deadline day is still running in the US.
+ * Counted in America/New_York calendar days so an evening UTC clock does not
+ * flip the count while the deadline day is still running in the US.
  */
 export function daysUntil(
   iso: string | null | undefined,
   now: Date = new Date(),
 ): number | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  const deadlineUTC = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const parts = typeof iso === 'string' ? deadlineDate(iso) : null;
+  if (!parts) return null;
+  const todayParts = deadlineDate(todayInDeadlineZone(now));
+  if (!todayParts) return null;
+  const deadlineUTC = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+  const todayUTC = Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]);
   return Math.round((deadlineUTC - todayUTC) / (1000 * 60 * 60 * 24));
 }
 
@@ -46,15 +46,16 @@ export function daysUntil(
 // Claim deadlines
 //
 // Records store the deadline as a bare date with no time zone. Until each
-// record carries its administrator's time zone (Phase 1), a deadline day counts
-// as open through 23:59:59 in the latest US time zone, so a settlement is never
-// hidden while it may still be open somewhere in the US. Pages tell people to
-// check the official site for the exact cutoff.
+// record carries its administrator's time zone, a deadline day stays open
+// through that date in America/New_York. UTC midnight is still evening in
+// the US, so comparing against today's UTC date would close settlements
+// early. Pages tell people to check the official site for the exact cutoff.
 // ---------------------------------------------------------------------------
 
-/** The latest US time zone. Hawaii has no daylight saving time, so UTC-10 all year. */
-export const LATEST_US_TIME_ZONE = 'Pacific/Honolulu';
-const LATEST_US_UTC_OFFSET_HOURS = -10;
+/** Calendar zone for "is this deadline still open today?" */
+export const DEADLINE_TIME_ZONE = 'America/New_York';
+/** @deprecated Use DEADLINE_TIME_ZONE. Kept so existing imports stay valid. */
+export const LATEST_US_TIME_ZONE = DEADLINE_TIME_ZONE;
 const HOUR_MS = 60 * 60 * 1000;
 const LEADING_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
 
@@ -80,46 +81,89 @@ function deadlineDate(deadline: string): [number, number, number] | null {
   return [y, mo, d];
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function ymd(parts: [number, number, number]): string {
+  return `${parts[0]}-${pad2(parts[1])}-${pad2(parts[2])}`;
+}
+
+/** Today's calendar date (YYYY-MM-DD) in a named time zone. */
+export function calendarDateInZone(now: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+/** First instant of `ymd` (YYYY-MM-DD) in `timeZone`, as a UTC Date. */
+function startOfDayInZone(ymdValue: string, timeZone: string): Date {
+  const parts = deadlineDate(ymdValue);
+  if (!parts) return new Date(NaN);
+  const [y, mo, d] = parts;
+  let lo = Date.UTC(y, mo - 1, d) - 14 * HOUR_MS;
+  let hi = Date.UTC(y, mo - 1, d) + 14 * HOUR_MS;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (calendarDateInZone(new Date(mid), timeZone) >= ymdValue) hi = mid;
+    else lo = mid + 1;
+  }
+  return new Date(lo);
+}
+
 /**
- * The first instant at which a deadline has passed: the day after the deadline
- * at 00:00 in Pacific/Honolulu (10:00 UTC). Null when there is no usable date.
- * Example: a 2026-10-15 deadline passes at 2026-10-16T10:00:00Z.
+ * The first instant at which a deadline has passed: midnight at the start of
+ * the next calendar day in America/New_York. Null when there is no usable date.
+ * Example (EDT): a 2026-10-15 deadline passes at 2026-10-16T04:00:00Z.
  */
 export function deadlineCutoff(deadline: string | null | undefined): Date | null {
   if (!deadline) return null;
   const parts = deadlineDate(deadline);
   if (!parts) return null;
-  const [y, mo, d] = parts;
-  return new Date(Date.UTC(y, mo - 1, d + 1, -LATEST_US_UTC_OFFSET_HOURS));
+  const next = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + 1));
+  return startOfDayInZone(
+    `${next.getUTCFullYear()}-${pad2(next.getUTCMonth() + 1)}-${pad2(next.getUTCDate())}`,
+    DEADLINE_TIME_ZONE,
+  );
 }
 
 /**
- * True once the deadline day has ended everywhere in the US. A missing or
+ * True once the deadline day has ended in America/New_York. A missing or
  * unreadable deadline never counts as passed.
  */
 export function isDeadlinePassed(
   deadline: string | null | undefined,
   now: Date = new Date(),
 ): boolean {
-  const cutoff = deadlineCutoff(deadline);
-  return cutoff !== null && now.getTime() >= cutoff.getTime();
+  const parts = typeof deadline === 'string' ? deadlineDate(deadline) : null;
+  if (!parts) return false;
+  return ymd(parts) < todayInDeadlineZone(now);
 }
 
 /**
- * Today's date (YYYY-MM-DD) in Pacific/Honolulu. A deadline is still open
- * exactly when `deadline >= todayInLatestUSZone()`, which is how database
+ * Today's date (YYYY-MM-DD) in America/New_York. A deadline is still open
+ * exactly when `deadline >= todayInDeadlineZone()`, which is how database
  * queries apply the same rule as isDeadlinePassed.
  */
+export function todayInDeadlineZone(now: Date = new Date()): string {
+  return calendarDateInZone(now, DEADLINE_TIME_ZONE);
+}
+
+/** @deprecated Use todayInDeadlineZone. Same America/New_York calendar date. */
 export function todayInLatestUSZone(now: Date = new Date()): string {
-  return new Date(now.getTime() + LATEST_US_UTC_OFFSET_HOURS * HOUR_MS)
-    .toISOString()
-    .slice(0, 10);
+  return todayInDeadlineZone(now);
 }
 
 /**
- * Whole days left to file, for urgency labels. Counted in UTC days, which run
- * ahead of every US time zone, so we never overstate the time left; 0 means
- * "last day". Null when there is no deadline or it has passed.
+ * Whole days left to file, for urgency labels. Counted in America/New_York
+ * calendar days; 0 means "last day". Null when there is no deadline or it
+ * has passed.
  */
 export function daysLeftToFile(
   deadline: string | null | undefined,

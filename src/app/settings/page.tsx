@@ -6,6 +6,7 @@ import type { Profile } from '@/lib/types';
 import { legalContact } from '@/lib/legal-contact';
 import { NotificationPrefs } from '@/components/NotificationPrefs';
 import { ReferralCard } from '@/components/ReferralCard';
+import { DeleteAccount } from '@/components/DeleteAccount';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -108,6 +109,11 @@ export default async function SettingsPage() {
             ) : null}
             .
           </p>
+          <p className="mt-3 text-sm text-ink-muted">
+            Match-quality logging is optional. It never includes optional health
+            answers. You can turn it on or off in the form above.
+          </p>
+          <DeleteAccount />
         </section>
 
         <ReferralCard

@@ -56,6 +56,7 @@ import LawsuitsPage from '@/app/lawsuits/page';
 import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
 import HomePage from '@/app/page';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
+import { FILING_FREE_WARNING } from '@/lib/copy';
 
 function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   return {
@@ -130,14 +131,14 @@ afterEach(() => {
 describe('catalog queries', () => {
   it('ask the database only for rows open for claims', async () => {
     db.list = { data: [lawsuit()], error: null };
-    const now = new Date('2026-10-16T08:00:00Z');
+    const now = new Date('2026-10-16T08:00:00Z'); // 04:00 America/New_York
     const result = await lookupLawsuits(undefined, now);
     expect(result).toEqual({ lawsuits: [lawsuit()], error: false });
 
     const call = (name: string) => db.calls.filter(([m]) => m === name).map(([, a]) => a);
     expect(call('eq')).toContainEqual(['review_status', 'published']);
     expect(call('in')).toContainEqual(['status', ['open', 'closing_soon']]);
-    expect(call('or')).toContainEqual(['deadline.is.null,deadline.gte.2026-10-15']);
+    expect(call('or')).toContainEqual(['deadline.is.null,deadline.gte.2026-10-16']);
     const not = call('not')[0];
     expect(not[0]).toBe('slug');
     expect(not[1]).toBe('in');
@@ -477,7 +478,9 @@ describe('"Closing soon" when the catalog cannot be read', () => {
     expect(html).toContain('We couldn’t load settlements right now.');
     expect(html).not.toContain('No deadlines coming up right now.');
     db.list = { data: [], error: null };
-    expect(renderToStaticMarkup(await HomePage())).toContain('No deadlines coming up right now.');
+    const empty = renderToStaticMarkup(await HomePage());
+    expect(empty).toContain('No deadlines coming up right now.');
+    expect(empty).toContain(FILING_FREE_WARNING);
   });
 
   it('the dashboard module says so too', () => {

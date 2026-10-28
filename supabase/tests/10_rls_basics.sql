@@ -81,11 +81,17 @@ create function pg_temp.protected_tables() returns text[]
 language sql immutable as $$
   select array['lawsuits', 'sources', 'jobs', 'notifications', 'recoveries',
                'referrals', 'subscribers', 'claim_events',
-               'share_links', 'share_link_clicks']
+               'share_links', 'share_link_clicks',
+               'administrators', 'administrator_form_mappings',
+               'eligibility_rule_drafts', 'ingest_alerts',
+               'account_deletion_audit']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
-language sql immutable as $$ select array['proof_feedback'] $$;
+language sql immutable as $$
+  select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
+               'match_events', 'match_feature_snapshots', 'match_labels']
+$$;
 
 -- For each protected table, the row count and an md5 of every row, read as
 -- the superuser. A test saves it before switching to an API role and compares

@@ -218,6 +218,29 @@ export interface DashboardMatch {
   strength: MatchStrength;
   label: string;
   officialUrl: string | null;
+  score: number;
+}
+
+/** Possible matches shown after Strong; extras stay hidden behind the cap. */
+export const POSSIBLE_MATCH_CAP = 20;
+
+export interface GroupedDashboardMatches {
+  strong: DashboardMatch[];
+  possible: DashboardMatch[];
+  possibleHidden: number;
+}
+
+export function groupDashboardMatches(
+  items: DashboardMatch[],
+  possibleCap = POSSIBLE_MATCH_CAP,
+): GroupedDashboardMatches {
+  const strong = items.filter((item) => item.strength === 'strong');
+  const possibleAll = items.filter((item) => item.strength !== 'strong');
+  return {
+    strong,
+    possible: possibleAll.slice(0, possibleCap),
+    possibleHidden: Math.max(0, possibleAll.length - possibleCap),
+  };
 }
 
 export interface ClosingSoonItem {
@@ -244,7 +267,7 @@ export function buildDashboardMatches(
     (lawsuit) => UUID_RE.test(lawsuit.id) && !isFictional(lawsuit.slug) && isOpenForClaims(lawsuit, now),
   );
   const byId = new Map(open.map((lawsuit) => [lawsuit.id, lawsuit]));
-  return matchProfile(profile as Profile, open, 0.4, now).flatMap((result) => {
+  const scored = matchProfile(profile as Profile, open, 0.4, now).flatMap((result) => {
     const lawsuit = byId.get(result.lawsuit_id);
     if (!lawsuit) return [];
     const strength = classifyMatch(lawsuit);
@@ -258,8 +281,13 @@ export function buildDashboardMatches(
         strength,
         label: matchStrengthLabel(strength),
         officialUrl: safeExternalUrl(lawsuit.claim_url),
+        score: result.score,
       },
     ];
+  });
+  return scored.sort((a, b) => {
+    if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
+    return b.score - a.score;
   });
 }
 

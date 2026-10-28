@@ -31,6 +31,14 @@ describe('daysUntil', () => {
     expect(daysUntil('not-a-date')).toBeNull();
   });
 
+  it('keeps the deadline day open during the US evening, when UTC is already tomorrow', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 10 pm EDT on Oct 15. UTC date is Oct 16.
+    vi.setSystemTime(new Date('2026-10-16T02:00:00Z'));
+    expect(daysUntil('2026-10-15')).toBe(0);
+    expect(daysUntil('2026-10-16')).toBe(1);
+  });
+
   it('counts whole calendar days, negative once the date has passed', () => {
     // A frozen clock at midday UTC: the same calendar day in UTC and in every
     // US time zone, so the result doesn't depend on when or where tests run.

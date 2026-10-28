@@ -43,6 +43,9 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
   isSupabaseConfigured: () => true,
 }));
+vi.mock('@/lib/ingest-alerts', () => ({
+  maybeRecordIngestAlert: vi.fn().mockResolvedValue(null),
+}));
 
 import * as daily from '@/app/api/cron/daily/route';
 import * as digest from '@/app/api/cron/digest/route';

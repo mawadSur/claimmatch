@@ -16,5 +16,12 @@ interface Props {
  * value shipped to the browser.
  */
 export function AdminNav({ counts }: Props) {
-  return <AdminNavLinks counts={counts} showRecoveries={flags.adminRecoveries()} />;
+  return (
+    <AdminNavLinks
+      counts={counts}
+      showRecoveries={flags.adminRecoveries()}
+      showFiling={flags.assistedFiling()}
+      showEligibilityDrafts={flags.eligibilityDrafts()}
+    />
+  );
 }

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { PENDING_NEXT_COOKIE, callbackDestination } from '@/lib/safe-next';
+import { applySessionFlags } from '@/lib/session-flags';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * OAuth / email-confirmation callback. Supabase redirects here with a ?code
@@ -26,10 +27,13 @@ export async function GET(request: NextRequest) {
   let target = `${origin}${destination}`;
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
       target = toLogin('confirmed=1');
     } else {
+      if (data?.user) {
+        await applySessionFlags({ userId: data.user.id, email: data.user.email });
+      }
       const landed = new URL(target);
       landed.searchParams.set('confirmed', '1');
       target = landed.toString();

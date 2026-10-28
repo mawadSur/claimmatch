@@ -16,8 +16,18 @@ in this order. Every file is additive: nothing is deleted.
 9. `0012_revoke_attribution_anon.sql` — revoke `persist_first_attribution` execute from `public` and `anon`; keep grant to `authenticated`. Additive; apply after 0011.
 10. `0013_verified_fields.sql` — `verified_at` / `verified_by`, `eligibility_verified`, `proof_verified`, `form_field_order`. Additive. Public "Verified on" badge stays off until `VERIFIED_FIELDS_ENABLED=1`. Already applied on production.
 11. `0014_proof_feedback.sql` — `proof_feedback` table (own-row RLS). Additive. Public UI stays off until `PROOF_FEEDBACK_ENABLED=1`.
+12. `0015_assisted_filing.sql` — `lawsuits.assisted_filing_allowed` (default false), `claim_authorizations`, `filing_jobs`. Additive. UI and workers stay off until `ASSISTED_FILING_ENABLED=1`.
+13. `0016_administrators.sql` — administrator registry + form mappings. Additive. Export/API stay off until `DIRECT_FILING_ENABLED=1`.
+14. `0017_match_events.sql` — match events, feature snapshots, labels, labeled-outcomes view, `profiles.match_metrics_consent_at`. Additive. Writes stay off until `MATCH_METRICS_ENABLED=1`.
+15. `0018_eligibility_drafts.sql` — pending eligibility rule drafts. Additive. Script/UI stay off until `ELIGIBILITY_DRAFTS_ENABLED=1`. Never auto-publishes.
+16. `0019_ingest_alerts.sql` — `ingest_alerts` rows for failed or zero-update ingest. Additive. Email stays off until `INGEST_ALERT_EMAILS_ENABLED=1`.
+17. `0020_soft_launch.sql` — `profiles.is_internal` and `profiles.cohort`. Additive.
+18. `0021_link_check.sql` — official-link check columns. Additive. Checker stays off until `LINK_CHECK_ENABLED=1`.
+19. `0022_payout_reports.sql` — user-reported payout columns on `recoveries`. Additive. UI stays off until `PAYOUT_REPORT_ENABLED=1`.
+20. `0023_third_party_fee.sql` — `third_party_fee_status` / generated `third_party_fee_allowed`. Additive.
+21. `0024_account_deletion.sql` — PII-free deletion audit table. Additive.
 
-CI applies 0001–0014 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0024 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -25,7 +35,7 @@ CI applies 0001–0014 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED` and `MATCH_STATE_ONLY_CAP_ENABLED`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED` and `FEE_DISCLOSURE_ENABLED`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
