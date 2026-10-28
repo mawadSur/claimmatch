@@ -264,7 +264,7 @@ describe('POST /api/claims', () => {
 
     it('is accepted the day after the deadline, when saving is refused', async () => {
       h.claimRow = null;
-      // Two days back in UTC is always past the Honolulu cutoff.
+      // Two days back in UTC is always past the Eastern cutoff.
       h.settlement = settlement({ deadline: daysAgo(2) });
       const save = await post({ lawsuit_id: LAWSUIT_ID });
       expect(save.status).toBe(409);

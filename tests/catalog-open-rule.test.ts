@@ -62,19 +62,19 @@ function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   };
 }
 
-describe('deadline cutoff (23:59:59 Pacific/Honolulu)', () => {
-  it('ends a date-only deadline at 10:00 UTC the next day', () => {
-    expect(deadlineCutoff('2026-10-15')?.toISOString()).toBe('2026-10-16T10:00:00.000Z');
+describe('deadline cutoff (through that date in America/New_York)', () => {
+  it('ends a date-only deadline at midnight Eastern the next day', () => {
+    // 2026-10-15 is EDT (UTC-4): midnight Oct 16 ET is 04:00 UTC.
+    expect(deadlineCutoff('2026-10-15')?.toISOString()).toBe('2026-10-16T04:00:00.000Z');
   });
 
-  it('keeps 2026-10-15 open at 2026-10-16T08:00Z and closes it at 10:00Z', () => {
-    expect(isDeadlinePassed('2026-10-15', at('2026-10-16T08:00:00Z'))).toBe(false);
-    expect(isDeadlinePassed('2026-10-15', at('2026-10-16T09:59:59.999Z'))).toBe(false);
-    expect(isDeadlinePassed('2026-10-15', at('2026-10-16T10:00:00Z'))).toBe(true);
+  it('keeps 2026-10-15 open at 2026-10-16T03:59Z and closes it at 04:00Z', () => {
+    expect(isDeadlinePassed('2026-10-15', at('2026-10-16T03:59:59.999Z'))).toBe(false);
+    expect(isDeadlinePassed('2026-10-15', at('2026-10-16T04:00:00Z'))).toBe(true);
   });
 
   it('is not fooled by midnight UTC on the deadline day', () => {
-    // 00:00 UTC is 5 pm Pacific on the 15th: still the deadline day in the US.
+    // 00:00 UTC is 8 pm Eastern on the 15th: still the deadline day in New York.
     expect(isDeadlinePassed('2026-10-15', at('2026-10-16T00:00:00Z'))).toBe(false);
   });
 
@@ -86,10 +86,10 @@ describe('deadline cutoff (23:59:59 Pacific/Honolulu)', () => {
   });
 
   it('uses only the calendar date of a timestamp', () => {
-    expect(deadlineCutoff('2026-10-15T00:00:00.000Z')?.toISOString()).toBe('2026-10-16T10:00:00.000Z');
+    expect(deadlineCutoff('2026-10-15T00:00:00.000Z')?.toISOString()).toBe('2026-10-16T04:00:00.000Z');
   });
 
-  it('agrees with the database form: deadline >= today in Honolulu', () => {
+  it('agrees with the database form: deadline >= today in America/New_York', () => {
     const deadlines = ['2026-10-14', '2026-10-15', '2026-10-16', '2026-12-31', '2027-01-01'];
     const start = Date.parse('2026-10-14T00:00:00Z');
     for (let t = start; t < start + 4 * 86_400_000; t += 37 * 60_000) {
@@ -101,25 +101,25 @@ describe('deadline cutoff (23:59:59 Pacific/Honolulu)', () => {
     }
   });
 
-  it('gives today in Honolulu', () => {
-    expect(todayInLatestUSZone(at('2026-10-16T08:00:00Z'))).toBe('2026-10-15');
-    expect(todayInLatestUSZone(at('2026-10-16T10:00:00Z'))).toBe('2026-10-16');
+  it('gives today in America/New_York', () => {
+    expect(todayInLatestUSZone(at('2026-10-16T03:00:00Z'))).toBe('2026-10-15');
+    expect(todayInLatestUSZone(at('2026-10-16T04:00:00Z'))).toBe('2026-10-16');
   });
 });
 
 describe('days left and urgency labels', () => {
   it('never overstates the time left', () => {
-    // 05:00 UTC on the 16th is still the 15th in the US: last day, not "closed".
-    expect(daysLeftToFile('2026-10-15', at('2026-10-16T05:00:00Z'))).toBe(0);
-    expect(deadlineUrgencyLabel('2026-10-15', at('2026-10-16T05:00:00Z'))).toBe('Last day to file');
-    expect(daysLeftToFile('2026-10-17', at('2026-10-16T05:00:00Z'))).toBe(1);
-    expect(deadlineUrgencyLabel('2026-10-17', at('2026-10-16T05:00:00Z'))).toBe('1 day left');
-    expect(deadlineUrgencyLabel('2026-10-26', at('2026-10-16T05:00:00Z'))).toBe('10 days left');
+    // 03:00 UTC on the 16th is still the 15th in New York: last day, not "closed".
+    expect(daysLeftToFile('2026-10-15', at('2026-10-16T03:00:00Z'))).toBe(0);
+    expect(deadlineUrgencyLabel('2026-10-15', at('2026-10-16T03:00:00Z'))).toBe('Last day to file');
+    expect(daysLeftToFile('2026-10-17', at('2026-10-16T03:00:00Z'))).toBe(2);
+    expect(deadlineUrgencyLabel('2026-10-17', at('2026-10-16T03:00:00Z'))).toBe('2 days left');
+    expect(deadlineUrgencyLabel('2026-10-26', at('2026-10-16T03:00:00Z'))).toBe('11 days left');
   });
 
   it('has no label after the deadline, far from it, or without one', () => {
-    expect(daysLeftToFile('2026-10-15', at('2026-10-16T10:00:00Z'))).toBeNull();
-    expect(deadlineUrgencyLabel('2026-10-15', at('2026-10-16T10:00:00Z'))).toBeNull();
+    expect(daysLeftToFile('2026-10-15', at('2026-10-16T04:00:00Z'))).toBeNull();
+    expect(deadlineUrgencyLabel('2026-10-15', at('2026-10-16T04:00:00Z'))).toBeNull();
     expect(deadlineUrgencyLabel('2027-06-01', at('2026-10-16T05:00:00Z'))).toBeNull();
     expect(deadlineUrgencyLabel(null)).toBeNull();
   });
@@ -145,10 +145,10 @@ describe('isOpenForClaims', () => {
     expect(isOpenForClaims(lawsuit({ deadline: null, status: 'closed' }), now)).toBe(false);
   });
 
-  it('honours the Honolulu cutoff on the deadline day', () => {
+  it('honours the Eastern cutoff on the deadline day', () => {
     const l = lawsuit({ deadline: '2026-10-15' });
-    expect(isOpenForClaims(l, at('2026-10-16T08:00:00Z'))).toBe(true);
-    expect(isOpenForClaims(l, at('2026-10-16T10:00:00Z'))).toBe(false);
+    expect(isOpenForClaims(l, at('2026-10-16T03:00:00Z'))).toBe(true);
+    expect(isOpenForClaims(l, at('2026-10-16T04:00:00Z'))).toBe(false);
   });
 
   it('rejects closed and draft rows', () => {

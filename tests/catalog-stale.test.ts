@@ -19,7 +19,7 @@ import {
 } from '@/lib/scraper/stale';
 import type { ScrapedLawsuit } from '@/lib/types';
 
-const now = new Date('2026-10-16T10:00:00Z'); // past the Honolulu cutoff for 2026-10-15
+const now = new Date('2026-10-16T10:00:00Z'); // past the Eastern cutoff for 2026-10-15
 const SOURCE = '11111111-1111-4111-8111-111111111111';
 
 function candidate(overrides: Partial<StaleCandidate> = {}): StaleCandidate {
@@ -49,8 +49,8 @@ describe('deadline closes', () => {
     });
   });
 
-  it('keeps a row open through the Honolulu cutoff on its deadline day', () => {
-    const stillOpen = new Date('2026-10-16T08:00:00Z');
+  it('keeps a row open through the Eastern cutoff on its deadline day', () => {
+    const stillOpen = new Date('2026-10-16T03:00:00Z'); // 11 pm EDT on Oct 15
     expect(planDeadlineCloses([candidate({ deadline: '2026-10-15' })], stillOpen)).toHaveLength(0);
   });
 

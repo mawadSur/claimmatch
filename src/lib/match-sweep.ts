@@ -45,7 +45,7 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     // Fail loudly so the cron reports an error instead of a quiet "0 sent".
     throw new Error(`[match-sweep] loading settlements failed: ${lawsuitErr.message}`);
   }
-  // Query already drops past Honolulu-cutoff deadlines; filter again and let
+  // Query already drops past America/New_York deadlines; filter again and let
   // matchProfile refuse any leftover expired row.
   const lawsuits = filterOpenForClaims((lawsuitData ?? []) as Lawsuit[], now);
 

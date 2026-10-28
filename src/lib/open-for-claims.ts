@@ -32,9 +32,8 @@ export function isPublicLawsuit(lawsuit: Pick<OpenRuleFields, 'slug' | 'review_s
 /**
  * Published, not fictional, status open (or closing soon), and the deadline has
  * not passed. No deadline counts as open. A date-only deadline stays open
- * through 23:59:59 Pacific/Honolulu, the latest US time zone (see
- * isDeadlinePassed); people are told to check the official site for the exact
- * cutoff.
+ * through that date in America/New_York (see isDeadlinePassed); people are
+ * told to check the official site for the exact cutoff.
  */
 export function isOpenForClaims(lawsuit: OpenRuleFields, now: Date = new Date()): boolean {
   if (!isPublicLawsuit(lawsuit)) return false;

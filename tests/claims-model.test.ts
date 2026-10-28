@@ -45,22 +45,21 @@ const PAST_10_DAYS = ctx({ deadline: '2026-10-06' });
 const PAST_60_DAYS = ctx({ deadline: '2026-08-17' });
 const FICTIONAL = ctx({ slug: 'fake-olive-oil', review_status: 'rejected' }, fictionalSlugs);
 
-describe('deadlines (open through 23:59:59 Pacific/Honolulu)', () => {
-  it('cuts off at the end of the day in Honolulu (the shared catalog cutoff)', () => {
-    // deadlineCutoff is the catalog's: the first instant the deadline has passed.
-    expect(deadlineCutoff('2026-11-30')?.toISOString()).toBe('2026-12-01T10:00:00.000Z');
-    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T09:59:59.999Z'))).toBe(false);
-    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T10:00:00.000Z'))).toBe(true);
+describe('deadlines (open through that date in America/New_York)', () => {
+  it('cuts off at midnight Eastern the next day (the shared catalog cutoff)', () => {
+    // Nov 30 2026 is EST (UTC-5): midnight Dec 1 ET is 05:00 UTC.
+    expect(deadlineCutoff('2026-11-30')?.toISOString()).toBe('2026-12-01T05:00:00.000Z');
+    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T04:59:59.999Z'))).toBe(false);
+    expect(isDeadlinePassed('2026-11-30', new Date('2026-12-01T05:00:00.000Z'))).toBe(true);
   });
 
   it('never overstates the days left, with 0 on the last day', () => {
     expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe(0);
-    // 04:00 on Nov 30 in New York (still Nov 29 in Honolulu): already the last day for most people.
     expect(daysUntilDeadline('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe(0);
     expect(daysUntilDeadline('2026-11-30', new Date('2026-11-29T20:00:00Z'))).toBe(1);
-    // Still open late on Nov 30 in Honolulu.
-    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T09:59:00Z'))).toBe(0);
-    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T10:00:00Z'))).toBe(-1);
+    // Still open late on Nov 30 in New York (11:59 pm EST).
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T04:59:00Z'))).toBe(0);
+    expect(daysUntilDeadline('2026-11-30', new Date('2026-12-01T05:00:00Z'))).toBe(-1);
     expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T20:00:00Z'))).toBe('Last day is today');
     expect(deadlineCountdown('2026-11-30', new Date('2026-11-30T09:00:00Z'))).toBe('Last day is today');
     expect(deadlineCountdown('2026-11-30', new Date('2026-11-29T20:00:00Z'))).toBe('1 day left');
@@ -78,8 +77,8 @@ describe('deadlines (open through 23:59:59 Pacific/Honolulu)', () => {
 
   it('accepts late reports until 30 days after the deadline', () => {
     expect(lateReportLastDay('2026-11-30')).toBe('2026-12-30');
-    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T09:59:00Z'))).toBe(true);
-    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T10:00:01Z'))).toBe(false);
+    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T04:59:00Z'))).toBe(true);
+    expect(isLateReportWindowOpen('2026-11-30', new Date('2026-12-31T05:00:01Z'))).toBe(false);
     expect(isLateReportWindowOpen(null, NOW)).toBe(true);
   });
 });
@@ -114,7 +113,7 @@ describe('open-for-claims rule', () => {
 });
 
 describe('reporting filing without a claim (WP:122, WP:141)', () => {
-  // NOW is 2026-10-16 18:00 UTC (08:00 in Honolulu).
+  // NOW is 2026-10-16 18:00 UTC (14:00 in America/New_York).
   const DAY_AFTER = ctx({ deadline: '2026-10-15' });
   const DAY_30 = ctx({ deadline: '2026-09-16' }); // the last day to report is today
   const DAY_31 = ctx({ deadline: '2026-09-15' });
@@ -126,10 +125,10 @@ describe('reporting filing without a claim (WP:122, WP:141)', () => {
     expect(canReportWithoutClaim(DAY_AFTER)).toBe(true);
     expect(canReportWithoutClaim(DAY_30)).toBe(true);
     expect(canReportWithoutClaim(DAY_31)).toBe(false);
-    // The window ends with the last day in Honolulu.
+    // The window ends with the last day in America/New_York (EDT).
     const deadline = { deadline: '2026-09-15' };
-    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T09:59:59Z')))).toBe(true);
-    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T10:00:00Z')))).toBe(false);
+    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T03:59:59Z')))).toBe(true);
+    expect(canReportWithoutClaim(ctx(deadline, notFictional, new Date('2026-10-16T04:00:00Z')))).toBe(false);
   });
 
   it('stays possible on a listing our list marks closed while it is re-checked (D41)', () => {

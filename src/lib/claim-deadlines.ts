@@ -3,14 +3,14 @@
  * functions (no Supabase, no network); re-exported from '@/lib/claims'.
  */
 import { isOpenForClaims } from './open-for-claims';
-import { daysLeftToFile, isDeadlinePassed } from './utils';
+import { daysLeftToFile, isDeadlinePassed, todayInDeadlineZone } from './utils';
 
 /* -------------------------------------------------------------------------- */
 /* Deadlines                                                                  */
 /* Records carry a date-only deadline. Until they carry their own time zone, a */
-/* deadline stays open through 23:59:59 on that date in Pacific/Honolulu      */
-/* (UTC-10, no daylight saving), the latest US time zone. People are told to  */
-/* check the official site for the exact cutoff.                              */
+/* deadline stays open through that date in America/New_York. UTC midnight is */
+/* still evening in the US, so we never compare against today's UTC date.     */
+/* People are told to check the official site for the exact cutoff.           */
 /*                                                                            */
 /* The cutoff and the open-for-claims rule are shared with the catalog        */
 /* (src/lib/utils.ts and src/lib/open-for-claims.ts) and re-exported here, so  */
@@ -21,7 +21,6 @@ export { deadlineCutoff, isDeadlinePassed } from './utils';
 export { isOpenForClaims } from './open-for-claims';
 
 const DAY_MS = 86_400_000;
-const HONOLULU_OFFSET_MS = 10 * 3_600_000;
 /** A late "I filed it" is accepted this many days after the deadline (WP:112). */
 export const LATE_REPORT_DAYS = 30;
 
@@ -47,17 +46,19 @@ export function parseCalendarDate(value: string | null | undefined): CalendarDat
 /**
  * Calendar days left to file: 0 on the last day, negative once the deadline
  * has passed. While the deadline is open this is the catalog's count
- * (daysLeftToFile, in UTC days), which never overstates the time left for
- * anyone in the US, so the claim page and the settlement page show the same
- * number. After the cutoff it counts days since the deadline, in Honolulu.
+ * (daysLeftToFile, America/New_York days). After the cutoff it counts days
+ * since the deadline in the same zone.
  */
 export function daysUntilDeadline(deadline: string | null | undefined, now: Date): number | null {
   const p = parseCalendarDate(deadline);
   if (!p) return null;
   if (!isDeadlinePassed(deadline, now)) return daysLeftToFile(deadline, now);
-  const local = new Date(now.getTime() - HONOLULU_OFFSET_MS);
-  const today = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate());
-  return Math.min(-1, Math.round((Date.UTC(p.y, p.m - 1, p.d) - today) / DAY_MS));
+  const today = parseCalendarDate(todayInDeadlineZone(now));
+  if (!today) return null;
+  return Math.min(
+    -1,
+    Math.round((Date.UTC(p.y, p.m - 1, p.d) - Date.UTC(today.y, today.m - 1, today.d)) / DAY_MS),
+  );
 }
 
 export function addCalendarDays(date: string | null | undefined, days: number): string | null {

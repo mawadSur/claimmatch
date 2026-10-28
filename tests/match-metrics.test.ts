@@ -30,7 +30,7 @@ describe('match features exclude health answers', () => {
       payout_min: 25,
       payout_max: 75,
     });
-    const features = buildMatchFeatures(profile, lawsuit, new Date('2026-10-28T00:00:00Z'));
+    const features = buildMatchFeatures(profile, lawsuit, new Date('2026-10-28T12:00:00Z'));
     expect(features.attribute_overlap).toEqual(['had_data_breach']);
     expect(features.attribute_overlap).not.toContain('took_medication');
     expect(features.state).toBe('NY');

@@ -5,7 +5,7 @@ import type { IngestPlan, PlannedUpdate } from './plan';
 
 /**
  * Close rules that do not wait for the feed to mark a record closed:
- * 1. The deadline has already passed (Honolulu cutoff — same as isOpenForClaims).
+ * 1. The deadline has already passed (America/New_York date — same as isOpenForClaims).
  * 2. A feed-source row has been missing from N consecutive successful,
  *    non-empty feeds.
  *

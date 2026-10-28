@@ -131,14 +131,14 @@ afterEach(() => {
 describe('catalog queries', () => {
   it('ask the database only for rows open for claims', async () => {
     db.list = { data: [lawsuit()], error: null };
-    const now = new Date('2026-10-16T08:00:00Z');
+    const now = new Date('2026-10-16T08:00:00Z'); // 04:00 America/New_York
     const result = await lookupLawsuits(undefined, now);
     expect(result).toEqual({ lawsuits: [lawsuit()], error: false });
 
     const call = (name: string) => db.calls.filter(([m]) => m === name).map(([, a]) => a);
     expect(call('eq')).toContainEqual(['review_status', 'published']);
     expect(call('in')).toContainEqual(['status', ['open', 'closing_soon']]);
-    expect(call('or')).toContainEqual(['deadline.is.null,deadline.gte.2026-10-15']);
+    expect(call('or')).toContainEqual(['deadline.is.null,deadline.gte.2026-10-16']);
     const not = call('not')[0];
     expect(not[0]).toBe('slug');
     expect(not[1]).toBe('in');

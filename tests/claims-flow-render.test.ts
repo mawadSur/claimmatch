@@ -51,7 +51,7 @@ import ClaimPage from '@/app/claim/[slug]/page';
 import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
 import { settlementContext, type ClaimView } from '@/lib/claims';
 
-// 2026-10-16 18:00 UTC is 08:00 in Honolulu.
+// 2026-10-16 18:00 UTC is 14:00 in America/New_York.
 const NOW = new Date('2026-10-16T18:00:00Z');
 const LAWSUIT_ID = '00000000-0000-4000-8000-0000000000d1';
 const OFFICIAL = 'https://www.real-admin.com/file';
