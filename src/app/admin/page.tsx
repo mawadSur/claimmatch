@@ -28,6 +28,11 @@ import { getAdminUser } from '@/lib/admin';
 import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
 import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
+import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
+import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
+import { flags } from '@/lib/flags';
+import { listBrokenOfficialLinks } from '@/lib/link-check';
+import { EMPTY_SOFT_LAUNCH_COUNTS, loadSoftLaunchCounts } from '@/lib/soft-launch';
 
 export const metadata: Metadata = { title: 'Admin' };
 
@@ -105,6 +110,10 @@ export default async function AdminOverviewPage() {
   ]);
   const lastIngest = await loadLastIngestRun(svc);
   const lastDigestFailure = await loadLastDigestFailure(svc);
+  const softLaunch = await loadSoftLaunchCounts().catch(() => ({ ...EMPTY_SOFT_LAUNCH_COUNTS }));
+  const brokenLinks = flags.linkCheck()
+    ? await listBrokenOfficialLinks(50).catch(() => [])
+    : [];
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -132,6 +141,9 @@ export default async function AdminOverviewPage() {
       </header>
 
       <CronFailureBanners ingest={lastIngest} digest={lastDigestFailure} />
+
+      <SoftLaunchCard counts={softLaunch} />
+      {flags.linkCheck() ? <BrokenLinksList rows={brokenLinks} /> : null}
 
       {/* Quick-action cards */}
       <section className="grid gap-4 sm:grid-cols-2">

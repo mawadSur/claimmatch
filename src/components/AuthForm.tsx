@@ -94,6 +94,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
     posthog?.identify(userId);
     const once = attributionPersonProperties(attr);
     if (Object.keys(once).length > 0) posthog?.setPersonProperties({}, once);
+    void fetch('/api/session-flags', { method: 'POST' })
+      .then((res) => res.json())
+      .then((json: { internal?: boolean }) => {
+        if (json.internal) {
+          posthog?.identify(userId, { internal: true });
+          posthog?.opt_out_capturing();
+        }
+      })
+      .catch(() => undefined);
   }
 
   async function handleSubmit(e: React.FormEvent) {

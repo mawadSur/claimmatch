@@ -8,6 +8,7 @@ import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { processFilingQueue } from '@/lib/filing/queue';
 import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
+import { runOfficialLinkCheck } from '@/lib/link-check';
 import {
   buildReport,
   checkIngestStep,
@@ -69,6 +70,10 @@ async function handle(req: Request) {
   }
   if (flags.eligibilityDrafts()) {
     await runStep('daily/eligibilityDrafts', () => persistEligibilityDrafts());
+  }
+  // Hobby allows two crons; the weekly checker piggybacks on Monday UTC.
+  if (flags.linkCheck() && new Date().getUTCDay() === 1) {
+    await runOfficialLinkCheck();
   }
   return NextResponse.json(report, { status: reportHttpStatus(report) });
 }

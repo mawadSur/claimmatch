@@ -185,7 +185,7 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
                 </td>
                 <td className="px-4 py-3">
                   <span className={STATUS_TONE[r.status] ?? 'badge-gray'}>
-                    {STATUS_LABEL[r.status] ?? r.status}
+                    {r.source === 'user_reported' ? 'Reported' : STATUS_LABEL[r.status] ?? r.status}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -210,10 +210,16 @@ export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-ink-muted">
-                  {formatUSD(feeNum)}
-                  <div className="text-[11px] text-ink-soft">
-                    {Math.round(pct * 100)}%
-                  </div>
+                  {r.source === 'user_reported' ? (
+                    <span className="text-ink-soft">—</span>
+                  ) : (
+                    <>
+                      {formatUSD(feeNum)}
+                      <div className="text-[11px] text-ink-soft">
+                        {Math.round(pct * 100)}%
+                      </div>
+                    </>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold text-success-700">
                   {formatUSD(netNum)}

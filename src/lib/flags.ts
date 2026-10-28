@@ -103,4 +103,14 @@ export const flags = {
    * Alert rows are still recorded either way. Off: no email.
    */
   ingestAlertEmails: () => on('INGEST_ALERT_EMAILS_ENABLED'),
+  /**
+   * Weekly official claim-link checker. Off: the cron route no-ops and the
+   * daily Monday hook does not probe URLs.
+   */
+  linkCheck: () => on('LINK_CHECK_ENABLED'),
+  /**
+   * User-reported "I got paid" amount (no fee shown or charged). Off: the
+   * form and API are hidden.
+   */
+  payoutReport: () => on('PAYOUT_REPORT_ENABLED'),
 };

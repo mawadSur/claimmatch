@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Search, HelpCircle, CheckCircle2, XCircle, BadgeCheck } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
+import { FILING_FREE_WARNING } from '@/lib/copy';
 import { jsonLd } from '@/lib/jsonld';
 import { SITE } from '@/lib/utils';
 
@@ -42,7 +43,7 @@ const FAQ = [
   },
   {
     q: 'Do I have to pay to file a claim?',
-    a: 'No. You file on the official settlement website, and you should never have to pay to file a settlement claim. If someone asks you for a fee to get settlement money, be careful.',
+    a: `No. You file on the official settlement website. ${FILING_FREE_WARNING}`,
   },
   {
     q: 'How does ClaimMatch make money?',

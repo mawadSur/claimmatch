@@ -83,7 +83,8 @@ language sql immutable as $$
                'referrals', 'subscribers', 'claim_events',
                'share_links', 'share_link_clicks',
                'administrators', 'administrator_form_mappings',
-               'eligibility_rule_drafts', 'ingest_alerts']
+               'eligibility_rule_drafts', 'ingest_alerts',
+               'account_deletion_audit']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]

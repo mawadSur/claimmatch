@@ -143,6 +143,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
       { assisted_filing_allowed: Boolean((settlement as { assisted_filing_allowed?: boolean }).assisted_filing_allowed) },
       flags.assistedFiling(),
     ),
+    payoutReportEnabled: flags.payoutReport(),
   };
 
   return (

@@ -56,6 +56,7 @@ import LawsuitsPage from '@/app/lawsuits/page';
 import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
 import HomePage from '@/app/page';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
+import { FILING_FREE_WARNING } from '@/lib/copy';
 
 function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
   return {
@@ -477,7 +478,9 @@ describe('"Closing soon" when the catalog cannot be read', () => {
     expect(html).toContain('We couldn’t load settlements right now.');
     expect(html).not.toContain('No deadlines coming up right now.');
     db.list = { data: [], error: null };
-    expect(renderToStaticMarkup(await HomePage())).toContain('No deadlines coming up right now.');
+    const empty = renderToStaticMarkup(await HomePage());
+    expect(empty).toContain('No deadlines coming up right now.');
+    expect(empty).toContain(FILING_FREE_WARNING);
   });
 
   it('the dashboard module says so too', () => {

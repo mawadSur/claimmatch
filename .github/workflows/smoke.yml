@@ -1,0 +1,49 @@
+# Read-only smoke against a successful Vercel deployment.
+# Never signs up or writes. Uses the deployment URL only.
+name: Post-deploy smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Origin to smoke-test (e.g. https://claimmatch.vercel.app)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.event.deployment_status.target_url || inputs.url || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: smoke
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || inputs.url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run read-only smoke
+        run: npm run test:e2e

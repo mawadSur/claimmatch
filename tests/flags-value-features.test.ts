@@ -27,6 +27,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.matchMetrics()).toBe(false);
     expect(flags.eligibilityDrafts()).toBe(false);
     expect(flags.ingestAlertEmails()).toBe(false);
+    expect(flags.linkCheck()).toBe(false);
+    expect(flags.payoutReport()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -48,6 +50,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('MATCH_METRICS_ENABLED', 'on');
     vi.stubEnv('ELIGIBILITY_DRAFTS_ENABLED', 'true');
     vi.stubEnv('INGEST_ALERT_EMAILS_ENABLED', 'yes');
+    vi.stubEnv('LINK_CHECK_ENABLED', 'true');
+    vi.stubEnv('PAYOUT_REPORT_ENABLED', 'yes');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -68,6 +72,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.matchMetrics()).toBe(false);
     expect(flags.eligibilityDrafts()).toBe(false);
     expect(flags.ingestAlertEmails()).toBe(false);
+    expect(flags.linkCheck()).toBe(false);
+    expect(flags.payoutReport()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -89,6 +95,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('MATCH_METRICS_ENABLED', '1');
     vi.stubEnv('ELIGIBILITY_DRAFTS_ENABLED', '1');
     vi.stubEnv('INGEST_ALERT_EMAILS_ENABLED', '1');
+    vi.stubEnv('LINK_CHECK_ENABLED', '1');
+    vi.stubEnv('PAYOUT_REPORT_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -109,5 +117,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.matchMetrics()).toBe(true);
     expect(flags.eligibilityDrafts()).toBe(true);
     expect(flags.ingestAlertEmails()).toBe(true);
+    expect(flags.linkCheck()).toBe(true);
+    expect(flags.payoutReport()).toBe(true);
   });
 });

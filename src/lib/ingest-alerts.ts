@@ -61,6 +61,27 @@ function adminInboxes(): string[] {
     .filter((s) => s.includes('@'));
 }
 
+/** Best-effort admin email. Used by ingest alerts and the link checker. */
+export async function notifyAdmins(input: { subject: string; html: string }): Promise<boolean> {
+  const to = adminInboxes();
+  if (to.length === 0) return false;
+  const resend = getResend();
+  if (!resend) return false;
+  const from = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
+  try {
+    await resend.emails.send({
+      from,
+      to,
+      subject: input.subject,
+      html: input.html,
+    });
+    return true;
+  } catch (err) {
+    console.error('[notify-admins] email failed', err);
+    return false;
+  }
+}
+
 export function renderIngestAlertEmail(input: {
   job: string;
   reason: IngestAlertReason;
@@ -86,29 +107,18 @@ async function sendIngestAlertEmail(input: {
   at: string;
 }): Promise<boolean> {
   if (!flags.ingestAlertEmails()) return false;
-  const to = adminInboxes();
-  if (to.length === 0) {
+  if (adminInboxes().length === 0) {
     console.log('[ingest-alert] INGEST_ALERT_EMAILS_ENABLED=1 but ADMIN_EMAILS is empty');
     return false;
   }
-  const resend = getResend();
-  if (!resend) {
+  if (!getResend()) {
     console.log('[ingest-alert] RESEND_API_KEY not set — skipping ingest alert email');
     return false;
   }
-  const from = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
-  try {
-    await resend.emails.send({
-      from,
-      to,
-      subject: `${input.reason === 'failed' ? 'Ingest failed' : 'Ingest updated 0 rows'} on ${SITE.name}`,
-      html: renderIngestAlertEmail(input),
-    });
-    return true;
-  } catch (err) {
-    console.error('[ingest-alert] email failed', err);
-    return false;
-  }
+  return notifyAdmins({
+    subject: `${input.reason === 'failed' ? 'Ingest failed' : 'Ingest updated 0 rows'} on ${SITE.name}`,
+    html: renderIngestAlertEmail(input),
+  });
 }
 
 /** Record an alert row (always) and email when the email flag is on. Never throws. */

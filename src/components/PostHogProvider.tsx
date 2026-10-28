@@ -69,6 +69,30 @@ function AttributionSync() {
   return null;
 }
 
+function IdentifySession() {
+  const ph = usePostHog();
+  const ran = useRef(false);
+
+  useEffect(() => {
+    if (ran.current || !ph) return;
+    ran.current = true;
+    void fetch('/api/session-flags', { method: 'POST' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: { internal?: boolean } | null) => {
+        if (!json) return;
+        if (json.internal) {
+          ph.setPersonProperties({ internal: true });
+          ph.opt_out_capturing();
+        }
+      })
+      .catch(() => {
+        ran.current = false;
+      });
+  }, [ph]);
+
+  return null;
+}
+
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!POSTHOG_KEY) return;
@@ -101,6 +125,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <PostHogPageView />
         <AttributionSync />
+        <IdentifySession />
       </Suspense>
       {children}
     </PHProvider>

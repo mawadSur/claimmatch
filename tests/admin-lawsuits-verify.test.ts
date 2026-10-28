@@ -121,6 +121,24 @@ describe('PATCH /api/admin/lawsuits verify', () => {
     expect(h.lastUpdate).toBeNull();
   });
 
+  it('round-trips assisted filing and third-party fee flags', async () => {
+    h.admin = { id: 'admin-1', email: 'ops@example.com' };
+    h.updated = { id, assisted_filing_allowed: true, third_party_fee_status: 'allowed' };
+    const res = await patch({
+      id,
+      action: 'update',
+      patch: {
+        assisted_filing_allowed: true,
+        third_party_fee_status: 'allowed',
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(h.lastUpdate).toEqual({
+      assisted_filing_allowed: true,
+      third_party_fee_status: 'allowed',
+    });
+  });
+
   it('clears the stamp on unverify without touching verified fields', async () => {
     h.admin = { id: 'admin-1', email: 'ops@example.com' };
     h.updated = { id, verified_at: null, verified_by: null };

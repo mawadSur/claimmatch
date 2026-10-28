@@ -10,6 +10,7 @@ import { pickClosingSoon } from '@/lib/closing-soon';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { FILING_FREE_WARNING } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 const STEPS = [
@@ -152,8 +153,7 @@ export default async function HomePage() {
                 ))}
               </ol>
               <p className="mt-6 rounded-xl bg-gray-50 p-3 text-sm text-ink-muted">
-                You should never have to pay to file a settlement claim. If someone
-                asks you for a fee, be careful.
+                {FILING_FREE_WARNING}
               </p>
             </div>
           </div>

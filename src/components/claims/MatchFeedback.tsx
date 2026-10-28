@@ -21,6 +21,7 @@ export function MatchFeedback({
   const posthog = usePostHog();
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [choice, setChoice] = useState<string | null>(null);
+  const [amount, setAmount] = useState('');
 
   async function report(label: 'not_relevant' | 'filed' | 'paid') {
     setStatus('saving');
@@ -32,10 +33,18 @@ export function MatchFeedback({
         matchedSignals: reasons,
       });
       posthog?.capture(posthogMatchEventName(eventType), props);
+      const payout =
+        label === 'paid' && amount !== '' && Number.isFinite(Number(amount)) ? Number(amount) : null;
       const res = await fetch('/api/match-labels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lawsuit_id: lawsuitId, label, score, matched_signals: reasons }),
+        body: JSON.stringify({
+          lawsuit_id: lawsuitId,
+          label,
+          score,
+          matched_signals: reasons,
+          payout_amount: payout,
+        }),
       });
       if (!res.ok) {
         setStatus('error');
@@ -76,6 +85,18 @@ export function MatchFeedback({
         >
           I got paid
         </button>
+        <input
+          type="number"
+          min={0}
+          max={100000}
+          step="0.01"
+          inputMode="decimal"
+          aria-label="Payout amount in US dollars"
+          placeholder="Amount (optional)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-28 rounded-lg border border-gray-200 px-2 py-1"
+        />
       </div>
       <p className="mt-1" aria-live="polite">
         {status === 'saved' && choice === 'not_relevant' && 'Marked not relevant.'}

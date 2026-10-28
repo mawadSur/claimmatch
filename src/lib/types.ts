@@ -133,6 +133,14 @@ export interface Lawsuit {
   assisted_filing_allowed?: boolean;
   /** 0016: optional FK to public.administrators. */
   administrator_id?: string | null;
+  /** 0021: last official-link check. */
+  link_status?: 'ok' | 'redirect' | 'broken' | 'timeout' | 'error' | null;
+  link_http_status?: number | null;
+  link_checked_at?: string | null;
+  /** 0023: unknown | allowed | barred. Default unknown. */
+  third_party_fee_status?: 'unknown' | 'allowed' | 'barred';
+  /** 0023: generated true only when status is allowed. */
+  third_party_fee_allowed?: boolean;
 }
 
 /** 0014: signed-in crowd signal. Never shown as a public fact. */
@@ -171,6 +179,10 @@ export interface Profile {
   first_ref?: string | null;
   /** 0017: when the user agreed to privacy-safe match-quality logging. */
   match_metrics_consent_at?: string | null;
+  /** 0020: tester account excluded from traction counts. */
+  is_internal?: boolean;
+  /** 0020: first-touch soft-launch tag (soft-1, soft-2, …). */
+  cohort?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -235,6 +247,10 @@ export interface Recovery {
   status: RecoveryStatus;
   received_at: string | null;
   paid_out_at: string | null;
+  /** 0022: legacy ledger vs user-reported payout. */
+  source?: 'legacy' | 'user_reported';
+  payout_method?: 'check' | 'card' | 'e_payment' | 'other' | null;
+  user_reported_at?: string | null;
   created_at: string;
   updated_at: string;
 }

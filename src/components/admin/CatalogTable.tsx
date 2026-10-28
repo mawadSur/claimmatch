@@ -82,6 +82,8 @@ export function CatalogTable({ rows: initial }: { rows: Lawsuit[] }) {
             <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3 font-semibold">Deadline</th>
             <th className="px-4 py-3 font-semibold">Featured</th>
+            <th className="px-4 py-3 font-semibold">Assist</th>
+            <th className="px-4 py-3 font-semibold">3rd-party fee</th>
             <th className="px-4 py-3 text-right font-semibold">Actions</th>
           </tr>
         </thead>
@@ -120,6 +122,35 @@ export function CatalogTable({ rows: initial }: { rows: Lawsuit[] }) {
                   ) : (
                     <span className="text-ink-soft">—</span>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    disabled={row.busy !== null}
+                    onClick={() =>
+                      patchLawsuit(row, 'feature', {
+                        assisted_filing_allowed: !l.assisted_filing_allowed,
+                      })
+                    }
+                    className="btn-ghost px-2 py-1 text-xs"
+                  >
+                    {l.assisted_filing_allowed ? 'Allowed' : 'Off'}
+                  </button>
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    aria-label={`Third-party fee for ${l.title}`}
+                    disabled={row.busy !== null}
+                    value={l.third_party_fee_status ?? 'unknown'}
+                    onChange={(e) =>
+                      patchLawsuit(row, 'feature', { third_party_fee_status: e.target.value })
+                    }
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="allowed">Allowed</option>
+                    <option value="barred">Barred</option>
+                  </select>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">

@@ -26,6 +26,7 @@ import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
 import { UnverifiedLabel } from './UnverifiedLabel';
 import { AuthorizeFiling } from './AuthorizeFiling';
+import { ReportPayout } from './ReportPayout';
 
 export interface ClaimFlowSettlement {
   id: string;
@@ -44,6 +45,8 @@ export interface ClaimFlowSettlement {
   formFieldOrder?: string[] | null;
   /** Stage 2: settlement is on the assisted-filing allowlist and the flag is on. */
   assistedFilingAllowed?: boolean;
+  /** C4: show "I got paid" amount form when the claim is already submitted. */
+  payoutReportEnabled?: boolean;
 }
 
 const PROOF_TEXT: Record<ProofNeed, string> = {
@@ -149,6 +152,13 @@ export function ClaimFlow({
         </h2>
         <div className="mt-4">
           <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+          {settlement.payoutReportEnabled ? (
+            <ReportPayout
+              claimId={claim.id}
+              lawsuitId={settlement.id}
+              enabled={settlement.payoutReportEnabled}
+            />
+          ) : null}
         </div>
         {settlement.officialUrl && (
           <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">

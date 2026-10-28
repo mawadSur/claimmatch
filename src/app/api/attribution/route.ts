@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { parseAttribution, hasAttribution } from '@/lib/attribution';
+import { applySessionFlags } from '@/lib/session-flags';
+import { createClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 
@@ -44,5 +45,6 @@ export async function POST(req: Request) {
     console.error('[attribution] persist failed', { code: error.code });
     return NextResponse.json({ ok: false }, { status: 500 });
   }
+  await applySessionFlags({ userId: user.id, email: user.email });
   return NextResponse.json({ ok: true });
 }

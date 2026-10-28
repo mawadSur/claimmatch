@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({
   lawsuit_id: z.string().uuid(),
   label: z.string(),
-  payout_amount: z.number().nonnegative().optional().nullable(),
+  payout_amount: z.number().min(0).max(100000).optional().nullable(),
   score: z.number().min(0).max(1).optional().nullable(),
   matched_signals: z.array(z.string()).optional(),
 });
