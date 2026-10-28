@@ -19,7 +19,7 @@ export default async function AdminFilingPage() {
         <h2 className="text-2xl font-extrabold">Assisted filing</h2>
         <p className="max-w-2xl text-sm text-ink-muted">
           This view is off. Set ASSISTED_FILING_ENABLED=1 after counsel review.
-          Settlements still need assisted_filing_allowed = true.
+          When on, full-service filing is the primary path for every claim.
         </p>
       </div>
     );

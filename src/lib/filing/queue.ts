@@ -4,11 +4,12 @@ import type { FilingJob, FilingJobStatus, FormFieldMapping, Lawsuit, Profile } f
 import { sendFilingReceiptEmail } from './receipt';
 import { createFilingWorker, type FilingWorker, type FilingWorkerResult } from './worker';
 
+/** Primary path when the flag is on: every claim can be authorized. */
 export function assistedFilingAllowed(
-  lawsuit: Pick<Lawsuit, 'assisted_filing_allowed'>,
+  _lawsuit?: Pick<Lawsuit, 'assisted_filing_allowed'>,
   enabled = flags.assistedFiling(),
 ): boolean {
-  return enabled && lawsuit.assisted_filing_allowed === true;
+  return enabled;
 }
 
 export async function queueFilingJob(input: {

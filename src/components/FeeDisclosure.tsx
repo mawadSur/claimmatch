@@ -4,8 +4,8 @@ import { flags } from '@/lib/flags';
 
 /**
  * Single public fee surface. Default: free during beta. When
- * FEE_DISCLOSURE_ENABLED=1, states the recovery-share fee on every
- * ClaimMatch claim (not only assisted filings).
+ * FEE_DISCLOSURE_ENABLED=1, states that ClaimMatch files the claim and
+ * charges a recovery share only if the user is paid.
  */
 export function FeeDisclosure({
   compact = false,
@@ -15,7 +15,7 @@ export function FeeDisclosure({
   className?: string;
 }) {
   const body = flags.feeDisclosure()
-    ? `${feeEveryClaimCopy()} You always file on the official site, and ClaimMatch never files for you.`
+    ? feeEveryClaimCopy()
     : `${BETA_FEE_COPY} You always file on the official site, and ClaimMatch never files for you.`;
 
   if (compact) {

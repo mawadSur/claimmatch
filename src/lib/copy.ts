@@ -10,18 +10,24 @@ export const OFFICIAL_FILING_IS_FREE = 'Filing on the official site is always fr
 export const FILING_FREE_WARNING = OFFICIAL_FILING_IS_FREE;
 
 /**
- * Recovery share, in percent. Owner decision: applies to every claim made
- * through ClaimMatch, not only assisted filings. Public pages show this only
+ * Recovery share, in percent. Owner decision: ClaimMatch files the claim and
+ * charges this share only if the user is paid. Public pages show this only
  * when FEE_DISCLOSURE_ENABLED=1.
  */
 export const CLAIMMATCH_FEE_RATE = 15;
 
 export function feeEveryClaimCopy(rate = CLAIMMATCH_FEE_RATE): string {
   return (
-    `ClaimMatch’s fee is ${rate} percent of what you receive on every claim you make through ClaimMatch, not only assisted filings. ` +
-    'The settlement administrator pays you directly. Official filing on the administrator’s site stays free.'
+    `ClaimMatch files the claim for you and charges ${rate} percent only if you get paid. ` +
+    'The settlement administrator pays you directly.'
   );
 }
+
+/** Primary match CTA when ASSISTED_FILING_ENABLED=1. */
+export const FILE_FOR_YOU_CTA = 'We’ll file it for you';
+
+/** Secondary self-file link next to the primary filing CTA. */
+export const SELF_FILE_SECONDARY = 'Copy details and file yourself';
 
 export const BETA_FEE_COPY =
   'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.';

@@ -32,8 +32,8 @@ describe('C1 official-filing and fee copy', () => {
 
   it('keeps the recovery-share wording interpolated so copy-guard stays clean', () => {
     expect(feeEveryClaimCopy()).toContain(`${CLAIMMATCH_FEE_RATE} percent`);
-    expect(feeEveryClaimCopy()).toContain('every claim you make through ClaimMatch');
-    expect(feeEveryClaimCopy()).toContain('not only assisted filings');
+    expect(feeEveryClaimCopy()).toContain('files the claim for you');
+    expect(feeEveryClaimCopy()).toContain('only if you get paid');
     expect(feeEveryClaimCopy()).not.toContain('15%');
   });
 

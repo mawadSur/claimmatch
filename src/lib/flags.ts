@@ -78,9 +78,9 @@ export const flags = {
    */
   stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
   /**
-   * Stage 2: authorized assisted filing. Off: no e-sign, queue, worker or
-   * filing UI. Even when on, a settlement must also have
-   * assisted_filing_allowed = true.
+   * Full-service filing is the primary path. Off: no e-sign, queue, worker
+   * or filing CTA. On: match CTAs offer “we’ll file it for you”, then
+   * per-claim authorization and the filing queue.
    */
   assistedFiling: () => on('ASSISTED_FILING_ENABLED'),
   /**

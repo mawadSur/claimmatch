@@ -24,8 +24,8 @@ const Body = z.object({
 
 /**
  * POST /api/filing/authorize — store the signed authorization and queue a
- * filing job. Off unless ASSISTED_FILING_ENABLED=1 and the settlement is
- * allowlisted. Never talks to an official form.
+ * filing job. Off unless ASSISTED_FILING_ENABLED=1. Never talks to an
+ * official form from this route.
  */
 export async function POST(req: Request) {
   if (!flags.assistedFiling()) {

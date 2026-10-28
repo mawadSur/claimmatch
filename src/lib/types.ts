@@ -129,7 +129,7 @@ export interface Lawsuit {
   proof_verified?: ProofRequired | null;
   /** 0013: optional official-form field order (C10). */
   form_field_order?: string[] | null;
-  /** 0015: per-settlement allowlist for assisted filing. Default false. */
+  /** 0015: per-settlement filing marker. User path is gated by the flag. */
   assisted_filing_allowed?: boolean;
   /** 0016: optional FK to public.administrators. */
   administrator_id?: string | null;

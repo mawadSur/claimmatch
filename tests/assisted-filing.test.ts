@@ -10,14 +10,16 @@ afterEach(() => {
   setFilingWorkerFactory(null);
 });
 
-describe('assisted filing flags and allowlist', () => {
-  it('stays off unless the flag is 1 and the settlement is allowlisted', () => {
-    const lawsuit = makeLawsuit({}, { assisted_filing_allowed: true });
+describe('assisted filing flag', () => {
+  it('stays off unless the flag is exactly 1', () => {
+    const lawsuit = makeLawsuit({}, { assisted_filing_allowed: false });
+    expect(assistedFilingAllowed(lawsuit)).toBe(false);
+    vi.stubEnv('ASSISTED_FILING_ENABLED', 'true');
     expect(assistedFilingAllowed(lawsuit)).toBe(false);
     vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
     expect(assistedFilingAllowed(lawsuit)).toBe(true);
-    expect(assistedFilingAllowed(makeLawsuit({}, { assisted_filing_allowed: false }))).toBe(false);
-    expect(assistedFilingAllowed(makeLawsuit({}))).toBe(false);
+    expect(assistedFilingAllowed(makeLawsuit({}))).toBe(true);
+    expect(assistedFilingAllowed()).toBe(true);
   });
 });
 

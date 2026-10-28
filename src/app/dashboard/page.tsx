@@ -126,6 +126,7 @@ export default async function DashboardPage({
           failed={catalog.error}
           needsProfile={needsProfile}
           metricsEnabled={flags.matchMetrics()}
+          fileForYou={flags.assistedFiling()}
         />
 
         {flags.assistedFiling() && (

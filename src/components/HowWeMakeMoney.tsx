@@ -17,8 +17,8 @@ export function HowWeMakeMoney({
   const disclose = flags.feeDisclosure();
   const points = disclose
     ? [
-        'Filing a settlement claim is always free on the official administrator’s site. You never need ClaimMatch to file.',
-        'ClaimMatch lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. ClaimMatch never files for you.',
+        'You can still file on the official administrator’s site yourself. Official filing there stays free.',
+        'ClaimMatch lists open settlements and, after you authorize a claim, processes and submits it. Copy-ready details stay available if you want to file yourself.',
         feeEveryClaimCopy(),
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',

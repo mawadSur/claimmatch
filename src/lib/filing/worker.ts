@@ -73,7 +73,7 @@ export function createFilingWorker(): FilingWorker {
 /**
  * Playwright-shaped stub. It never launches a browser and never posts to an
  * official form. Swap the body for a real Playwright or Browserbase session
- * after counsel review and a per-settlement allowlist.
+ * after counsel review.
  */
 export class PlaywrightFilingWorker implements FilingWorker {
   readonly kind: 'playwright' | 'browserbase';

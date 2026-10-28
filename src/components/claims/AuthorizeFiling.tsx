@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { FILE_FOR_YOU_CTA } from '@/lib/copy';
 import { AUTHORIZATION_TEXT_V1, AUTHORIZATION_VERSION } from '@/lib/filing/authorization';
 
 /**
@@ -54,13 +55,14 @@ export function AuthorizeFiling({
 
   return (
     <form
+      id="authorize"
       onSubmit={submit}
-      className="mt-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-5"
+      className="mt-6 scroll-mt-24 rounded-2xl border border-brand-100 bg-brand-50/40 p-5"
     >
-      <h3 className="text-base font-bold text-ink">Authorize this submission</h3>
+      <h3 className="text-base font-bold text-ink">{FILE_FOR_YOU_CTA}</h3>
       <p className="mt-1 text-sm text-ink-muted">
-        Optional. Only settlements on the allowlist can use this. You still review
-        the official notice yourself.
+        Authorize ClaimMatch to process and submit this claim. After you sign, it
+        goes to the filing queue. Review the official notice yourself first.
       </p>
       <div className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-sm leading-relaxed text-ink">
         {AUTHORIZATION_TEXT_V1}

@@ -81,27 +81,29 @@ describe('fee copy while disclosure is off (beta)', () => {
 });
 
 describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
-  it('FeeDisclosure states the recovery share on every claim', async () => {
+  it('FeeDisclosure says ClaimMatch files and charges only if paid', async () => {
     const { FeeDisclosure } = await loadSurfaces(true);
     const html = htmlOf(FeeDisclosure);
     expect(html).toContain(feeEveryClaimCopy());
     expect(html).toContain(`${CLAIMMATCH_FEE_RATE} percent`);
-    expect(html).toContain('every claim you make through ClaimMatch');
-    expect(html).toContain('not only assisted filings');
-    expect(html).toContain('You always file on the official site');
-    expect(html).toContain('ClaimMatch never files for you');
+    expect(html).toContain('files the claim for you');
+    expect(html).toContain('only if you get paid');
+    expect(html).not.toContain('You always file on the official site');
+    expect(html).not.toContain('ClaimMatch never files for you');
     expect(html).not.toContain('free during beta');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('15%');
     expectNoBanned(html);
   });
 
-  it('HowWeMakeMoney swaps the beta bullets for the every-claim fee', async () => {
+  it('HowWeMakeMoney swaps the beta bullets for the paid-if-recovered fee', async () => {
     const { HowWeMakeMoney } = await loadSurfaces(true);
     const html = htmlOf(HowWeMakeMoney);
     expect(html).toContain(feeEveryClaimCopy());
-    expect(html).toContain('copy-ready details');
+    expect(html).toContain('Copy-ready details');
+    expect(html).toContain('processes and submits it');
     expect(html).toContain('href="/pricing"');
+    expect(html).not.toContain('ClaimMatch never files for you');
     expect(html).not.toContain('don’t run ads or sell paid plans today');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('Draft');

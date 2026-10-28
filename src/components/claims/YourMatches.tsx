@@ -5,6 +5,7 @@ import {
   groupDashboardMatches,
   type DashboardMatch,
 } from './dashboard-model';
+import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { MatchFeedback } from './MatchFeedback';
 
 /**
@@ -16,11 +17,14 @@ export function YourMatches({
   failed = false,
   needsProfile = false,
   metricsEnabled = false,
+  fileForYou = false,
 }: {
   items: DashboardMatch[];
   failed?: boolean;
   needsProfile?: boolean;
   metricsEnabled?: boolean;
+  /** ASSISTED_FILING_ENABLED: primary CTA authorizes ClaimMatch to file. */
+  fileForYou?: boolean;
 }) {
   const grouped = groupDashboardMatches(items);
   const hasAny = items.length > 0;
@@ -70,7 +74,7 @@ export function YourMatches({
                 </p>
               </div>
             ) : (
-              <MatchList items={grouped.strong} metricsEnabled={metricsEnabled} />
+              <MatchList items={grouped.strong} metricsEnabled={metricsEnabled} fileForYou={fileForYou} />
             )}
           </div>
 
@@ -86,7 +90,7 @@ export function YourMatches({
                 <p className="pt-3 text-sm text-ink-muted">
                   These are state-only or broader fits. Showing up to {POSSIBLE_MATCH_CAP}.
                 </p>
-                <MatchList items={grouped.possible} metricsEnabled={metricsEnabled} />
+                <MatchList items={grouped.possible} metricsEnabled={metricsEnabled} fileForYou={fileForYou} />
               </div>
             </details>
           )}
@@ -130,9 +134,11 @@ function EmptyMatches({ needsProfile }: { needsProfile: boolean }) {
 function MatchList({
   items,
   metricsEnabled,
+  fileForYou,
 }: {
   items: DashboardMatch[];
   metricsEnabled: boolean;
+  fileForYou: boolean;
 }) {
   return (
     <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
@@ -177,13 +183,31 @@ function MatchList({
               />
             )}
           </div>
-          <Link
-            href={`/claim/${item.slug}`}
-            className="btn-secondary shrink-0 !px-4 !py-2 text-sm"
-            aria-label={`How to file: ${item.title}`}
-          >
-            How to file <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          {fileForYou ? (
+            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+              <Link
+                href={`/claim/${item.slug}#authorize`}
+                className="btn-primary !px-4 !py-2 text-sm"
+                aria-label={`${FILE_FOR_YOU_CTA}: ${item.title}`}
+              >
+                {FILE_FOR_YOU_CTA} <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link
+                href={`/claim/${item.slug}`}
+                className="text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+              >
+                {SELF_FILE_SECONDARY}
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href={`/claim/${item.slug}`}
+              className="btn-secondary shrink-0 !px-4 !py-2 text-sm"
+              aria-label={`How to file: ${item.title}`}
+            >
+              How to file <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          )}
         </li>
       ))}
     </ul>

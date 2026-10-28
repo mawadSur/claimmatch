@@ -95,6 +95,16 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> =
     rule: 'claim filed',
     reason: 'Quotes the wrong “Claim filed” message the old flow showed, in order to correct it (D42).',
   },
+  {
+    file: 'src/lib/copy.ts',
+    rule: 'we file',
+    reason: 'Owner: full-service primary CTA (“We’ll file it for you”), shown only when ASSISTED_FILING_ENABLED=1.',
+  },
+  {
+    file: 'src/lib/copy.ts',
+    rule: 'we submit',
+    reason: 'Owner: fee disclosure says ClaimMatch files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.',
+  },
 ];
 
 const NEGATION =
