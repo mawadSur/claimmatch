@@ -21,16 +21,23 @@ begin
     raise exception '0023: lawsuits.third_party_fee_allowed is missing';
   end if;
 
+  -- Own row: the 10_rls_basics fixtures are rolled back and do not exist here.
+  insert into public.lawsuits (id, slug, title)
+  values ('63000000-0000-4000-8000-000000000063', 'fee-test-63', 'Fee test 63');
+  if (select third_party_fee_status from public.lawsuits
+       where id = '63000000-0000-4000-8000-000000000063') <> 'unknown'
+     or (select third_party_fee_allowed from public.lawsuits
+       where id = '63000000-0000-4000-8000-000000000063') is not false then
+    raise exception '0023: new lawsuit must default to unknown / not allowed';
+  end if;
   update public.lawsuits
      set third_party_fee_status = 'allowed'
-   where id = '10000000-0000-4000-8000-000000000001';
+   where id = '63000000-0000-4000-8000-000000000063';
   select third_party_fee_allowed into allowed
     from public.lawsuits
-   where id = '10000000-0000-4000-8000-000000000001';
+   where id = '63000000-0000-4000-8000-000000000063';
   if allowed is not true then
     raise exception '0023: allowed status did not set third_party_fee_allowed';
   end if;
-  update public.lawsuits
-     set third_party_fee_status = 'unknown'
-   where id = '10000000-0000-4000-8000-000000000001';
+  delete from public.lawsuits where id = '63000000-0000-4000-8000-000000000063';
 end $$;
