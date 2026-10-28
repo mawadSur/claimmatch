@@ -113,4 +113,9 @@ export const flags = {
    * form and API are hidden.
    */
   payoutReport: () => on('PAYOUT_REPORT_ENABLED'),
+  /**
+   * Public 15-percent-of-recovery fee on every ClaimMatch claim. Off: the
+   * site keeps saying it is free during beta (counsel review still open).
+   */
+  feeDisclosure: () => on('FEE_DISCLOSURE_ENABLED'),
 };

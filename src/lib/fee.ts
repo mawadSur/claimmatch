@@ -1,10 +1,10 @@
 /**
- * Public fee display. The amount is undecided (D4 / Mohammed, Oct 2026), so
- * the default is TBD and the UI says ClaimMatch is free during beta.
+ * Public fee display. The live site stays on “free during beta” until
+ * FEE_DISCLOSURE_ENABLED=1 (counsel review). That flag shows the owner’s
+ * every-claim recovery share from src/lib/copy.ts.
  *
- * NEXT_PUBLIC_CLAIMMATCH_FEE_PCT is kept for later accounting. Do not use it
- * on public pages until a fee is announced. Public copy must not promise a
- * permanent no-share model in either FeeDisclosure branch.
+ * NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY is a leftover override. Do not use it
+ * on public pages while the beta wording is the default.
  */
 export const FEE_DISPLAY = (
   process.env.NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY ?? 'TBD'

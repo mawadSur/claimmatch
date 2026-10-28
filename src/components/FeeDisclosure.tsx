@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { FEE_DISPLAY, isFeeTbd } from '@/lib/fee';
+import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 
 /**
- * Single public fee surface. When the amount is TBD, ClaimMatch is free during
- * beta. Use this instead of a hard-coded percentage on public pages.
+ * Single public fee surface. Default: free during beta. When
+ * FEE_DISCLOSURE_ENABLED=1, states the recovery-share fee on every
+ * ClaimMatch claim (not only assisted filings).
  */
 export function FeeDisclosure({
   compact = false,
@@ -12,9 +14,9 @@ export function FeeDisclosure({
   compact?: boolean;
   className?: string;
 }) {
-  const body = isFeeTbd()
-    ? 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You always file on the official site, and ClaimMatch never files for you.'
-    : `The price is ${FEE_DISPLAY}. You’ll see the price before you use anything paid. You always file on the official site, and ClaimMatch never files for you.`;
+  const body = flags.feeDisclosure()
+    ? `${feeEveryClaimCopy()} You always file on the official site, and ClaimMatch never files for you.`
+    : `${BETA_FEE_COPY} You always file on the official site, and ClaimMatch never files for you.`;
 
   if (compact) {
     return (

@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CLAIMMATCH_FEE_RATE, feeEveryClaimCopy } from '@/lib/copy';
 
 const BANNED = [
   /never\s+takes?\s+a\s+cut/i,
@@ -10,6 +11,8 @@ const BANNED = [
   /draft\s+for\s+review/i,
   /fully\s+pre-?fills?/i,
   /pre-?fills?\s+(?:the|your)/i,
+  /be careful/i,
+  /must pay to file/i,
 ];
 
 const TBD_PHRASES = [
@@ -21,12 +24,12 @@ const TBD_PHRASES = [
   'ClaimMatch never files for you',
 ];
 
-async function loadSurfaces(feeDisplay?: string) {
+async function loadSurfaces(disclose?: boolean) {
   vi.resetModules();
-  if (feeDisplay === undefined) {
-    delete process.env.NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY;
+  if (disclose) {
+    process.env.FEE_DISCLOSURE_ENABLED = '1';
   } else {
-    process.env.NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY = feeDisplay;
+    delete process.env.FEE_DISCLOSURE_ENABLED;
   }
   const { FeeDisclosure } = await import('@/components/FeeDisclosure');
   const { HowWeMakeMoney } = await import('@/components/HowWeMakeMoney');
@@ -44,17 +47,18 @@ function expectNoBanned(html: string) {
 }
 
 afterEach(() => {
-  delete process.env.NEXT_PUBLIC_CLAIMMATCH_FEE_DISPLAY;
+  delete process.env.FEE_DISCLOSURE_ENABLED;
   vi.resetModules();
 });
 
-describe('fee copy when the amount is undecided', () => {
+describe('fee copy while disclosure is off (beta)', () => {
   it('FeeDisclosure uses the beta wording and never promises no cut', async () => {
     const { FeeDisclosure } = await loadSurfaces();
     const html = htmlOf(FeeDisclosure);
     expect(html).toContain('Cost');
     expect(html).not.toContain('Our fee');
     for (const phrase of TBD_PHRASES) expect(html).toContain(phrase);
+    expect(html).not.toContain(feeEveryClaimCopy());
     expectNoBanned(html);
   });
 
@@ -71,31 +75,38 @@ describe('fee copy when the amount is undecided', () => {
     expect(html).toContain('Pricing');
     expect(html).not.toContain('Draft');
     expect(html).not.toContain('counsel');
+    expect(html).not.toContain(feeEveryClaimCopy());
     expectNoBanned(html);
   });
 });
 
-describe('fee copy when a price is set', () => {
-  it('FeeDisclosure shows the price and a different, non-no-cut wording', async () => {
-    const { FeeDisclosure } = await loadSurfaces('$4.99');
+describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
+  it('FeeDisclosure states the recovery share on every claim', async () => {
+    const { FeeDisclosure } = await loadSurfaces(true);
     const html = htmlOf(FeeDisclosure);
-    expect(html).toContain('The price is $4.99');
-    expect(html).toContain('You’ll see the price before you use anything paid');
+    expect(html).toContain(feeEveryClaimCopy());
+    expect(html).toContain(`${CLAIMMATCH_FEE_RATE} percent`);
+    expect(html).toContain('every claim you make through ClaimMatch');
+    expect(html).toContain('not only assisted filings');
     expect(html).toContain('You always file on the official site');
     expect(html).toContain('ClaimMatch never files for you');
     expect(html).not.toContain('free during beta');
     expect(html).not.toContain('We may introduce a fee later');
+    expect(html).not.toContain('15%');
     expectNoBanned(html);
   });
 
-  it('HowWeMakeMoney still has no draft or counsel markers', async () => {
-    const { HowWeMakeMoney } = await loadSurfaces('$4.99');
+  it('HowWeMakeMoney swaps the beta bullets for the every-claim fee', async () => {
+    const { HowWeMakeMoney } = await loadSurfaces(true);
     const html = htmlOf(HowWeMakeMoney);
-    expect(html).toContain('The price is $4.99');
+    expect(html).toContain(feeEveryClaimCopy());
     expect(html).toContain('copy-ready details');
     expect(html).toContain('href="/pricing"');
+    expect(html).not.toContain('don’t run ads or sell paid plans today');
+    expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('Draft');
     expect(html).not.toContain('counsel');
+    expect(html).not.toContain('15%');
     expectNoBanned(html);
   });
 });

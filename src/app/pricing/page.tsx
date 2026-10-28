@@ -3,11 +3,12 @@ import Link from 'next/link';
 import { ArrowRight, Search, HelpCircle, CheckCircle2, XCircle, BadgeCheck } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { FILING_FREE_WARNING } from '@/lib/copy';
+import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { SITE } from '@/lib/utils';
 
-export const metadata: Metadata = {
+const BETA_METADATA: Metadata = {
   title: 'Pricing',
   description:
     'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You file on the official settlement site.',
@@ -19,6 +20,22 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
+
+export function generateMetadata(): Metadata {
+  if (!flags.feeDisclosure()) return BETA_METADATA;
+  const body = feeEveryClaimCopy();
+  return {
+    title: 'Pricing',
+    description: body,
+    openGraph: {
+      title: 'ClaimMatch pricing',
+      description: body,
+      url: `${SITE.url}/pricing`,
+      siteName: SITE.name,
+      type: 'website',
+    },
+  };
+}
 
 const FREE = [
   'Browsing settlements that are open for claims',
@@ -32,26 +49,52 @@ const NEVER = [
   'Charge you to file a claim',
 ];
 
-const FAQ = [
-  {
-    q: 'Does ClaimMatch cost anything?',
-    a: 'ClaimMatch is free during beta. We don’t charge you to browse settlements, create an account or keep track of your claims. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
-  },
-  {
-    q: 'Do you handle my settlement money?',
-    a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly.',
-  },
-  {
-    q: 'Do I have to pay to file a claim?',
-    a: `No. You file on the official settlement website. ${FILING_FREE_WARNING}`,
-  },
-  {
-    q: 'How does ClaimMatch make money?',
-    a: 'ClaimMatch is free during beta. We don’t run ads or sell paid plans today, and we do not sell your personal information. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
-  },
-];
+function pricingFaq(disclose: boolean) {
+  if (disclose) {
+    const fee = feeEveryClaimCopy();
+    return [
+      {
+        q: 'Does ClaimMatch cost anything?',
+        a: fee,
+      },
+      {
+        q: 'Do you handle my settlement money?',
+        a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly.',
+      },
+      {
+        q: 'Do I have to pay to file a claim?',
+        a: `No. You file on the official settlement website. ${OFFICIAL_FILING_IS_FREE}`,
+      },
+      {
+        q: 'How does ClaimMatch make money?',
+        a: `${fee} We don’t run ads or sell paid plans, and we do not sell your personal information.`,
+      },
+    ];
+  }
+  return [
+    {
+      q: 'Does ClaimMatch cost anything?',
+      a: 'ClaimMatch is free during beta. We don’t charge you to browse settlements, create an account or keep track of your claims. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+    },
+    {
+      q: 'Do you handle my settlement money?',
+      a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly.',
+    },
+    {
+      q: 'Do I have to pay to file a claim?',
+      a: `No. You file on the official settlement website. ${OFFICIAL_FILING_IS_FREE}`,
+    },
+    {
+      q: 'How does ClaimMatch make money?',
+      a: 'ClaimMatch is free during beta. We don’t run ads or sell paid plans today, and we do not sell your personal information. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+    },
+  ];
+}
 
 export default function PricingPage() {
+  const disclose = flags.feeDisclosure();
+  const faq = pricingFaq(disclose);
+
   return (
     <>
       {/* Hero ---------------------------------------------------------------- */}
@@ -62,12 +105,22 @@ export default function PricingPage() {
               <BadgeCheck className="h-3.5 w-3.5" aria-hidden /> Pricing
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              Free during beta.{' '}
-              <span className="text-brand-600">We may introduce a fee later.</span>
+              {disclose ? (
+                <>
+                  A share of what you receive.{' '}
+                  <span className="text-brand-600">Official filing stays free.</span>
+                </>
+              ) : (
+                <>
+                  Free during beta.{' '}
+                  <span className="text-brand-600">We may introduce a fee later.</span>
+                </>
+              )}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              ClaimMatch is a free claim assistant. You file on the official settlement
-              site, and if your claim is paid, the money goes straight to you.
+              {disclose
+                ? `${feeEveryClaimCopy()} You file on the official settlement site, and the settlement administrator pays you directly.`
+                : `${BETA_FEE_COPY} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
             </p>
           </div>
         </div>
@@ -108,7 +161,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mx-auto mt-10 max-w-3xl space-y-4">
-          {FAQ.map((f) => (
+          {faq.map((f) => (
             <div key={f.q} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <h3 className="flex items-start gap-2 text-base font-bold">
                 <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" aria-hidden />
@@ -125,7 +178,7 @@ export default function PricingPage() {
             __html: jsonLd({
               '@context': 'https://schema.org',
               '@type': 'FAQPage',
-              mainEntity: FAQ.map((f) => ({
+              mainEntity: faq.map((f) => ({
                 '@type': 'Question',
                 name: f.q,
                 acceptedAnswer: { '@type': 'Answer', text: f.a },
