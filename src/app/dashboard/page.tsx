@@ -35,7 +35,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string }>;
+  searchParams: Promise<{ welcome?: string; denied?: string; password?: string }>;
 }) {
   const supabase = await createClient();
   const {
@@ -43,7 +43,7 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/dashboard');
 
-  const { welcome } = await searchParams;
+  const { welcome, denied, password } = await searchParams;
   const now = new Date();
 
   const [{ data: profile }, claims, catalog, filingJobs] = await Promise.all([
@@ -93,6 +93,17 @@ export default async function DashboardPage({
             It doesn&rsquo;t file for you and never handles settlement payments.
           </p>
         </header>
+
+        {denied === 'admin' && (
+          <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            You don&rsquo;t have access to the admin area. It&rsquo;s only for ClaimMatch staff.
+          </p>
+        )}
+        {password === 'updated' && (
+          <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+            Your password was updated.
+          </p>
+        )}
 
         {welcome === '1' && <WelcomeCard />}
 

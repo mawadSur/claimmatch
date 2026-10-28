@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { createServiceClient } from '@/lib/supabase/server';
 import { AdminNav, type AdminNavCounts } from '@/components/admin/AdminNav';
 
@@ -13,8 +12,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const admin = await getAdminUser();
-  if (!admin) redirect('/login?next=/admin');
+  const admin = await requireAdmin('/admin');
 
   // Fetch counts for nav badges
   const counts = await getNavCounts();

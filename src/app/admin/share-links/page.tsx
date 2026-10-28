@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Link2 } from 'lucide-react';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { createServiceClient } from '@/lib/supabase/server';
 import { ShareLinksManager } from '@/components/admin/ShareLinksManager';
 import type { ShareLinkStats } from '@/lib/share-links';
@@ -10,7 +9,7 @@ export const metadata: Metadata = { title: 'Share links' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminShareLinksPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/share-links');
+  await requireAdmin('/admin/share-links');
   const svc = createServiceClient();
 
   let items: ShareLinkStats[] = [];

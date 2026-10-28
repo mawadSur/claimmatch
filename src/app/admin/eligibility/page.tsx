@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { ListChecks } from 'lucide-react';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { flags } from '@/lib/flags';
 import { listPendingEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import { EligibilityDraftQueue } from '@/components/admin/EligibilityDraftQueue';
@@ -10,7 +9,7 @@ export const metadata: Metadata = { title: 'Eligibility drafts' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminEligibilityPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/eligibility');
+  await requireAdmin('/admin/eligibility');
 
   if (!flags.eligibilityDrafts()) {
     return (

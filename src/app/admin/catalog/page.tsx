@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Library } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { CatalogTable } from '@/components/admin/CatalogTable';
 
@@ -15,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * feature/unfeature and publish/unpublish inline.
  */
 export default async function AdminCatalogPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/catalog');
+  await requireAdmin('/admin/catalog');
   const svc = createServiceClient();
 
   let rows: Lawsuit[] = [];

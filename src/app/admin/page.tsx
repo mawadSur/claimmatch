@@ -22,9 +22,8 @@ import {
   Send,
   HelpCircle,
 } from 'lucide-react';
-import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
 import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
@@ -40,7 +39,7 @@ export const metadata: Metadata = { title: 'Admin' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminOverviewPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin');
+  await requireAdmin('/admin');
   const svc = createServiceClient();
 
   // Exact-count helper (head:true → no rows transferred). Returns null when the

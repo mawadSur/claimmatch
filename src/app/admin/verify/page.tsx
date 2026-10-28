@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { BadgeCheck } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { VerifyQueue } from '@/components/admin/VerifyQueue';
 import { tallyProofFeedback, type ProofFeedbackCounts } from '@/lib/proof-feedback';
@@ -16,7 +15,7 @@ export const dynamic = 'force-dynamic';
  * Public "Verified on" badges stay off until VERIFIED_FIELDS_ENABLED=1.
  */
 export default async function AdminVerifyPage() {
-  if (!(await getAdminUser())) redirect('/login?next=/admin/verify');
+  await requireAdmin('/admin/verify');
   const svc = createServiceClient();
 
   let items: Lawsuit[] = [];

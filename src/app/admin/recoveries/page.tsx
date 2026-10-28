@@ -9,7 +9,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
-import { getAdminUser } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { flags } from '@/lib/flags';
 import { formatUSD } from '@/lib/recovery';
 import type { RecoveryStatus } from '@/lib/types';
@@ -32,7 +32,7 @@ export const dynamic = 'force-dynamic';
  */
 export default async function AdminRecoveriesPage() {
   if (!flags.adminRecoveries()) notFound();
-  if (!(await getAdminUser())) redirect('/login?next=/admin/recoveries');
+  await requireAdmin('/admin/recoveries');
   const svc = createServiceClient();
 
   let rows: RecoveryRow[] = [];
