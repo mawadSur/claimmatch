@@ -5,6 +5,8 @@ import {
   ShieldAlert, Target,
 } from 'lucide-react';
 import { Disclaimer } from '@/components/Disclaimer';
+import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { SITE } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -41,7 +43,7 @@ const VALUES = [
   {
     icon: HandCoins,
     title: 'Free during beta',
-    body: 'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. We never handle settlement payments.',
+    body: `${BETA_FEE_COPY} We never handle settlement payments.`,
   },
   {
     icon: ShieldCheck,
@@ -51,6 +53,19 @@ const VALUES = [
 ];
 
 export default function AboutPage() {
+  const disclose = flags.feeDisclosure();
+  const values = disclose
+    ? VALUES.map((v) =>
+        v.title === 'Free during beta'
+          ? {
+              ...v,
+              title: 'Official filing stays free',
+              body: `${feeEveryClaimCopy()} We never handle settlement payments.`,
+            }
+          : v,
+      )
+    : VALUES;
+
   return (
     <>
       {/* Hero ---------------------------------------------------------------- */}
@@ -113,8 +128,9 @@ export default function AboutPage() {
           </div>
           <h2 className="mt-4 text-3xl font-extrabold">Our goal</h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-ink-muted">
-            Make it easy to find real, open settlements and to file on the official
-            site with confidence, without paying anyone and without giving up control.
+            {disclose
+              ? 'Make it easy to find real, open settlements and to file on the official site with confidence, without giving up control.'
+              : 'Make it easy to find real, open settlements and to file on the official site with confidence, without paying anyone and without giving up control.'}
           </p>
           <div className="mt-8">
             <Link href="/how-it-works" className="btn-secondary">
@@ -130,7 +146,7 @@ export default function AboutPage() {
           <h2 id="values-heading" className="text-3xl font-extrabold">What we stand for</h2>
         </div>
         <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-          {VALUES.map((v) => (
+          {values.map((v) => (
             <li key={v.title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
               <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
                 <v.icon className="h-5 w-5" aria-hidden />
@@ -141,7 +157,7 @@ export default function AboutPage() {
           ))}
         </ul>
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-muted">
-          Is it free during beta? Yes.{' '}
+          {disclose ? 'What does it cost?' : 'Is it free during beta? Yes.'}{' '}
           <Link href="/pricing" className="font-semibold text-brand-700 underline hover:text-brand-800">
             See pricing
           </Link>

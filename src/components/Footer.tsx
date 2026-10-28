@@ -25,8 +25,9 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-ink-muted">
-              A free claim assistant. Find open class-action settlements, file on the
-              official site, and keep track of your claims. Free during beta.
+              {flags.feeDisclosure()
+                ? 'A claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Official filing stays free.'
+                : 'A free claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Free during beta.'}
             </p>
           </div>
 

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
+import { feeEveryClaimCopy } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { SITE } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -112,6 +114,8 @@ const CATEGORY_ICONS: Record<string, typeof Gift> = {
 };
 
 export default function HowItWorksPage() {
+  const disclose = flags.feeDisclosure();
+
   return (
     <>
       {/* Hero ---------------------------------------------------------------- */}
@@ -123,9 +127,9 @@ export default function HowItWorksPage() {
               You file. <span className="text-brand-600">We help you stay on top of it.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              ClaimMatch is a free claim assistant. We help you find settlements that
-              are open, point you to the official notice and claim site, and keep track
-              of the claims you file. You always file on the official site yourself.
+              {disclose
+                ? 'ClaimMatch is a claim assistant. We help you find settlements that are open, point you to the official notice and claim site, and keep track of the claims you file. You always file on the official site yourself.'
+                : 'ClaimMatch is a free claim assistant. We help you find settlements that are open, point you to the official notice and claim site, and keep track of the claims you file. You always file on the official site yourself.'}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
@@ -275,7 +279,9 @@ export default function HowItWorksPage() {
         <div className="container-narrow text-center">
           <h2 className="text-3xl font-extrabold">Ready to look?</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            It’s free during beta. We may introduce a fee later.
+            {disclose
+              ? feeEveryClaimCopy()
+              : 'It’s free during beta. We may introduce a fee later.'}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">

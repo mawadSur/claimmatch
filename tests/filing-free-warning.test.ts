@@ -53,7 +53,7 @@ describe('C1 official-filing and fee copy', () => {
     const html = renderToStaticMarkup(createElement(FlaggedPricing));
     expect(html).toContain(feeEveryClaimCopy());
     expect(html).toContain(OFFICIAL_FILING_IS_FREE);
-    expect(html).not.toContain('Free during beta');
+    expect(html).toContain('A share of what you receive');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toMatch(BANNED_WARNING);
   });
