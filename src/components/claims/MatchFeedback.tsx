@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
-import { posthogMatchEventName, posthogMatchProperties } from '@/lib/match-events';
+import { posthogMatchEventName, posthogMatchProperties } from '@/lib/match-events-shared';
 
 /**
  * Lets a signed-in user mark a match as not relevant, or say they submitted

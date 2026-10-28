@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
-import { posthogMatchEventName } from '@/lib/match-events';
+import { posthogMatchEventName } from '@/lib/match-events-shared';
 
 /**
  * "I got paid" — amount only. No fee is shown or charged.
