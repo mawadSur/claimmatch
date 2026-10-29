@@ -118,4 +118,16 @@ export const flags = {
    * site keeps saying it is free during beta (counsel review still open).
    */
   feeDisclosure: () => on('FEE_DISCLOSURE_ENABLED'),
+  /**
+   * After N consecutive successful-feed misses, queue the open SettleSignal
+   * row on /admin for a person to close or keep. Never auto-closes. Off: the
+   * ingest still increments missed_feed_count and may auto-close after N
+   * (existing behavior).
+   */
+  missingCloseQueue: () => on('INGEST_MISSING_CLOSE_QUEUE_ENABLED'),
+  /**
+   * Server-side /lawsuits pagination (24 per page) plus rel=next/prev.
+   * Off: the catalog still renders every open row on one page.
+   */
+  lawsuitsPagination: () => on('LAWSUITS_PAGINATION_ENABLED'),
 };

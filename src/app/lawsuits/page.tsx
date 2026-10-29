@@ -3,14 +3,16 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CalendarClock, RefreshCw, SearchX } from 'lucide-react';
 import {
+  catalogPath,
   catalogQueryString,
   filterCatalog,
   LAWSUITS_PAGE_SIZE,
-  paginate,
+  paginateCatalog,
   parseHasDeadline,
   parsePage,
   parseProofFilter,
 } from '@/lib/catalog-page';
+import { flags } from '@/lib/flags';
 import {
   categoriesOf,
   cleanSearchTerm,
@@ -29,52 +31,92 @@ const DESCRIPTION =
 /** Public catalog: no per-user content. CDN / ISR cache for 15 minutes. */
 export const revalidate = 900;
 
-export const metadata: Metadata = {
-  title: 'Open Class Action Settlements',
-  description: DESCRIPTION,
-  alternates: { canonical: pageUrl('/lawsuits') },
-  openGraph: {
-    title: 'Open Class Action Settlements — ClaimMatch',
-    description: DESCRIPTION,
-    url: pageUrl('/lawsuits'),
-    siteName: SITE.name,
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Open Class Action Settlements',
-    description: DESCRIPTION,
-  },
-};
-
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function catalogFilters(params: Record<string, string | string[] | undefined>) {
+  return {
+    q: cleanSearchTerm(firstParam(params.q)),
+    category: firstParam(params.category)?.trim() || undefined,
+    hasDeadline: parseHasDeadline(firstParam(params.hasDeadline)),
+    proof: parseProofFilter(firstParam(params.proof)),
+    page: parsePage(firstParam(params.page)),
+  };
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const filters = catalogFilters(params);
+  const paginationOn = flags.lawsuitsPagination();
+  // Page 2+ canonicalizes to page 1 with the same filters. Page 1 stays indexable.
+  const canonicalPath = catalogPath({
+    q: filters.q,
+    category: filters.category,
+    hasDeadline: filters.hasDeadline,
+    proof: filters.proof,
+    page: 1,
+  });
+  const title =
+    paginationOn && filters.page > 1
+      ? `Open Class Action Settlements (page ${filters.page})`
+      : 'Open Class Action Settlements';
+  return {
+    title,
+    description: DESCRIPTION,
+    alternates: { canonical: pageUrl(canonicalPath) },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: 'Open Class Action Settlements — ClaimMatch',
+      description: DESCRIPTION,
+      url: pageUrl(canonicalPath),
+      siteName: SITE.name,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Open Class Action Settlements',
+      description: DESCRIPTION,
+    },
+  };
+}
+
 export default async function LawsuitsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const q = cleanSearchTerm(firstParam(params.q));
-  const category = firstParam(params.category)?.trim() || undefined;
-  const hasDeadline = parseHasDeadline(firstParam(params.hasDeadline));
-  const proof = parseProofFilter(firstParam(params.proof));
-  const page = parsePage(firstParam(params.page));
+  const { q, category, hasDeadline, proof, page } = catalogFilters(params);
+  const paginationOn = flags.lawsuitsPagination();
 
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it.
   const catalog = await lookupLawsuits();
   const categories = categoriesOf(catalog.lawsuits);
   const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline, proof });
-  const paged = paginate(filteredList, page, LAWSUITS_PAGE_SIZE);
+  const paged = paginateCatalog(filteredList, page, paginationOn, LAWSUITS_PAGE_SIZE);
   const count = paged.total;
   const filtered = Boolean(q || category || hasDeadline || proof);
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
 
+  const prevHref =
+    paginationOn && paged.page > 1
+      ? catalogPath({ q, category, hasDeadline, proof, page: paged.page - 1 })
+      : null;
+  const nextHref =
+    paginationOn && paged.page < paged.totalPages
+      ? catalogPath({ q, category, hasDeadline, proof, page: paged.page + 1 })
+      : null;
+
   return (
     <>
+      {prevHref ? <link rel="prev" href={pageUrl(prevHref)} /> : null}
+      {nextHref ? <link rel="next" href={pageUrl(nextHref)} /> : null}
       {/* Header ------------------------------------------------------------- */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
@@ -190,7 +232,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
                 </li>
               ))}
             </ul>
-            {paged.totalPages > 1 && (
+            {paginationOn && paged.totalPages > 1 && (
               <Pagination
                 page={paged.page}
                 totalPages={paged.totalPages}

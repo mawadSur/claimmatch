@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  catalogPath,
   catalogQueryString,
   filterCatalog,
   isThinSettlement,
   LAWSUITS_PAGE_SIZE,
   paginate,
+  paginateCatalog,
   parseHasDeadline,
   parsePage,
   parseProofFilter,
@@ -67,6 +69,20 @@ describe('catalog pagination helpers', () => {
     expect(catalogQueryString({ q: 'fee', hasDeadline: true, page: 2 })).toBe(
       'q=fee&hasDeadline=1&page=2',
     );
+    expect(catalogPath({ page: 1 })).toBe('/lawsuits');
+    expect(catalogPath({ q: 'fee', page: 2 })).toBe('/lawsuits?q=fee&page=2');
+    expect(catalogPath({ q: 'fee', page: 1 })).toBe('/lawsuits?q=fee');
+  });
+
+  it('paginateCatalog is a no-op when pagination is off', () => {
+    const items = Array.from({ length: 50 }, (_, i) => i);
+    const all = paginateCatalog(items, 2, false);
+    expect(all.items).toHaveLength(50);
+    expect(all.totalPages).toBe(1);
+    expect(all.page).toBe(1);
+    const paged = paginateCatalog(items, 2, true);
+    expect(paged.items).toHaveLength(24);
+    expect(paged.page).toBe(2);
   });
 });
 

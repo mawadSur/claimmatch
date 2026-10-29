@@ -114,6 +114,40 @@ export function catalogQueryString(opts: {
   return params.toString();
 }
 
+/** Path for a catalog page. Page 1 drops the page param (canonical target). */
+export function catalogPath(opts: {
+  q?: string;
+  category?: string;
+  hasDeadline?: boolean;
+  proof?: 'no';
+  page?: number;
+}): string {
+  const qs = catalogQueryString(opts);
+  return qs ? `/lawsuits?${qs}` : '/lawsuits';
+}
+
+/**
+ * When pagination is off, every open row is one page (existing behavior).
+ * When it is on, slice 24 at a time.
+ */
+export function paginateCatalog<T>(
+  items: T[],
+  page: number,
+  enabled: boolean,
+  pageSize: number = LAWSUITS_PAGE_SIZE,
+): Paginated<T> {
+  if (!enabled) {
+    return {
+      items,
+      page: 1,
+      pageSize: items.length || pageSize,
+      total: items.length,
+      totalPages: 1,
+    };
+  }
+  return paginate(items, page, pageSize);
+}
+
 /** A listing is thin when it has none of the facts a visitor comes for. */
 export function isThinSettlement(
   lawsuit: Pick<Lawsuit, 'deadline' | 'eligibility_text' | 'administrator' | 'typical_payout'>,

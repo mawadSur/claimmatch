@@ -31,6 +31,11 @@ import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
 import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
 import { flags } from '@/lib/flags';
 import { listBrokenOfficialLinks } from '@/lib/link-check';
+import { MissingFeedQueue } from '@/components/admin/MissingFeedQueue';
+import {
+  listMissingFeedCloseQueue,
+  missingFeedCloseThreshold,
+} from '@/lib/missing-feed-queue';
 import { EMPTY_SOFT_LAUNCH_COUNTS, loadSoftLaunchCounts } from '@/lib/soft-launch';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -113,6 +118,10 @@ export default async function AdminOverviewPage() {
   const brokenLinks = flags.linkCheck()
     ? await listBrokenOfficialLinks(50).catch(() => [])
     : [];
+  const missingFeedQueue = flags.missingCloseQueue()
+    ? await listMissingFeedCloseQueue().catch(() => [])
+    : [];
+  const missingFeedAfter = missingFeedCloseThreshold();
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -143,6 +152,20 @@ export default async function AdminOverviewPage() {
 
       <SoftLaunchCard counts={softLaunch} />
       {flags.linkCheck() ? <BrokenLinksList rows={brokenLinks} /> : null}
+      {flags.missingCloseQueue() ? (
+        <section aria-labelledby="missing-feed-title">
+          <div className="mb-4">
+            <h3 id="missing-feed-title" className="text-lg font-bold text-ink">
+              Missing from feed, propose close
+            </h3>
+            <p className="text-sm text-ink-soft">
+              Open SettleSignal listings absent from {missingFeedAfter} consecutive successful
+              feeds. Close or keep — nothing is auto-closed.
+            </p>
+          </div>
+          <MissingFeedQueue items={missingFeedQueue} closeAfter={missingFeedAfter} />
+        </section>
+      ) : null}
 
       {/* Quick-action cards */}
       <section className="grid gap-4 sm:grid-cols-2">
@@ -373,7 +396,7 @@ async function loadLastIngestRun(svc: ReturnType<typeof createServiceClient>): P
       .from('jobs')
       .select('created_at, status, error, result')
       .eq('type', 'pipeline')
-      .in('status', ['done', 'failed'])
+      .in('status', ['done', 'failed', 'running'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -410,7 +433,13 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
         </h3>
         <p className="text-sm text-ink-soft">
           {run
-            ? `${new Date(run.at).toUTCString()} · ${attention ? 'needs attention' : 'no problems'}`
+            ? `${new Date(run.at).toUTCString()} · ${
+                run.status === 'running'
+                  ? 'started, still running'
+                  : attention
+                    ? 'needs attention'
+                    : 'no problems'
+              }`
             : 'No run recorded yet. The daily cron records each run here.'}
         </p>
       </div>

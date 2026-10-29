@@ -119,14 +119,21 @@ export function planFeedPresence(args: {
   seenExternalIds: Iterable<string>;
   now: Date;
   closeAfter?: number;
-}): { seen: PlannedStaleAction[]; missing: PlannedStaleAction[] } {
+  /**
+   * When false, increment missed_feed_count but never set status=closed.
+   * Used by INGEST_MISSING_CLOSE_QUEUE_ENABLED so a person decides.
+   */
+  autoCloseMissing?: boolean;
+}): { seen: PlannedStaleAction[]; missing: PlannedStaleAction[]; proposeClose: PlannedStaleAction[] } {
   const seenIds = new Set(Array.from(args.seenExternalIds).filter(Boolean));
-  if (seenIds.size === 0) return { seen: [], missing: [] };
+  if (seenIds.size === 0) return { seen: [], missing: [], proposeClose: [] };
 
   const closeAfter = args.closeAfter ?? DEFAULT_MISSING_FEED_CLOSE_AFTER;
+  const autoCloseMissing = args.autoCloseMissing !== false;
   const seenAt = args.now.toISOString();
   const seen: PlannedStaleAction[] = [];
   const missing: PlannedStaleAction[] = [];
+  const proposeClose: PlannedStaleAction[] = [];
 
   for (const row of args.sourceRows) {
     if (!isCloseableStatus(row.status)) continue;
@@ -149,8 +156,9 @@ export function planFeedPresence(args: {
 
     const previous = row.missed_feed_count ?? 0;
     const nextCount = previous + 1;
-    const close = nextCount >= closeAfter;
-    missing.push({
+    const reached = nextCount >= closeAfter;
+    const close = autoCloseMissing && reached;
+    const action: PlannedStaleAction = {
       id: row.id,
       slug: row.slug,
       external_id: row.external_id,
@@ -164,10 +172,14 @@ export function planFeedPresence(args: {
         : { missed_feed_count: nextCount },
       changes: close
         ? [`missing from ${nextCount} consecutive successful feeds`]
-        : [`missed_feed_count ${previous} -> ${nextCount}`],
-    });
+        : reached && !autoCloseMissing
+          ? [`missed_feed_count ${previous} -> ${nextCount}; queued for admin close review`]
+          : [`missed_feed_count ${previous} -> ${nextCount}`],
+    };
+    missing.push(action);
+    if (reached && !autoCloseMissing) proposeClose.push(action);
   }
-  return { seen, missing };
+  return { seen, missing, proposeClose };
 }
 
 export function staleToUpdate(action: PlannedStaleAction): PlannedUpdate {

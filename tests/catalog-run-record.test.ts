@@ -1,12 +1,54 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const m = vi.hoisted(() => ({ insert: vi.fn() }));
-
-vi.mock('@/lib/supabase/server', () => ({
-  createServiceClient: () => ({ from: () => ({ insert: m.insert }) }),
+const m = vi.hoisted(() => ({
+  insert: vi.fn(),
+  update: vi.fn(),
+  runningRows: [] as Array<{ id: string; payload: unknown; created_at: string }>,
 }));
 
-import { recordIngestRun } from '@/lib/jobs';
+vi.mock('@/lib/supabase/server', () => ({
+  createServiceClient: () => ({
+    from: () => ({
+      insert: (row: unknown) => {
+        m.insert(row);
+        const result = { error: null, data: { id: 'job-1' } };
+        return {
+          then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+            Promise.resolve(result).then(resolve, reject),
+          select: () => ({
+            single: async () => result,
+          }),
+        };
+      },
+      update: (row: unknown) => {
+        m.update(row);
+        const eq = () => ({
+          eq: () => Promise.resolve({ error: null }),
+          then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+            Promise.resolve({ error: null }).then(resolve, reject),
+        });
+        return { eq };
+      },
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            lte: () => ({
+              limit: async () => ({ data: m.runningRows, error: null }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  }),
+}));
+
+import {
+  failStaleIngestRuns,
+  finishIngestRun,
+  INGEST_STARTED_PHASE,
+  recordIngestRun,
+  startIngestRun,
+} from '@/lib/jobs';
 import { checkIngestStep, ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 
 const CLEAN = { ingested: 300, held: 0, failed: 0, emptySources: [], heldSlugs: [], heldClosures: [] };
@@ -45,7 +87,8 @@ describe('recordIngestRun', () => {
   let errorLog: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
     m.insert.mockReset();
-    m.insert.mockResolvedValue({ error: null });
+    m.update.mockReset();
+    m.runningRows = [];
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co');
     errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -72,9 +115,67 @@ describe('recordIngestRun', () => {
   it('records nothing for a skipped run and never throws', async () => {
     await recordIngestRun('cron/daily', { status: 'skipped' });
     expect(m.insert).not.toHaveBeenCalled();
-    m.insert.mockResolvedValue({ error: { message: 'down' } });
+    m.insert.mockImplementationOnce(() => {
+      throw new Error('network');
+    });
     await expect(recordIngestRun('cron/daily', { status: 'ran', result: CLEAN })).resolves.toBeUndefined();
-    m.insert.mockRejectedValue(new Error('network'));
-    await expect(recordIngestRun('cron/daily', { status: 'ran', result: CLEAN })).resolves.toBeUndefined();
+  });
+});
+
+describe('startIngestRun / finishIngestRun', () => {
+  beforeEach(() => {
+    m.insert.mockReset();
+    m.update.mockReset();
+    m.runningRows = [];
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('inserts a running row with phase started', async () => {
+    const id = await startIngestRun('cron/daily', { dryRun: true });
+    expect(id).toBe('job-1');
+    expect(m.insert).toHaveBeenCalledWith({
+      type: 'pipeline',
+      status: 'running',
+      payload: { trigger: 'cron/daily', phase: INGEST_STARTED_PHASE, dryRun: true },
+      attempts: 1,
+      result: null,
+      error: null,
+    });
+  });
+
+  it('updates the started row to failed with the error text', async () => {
+    await finishIngestRun('job-1', 'cron/daily', { status: 'failed', error: 'feed timed out' });
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        error: 'feed timed out',
+        payload: { trigger: 'cron/daily', phase: 'failed' },
+      }),
+    );
+  });
+
+  it('marks leftover running ingest rows failed', async () => {
+    m.runningRows = [
+      {
+        id: 'old',
+        payload: { trigger: 'cron/daily', phase: INGEST_STARTED_PHASE },
+        created_at: '2026-10-26T06:00:00Z',
+      },
+    ];
+    const flipped = await failStaleIngestRuns({
+      now: new Date('2026-10-26T06:20:00Z'),
+      olderThanMs: 15 * 60 * 1000,
+    });
+    expect(flipped).toEqual([{ id: 'old', trigger: 'cron/daily' }]);
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        error: expect.stringMatching(/Timed out or killed/),
+      }),
+    );
   });
 });

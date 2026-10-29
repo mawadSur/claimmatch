@@ -21,6 +21,9 @@ const m = vi.hoisted(() => {
     failJob: vi.fn(),
     recordIngestRun: vi.fn(),
     recordCronFailure: vi.fn(),
+    startIngestRun: vi.fn(),
+    finishIngestRun: vi.fn(),
+    failStaleIngestRuns: vi.fn(),
     tables: {} as Record<string, unknown>,
     createServiceClient: vi.fn(),
     thenable,
@@ -37,6 +40,9 @@ vi.mock('@/lib/jobs', () => ({
   failJob: m.failJob,
   recordIngestRun: m.recordIngestRun,
   recordCronFailure: m.recordCronFailure,
+  startIngestRun: m.startIngestRun,
+  finishIngestRun: m.finishIngestRun,
+  failStaleIngestRuns: m.failStaleIngestRuns,
 }));
 vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: m.createServiceClient,
@@ -76,6 +82,9 @@ beforeEach(() => {
   m.runAllSources.mockResolvedValue({ inserted: 1, updated: 0, bySource: {} });
   m.runMatchSweep.mockResolvedValue({ users: 1, newMatches: 1, emailed: 1 });
   m.claimDue.mockResolvedValue([]);
+  m.startIngestRun.mockResolvedValue('job-daily');
+  m.finishIngestRun.mockResolvedValue(undefined);
+  m.failStaleIngestRuns.mockResolvedValue([]);
   m.tables = {};
   m.createServiceClient.mockImplementation(() => ({
     from: (table: string) => m.thenable(m.tables[table] ?? { data: [], error: null }),
@@ -163,7 +172,9 @@ describe('/api/cron/daily', () => {
     expect(body.failedSteps).toEqual(['ingest']);
     expect(body.steps.ingest.error).toMatch(/190 closures held for review/);
     expect(body.steps.ingest.result.heldClosures).toHaveLength(190);
-    expect(m.recordIngestRun).toHaveBeenCalledWith(
+    expect(m.startIngestRun).toHaveBeenCalledWith('cron/daily', expect.objectContaining({ dryRun: false }));
+    expect(m.finishIngestRun).toHaveBeenCalledWith(
+      'job-daily',
       'cron/daily',
       expect.objectContaining({ status: 'failed', result: summary }),
     );
@@ -184,7 +195,12 @@ describe('/api/cron/daily', () => {
     m.ingestAndExtract.mockResolvedValue({ ...INGEST, held: 0, failed: 0, emptySources: [] });
     const { status } = await call(daily.GET, '/api/cron/daily');
     expect(status).toBe(200);
-    expect(m.recordIngestRun).toHaveBeenCalledWith('cron/daily', expect.objectContaining({ status: 'ran' }));
+    expect(m.startIngestRun).toHaveBeenCalled();
+    expect(m.finishIngestRun).toHaveBeenCalledWith(
+      'job-daily',
+      'cron/daily',
+      expect.objectContaining({ status: 'ran' }),
+    );
   });
 
   it('fails loudly in production when the service role key is missing', async () => {
