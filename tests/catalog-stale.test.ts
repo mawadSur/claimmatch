@@ -105,6 +105,24 @@ describe('feed presence', () => {
     });
   });
 
+  it('queues for admin review instead of closing when autoCloseMissing is off', () => {
+    const { missing, proposeClose } = planFeedPresence({
+      sourceRows: [candidate({ missed_feed_count: 2 })],
+      seenExternalIds: ['settlesignal:other'],
+      now,
+      closeAfter: 3,
+      autoCloseMissing: false,
+    });
+    expect(missing[0]).toMatchObject({
+      close: false,
+      missed_feed_count: 3,
+      patch: { missed_feed_count: 3 },
+    });
+    expect(missing[0].patch).not.toHaveProperty('status');
+    expect(proposeClose).toHaveLength(1);
+    expect(proposeClose[0].slug).toBe('acme-data-breach-settlement');
+  });
+
   it('never closes when the seen set is empty (failed or empty feed)', () => {
     const { seen, missing } = planFeedPresence({
       sourceRows: [candidate({ missed_feed_count: 2 }), candidate({ id: 'b', slug: 'b', external_id: 'settlesignal:b' })],
@@ -114,6 +132,12 @@ describe('feed presence', () => {
     });
     expect(seen).toEqual([]);
     expect(missing).toEqual([]);
+    expect(planFeedPresence({
+      sourceRows: [candidate({ missed_feed_count: 2 }), candidate({ id: 'b', slug: 'b', external_id: 'settlesignal:b' })],
+      seenExternalIds: [],
+      now,
+      closeAfter: 1,
+    }).proposeClose).toEqual([]);
   });
 
   it('ignores already-closed and draft rows', () => {

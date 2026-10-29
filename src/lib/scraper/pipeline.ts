@@ -1,3 +1,4 @@
+import { flags } from '@/lib/flags';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { isOpenForClaims } from '@/lib/lawsuits';
 import type { ScrapedLawsuit } from '@/lib/types';
@@ -43,8 +44,10 @@ export { formatDryRunReport } from './stale';
  *   source; other differences are logged for a person to check.
  * - An empty or failed fetch changes nothing. A record missing from a
  *   successful non-empty feed increments missed_feed_count; after N
- *   consecutive misses (default 3) the row is closed. Past-deadline rows
- *   close even when the feed is empty or down.
+ *   consecutive misses (default 3) the row is closed unless
+ *   INGEST_MISSING_CLOSE_QUEUE_ENABLED=1, which queues it for /admin
+ *   instead (never auto-closes). Past-deadline rows close even when the
+ *   feed is empty or down.
  * - Closures above INGEST_MAX_CLOSE_SHARE (default 20%) of a source's open rows
  *   are held instead of applied. Every held row is logged with its changes and
  *   kept in the summary (heldClosures), which the cron routes store as a run
@@ -85,6 +88,9 @@ export type IngestSummary = {
   wouldClose: WouldCloseRow[];
   /** Feed-source rows whose miss count would go up but not yet close. */
   wouldIncrementMiss: WouldCloseRow[];
+  /** Rows at the miss threshold queued for admin review (flag on; never auto-closed). */
+  proposeClose: number;
+  proposeCloseSlugs: string[];
   /** True when this run planned writes and applied none. */
   dryRun: boolean;
   /** Sources that returned nothing (outage, error or empty feed). */
@@ -104,6 +110,10 @@ export type IngestOptions = {
 // near 4 KB, well under gateway URL limits.
 const IN_CHUNK = 40;
 const LOG_LIST_LIMIT = 50;
+/** Parallel catalog writes. Sequential 1-row updates of a ~900-row feed
+ *  exceed the Hobby duration cap before recordIngestRun used to run. */
+const WRITE_CHUNK = 25;
+const EXISTING_FETCH_CONCURRENCY = 5;
 
 function emptySummary(): IngestSummary {
   return {
@@ -123,6 +133,8 @@ function emptySummary(): IngestSummary {
     closedByMissingFeed: 0,
     wouldClose: [],
     wouldIncrementMiss: [],
+    proposeClose: 0,
+    proposeCloseSlugs: [],
     dryRun: false,
     emptySources: [],
     failed: 0,
@@ -219,13 +231,19 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
     // Presence tracking only after a successful non-empty fetch.
     if (remainingCloseable) {
       const sourceRows = remainingCloseable.filter((row) => isFeedSourceRow(row, source.id, adapter.slug));
+      const queueMissing = flags.missingCloseQueue();
       const presence = planFeedPresence({
         sourceRows,
         seenExternalIds: items.map((i) => i.external_id),
         now,
         closeAfter,
+        autoCloseMissing: !queueMissing,
       });
       planned = mergeStaleIntoPlan(planned, [...presence.seen, ...presence.missing]);
+      if (presence.proposeClose.length > 0) {
+        summary.proposeClose += presence.proposeClose.length;
+        summary.proposeCloseSlugs.push(...presence.proposeClose.map((row) => row.slug));
+      }
     }
 
     const openCount = remainingCloseable
@@ -333,25 +351,46 @@ async function applyPlanned(
     );
   }
 
-  for (const row of plan.inserts) {
+  for (let i = 0; i < plan.inserts.length; i += WRITE_CHUNK) {
+    const chunk = plan.inserts.slice(i, i + WRITE_CHUNK);
     if (dryRun) {
+      summary.inserted += chunk.length;
+      summary.pending_review += chunk.length;
+      continue;
+    }
+    const results = await Promise.all(
+      chunk.map(async (row) => {
+        const { error } = await supabase.from('lawsuits').insert(row);
+        return { row, error };
+      }),
+    );
+    for (const { row, error } of results) {
+      if (error) {
+        console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
+        summary.failed += 1;
+        continue;
+      }
       summary.inserted += 1;
       summary.pending_review += 1;
-      continue;
     }
-    const { error } = await supabase.from('lawsuits').insert(row);
-    if (error) {
-      console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
-      summary.failed += 1;
-      continue;
-    }
-    summary.inserted += 1;
-    summary.pending_review += 1;
   }
 
-  for (const update of plan.updates) {
-    if (!dryRun) {
-      const { error } = await supabase.from('lawsuits').update(update.patch).eq('id', update.id);
+  for (let i = 0; i < plan.updates.length; i += WRITE_CHUNK) {
+    const chunk = plan.updates.slice(i, i + WRITE_CHUNK);
+    if (dryRun) {
+      for (const update of chunk) {
+        summary.updated += 1;
+        recordPlannedUpdate(summary, update, extrasById.get(update.id));
+      }
+      continue;
+    }
+    const results = await Promise.all(
+      chunk.map(async (update) => {
+        const { error } = await supabase.from('lawsuits').update(update.patch).eq('id', update.id);
+        return { update, error };
+      }),
+    );
+    for (const { update, error } of results) {
       if (error) {
         console.error(`[pipeline] update failed for ${update.slug}: ${error.message}`);
         summary.failed += 1;
@@ -368,9 +407,9 @@ async function applyPlanned(
       if (update.reopens) {
         console.log(`[pipeline] reopened ${update.slug}: ${update.changes.join('; ')}`);
       }
+      summary.updated += 1;
+      recordPlannedUpdate(summary, update, extrasById.get(update.id));
     }
-    summary.updated += 1;
-    recordPlannedUpdate(summary, update, extrasById.get(update.id));
   }
 }
 
@@ -418,17 +457,24 @@ async function loadCloseableRows(supabase: Db): Promise<StaleCandidate[] | null>
 async function loadExisting(supabase: Db, externalIds: string[]): Promise<ExistingRow[] | null> {
   const ids = Array.from(new Set(externalIds.filter(Boolean)));
   const rows: ExistingRow[] = [];
+  const chunks: string[][] = [];
   for (let i = 0; i < ids.length; i += IN_CHUNK) {
-    const chunk = ids.slice(i, i + IN_CHUNK);
-    const { data, error } = await supabase
-      .from('lawsuits')
-      .select(EXISTING_ROW_COLUMNS)
-      .in('external_id', chunk);
-    if (error) {
-      console.error('[pipeline] reading existing rows failed:', error.message);
-      return null;
+    chunks.push(ids.slice(i, i + IN_CHUNK));
+  }
+  for (let i = 0; i < chunks.length; i += EXISTING_FETCH_CONCURRENCY) {
+    const batch = chunks.slice(i, i + EXISTING_FETCH_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((chunk) =>
+        supabase.from('lawsuits').select(EXISTING_ROW_COLUMNS).in('external_id', chunk),
+      ),
+    );
+    for (const { data, error } of results) {
+      if (error) {
+        console.error('[pipeline] reading existing rows failed:', error.message);
+        return null;
+      }
+      rows.push(...((data ?? []) as ExistingRow[]));
     }
-    rows.push(...((data ?? []) as ExistingRow[]));
   }
   return rows;
 }

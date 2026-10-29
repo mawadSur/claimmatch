@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminUser } from '@/lib/admin';
+import { flags } from '@/lib/flags';
+import { closeMissingFeedPatch, keepMissingFeedPatch } from '@/lib/missing-feed-queue';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isThirdPartyFeeStatus } from '@/lib/third-party-fee';
 import { isProofVerified } from '@/lib/verified-fields';
@@ -30,7 +32,15 @@ const ALLOWED_KEYS = new Set([
   'third_party_fee_status',
 ]);
 
-const SingleAction = z.enum(['publish', 'reject', 'update', 'verify', 'unverify']);
+const SingleAction = z.enum([
+  'publish',
+  'reject',
+  'update',
+  'verify',
+  'unverify',
+  'close_missing',
+  'keep_missing',
+]);
 
 const SingleBodySchema = z.object({
   id: z.string().uuid('A valid settlement id is required.'),
@@ -83,6 +93,12 @@ export async function PATCH(req: Request) {
   const { id, action } = parsed.data;
   const now = new Date().toISOString();
 
+  if (action === 'close_missing' || action === 'keep_missing') {
+    if (!flags.missingCloseQueue()) {
+      return NextResponse.json({ error: 'Missing-feed close queue is off.' }, { status: 400 });
+    }
+  }
+
   let updates: Record<string, unknown>;
   if (action === 'publish') {
     updates = { review_status: 'published', reviewed_by: admin.id, reviewed_at: now };
@@ -100,6 +116,10 @@ export async function PATCH(req: Request) {
     };
   } else if (action === 'unverify') {
     updates = { verified_at: null, verified_by: null };
+  } else if (action === 'close_missing') {
+    updates = closeMissingFeedPatch();
+  } else if (action === 'keep_missing') {
+    updates = keepMissingFeedPatch();
   } else {
     // action === 'update' — keep only whitelisted keys. Never stamp verification.
     const patch = parsed.data.patch ?? {};

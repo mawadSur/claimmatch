@@ -26,8 +26,9 @@ in this order. Every file is additive: nothing is deleted.
 19. `0022_payout_reports.sql` — user-reported payout columns on `recoveries`. Additive. UI stays off until `PAYOUT_REPORT_ENABLED=1`.
 20. `0023_third_party_fee.sql` — `third_party_fee_status` / generated `third_party_fee_allowed`. Additive.
 21. `0024_account_deletion.sql` — PII-free deletion audit table. Additive.
+22. `0025_profile_consent_grant.sql` — grant `profiles.match_metrics_consent_at` update to authenticated. Additive. Already applied on production.
 
-CI applies 0001–0024 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0025 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -35,8 +36,8 @@ CI applies 0001–0024 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED` and `FEE_DISCLOSURE_ENABLED`.
-   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED` and `LAWSUITS_PAGINATION_ENABLED`.
+   - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing except the `jobs` row), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
    1. `0004_prefill.sql` (any time).
@@ -78,6 +79,109 @@ Signed in as yourself:
 - Settings shows your `/r/<code>` referral link. Admins can open `/admin/share-links` and create a campaign URL.
 - Any older "filed" claim reads "Not filed" with the notice.
 - The claim page shows copy-ready details (name, address, email) to copy into the official form.
+
+## Nightly ingest reliability (Oct 2026)
+
+### What was silent, and why
+
+`vercel.json` schedules `GET /api/cron/daily` at `0 6 * * *`. From 26 Oct 2026 the
+production run wrote nothing for three nights: no `lawsuits` updates, SettleSignal
+`last_seen_at` still null, `missed_feed_count` still 0, past-deadline rows still
+open, `jobs` empty (even after `recordIngestRun` shipped in PRs #22/#23),
+`ingest_alerts` empty, `sources.last_run_at` still 14 Sep. The SettleSignal feed
+itself returned 200 with ~897 records. `CRON_SECRET` is set; a request without
+it correctly returns 401.
+
+**Root cause (high confidence): the handler only wrote a `jobs` row after
+`ingestAndExtract` finished, and that function does one Supabase write per
+catalog change.** A ~900-row feed plus presence stamps is hundreds of sequential
+HTTP updates. Vercel Hobby caps function duration at 10s (default) / 60s (max);
+`maxDuration = 300` is accepted at build time but not honored on Hobby. The
+isolate is killed during the feed fetch (20s timeout) or the write loop, before
+`recordIngestRun`, `maybeRecordIngestAlert`, `touchSource`, or the response.
+A killed run leaves no row and fires no alert.
+
+Supporting evidence in code (before this fix):
+
+- `src/app/api/cron/daily/route.ts` called `recordIngestRun` only after
+  `await runStep('daily/ingest', ingestAndExtract)`.
+- `src/lib/scraper/pipeline.ts` updated `lawsuits` one row at a time, and
+  stamped `sources.last_run_at` only after that loop.
+- `src/lib/scraper/sources/settlesignal.ts` uses a 20s feed timeout — already
+  longer than Hobby's 10s default.
+- `src/middleware.ts` ran a Supabase `getUser()` session refresh on every
+  path, including `/api/cron/*`. Cron sends no cookies; a hang or throw there
+  would also produce a silent night. That is now a pass-through. Confidence
+  that middleware was the *primary* killer is medium — it is a real risk and
+  is fixed regardless.
+- Auth expects `Authorization: Bearer ${CRON_SECRET}`, which is exactly what
+  Vercel Cron sends. A 401 from a **domain redirect** (old host → lawsuitai.org)
+  would also write nothing, because the follow-up request drops `Authorization`.
+  There is no host redirect in `next.config.mjs`; if Vercel project domains
+  still 301/308 the cron host, point the production domain at lawsuitai.org
+  so Cron hits it directly. Confidence: medium (cannot see project domain
+  settings from the repo).
+
+`serviceConfigProblem` (missing `SUPABASE_SERVICE_ROLE_KEY`) also skipped
+`recordIngestRun`. Unlikely here — the live site already reads Supabase — but
+the start row is now written before that check.
+
+### What this deploy changes (on by default)
+
+These are bug-fixes to the intended nightly path, not new product behavior:
+
+- Middleware does not session-refresh or redirect `/api/cron/*`.
+- The daily handler inserts a `jobs` row immediately (`status=running`,
+  `payload.phase=started`) before any network work, then updates it to
+  `done` / `failed`. The `job_status` enum has no `started` value; `running`
+  is the existing equivalent so **no migration is required**.
+- Catalog writes run in parallel chunks of 25 so a typical night finishes
+  inside the Hobby cap.
+- A leftover `running` row older than 15 minutes is marked failed on the next
+  trigger and fires `ALERT_WEBHOOK_URL` if set.
+- An uncaught throw in the handler records `failed` and fires the same hook.
+
+### New env flags (default OFF)
+
+| Flag | Default | Effect when set to exactly `1` |
+| --- | --- | --- |
+| `INGEST_MISSING_CLOSE_QUEUE_ENABLED` | off | After `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) consecutive successful-feed misses, show the open SettleSignal row on `/admin` as "Missing from feed, propose close" with one-click Close or Keep. **Never auto-closes.** Off: existing auto-close-after-N behavior stays. Uses `missed_feed_count` / `last_seen_at` — **no new migration**. |
+| `LAWSUITS_PAGINATION_ENABLED` | off | `/lawsuits` paginates 24 per page, keeps filters/sort (known deadlines first), ISR (`revalidate=900`), `rel=next/prev`, canonical to page 1. Off: every open row still renders on one page. |
+
+No production migration is required before merge. None is required before
+enabling either flag.
+
+### Manual dry run in production (after merge)
+
+Do this once, as yourself, with the cron secret. It plans every write and
+persists **only** the `jobs` row.
+
+1. Confirm the deploy is live on lawsuitai.org (not a preview).
+2. From a machine that can reach production:
+
+   ```bash
+   curl -sS -D - -X GET \
+     'https://lawsuitai.org/api/cron/daily?dryRun=1' \
+     -H "Authorization: Bearer $CRON_SECRET" \
+     -H 'x-vercel-cron: 1'
+   ```
+
+   Expected: HTTP 200 or 500 (500 still means the run recorded — held closures
+   or an empty source fail the step on purpose). Body includes `"dryRun": true`
+   and a `jobId`.
+3. In Supabase: `select id, status, payload, error, created_at from jobs order by created_at desc limit 5;`
+   You should see a `pipeline` row with `payload.phase` `started` then
+   `finished` or `failed`, and `payload.dryRun` true.
+4. Confirm `lawsuits` and `sources.last_run_at` did **not** change.
+5. Open `/admin` → Last catalog ingest. A dry run appears there. A
+   `running` row that never finishes is a timeout; wait 15 minutes and
+   trigger again, or inspect Vercel function logs.
+
+To run a real write after a clean dry run, omit `?dryRun=1` (and do not set
+`INGEST_DRY_RUN=1` in Vercel). Same `Authorization` header.
+
+If the request 401s with the secret set, Cron or curl is hitting a host that
+redirects (Authorization is dropped). Use the primary production domain.
 
 ## First nightly ingest after the deploy
 

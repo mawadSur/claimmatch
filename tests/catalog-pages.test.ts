@@ -52,7 +52,7 @@ vi.mock('@/lib/supabase/server', () => {
 import { getLawsuitBySlug, lookupLawsuitBySlug, lookupLawsuits } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import LawsuitDetailPage, { generateMetadata } from '@/app/lawsuits/[slug]/page';
-import LawsuitsPage from '@/app/lawsuits/page';
+import LawsuitsPage, { generateMetadata as generateLawsuitsMetadata } from '@/app/lawsuits/page';
 import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
 import HomePage from '@/app/page';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
@@ -433,7 +433,26 @@ describe('catalog page', () => {
     expect(html).toContain('Clear filters');
   });
 
-  it('paginates 24 per page and keeps filters on page links', async () => {
+  it('renders every open row on one page when pagination is off (default)', async () => {
+    db.list = {
+      data: Array.from({ length: 30 }, (_, i) =>
+        lawsuit({
+          id: `id-${i}`,
+          slug: `settlement-${i}`,
+          title: `Settlement ${i}`,
+          deadline: i < 5 ? null : `2099-12-${String(((i - 5) % 28) + 1).padStart(2, '0')}`,
+        }),
+      ),
+      error: null,
+    };
+    const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
+    expect(html).toContain('Showing 30 open settlements');
+    expect(html).not.toContain('Page 1 of 2');
+    expect(html).toContain('No deadline listed');
+  });
+
+  it('paginates 24 per page and keeps filters on page links when the flag is on', async () => {
+    vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
     db.list = {
       data: Array.from({ length: 30 }, (_, i) =>
         lawsuit({
@@ -449,17 +468,35 @@ describe('catalog page', () => {
     expect(page1).toContain('Showing 1–24 of 30 open settlements');
     expect(page1).toContain('Page 1 of 2');
     expect(page1).toContain('href="/lawsuits?page=2"');
+    expect(page1).toContain('rel="next"');
     // Known deadlines sort first, so page 1 is all dated.
     expect(page1).not.toContain('No deadline listed');
 
     const page2 = renderToStaticMarkup(await LawsuitsPage(searchParams({ page: '2' })));
     expect(page2).toContain('Showing 25–30 of 30 open settlements');
     expect(page2).toContain('No deadline listed');
+    expect(page2).toContain('rel="prev"');
 
     const dated = renderToStaticMarkup(await LawsuitsPage(searchParams({ hasDeadline: '1' })));
     expect(dated).toContain('with a listed deadline');
     expect(dated).toContain('Showing 1–24 of 25 open settlements');
     expect(dated).not.toContain('No deadline listed');
+  });
+
+  it('keeps page 1 indexable and canonicalizes later pages to page 1', async () => {
+    vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
+    const page1 = await generateLawsuitsMetadata(searchParams({}));
+    expect(page1.robots).toMatchObject({ index: true, follow: true });
+    expect(page1.alternates).toMatchObject({
+      canonical: expect.stringMatching(/\/lawsuits$/),
+    });
+    const page2 = await generateLawsuitsMetadata(searchParams({ page: '2', q: 'fee' }));
+    expect(page2.robots).toMatchObject({ index: true, follow: true });
+    expect(page2.alternates).toMatchObject({
+      canonical: expect.stringContaining('/lawsuits?q=fee'),
+    });
+    expect(String(page2.alternates?.canonical)).not.toContain('page=2');
+    expect(page2.title).toContain('page 2');
   });
 
   it('shows an error state, not sample data, when the database fails', async () => {
