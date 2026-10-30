@@ -84,7 +84,7 @@ language sql immutable as $$
                'share_links', 'share_link_clicks',
                'administrators', 'administrator_form_mappings',
                'eligibility_rule_drafts', 'ingest_alerts',
-               'account_deletion_audit']
+               'account_deletion_audit', 'held_closure_decisions']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -358,7 +358,12 @@ begin
     $q$delete from public.share_links$q$,
     $q$insert into public.share_link_clicks (code) values ('rls-test-by-anon')$q$,
     $q$update public.share_link_clicks set code = 'changed by anon'$q$,
-    $q$delete from public.share_link_clicks$q$
+    $q$delete from public.share_link_clicks$q$,
+    -- Held-closure review: admin / service-role only.
+    $q$insert into public.held_closure_decisions (slug, decision, change_fingerprint)
+       values ('rls-test-by-anon', 'dismissed', 'x')$q$,
+    $q$update public.held_closure_decisions set decision = 'approved'$q$,
+    $q$delete from public.held_closure_decisions$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -509,7 +514,11 @@ begin
     $q$delete from public.share_links$q$,
     $q$insert into public.share_link_clicks (code) values ('rls-test-by-a')$q$,
     $q$update public.share_link_clicks set code = 'changed by A'$q$,
-    $q$delete from public.share_link_clicks$q$
+    $q$delete from public.share_link_clicks$q$,
+    $q$insert into public.held_closure_decisions (slug, decision, change_fingerprint)
+       values ('rls-test-by-a', 'dismissed', 'x')$q$,
+    $q$update public.held_closure_decisions set decision = 'approved'$q$,
+    $q$delete from public.held_closure_decisions$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
