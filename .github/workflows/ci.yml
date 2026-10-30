@@ -104,8 +104,8 @@ jobs:
           fi
           psql --version
 
-      # Applies 0001–0012 from scratch, then supabase/tests (including RLS
-      # probes and 52_revoke_attribution_anon). Merge code that needs those
+      # Applies every supabase/migrations file from scratch, then
+      # supabase/tests (including RLS probes). Merge code that needs those
       # columns or functions only after the matching migration has been
       # applied on the target database.
       - name: Apply every migration from scratch and run the SQL tests

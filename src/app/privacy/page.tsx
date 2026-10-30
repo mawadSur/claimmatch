@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
 import { legalContact } from '@/lib/legal-contact';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: 'Privacy Policy',
   description:
     'What ClaimMatch collects, why, who helps us process it, the cookies we use, and your choices. Interim policy, pending legal review.',
-};
+  path: '/privacy',
+});
 
 const LAST_UPDATED = 'October 26, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';

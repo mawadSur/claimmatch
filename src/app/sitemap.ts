@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { isThinSettlement } from '@/lib/catalog-page';
 import { categoriesOf, getLawsuits } from '@/lib/lawsuits';
-import { newestUpdatedAt } from '@/lib/settlement-hubs';
+import { hubClosingSoon, newestUpdatedAt } from '@/lib/settlement-hubs';
 import { flags } from '@/lib/flags';
 import {
   categoryHubPath,
@@ -46,10 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const hubs: MetadataRoute.Sitemap = [];
   if (lawsuits.length > 0 && lastmod) {
-    hubs.push(
-      { url: pageUrl(CLOSING_SOON_PATH), lastModified: lastmod },
-      { url: pageUrl(NEW_SETTLEMENTS_PATH), lastModified: lastmod },
-    );
+    if (hubClosingSoon(lawsuits).length > 0) {
+      hubs.push({ url: pageUrl(CLOSING_SOON_PATH), lastModified: lastmod });
+    }
+    hubs.push({ url: pageUrl(NEW_SETTLEMENTS_PATH), lastModified: lastmod });
     for (const category of categoriesOf(lawsuits)) {
       hubs.push({
         url: pageUrl(categoryHubPath(category)),

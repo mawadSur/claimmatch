@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
+import { flags } from '@/lib/flags';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { recordIngestRun } from '@/lib/jobs';
@@ -34,7 +35,9 @@ async function handle(req: Request) {
   if (configProblem) {
     step = missingConfigStep(configProblem, process.env.NODE_ENV === 'production');
   } else {
-    step = checkIngestStep(await runStep('pipeline/ingest', ingestAndExtract));
+    step = checkIngestStep(await runStep('pipeline/ingest', ingestAndExtract), {
+      heldIsWarning: flags.ingestHeldIsWarning(),
+    });
     await recordIngestRun('cron/pipeline', step);
     await maybeRecordIngestAlert('pipeline', step);
   }

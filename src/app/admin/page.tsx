@@ -32,10 +32,12 @@ import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
 import { flags } from '@/lib/flags';
 import { listBrokenOfficialLinks } from '@/lib/link-check';
 import { MissingFeedQueue } from '@/components/admin/MissingFeedQueue';
+import { HeldClosuresQueue } from '@/components/admin/HeldClosuresQueue';
 import {
   listMissingFeedCloseQueue,
   missingFeedCloseThreshold,
 } from '@/lib/missing-feed-queue';
+import { listHeldClosureQueue } from '@/lib/held-closures';
 import { EMPTY_SOFT_LAUNCH_COUNTS, loadSoftLaunchCounts } from '@/lib/soft-launch';
 
 export const metadata: Metadata = { title: 'Admin' };
@@ -122,6 +124,9 @@ export default async function AdminOverviewPage() {
     ? await listMissingFeedCloseQueue().catch(() => [])
     : [];
   const missingFeedAfter = missingFeedCloseThreshold();
+  const heldClosureQueue = flags.adminHeldClosures()
+    ? await listHeldClosureQueue().catch(() => [])
+    : [];
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -164,6 +169,24 @@ export default async function AdminOverviewPage() {
             </p>
           </div>
           <MissingFeedQueue items={missingFeedQueue} closeAfter={missingFeedAfter} />
+        </section>
+      ) : null}
+      {flags.adminHeldClosures() ? (
+        <section aria-labelledby="held-closures-title">
+          <div className="mb-4">
+            <h3 id="held-closures-title" className="text-lg font-bold text-ink">
+              Held closures, review before closing
+            </h3>
+            <p className="text-sm text-ink-soft">
+              Closures the ingest circuit breaker held. Approve applies only that
+              close. Dismiss hides the slug until the planned change differs.{' '}
+              <Link href="/admin/held-closures" className="font-semibold text-brand-700 underline">
+                Open the full queue
+              </Link>
+              . Nothing is auto-closed.
+            </p>
+          </div>
+          <HeldClosuresQueue items={heldClosureQueue} />
         </section>
       ) : null}
 

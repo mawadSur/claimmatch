@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Lato } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
-import { SITE, canonicalUrl } from '@/lib/utils';
+import { SITE } from '@/lib/utils';
 import { jsonLd } from '@/lib/jsonld';
+import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
@@ -29,15 +30,18 @@ export const metadata: Metadata = {
     template: `%s · ${SITE.name}`,
   },
   description: SITE.description,
-  alternates: { canonical: canonicalUrl('/') },
   openGraph: {
     title: `${SITE.name} — ${SITE.tagline}`,
     description: SITE.description,
     url: SITE.url,
     siteName: SITE.name,
     type: 'website',
+    images: [SITE_OG_IMAGE],
   },
-  twitter: { card: 'summary_large_image' },
+  twitter: {
+    card: 'summary_large_image',
+    images: [SITE_OG_IMAGE.url],
+  },
   icons: { icon: '/favicon.svg' },
 };
 
@@ -48,8 +52,8 @@ const orgJsonLd = {
       '@type': 'Organization',
       name: SITE.name,
       url: SITE.url,
-      logo: `${SITE.url.replace(/\/$/, '')}/favicon.svg`,
-      sameAs: [],
+      logo: `${SITE.url.replace(/\/$/, '')}/opengraph-image`,
+      image: `${SITE.url.replace(/\/$/, '')}/opengraph-image`,
       description: SITE.description,
     },
     {

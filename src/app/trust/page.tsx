@@ -10,21 +10,14 @@ import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { legalContact } from '@/lib/legal-contact';
-import { SITE } from '@/lib/utils';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
-  title: 'Is ClaimMatch legit?',
+export const metadata: Metadata = publicPageMetadata({
+  title: 'Is this legit?',
   description:
-    'The facts about ClaimMatch: it is free, it never files claims for you or touches your settlement money, its listings are labeled unverified, and it is not a law firm.',
-  openGraph: {
-    title: 'Is ClaimMatch legit? Here are the facts.',
-    description:
-      'Free, never files for you, never touches your money, not a law firm. Here is how to check us.',
-    url: `${SITE.url}/trust`,
-    siteName: SITE.name,
-    type: 'website',
-  },
-};
+    'The facts: it is free, it never files claims for you or touches your settlement money, its listings are labeled unverified, and it is not a law firm.',
+  path: '/trust',
+});
 
 const FACTS = [
   {

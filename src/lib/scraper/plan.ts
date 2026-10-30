@@ -344,6 +344,60 @@ export interface HeldClosure {
   source: string;
   slug: string;
   changes: string[];
+  /** Lawsuit id when the planner still had the row. Older job summaries omit it. */
+  id?: string;
+  /** Status / deadline fields the close would write. Older summaries omit it. */
+  patch?: Record<string, unknown>;
+  closeReason?: PlannedUpdate['closeReason'];
+}
+
+const STATUS_CHANGE = /^status\s+\S+\s+->\s+(\S+)$/i;
+const DEADLINE_CHANGE = /^deadline\s+\S+\s+->\s+(\d{4}-\d{2}-\d{2})/;
+const CLOSE_STATUSES = new Set(['open', 'closing_soon', 'closed']);
+
+/** Stable key so a dismissed row reappears only when the planned change differs. */
+export function heldChangeFingerprint(changes: string[]): string {
+  return changes.map((c) => c.trim()).filter(Boolean).join('\n');
+}
+
+/**
+ * The status/deadline patch an admin approve may apply. Prefers the stored
+ * planner patch; otherwise reads the change lines. When neither names a
+ * field, approving a closure sets status to closed. Never invents a deadline.
+ */
+export function parseHeldClosurePatch(
+  changes: string[],
+  stored?: Record<string, unknown> | null,
+): { status?: LawsuitStatus; deadline?: string } {
+  const patch: { status?: LawsuitStatus; deadline?: string } = {};
+  if (stored && typeof stored === 'object') {
+    if (typeof stored.status === 'string' && CLOSE_STATUSES.has(stored.status)) {
+      patch.status = stored.status as LawsuitStatus;
+    }
+    if (typeof stored.deadline === 'string') {
+      const m = DATE.exec(stored.deadline.trim());
+      if (m) patch.deadline = m[0];
+    }
+  }
+  for (const line of changes) {
+    const status = STATUS_CHANGE.exec(line.trim());
+    if (status && CLOSE_STATUSES.has(status[1])) {
+      patch.status = status[1] as LawsuitStatus;
+    }
+    const deadline = DEADLINE_CHANGE.exec(line.trim());
+    if (deadline) patch.deadline = deadline[1];
+  }
+  return patch;
+}
+
+/** Whitelisted close patch. Always at least `{ status: 'closed' }`. */
+export function heldClosureApplyPatch(
+  changes: string[],
+  stored?: Record<string, unknown> | null,
+): { status?: LawsuitStatus; deadline?: string } {
+  const parsed = parseHeldClosurePatch(changes, stored);
+  if (!parsed.status && !parsed.deadline) return { status: 'closed' };
+  return parsed;
 }
 
 /** Held closures per log line, so no line is cut off and none is left out. */

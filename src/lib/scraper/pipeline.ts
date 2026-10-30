@@ -335,7 +335,14 @@ async function applyPlanned(
     summary.held += held.length;
     summary.heldSlugs.push(...held.map((h) => h.slug));
     summary.heldClosures.push(
-      ...held.map((h) => ({ source: adapterSlug, slug: h.slug, changes: h.changes })),
+      ...held.map((h) => ({
+        source: adapterSlug,
+        slug: h.slug,
+        changes: h.changes,
+        id: h.id,
+        patch: h.patch,
+        closeReason: h.closeReason,
+      })),
     );
     for (const line of heldClosureLogLines(adapterSlug, held, { allowed, openCount })) {
       console.warn(line);

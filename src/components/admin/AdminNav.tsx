@@ -22,6 +22,7 @@ export function AdminNav({ counts }: Props) {
       showRecoveries={flags.adminRecoveries()}
       showFiling={flags.assistedFiling()}
       showEligibilityDrafts={flags.eligibilityDrafts()}
+      showHeldClosures={flags.adminHeldClosures()}
     />
   );
 }

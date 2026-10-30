@@ -10,6 +10,7 @@ import {
 } from '@/lib/settlement-seo';
 import { HubChrome } from '@/components/settlement/HubChrome';
 import { JsonLd } from '@/components/settlement/JsonLd';
+import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
 export const revalidate = 3600;
@@ -24,13 +25,14 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: pageUrl(NEW_SETTLEMENTS_PATH) },
   openGraph: {
-    title: `${TITLE} — ${SITE.name}`,
+    title: TITLE,
     description: DESCRIPTION,
     url: pageUrl(NEW_SETTLEMENTS_PATH),
     siteName: SITE.name,
     type: 'website',
+    images: [SITE_OG_IMAGE],
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [SITE_OG_IMAGE.url] },
 };
 
 export default async function NewSettlementsHubPage() {

@@ -4,11 +4,14 @@ import { FileText, ShieldAlert } from 'lucide-react';
 import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
 import { legalContact } from '@/lib/legal-contact';
 
-export const metadata: Metadata = {
+import { publicPageMetadata } from '@/lib/site-metadata';
+
+export const metadata: Metadata = publicPageMetadata({
   title: 'Terms of Service',
   description:
     'Interim terms for using ClaimMatch, a free claim assistant. ClaimMatch is not a law firm, gives no legal advice, never files claims for you and never handles settlement money.',
-};
+  path: '/terms',
+});
 
 const LAST_UPDATED = 'October 16, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';

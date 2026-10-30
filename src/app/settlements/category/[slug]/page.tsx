@@ -14,6 +14,7 @@ import {
 } from '@/lib/settlement-seo';
 import { HubChrome } from '@/components/settlement/HubChrome';
 import { JsonLd } from '@/components/settlement/JsonLd';
+import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
 export const revalidate = 3600;
@@ -54,13 +55,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     // Empty known categories stay reachable but are not indexed.
     robots: openInCategory.length > 0 ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
-      title: `${title} — ${SITE.name}`,
+      title,
       description,
       url,
       siteName: SITE.name,
       type: 'website',
+      images: [SITE_OG_IMAGE],
     },
-    twitter: { card: 'summary_large_image', title, description },
+    twitter: { card: 'summary_large_image', title, description, images: [SITE_OG_IMAGE.url] },
   };
 }
 

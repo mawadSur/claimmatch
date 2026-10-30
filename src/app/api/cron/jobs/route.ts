@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { claimDue, completeJob, failJob, recordIngestRun } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
 import { authorizeCron } from '@/lib/cron-auth';
+import { flags } from '@/lib/flags';
 import type { Job } from '@/lib/types';
 import {
   buildReport,
@@ -78,7 +79,10 @@ async function processJob(job: Job): Promise<StepResult> {
       // as the cron routes: held closures, failed writes and empty sources
       // fail the step, and the run is stored for the admin overview.
       const summary = await ingestAndExtract();
-      const step = checkIngestStep({ status: 'ran', result: summary });
+      const step = checkIngestStep(
+        { status: 'ran', result: summary },
+        { heldIsWarning: flags.ingestHeldIsWarning() },
+      );
       await recordIngestRun(`cron/jobs:${job.type}`, step);
       await completeJob(job.id, summary);
       return step;

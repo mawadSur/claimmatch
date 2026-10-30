@@ -27,8 +27,9 @@ in this order. Every file is additive: nothing is deleted.
 20. `0023_third_party_fee.sql` — `third_party_fee_status` / generated `third_party_fee_allowed`. Additive.
 21. `0024_account_deletion.sql` — PII-free deletion audit table. Additive.
 22. `0025_profile_consent_grant.sql` — grant `profiles.match_metrics_consent_at` update to authenticated. Additive. Already applied on production.
+23. `0026_held_closure_decisions.sql` — `held_closure_decisions` (admin approve/dismiss of ingest circuit-breaker holds) and `ingest_alerts.reason` may be `warning`. Additive. **Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
 
-CI applies 0001–0025 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0026 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -36,7 +37,7 @@ CI applies 0001–0025 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED` and `LAWSUITS_PAGINATION_ENABLED`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED` and `INGEST_HELD_IS_WARNING`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing except the `jobs` row), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
@@ -147,9 +148,14 @@ These are bug-fixes to the intended nightly path, not new product behavior:
 | --- | --- | --- |
 | `INGEST_MISSING_CLOSE_QUEUE_ENABLED` | off | After `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3) consecutive successful-feed misses, show the open SettleSignal row on `/admin` as "Missing from feed, propose close" with one-click Close or Keep. **Never auto-closes.** Off: existing auto-close-after-N behavior stays. Uses `missed_feed_count` / `last_seen_at` — **no new migration**. |
 | `LAWSUITS_PAGINATION_ENABLED` | off | `/lawsuits` paginates 24 per page, keeps filters/sort (known deadlines first), ISR (`revalidate=900`), `rel=next/prev`, canonical to page 1. Off: every open row still renders on one page. |
+| `ADMIN_HELD_CLOSURES_ENABLED` | off | `/admin` and `/admin/held-closures` list circuit-breaker held closures (deduped by slug from recent `jobs` rows). Approve applies only that close (service role, audited). Dismiss hides the slug until the planned change differs. **Never auto-closes.** Needs `0026` on the target database. |
+| `INGEST_HELD_IS_WARNING` | off | When the only ingest problem is held closures, the jobs row is `done` with `payload.phase=held_warning`, the cron answers **200** with the held count, and `ingest_alerts.reason=warning`. Failed writes and empty sources still 500. Off: held-only nights still 500. Needs `0026` only for the `warning` alert reason. |
+| `HOME_WEDGE_ENTRIES_ENABLED` | off | Home cards for "Data breach & privacy" and "No proof required" when the live catalog has at least one matching open listing. `HOME_NARROWING_ENABLED` is the older name for the same cards. No match language, no invented counts. |
 
-No production migration is required before merge. None is required before
-enabling either flag.
+`0026_held_closure_decisions.sql` is **not** applied on production. After
+merge, the owner runs it in the Supabase SQL editor (additive, re-runnable).
+The new flags stay unset until then. SEO and smoke-workflow changes are
+fixes and do not need a flag.
 
 ### Manual dry run in production (after merge)
 
@@ -185,7 +191,17 @@ redirects (Authorization is dropped). Use the primary production domain.
 
 ## First nightly ingest after the deploy
 
-The circuit breaker will likely hold most closures: about 190 rows, against a default limit of 20% of the open catalog. The cron answers 500 by design, and `/admin` → "Last catalog ingest" lists the held rows. Review the list, then set `INGEST_MAX_CLOSE_SHARE=1` for one run.
+The circuit breaker will likely hold most closures: about 190 rows, against a default limit of 20% of the open catalog. The cron answers 500 by design (unless `INGEST_HELD_IS_WARNING=1`), and `/admin` → "Last catalog ingest" lists the held rows. With `ADMIN_HELD_CLOSURES_ENABLED=1` (and `0026` applied), review and approve or dismiss each row instead of raising `INGEST_MAX_CLOSE_SHARE` for a whole night.
+
+## Preview smoke (Vercel Deployment Protection)
+
+The `smoke` GitHub workflow hits the preview URL. If Deployment Protection
+is on, those requests 401 unless a bypass secret is sent.
+
+1. In Vercel: Project → Settings → Deployment Protection → **Protection Bypass for Automation**. Generate a secret.
+2. In GitHub: repo Settings → Secrets and variables → Actions → add `VERCEL_AUTOMATION_BYPASS_SECRET` with that value.
+3. Playwright sends it as `x-vercel-protection-bypass` (and `x-vercel-set-bypass-cookie: samesitenone`).
+4. If the GitHub secret is **absent**, the smoke job prints a notice and **exits 0** (does not fail the PR).
 
 ## Rollback
 

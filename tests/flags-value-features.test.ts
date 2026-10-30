@@ -32,6 +32,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.feeDisclosure()).toBe(false);
     expect(flags.missingCloseQueue()).toBe(false);
     expect(flags.lawsuitsPagination()).toBe(false);
+    expect(flags.adminHeldClosures()).toBe(false);
+    expect(flags.ingestHeldIsWarning()).toBe(false);
+    expect(flags.homeWedgeEntries()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -58,6 +61,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('FEE_DISCLOSURE_ENABLED', 'yes');
     vi.stubEnv('INGEST_MISSING_CLOSE_QUEUE_ENABLED', 'yes');
     vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', 'true');
+    vi.stubEnv('ADMIN_HELD_CLOSURES_ENABLED', 'yes');
+    vi.stubEnv('INGEST_HELD_IS_WARNING', 'true');
+    vi.stubEnv('HOME_WEDGE_ENTRIES_ENABLED', 'on');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -83,6 +89,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.feeDisclosure()).toBe(false);
     expect(flags.missingCloseQueue()).toBe(false);
     expect(flags.lawsuitsPagination()).toBe(false);
+    expect(flags.adminHeldClosures()).toBe(false);
+    expect(flags.ingestHeldIsWarning()).toBe(false);
+    expect(flags.homeWedgeEntries()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -109,6 +118,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('FEE_DISCLOSURE_ENABLED', '1');
     vi.stubEnv('INGEST_MISSING_CLOSE_QUEUE_ENABLED', '1');
     vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
+    vi.stubEnv('ADMIN_HELD_CLOSURES_ENABLED', '1');
+    vi.stubEnv('INGEST_HELD_IS_WARNING', '1');
+    vi.stubEnv('HOME_WEDGE_ENTRIES_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -134,5 +146,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.feeDisclosure()).toBe(true);
     expect(flags.missingCloseQueue()).toBe(true);
     expect(flags.lawsuitsPagination()).toBe(true);
+    expect(flags.adminHeldClosures()).toBe(true);
+    expect(flags.ingestHeldIsWarning()).toBe(true);
+    expect(flags.homeWedgeEntries()).toBe(true);
   });
 });

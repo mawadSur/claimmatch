@@ -72,6 +72,23 @@ describe('ingest problems (until D40 alerting)', () => {
     expect(checkIngestStep(skipped)).toBe(skipped);
   });
 
+  it('treats held-only runs as a warning when that flag is on', () => {
+    const held = { ...CLEAN, held: 187, heldSlugs: ['a'], failed: 0, emptySources: [] };
+    expect(checkIngestStep({ status: 'ran', result: held }, { heldIsWarning: true })).toMatchObject({
+      status: 'warning',
+      result: held,
+    });
+    expect(
+      checkIngestStep(
+        { status: 'ran', result: { ...held, failed: 1 } },
+        { heldIsWarning: true },
+      ),
+    ).toMatchObject({ status: 'failed' });
+    expect(checkIngestStep({ status: 'ran', result: held }, { heldIsWarning: false })).toMatchObject({
+      status: 'failed',
+    });
+  });
+
   it('flags a stored run as needing attention by its summary, whatever its stored status', () => {
     expect(ingestRunNeedsAttention({ status: 'done', summary: CLEAN })).toBe(false);
     expect(ingestRunNeedsAttention({ status: 'failed', summary: {} })).toBe(true);
@@ -145,6 +162,21 @@ describe('startIngestRun / finishIngestRun', () => {
       result: null,
       error: null,
     });
+  });
+
+  it('stores a held-only warning as done with phase held_warning', async () => {
+    await finishIngestRun('job-1', 'cron/daily', {
+      status: 'warning',
+      error: '187 closures held for review',
+      result: { ...CLEAN, held: 187 },
+    });
+    expect(m.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'done',
+        error: '187 closures held for review',
+        payload: { trigger: 'cron/daily', phase: 'held_warning' },
+      }),
+    );
   });
 
   it('updates the started row to failed with the error text', async () => {

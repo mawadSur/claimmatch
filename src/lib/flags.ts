@@ -130,4 +130,22 @@ export const flags = {
    * Off: the catalog still renders every open row on one page.
    */
   lawsuitsPagination: () => on('LAWSUITS_PAGINATION_ENABLED'),
+  /**
+   * Admin review queue for closures the ingest circuit breaker held.
+   * Off: /admin does not list them as an action queue and the apply
+   * route refuses writes. Never auto-closes.
+   */
+  adminHeldClosures: () => on('ADMIN_HELD_CLOSURES_ENABLED'),
+  /**
+   * When the only ingest problem is held closures (writes otherwise
+   * succeeded), store the jobs row as a warning and answer 200.
+   * Off: held closures still fail the cron (500), as before.
+   */
+  ingestHeldIsWarning: () => on('INGEST_HELD_IS_WARNING'),
+  /**
+   * Home-page "Data breach & privacy" and "No proof required" cards.
+   * Off: those cards stay hidden. HOME_NARROWING_ENABLED is the older
+   * name for the same cards; either flag shows them.
+   */
+  homeWedgeEntries: () => on('HOME_WEDGE_ENTRIES_ENABLED'),
 };

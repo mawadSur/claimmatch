@@ -7,21 +7,14 @@ import {
 import { Disclaimer } from '@/components/Disclaimer';
 import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
-import { SITE } from '@/lib/utils';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
-  title: 'About ClaimMatch',
+export const metadata: Metadata = publicPageMetadata({
+  title: 'About',
   description:
-    'ClaimMatch is a free claim assistant. It helps people find open class-action settlements, file on the official settlement site, and keep track of their claims.',
-  openGraph: {
-    title: 'About ClaimMatch',
-    description:
-      'A free claim assistant for class-action settlements. You file on the official site; we help you find settlements and keep track.',
-    url: `${SITE.url}/about`,
-    siteName: SITE.name,
-    type: 'website',
-  },
-};
+    'A free claim assistant. It helps people find open class-action settlements, file on the official settlement site, and keep track of their claims.',
+  path: '/about',
+});
 
 const HARD_PARTS = [
   { icon: MailX, text: 'Settlement notices are easy to miss or mistake for spam.' },

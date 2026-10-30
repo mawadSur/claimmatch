@@ -82,7 +82,11 @@ export const STALE_INGEST_MS = 15 * 60 * 1000;
 export type IngestRunStep =
   | { status: 'ran'; result: unknown }
   | { status: 'failed'; error: string; result?: unknown }
+  | { status: 'warning'; error: string; result?: unknown }
   | { status: 'skipped'; reason?: string };
+
+/** jobs.payload.phase for a finished run whose only problem was held closures. */
+export const INGEST_HELD_WARNING_PHASE = 'held_warning';
 
 /**
  * Insert a running jobs row at the very start of an ingest handler, before
@@ -158,10 +162,18 @@ export async function finishIngestRun(
     const { error } = await supabase
       .from('jobs')
       .update({
-        status: step.status === 'ran' ? 'done' : 'failed',
-        payload: { trigger, phase: step.status === 'ran' ? 'finished' : 'failed' },
+        status: step.status === 'failed' ? 'failed' : 'done',
+        payload: {
+          trigger,
+          phase:
+            step.status === 'ran'
+              ? 'finished'
+              : step.status === 'warning'
+                ? INGEST_HELD_WARNING_PHASE
+                : 'failed',
+        },
         result: step.result ?? null,
-        error: step.status === 'failed' ? step.error : null,
+        error: step.status === 'ran' ? null : step.error,
         locked_at: null,
       })
       .eq('id', jobId);
@@ -236,6 +248,7 @@ export async function recordIngestRun(
   step:
     | { status: 'ran'; result: unknown }
     | { status: 'failed'; error: string; result?: unknown }
+    | { status: 'warning'; error: string; result?: unknown }
     | { status: 'skipped' },
 ): Promise<void> {
   if (!configured() || step.status === 'skipped') return;
@@ -243,11 +256,14 @@ export async function recordIngestRun(
     const supabase = createServiceClient();
     const { error } = await supabase.from('jobs').insert({
       type: 'pipeline',
-      status: step.status === 'ran' ? 'done' : 'failed',
-      payload: { trigger },
+      status: step.status === 'failed' ? 'failed' : 'done',
+      payload: {
+        trigger,
+        ...(step.status === 'warning' ? { phase: INGEST_HELD_WARNING_PHASE } : {}),
+      },
       attempts: 1,
       result: step.result ?? null,
-      error: step.status === 'failed' ? step.error : null,
+      error: step.status === 'ran' ? null : step.error,
     });
     if (error) console.error('[jobs] could not record the ingest run:', error.message);
   } catch (err) {

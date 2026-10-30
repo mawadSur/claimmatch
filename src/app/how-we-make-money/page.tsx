@@ -5,27 +5,18 @@ import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
 import { Disclaimer } from '@/components/Disclaimer';
 import { feeEveryClaimCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
-import { SITE, canonicalUrl } from '@/lib/utils';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
 export function generateMetadata(): Metadata {
   const disclose = flags.feeDisclosure();
   const description = disclose
     ? feeEveryClaimCopy()
     : 'ClaimMatch is free during beta; copy-ready details; you file on the official site.';
-  return {
-    title: 'How ClaimMatch makes money',
+  return publicPageMetadata({
+    title: 'How we make money',
     description,
-    alternates: { canonical: canonicalUrl('/how-we-make-money') },
-    openGraph: {
-      title: 'How ClaimMatch makes money',
-      description: disclose
-        ? description
-        : 'Free during beta; copy-ready details; you file on the official site.',
-      url: canonicalUrl('/how-we-make-money'),
-      siteName: SITE.name,
-      type: 'website',
-    },
-  };
+    path: '/how-we-make-money',
+  });
 }
 
 export default function HowWeMakeMoneyPage() {

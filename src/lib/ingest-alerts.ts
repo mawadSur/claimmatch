@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { SITE } from '@/lib/utils';
 import type { StepResult } from '@/app/api/cron/_lib/report';
 
-export type IngestAlertReason = 'failed' | 'zero_updates';
+export type IngestAlertReason = 'failed' | 'zero_updates' | 'warning';
 
 export interface IngestAlertDecision {
   reason: IngestAlertReason;
@@ -26,6 +26,13 @@ export function ingestAlertDecision(step: StepResult | null | undefined): Ingest
   if (step.status === 'failed') {
     return {
       reason: 'failed',
+      error: step.error,
+      summary: asSummary(step.result),
+    };
+  }
+  if (step.status === 'warning') {
+    return {
+      reason: 'warning',
       error: step.error,
       summary: asSummary(step.result),
     };
@@ -88,7 +95,12 @@ export function renderIngestAlertEmail(input: {
   error: string;
   at: string;
 }): string {
-  const title = input.reason === 'failed' ? 'Catalog ingest failed' : 'Catalog ingest updated 0 rows';
+  const title =
+    input.reason === 'failed'
+      ? 'Catalog ingest failed'
+      : input.reason === 'warning'
+        ? 'Catalog ingest held closures for review'
+        : 'Catalog ingest updated 0 rows';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>${title}</title></head>
 <body style="font-family:system-ui,sans-serif;color:#171326;">
@@ -116,7 +128,13 @@ async function sendIngestAlertEmail(input: {
     return false;
   }
   return notifyAdmins({
-    subject: `${input.reason === 'failed' ? 'Ingest failed' : 'Ingest updated 0 rows'} on ${SITE.name}`,
+    subject: `${
+      input.reason === 'failed'
+        ? 'Ingest failed'
+        : input.reason === 'warning'
+          ? 'Ingest held closures'
+          : 'Ingest updated 0 rows'
+    } on ${SITE.name}`,
     html: renderIngestAlertEmail(input),
   });
 }
