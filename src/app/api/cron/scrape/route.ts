@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { runAllSources } from '@/lib/scraper';
 import { authorizeCron } from '@/lib/cron-auth';
+import { flags } from '@/lib/flags';
 import { recordIngestRun } from '@/lib/jobs';
 import {
   buildReport,
@@ -32,7 +33,9 @@ async function handle(req: Request) {
   if (configProblem) {
     step = missingConfigStep(configProblem, process.env.NODE_ENV === 'production');
   } else {
-    step = checkIngestStep(await runStep('scrape', runAllSources));
+    step = checkIngestStep(await runStep('scrape', runAllSources), {
+      heldIsWarning: flags.ingestHeldIsWarning(),
+    });
     await recordIngestRun('cron/scrape', step);
   }
   const report = buildReport('scrape', { scrape: step });

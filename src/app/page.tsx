@@ -12,6 +12,10 @@ import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { publicCostNote } from '@/lib/copy';
 import { flags } from '@/lib/flags';
+import { homeWedgeAvailability, homeWedgesEnabled } from '@/lib/home-wedges';
+import { publicPageMetadata } from '@/lib/site-metadata';
+import { SITE } from '@/lib/utils';
+import type { Metadata } from 'next';
 
 const STEPS = [
   {
@@ -50,21 +54,35 @@ const WE_DO_NOT = [
   'Sell your personal information',
 ];
 
-async function loadClosingSoon(): Promise<{ rows: Lawsuit[]; failed: boolean }> {
+const homeMeta = publicPageMetadata({
+  title: `${SITE.name} — ${SITE.tagline}`,
+  description: SITE.description,
+  path: '/',
+  ogTitle: `${SITE.name} — ${SITE.tagline}`,
+});
+export const metadata: Metadata = {
+  ...homeMeta,
+  // Skip the layout "%s · ClaimMatch" template so the site name is not doubled.
+  title: { absolute: `${SITE.name} — ${SITE.tagline}` },
+};
+
+async function loadHomeCatalog(): Promise<{ lawsuits: Lawsuit[]; failed: boolean }> {
   try {
     // lookupLawsuits() applies the shared open-for-claims rule and reports a
     // failed query (getLawsuits() would turn it into "no settlements"); we
     // only order.
     const result = await lookupLawsuits();
-    if (result.error) return { rows: [], failed: true };
-    return { rows: pickClosingSoon(result.lawsuits, 3), failed: false };
+    if (result.error) return { lawsuits: [], failed: true };
+    return { lawsuits: result.lawsuits, failed: false };
   } catch {
-    return { rows: [], failed: true };
+    return { lawsuits: [], failed: true };
   }
 }
 
 export default async function HomePage() {
-  const closing = await loadClosingSoon();
+  const catalog = await loadHomeCatalog();
+  const closing = { rows: pickClosingSoon(catalog.lawsuits, 3), failed: catalog.failed };
+  const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
   const weDo = disclose
     ? WE_DO.map((t) =>
@@ -237,7 +255,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {flags.homeNarrowing() && <HomeNarrowing />}
+      {wedges && (wedges.showBreachPrivacy || wedges.showNoProof) && (
+        <HomeNarrowing
+          showBreachPrivacy={wedges.showBreachPrivacy}
+          showDataBreach={wedges.showDataBreach}
+          showPrivacy={wedges.showPrivacy}
+          showNoProof={wedges.showNoProof}
+        />
+      )}
 
       {/* What we do and don't do --------------------------------------------- */}
       <section className="container-page py-16 sm:py-20" aria-labelledby="honest-heading">

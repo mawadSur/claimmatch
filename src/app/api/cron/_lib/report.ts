@@ -17,7 +17,9 @@ export type StepResult =
   | { status: 'ran'; result: unknown }
   | { status: 'skipped'; reason: string; resume?: string }
   /** `result` is kept when the step ran but needs a person (see checkIngestStep). */
-  | { status: 'failed'; error: string; result?: unknown };
+  | { status: 'failed'; error: string; result?: unknown }
+  /** Held closures only, when INGEST_HELD_IS_WARNING=1. Writes succeeded. */
+  | { status: 'warning'; error: string; result?: unknown };
 
 export interface CronReport {
   job: string;
@@ -26,6 +28,7 @@ export interface CronReport {
   ranSteps: string[];
   skippedSteps: string[];
   failedSteps: string[];
+  warningSteps: string[];
   steps: Record<string, StepResult>;
 }
 
@@ -96,15 +99,21 @@ export async function runStep(
  * writes, and sources that returned nothing. Each one leaves "open" listings
  * that the source has closed, so none may pass as a quiet success.
  */
-export function ingestProblems(result: unknown): string[] {
+export function ingestHeldProblems(result: unknown): string[] {
+  if (!result || typeof result !== 'object') return [];
+  const s = result as Partial<IngestSummary>;
+  if ((s.held ?? 0) > 0) {
+    return [
+      `${s.held} closures held for review (listed in heldClosures; raise INGEST_MAX_CLOSE_SHARE only after reviewing every one)`,
+    ];
+  }
+  return [];
+}
+
+export function ingestHardProblems(result: unknown): string[] {
   if (!result || typeof result !== 'object') return [];
   const s = result as Partial<IngestSummary>;
   const problems: string[] = [];
-  if ((s.held ?? 0) > 0) {
-    problems.push(
-      `${s.held} closures held for review (listed in heldClosures; raise INGEST_MAX_CLOSE_SHARE only after reviewing every one)`,
-    );
-  }
   if ((s.failed ?? 0) > 0) problems.push(`${s.failed} catalog reads or writes failed`);
   if (s.emptySources && s.emptySources.length > 0) {
     problems.push(`no records from ${s.emptySources.join(', ')}`);
@@ -112,16 +121,30 @@ export function ingestProblems(result: unknown): string[] {
   return problems;
 }
 
+export function ingestProblems(result: unknown): string[] {
+  return [...ingestHeldProblems(result), ...ingestHardProblems(result)];
+}
+
 /**
- * The ingest step as the cron reports it. Until D40's alerting exists, a run
- * that needs a person counts as failed (so the route answers 500), and keeps
- * its summary so the response and the run record still list every held row.
+ * The ingest step as the cron reports it. A run that needs a person counts as
+ * failed (so the route answers 500) unless the only problem is held closures
+ * and `heldIsWarning` is on — then it is a warning (200) and keeps its summary.
  */
-export function checkIngestStep(step: StepResult): StepResult {
+export function checkIngestStep(
+  step: StepResult,
+  opts: { heldIsWarning?: boolean } = {},
+): StepResult {
   if (step.status !== 'ran') return step;
-  const problems = ingestProblems(step.result);
-  if (problems.length === 0) return step;
-  return { status: 'failed', error: problems.join('; '), result: step.result };
+  const hard = ingestHardProblems(step.result);
+  const held = ingestHeldProblems(step.result);
+  if (hard.length > 0) {
+    return { status: 'failed', error: [...held, ...hard].join('; '), result: step.result };
+  }
+  if (held.length === 0) return step;
+  if (opts.heldIsWarning) {
+    return { status: 'warning', error: held.join('; '), result: step.result };
+  }
+  return { status: 'failed', error: held.join('; '), result: step.result };
 }
 
 /**
@@ -136,12 +159,14 @@ export function ingestRunNeedsAttention(run: { status: string; summary: unknown 
 export function buildReport(job: string, steps: Record<string, StepResult>): CronReport {
   const names = Object.keys(steps);
   const failedSteps = names.filter((n) => steps[n].status === 'failed');
+  const warningSteps = names.filter((n) => steps[n].status === 'warning');
   return {
     job,
     ok: failedSteps.length === 0,
     ranSteps: names.filter((n) => steps[n].status === 'ran'),
     skippedSteps: names.filter((n) => steps[n].status === 'skipped'),
     failedSteps,
+    warningSteps,
     steps,
   };
 }

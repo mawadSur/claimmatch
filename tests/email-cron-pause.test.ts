@@ -64,6 +64,7 @@ describe('buildReport and reportHttpStatus', () => {
       ranSteps: ['ingest'],
       skippedSteps: ['matchSweep'],
       failedSteps: [],
+      warningSteps: [],
       steps: {
         ingest: { status: 'ran', result: { ingested: 3 } },
         matchSweep: { status: 'skipped', reason: D50_PAUSED },

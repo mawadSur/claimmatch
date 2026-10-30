@@ -32,7 +32,8 @@ import {
  *   1. ingest: fetch every source adapter and refresh the catalog (new records
  *      wait for review; no model calls; large closure batches are held). Held
  *      closures, failed writes and empty sources make the step fail (500)
- *      until D40's alerting exists; every run is stored as a jobs row.
+ *      unless INGEST_HELD_IS_WARNING=1 and the only problem is held closures
+ *      (then 200 + a warning jobs row). Every run is stored as a jobs row.
  *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
  *      only when MATCH_EMAILS_ENABLED=1.
  * The JSON reports each step as ran, skipped or failed; any failure makes the
@@ -53,6 +54,7 @@ function stepToIngestRun(step: StepResult | undefined): IngestRunStep {
   if (!step) return { status: 'failed', error: 'ingest did not run' };
   if (step.status === 'skipped') return { status: 'skipped', reason: step.reason };
   if (step.status === 'ran') return { status: 'ran', result: step.result };
+  if (step.status === 'warning') return { status: 'warning', error: step.error, result: step.result };
   return { status: 'failed', error: step.error, result: step.result };
 }
 
@@ -91,6 +93,7 @@ async function handle(req: Request) {
     } else {
       steps.ingest = checkIngestStep(
         await runStep('daily/ingest', () => ingestAndExtract({ dryRun })),
+        { heldIsWarning: flags.ingestHeldIsWarning() },
       );
     }
     await maybeRecordIngestAlert('daily', steps.ingest);

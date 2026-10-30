@@ -9,21 +9,14 @@ import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
 import { feeEveryClaimCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
-import { SITE } from '@/lib/utils';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
-  title: 'How ClaimMatch Works',
+export const metadata: Metadata = publicPageMetadata({
+  title: 'How it works',
   description:
-    'How ClaimMatch works: find a settlement that is open for claims, check who qualifies on the official notice, file on the official site yourself, and keep track of your claim. Free.',
-  openGraph: {
-    title: 'How ClaimMatch works',
-    description:
-      'Find open settlements, check who qualifies on the official notice, file on the official site, and keep track. Free.',
-    url: `${SITE.url}/how-it-works`,
-    siteName: SITE.name,
-    type: 'website',
-  },
-};
+    'Find a settlement that is open for claims, check who qualifies on the official notice, file on the official site yourself, and keep track of your claim. Free.',
+  path: '/how-it-works',
+});
 
 const STEPS = [
   {

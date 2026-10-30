@@ -27,23 +27,38 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || inputs.url }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - name: Check out
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
+      - name: Skip when preview protection bypass is unset
+        id: gate
+        run: |
+          if [ -z "${VERCEL_AUTOMATION_BYPASS_SECRET}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Smoke skipped::VERCEL_AUTOMATION_BYPASS_SECRET is not set. Preview deployment protection would 401. Add the Vercel automation bypass secret to this GitHub repository (see docs/PRODUCTION-RUNBOOK.md)."
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Set up Node 24
+        if: steps.gate.outputs.skip != 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
       - name: Install dependencies
+        if: steps.gate.outputs.skip != 'true'
         run: npm ci
 
       - name: Install Playwright Chromium
+        if: steps.gate.outputs.skip != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run read-only smoke
+        if: steps.gate.outputs.skip != 'true'
         run: npm run test:e2e

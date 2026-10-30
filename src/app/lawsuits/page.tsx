@@ -23,6 +23,7 @@ import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { pageUrl } from '@/lib/settlement-seo';
+import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
 const DESCRIPTION =
@@ -73,16 +74,18 @@ export async function generateMetadata({
     alternates: { canonical: pageUrl(canonicalPath) },
     robots: { index: true, follow: true },
     openGraph: {
-      title: 'Open Class Action Settlements — ClaimMatch',
+      title: 'Open Class Action Settlements',
       description: DESCRIPTION,
       url: pageUrl(canonicalPath),
       siteName: SITE.name,
       type: 'website',
+      images: [SITE_OG_IMAGE],
     },
     twitter: {
       card: 'summary_large_image',
       title: 'Open Class Action Settlements',
       description: DESCRIPTION,
+      images: [SITE_OG_IMAGE.url],
     },
   };
 }

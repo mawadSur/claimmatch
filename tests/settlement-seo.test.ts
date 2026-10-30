@@ -106,6 +106,8 @@ describe('settlement SEO helpers', () => {
     expect(article['@type']).toBe('Article');
     expect(article.about['@type']).toBe('Thing');
     expect(article.about.name).toBe('Widget Settlement');
+    expect(article.image).toMatch(/\/lawsuits\/widget-settlement\/opengraph-image$/);
+    expect(article.url).toMatch(/^https:\/\/lawsuitai\.org\/lawsuits\/widget-settlement$/);
   });
 
   it('maps category slugs and keeps unknown slugs unresolved', () => {

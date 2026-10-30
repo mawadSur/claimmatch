@@ -246,6 +246,7 @@ export function settlementArticleJsonLd(lawsuit: Lawsuit) {
     description: settlementMetaDescription(lawsuit),
     url,
     mainEntityOfPage: url,
+    image: pageUrl(`/lawsuits/${lawsuit.slug}/opengraph-image`),
     dateModified: lawsuit.updated_at,
     datePublished: lawsuit.created_at,
     author: { '@type': 'Organization', name: SITE.name, url: pageUrl('/') },

@@ -152,6 +152,32 @@ describe('/api/cron/daily', () => {
     expect(m.ingestAndExtract).not.toHaveBeenCalled();
   });
 
+  it('answers 200 with a warning when INGEST_HELD_IS_WARNING=1 and only closures were held', async () => {
+    vi.stubEnv('INGEST_HELD_IS_WARNING', '1');
+    const heldClosures = [{ source: 'settlesignal', slug: 'held-0', changes: ['status open -> closed'] }];
+    const summary = {
+      ...INGEST,
+      held: 1,
+      heldSlugs: ['held-0'],
+      heldClosures,
+      failed: 0,
+      emptySources: [],
+    };
+    m.ingestAndExtract.mockResolvedValue(summary);
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.failedSteps).toEqual([]);
+    expect(body.warningSteps).toEqual(['ingest']);
+    expect(body.steps.ingest.status).toBe('warning');
+    expect(body.steps.ingest.error).toMatch(/1 closures held for review/);
+    expect(m.finishIngestRun).toHaveBeenCalledWith(
+      'job-daily',
+      'cron/daily',
+      expect.objectContaining({ status: 'warning', result: summary }),
+    );
+  });
+
   it('answers 500 when closures were held, and keeps every held row in the response and the run record', async () => {
     const heldClosures = Array.from({ length: 190 }, (_, i) => ({
       source: 'settlesignal',

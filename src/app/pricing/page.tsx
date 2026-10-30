@@ -6,35 +6,23 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
-import { SITE } from '@/lib/utils';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-const BETA_METADATA: Metadata = {
+const BETA_METADATA: Metadata = publicPageMetadata({
   title: 'Pricing',
   description:
     'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You file on the official settlement site.',
-  openGraph: {
-    title: 'ClaimMatch pricing: free during beta',
-    description: 'Free during beta. You file on the official site.',
-    url: `${SITE.url}/pricing`,
-    siteName: SITE.name,
-    type: 'website',
-  },
-};
+  path: '/pricing',
+});
 
 export function generateMetadata(): Metadata {
   if (!flags.feeDisclosure()) return BETA_METADATA;
   const body = feeEveryClaimCopy();
-  return {
+  return publicPageMetadata({
     title: 'Pricing',
     description: body,
-    openGraph: {
-      title: 'ClaimMatch pricing',
-      description: body,
-      url: `${SITE.url}/pricing`,
-      siteName: SITE.name,
-      type: 'website',
-    },
-  };
+    path: '/pricing',
+  });
 }
 
 const FREE = [

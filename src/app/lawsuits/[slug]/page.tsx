@@ -39,6 +39,7 @@ import {
   settlementPath,
 } from '@/lib/settlement-seo';
 import { flags } from '@/lib/flags';
+import { settlementOgImagePath } from '@/lib/site-metadata';
 import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
 import { AddToCalendarLink } from '@/components/settlement/AddToCalendarLink';
 import { AnswerBlock } from '@/components/settlement/AnswerBlock';
@@ -99,11 +100,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       url,
       siteName: SITE.name,
       type: 'article',
+      images: [
+        {
+          url: settlementOgImagePath(lawsuit.slug),
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: [settlementOgImagePath(lawsuit.slug)],
     },
   };
 }
