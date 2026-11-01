@@ -8,9 +8,11 @@ import { createClient } from '@/lib/supabase/client';
 export function NavAuthLinks({
   signedIn,
   isAdmin = false,
+  compact = false,
 }: {
   signedIn: boolean;
   isAdmin?: boolean;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const posthog = usePostHog();
@@ -27,19 +29,32 @@ export function NavAuthLinks({
 
   if (signedIn) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {isAdmin && (
-          <Link href="/admin" className="hidden text-sm font-semibold text-ink-muted hover:text-brand-700 sm:inline">
+          <Link
+            href="/admin"
+            className="nav-link hidden min-h-tap items-center sm:inline-flex"
+          >
             Admin
           </Link>
         )}
-        <Link href="/settings" className="hidden text-sm font-medium text-ink-muted hover:text-brand-700 sm:inline">
+        <Link
+          href="/settings"
+          className="nav-link hidden min-h-tap items-center sm:inline-flex"
+        >
           Settings
         </Link>
-        <Link href="/dashboard" className="text-sm font-semibold text-brand-700 hover:text-brand-800">
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-tap items-center text-sm font-semibold text-brand-700 hover:text-brand-800"
+        >
           Dashboard
         </Link>
-        <button onClick={signOut} className="btn-ghost !px-3 !py-2 text-sm">
+        <button
+          type="button"
+          onClick={signOut}
+          className="btn-ghost !min-h-tap !px-3 !py-2 text-sm"
+        >
           Sign out
         </button>
       </div>
@@ -48,10 +63,16 @@ export function NavAuthLinks({
 
   return (
     <div className="flex items-center gap-2">
-      <Link href="/login" className="text-sm font-semibold text-ink-muted hover:text-brand-700">
+      <Link
+        href="/login"
+        className="inline-flex min-h-tap items-center px-2 text-sm font-semibold text-ink-muted hover:text-brand-700"
+      >
         Log in
       </Link>
-      <Link href="/signup" className="btn-primary !py-2 !px-4 text-sm">
+      <Link
+        href="/signup"
+        className={`btn-primary !min-h-tap text-sm ${compact ? '!px-3 !py-2' : '!px-4 !py-2'}`}
+      >
         Get started
       </Link>
     </div>

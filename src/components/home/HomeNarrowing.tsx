@@ -23,7 +23,7 @@ export function HomeNarrowing({
   return (
     <section className="container-page py-16 sm:py-20" aria-labelledby="narrowing-heading">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 id="narrowing-heading" className="font-display text-3xl font-extrabold sm:text-4xl">
+        <h2 id="narrowing-heading" className="font-display text-3xl font-bold sm:text-4xl">
           Start with a type of settlement
         </h2>
         <p className="mt-3 text-ink-muted">
@@ -33,7 +33,7 @@ export function HomeNarrowing({
       </div>
       <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
         {breachCard && (
-          <article className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-100 text-brand-700">
               <ShieldCheck className="h-5 w-5" aria-hidden="true" />
             </span>
@@ -56,7 +56,7 @@ export function HomeNarrowing({
           </article>
         )}
         {showNoProof && (
-          <article className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-100 text-brand-700">
               <FileCheck className="h-5 w-5" aria-hidden="true" />
             </span>

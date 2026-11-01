@@ -22,7 +22,7 @@ export function generateMetadata(): Metadata {
 export default function HowWeMakeMoneyPage() {
   return (
     <>
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
+      <section className="bg-brand-50">
         <div className="container-page relative py-16 sm:py-20">
           <div className="mx-auto max-w-3xl">
             <HowWeMakeMoney heading="h1" />

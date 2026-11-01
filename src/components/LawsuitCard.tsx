@@ -86,12 +86,12 @@ export function LawsuitCard({
       )}
 
       {!lawsuit.deadline && (
-        <p className="mt-3 inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-ink-muted">
+        <p className="mt-3 inline-flex rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-ink-muted">
           No deadline listed
         </p>
       )}
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-gray-50 p-3">
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-brand-50 p-3">
         <Stat
           label="Deadline"
           value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'No deadline listed'}
@@ -142,7 +142,7 @@ export function LawsuitCard({
             </Link>
           </div>
         ) : (
-          <p className="rounded-xl bg-gray-100 px-3 py-2.5 text-center text-sm font-semibold text-gray-700">
+          <p className="rounded-xl bg-brand-50 px-3 py-2.5 text-center text-sm font-semibold text-ink-muted">
             Claims closed
           </p>
         )}

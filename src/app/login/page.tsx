@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { safeNextPath } from '@/lib/safe-next';
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 
 function AuthFormFallback() {
   return (
-    <div className="h-80 animate-pulse rounded-2xl border border-gray-100 bg-white shadow-card" />
+    <div className="h-80 animate-pulse rounded-2xl border border-slate-200 bg-white shadow-card" />
   );
 }
 
@@ -26,14 +25,11 @@ export default async function LoginPage({
   // greet them with "Welcome back" and hide sign-up in a small link.
   const fromClaim = next?.startsWith('/claim/') ?? false;
   return (
-    <section className="bg-gradient-to-b from-brand-50 via-white to-white">
-      <div className="container-narrow py-16 sm:py-24">
+    <section className="bg-brand-50">
+      <div className="container-narrow py-14 sm:py-20">
         <div className="mx-auto max-w-md">
           <div className="text-center">
-            <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-brand-700">
-              <ShieldCheck className="h-6 w-6" aria-hidden />
-            </div>
-            <h1 className="mt-5 text-3xl font-extrabold">
+            <h1 className="text-3xl font-bold">
               {fromClaim ? 'Log in or create a free account' : 'Welcome back'}
             </h1>
             <p className="mt-2 text-ink-muted">

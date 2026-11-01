@@ -2,15 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --font-sans / --font-display are injected by next/font (see src/app/layout.tsx);
-   the Tailwind fontFamily config carries a Lato/system fallback stack. */
+/* --font-sans / --font-display are injected by next/font (see src/app/layout.tsx). */
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    touch-action: manipulation;
   }
   body {
-    @apply bg-white text-ink antialiased;
+    @apply bg-brand-50 text-ink antialiased;
     font-feature-settings: 'kern';
   }
   h1, h2, h3, h4 {
@@ -21,23 +21,23 @@
 @layer components {
   /* Buttons ---------------------------------------------------------------- */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3
-           text-sm font-semibold transition-all duration-150
+    @apply inline-flex min-h-tap cursor-pointer items-center justify-center gap-2
+           rounded-xl px-5 py-3 text-base font-semibold transition-colors duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400
-           focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
+           disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700
-           hover:shadow-card-hover active:scale-[.98];
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
   }
   .btn-secondary {
-    @apply btn bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50;
+    @apply btn bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50 hover:ring-brand-300;
   }
   .btn-success {
-    @apply btn bg-success-500 text-white hover:bg-success-600 active:scale-[.98];
+    @apply btn bg-success-500 text-white hover:bg-success-600 active:bg-success-700;
   }
   .btn-ghost {
-    @apply btn text-ink-muted hover:bg-gray-100;
+    @apply btn text-ink-muted hover:bg-white hover:text-ink;
   }
 
   /* Badges ----------------------------------------------------------------- */
@@ -47,29 +47,42 @@
   .badge-green { @apply badge bg-success-50 text-success-700; }
   .badge-red { @apply badge bg-danger-50 text-danger-700; }
   .badge-brand { @apply badge bg-brand-100 text-brand-700; }
-  .badge-gray { @apply badge bg-gray-100 text-gray-600; }
+  .badge-gray { @apply badge bg-white text-ink-muted ring-1 ring-slate-200; }
+  .badge-gold { @apply badge bg-gold-50 text-gold-700; }
 
-  /* Settlement / lawsuit card (design carried over from original site) ----- */
+  /* Settlement / lawsuit card --------------------------------------------- */
   .settlement-card {
-    @apply flex flex-col rounded-2xl border-t-4 border-brand-400 bg-white
-           p-5 shadow-card transition-all duration-200 hover:-translate-y-1
-           hover:shadow-card-hover;
+    @apply flex flex-col rounded-2xl border border-slate-200 bg-white
+           p-5 shadow-card transition-colors duration-200
+           hover:border-brand-300 hover:shadow-card-hover;
   }
 
   .container-page {
-    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+    @apply mx-auto w-full max-w-5xl px-5 sm:px-6;
   }
   .container-narrow {
-    @apply mx-auto w-full max-w-3xl px-5 sm:px-8;
+    @apply mx-auto w-full max-w-xl px-5 sm:px-6;
   }
 
   .field-label {
-    @apply mb-1.5 block text-sm font-medium text-ink;
+    @apply mb-1.5 block text-sm font-semibold text-ink;
   }
   .field-input {
-    @apply w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-ink
-           shadow-sm outline-none transition focus:border-brand-400
+    @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-ink
+           shadow-sm outline-none transition duration-200 focus:border-brand-500
            focus:ring-2 focus:ring-brand-100;
+  }
+
+  .nav-link {
+    @apply rounded-md text-sm font-semibold text-ink-muted transition-colors duration-200
+           hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-brand-400;
+  }
+
+  .text-link {
+    @apply rounded font-semibold text-brand-700 underline-offset-2 transition-colors duration-200
+           hover:text-brand-800 hover:underline focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-brand-400;
   }
 }
 
@@ -78,10 +91,6 @@
   @apply animate-fade-up;
 }
 
-/* ---------------------------------------------------------------------------
-   Shared motion vocabulary (used by the polished hero + dashboard surfaces).
-   Staggered page-load reveals: wrap children and set --i per item.
-   --------------------------------------------------------------------------- */
 @keyframes notif-in {
   0% { opacity: 0; transform: translateY(-12px) scale(0.96); }
   60% { opacity: 1; transform: translateY(2px) scale(1.01); }
@@ -94,13 +103,11 @@
 .animate-notif { animation: notif-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-float { animation: float-soft 5s ease-in-out infinite; }
 
-/* Staggered reveal: parent gets .stagger, children animate with an index delay. */
 .stagger > * {
   animation: fade-up 0.6s ease-out both;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
 
-/* Respect users who prefer less motion. */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.001ms !important;

@@ -1,10 +1,14 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * ClaimMatch design system.
- * Palette carried over from the original settlement-card UI:
- *   brand purple (#a463f2 / #5521b5), success green (#00ab6b),
- *   plus a neutral slate scale for text/surfaces.
+ * Public-site design system (UI UX Pro Max):
+ *   Style:    Minimalism & Swiss Style
+ *   Pattern:  Trust & Authority + Conversion
+ *   Palette:  Banking / traditional finance (navy + trust blue + gold)
+ *   Fonts:    Corporate Trust — Lexend + Source Sans 3
+ *
+ * Light surfaces only. CTA uses navy; gold is reserved for small emphasis
+ * (payout figures, badges). Avoid AI purple/pink gradients.
  */
 const config: Config = {
   content: [
@@ -16,37 +20,48 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#f6f0ff',
-          100: '#ede0ff',
-          200: '#dcc4ff',
-          300: '#c39bff',
-          400: '#a463f2',
-          500: '#8b3ee8',
-          600: '#7526d1',
-          700: '#5521b5',
-          800: '#471b93',
-          900: '#3b1878',
+          50: '#F4F7FB',
+          100: '#E6EEF6',
+          200: '#C5D4E6',
+          300: '#8FA8C4',
+          400: '#5B7DA3',
+          500: '#2E5278',
+          600: '#1E3A5F',
+          700: '#16304E',
+          800: '#0F243C',
+          900: '#0A1628',
+        },
+        cta: {
+          50: '#EFF6FF',
+          600: '#1D4ED8',
+          700: '#1E40AF',
+        },
+        gold: {
+          50: '#FFFBEB',
+          100: '#FEF3C7',
+          600: '#B45309',
+          700: '#92400E',
         },
         success: {
-          50: '#def7ec',
-          100: '#bcf0da',
-          500: '#00ab6b',
-          600: '#03835a',
-          700: '#03543f',
+          50: '#F0FDF4',
+          100: '#DCFCE7',
+          500: '#16A34A',
+          600: '#15803D',
+          700: '#166534',
         },
         danger: {
-          50: '#fde8e8',
-          500: '#e02424',
-          700: '#9b1c1c',
+          50: '#FEF2F2',
+          500: '#DC2626',
+          700: '#B91C1C',
         },
         ink: {
-          DEFAULT: '#1a202c',
-          muted: '#4a5568',
-          soft: '#718096',
+          DEFAULT: '#0F172A',
+          muted: '#334155',
+          soft: '#475569',
         },
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Lato', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'Source Sans 3', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
@@ -54,8 +69,14 @@ const config: Config = {
         '2xl': '1rem',
       },
       boxShadow: {
-        card: '0 5px 20px 0 rgba(24,24,24,.08)',
-        'card-hover': '0 12px 32px 0 rgba(85,33,181,.14)',
+        card: '0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12)',
+        'card-hover': '0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 16px 32px -12px rgba(30, 58, 95, 0.18)',
+      },
+      minHeight: {
+        tap: '44px',
+      },
+      minWidth: {
+        tap: '44px',
       },
       keyframes: {
         'fade-up': {

@@ -86,7 +86,7 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero ---------------------------------------------------------------- */}
-      <section className="bg-gradient-to-b from-brand-50 via-white to-white">
+      <section className="bg-brand-50">
         <div className="container-page py-16 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <span className="badge-brand mx-auto gap-1.5">

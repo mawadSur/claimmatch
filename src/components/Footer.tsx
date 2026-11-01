@@ -1,30 +1,25 @@
 import Link from 'next/link';
-import { Scale } from 'lucide-react';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
+import { SiteLogo } from './SiteLogo';
 
-const LINK = 'rounded hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
-const INLINE_LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
+const LINK =
+  'inline-flex min-h-tap items-center rounded hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
+const INLINE_LINK =
+  'font-semibold text-brand-700 underline decoration-brand-200 underline-offset-2 hover:text-brand-800';
 
 export function Footer() {
   const contact = legalContact();
 
   return (
-    <footer className="mt-20 border-t border-gray-100 bg-gray-50">
+    <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="container-page py-12">
-        <div className="grid gap-10 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 font-display text-lg font-extrabold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
-                <Scale className="h-4 w-4" aria-hidden />
-              </span>
-              <span>
-                Claim<span className="text-brand-600">Match</span>
-              </span>
-            </Link>
-            <p className="mt-3 max-w-sm text-sm text-ink-muted">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="sm:col-span-2">
+            <SiteLogo size="sm" />
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-ink-muted">
               {flags.feeDisclosure()
                 ? 'A claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Official filing stays free.'
                 : 'A free claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Free during beta.'}
@@ -33,8 +28,8 @@ export function Footer() {
 
           <nav aria-label="Product">
             <h2 className="text-sm font-semibold text-ink">Product</h2>
-            <ul className="mt-3 space-y-2 text-sm text-ink-muted">
-              <li><Link href="/lawsuits" className={LINK}>Browse settlements</Link></li>
+            <ul className="mt-3 space-y-1 text-sm text-ink-muted">
+              <li><Link href="/lawsuits" className={LINK}>Settlements</Link></li>
               {flags.noticeLookup() && (
                 <li><Link href="/check" className={LINK}>Check a notice</Link></li>
               )}
@@ -43,16 +38,16 @@ export function Footer() {
                 <li><Link href={RECENTLY_CLOSED_PATH} className={LINK}>Recently closed</Link></li>
               )}
               <li><Link href="/settlements/new" className={LINK}>New settlements</Link></li>
-              <li><Link href="/settlements/category/data-breach" className={LINK}>Data breach settlements</Link></li>
               <li><Link href="/how-it-works" className={LINK}>How it works</Link></li>
               <li><Link href="/pricing" className={LINK}>Pricing</Link></li>
+              <li><Link href="/how-we-make-money" className={LINK}>How we make money</Link></li>
               <li><Link href="/signup" className={LINK}>Create a free account</Link></li>
             </ul>
           </nav>
 
           <nav aria-label="Company">
             <h2 className="text-sm font-semibold text-ink">Company</h2>
-            <ul className="mt-3 space-y-2 text-sm text-ink-muted">
+            <ul className="mt-3 space-y-1 text-sm text-ink-muted">
               <li><Link href="/about" className={LINK}>About</Link></li>
               <li><Link href="/trust" className={LINK}>Is this legit?</Link></li>
               <li><Link href="/privacy" className={LINK}>Privacy</Link></li>
@@ -64,7 +59,7 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="mt-10 space-y-3 border-t border-gray-200 pt-6 text-xs leading-relaxed text-ink-muted">
+        <div className="mt-10 space-y-3 border-t border-slate-200 pt-6 text-xs leading-relaxed text-ink-muted">
           <p>
             Settlement listings include data from{' '}
             <a

@@ -165,9 +165,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <JsonLd data={settlementArticleJsonLd(lawsuit)} />
 
       {/* Header ------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
-        <div className="container-page relative py-10 sm:py-14">
+      <section className="bg-brand-50">
+        <div className="container-page py-10 sm:py-14">
           <PageBreadcrumbs
             items={[
               { name: 'Home', href: '/' },
@@ -198,7 +197,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <VerifiedBadge lawsuit={lawsuit} />
           </div>
 
-          <h1 className="mt-4 max-w-3xl text-3xl font-extrabold leading-tight sm:text-4xl">
+          <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight sm:text-4xl">
             {lawsuit.title}
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
@@ -247,7 +246,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       {/* Body --------------------------------------------------------------- */}
       <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <dl className="grid gap-4 rounded-2xl bg-gray-50 p-5 sm:grid-cols-2">
+          <dl className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
             {deadlineText(lawsuit) && (
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
@@ -284,7 +283,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
           )}
 
           {/* Neutral, not a success box: the text is unverified, like the claim page's Step 1. */}
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-bold">Who may qualify</h2>
             {eligibility ? (
               <>
@@ -306,7 +305,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 href={official.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1 rounded text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                    className="text-link mt-3 inline-flex items-center gap-1"
               >
                 Read the rules on the official site
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -417,7 +416,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
         {/* Sidebar ---------------------------------------------------------- */}
         <aside className="lg:col-span-1">
-          <div className="sticky top-24 rounded-2xl border-t-4 border-brand-400 bg-white p-6 shadow-card">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             {open ? (
               <>
                 <h2 className="text-lg font-bold">Check if you qualify</h2>

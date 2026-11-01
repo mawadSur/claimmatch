@@ -33,12 +33,12 @@ export function HowWeMakeMoney({
       ];
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-card sm:p-10">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
       <div className="flex items-center gap-3">
         <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
           <HandCoins className="h-5 w-5" />
         </div>
-        <Heading className="text-2xl font-extrabold">How ClaimMatch makes money</Heading>
+        <Heading className="text-2xl font-bold">How ClaimMatch makes money</Heading>
       </div>
       <ul className="mt-6 space-y-3 text-sm leading-relaxed text-ink-muted">
         {points.map((t) => (
@@ -52,7 +52,7 @@ export function HowWeMakeMoney({
         <FeeDisclosure />
       </div>
       <p className="mt-6 text-xs text-ink-soft">
-        <Link href="/pricing" className="font-semibold text-brand-700 hover:text-brand-800">
+        <Link href="/pricing" className="text-link">
           Pricing
         </Link>
       </p>

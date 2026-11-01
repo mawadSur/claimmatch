@@ -15,7 +15,7 @@ export function AnswerBlock({
   official: CatalogLink | null;
 }) {
   return (
-    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
+    <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <h2 className="text-lg font-bold">The short answer</h2>
       <p className="mt-1 text-sm text-ink-muted">
         From our listing. Confirm every detail on the official notice before you file.
@@ -63,7 +63,7 @@ export function MissingDetailsBlock({
   if (missing.length === 0) return null;
   const list = missing.join(', ');
   return (
-    <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-ink">
+    <div className="mt-4 rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
       <p>
         We don&apos;t have these details yet: {list}. Check the official notice
         {official ? (

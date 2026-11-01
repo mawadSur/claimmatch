@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { flags } from '@/lib/flags';
 
@@ -25,25 +25,19 @@ const DISCLOSED_BULLETS = [
 
 function AuthFormFallback() {
   return (
-    <div className="h-96 animate-pulse rounded-2xl border border-gray-100 bg-white shadow-card" />
+    <div className="h-96 animate-pulse rounded-2xl border border-slate-200 bg-white shadow-card" />
   );
 }
-
-const LEGAL_LINK =
-  'font-semibold text-brand-700 underline hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
 
 export default function SignupPage() {
   const bullets = flags.feeDisclosure() ? DISCLOSED_BULLETS : BETA_BULLETS;
 
   return (
-    <section className="bg-gradient-to-b from-brand-50 via-white to-white">
-      <div className="container-narrow py-16 sm:py-24">
+    <section className="bg-brand-50">
+      <div className="container-narrow py-14 sm:py-20">
         <div className="mx-auto max-w-md">
           <div className="text-center">
-            <span className="badge-brand mx-auto gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Free claim assistant
-            </span>
-            <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl">
+            <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
               Create your free account
             </h1>
             <p className="mt-3 text-ink-muted">
@@ -69,11 +63,11 @@ export default function SignupPage() {
 
           <p className="mt-4 text-center text-sm text-ink-muted">
             By creating an account, you agree to the{' '}
-            <Link href="/terms" className={LEGAL_LINK}>
+            <Link href="/terms" className="text-link">
               Terms
             </Link>{' '}
             and{' '}
-            <Link href="/privacy" className={LEGAL_LINK}>
+            <Link href="/privacy" className="text-link">
               Privacy Policy
             </Link>
             .
