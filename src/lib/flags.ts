@@ -148,4 +148,9 @@ export const flags = {
    * name for the same cards; either flag shows them.
    */
   homeWedgeEntries: () => on('HOME_WEDGE_ENTRIES_ENABLED'),
+  /**
+   * Home hero primary CTA goes to /signup instead of /lawsuits.
+   * Off (default): "See open settlements" keeps the current browse path.
+   */
+  homeAccountFirstCta: () => on('HOME_ACCOUNT_FIRST_CTA_ENABLED'),
 };

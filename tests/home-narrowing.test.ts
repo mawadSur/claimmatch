@@ -33,6 +33,8 @@ describe('C17 home narrowing', () => {
     const off = renderToStaticMarkup(await HomePage());
     expect(off).not.toContain('No proof required');
     expect(off).not.toContain('Start with a type of settlement');
+    expect(off).toContain('See open settlements');
+    expect(off).toContain('href="/lawsuits"');
 
     listed.lawsuits = [
       makeLawsuit({ proof: 'no' }, { category: 'Data Breach', title: 'Acme Breach' }),

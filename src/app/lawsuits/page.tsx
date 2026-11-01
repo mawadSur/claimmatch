@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, CalendarClock, RefreshCw, SearchX } from 'lucide-react';
+import { AlertTriangle, RefreshCw, SearchX } from 'lucide-react';
 import {
   catalogPath,
   catalogQueryString,
@@ -120,14 +120,9 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
     <>
       {prevHref ? <link rel="prev" href={pageUrl(prevHref)} /> : null}
       {nextHref ? <link rel="next" href={pageUrl(nextHref)} /> : null}
-      {/* Header ------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-200/40 blur-3xl" />
-        <div className="container-page relative py-12 sm:py-16">
-          <span className="badge-brand gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" /> Updated daily
-          </span>
-          <h1 className="mt-4 text-4xl font-extrabold leading-tight sm:text-5xl">
+      <section className="bg-brand-50">
+        <div className="container-page py-10 sm:py-14">
+          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
             Open settlements
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
@@ -141,8 +136,8 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           </div>
 
           <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
-            <div className="text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
+            <div className="text-sm text-amber-950">
               <p className="font-bold">Unverified: check the official site</p>
               <p className="mt-1">
                 These listings come from public sources, and we haven’t checked them
@@ -154,11 +149,10 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
         </div>
       </section>
 
-      {/* Filters + results -------------------------------------------------- */}
       <section className="container-page py-10">
         <Suspense
           fallback={
-            <div className="h-[7.5rem] rounded-2xl border border-gray-100 bg-white shadow-card" />
+            <div className="h-[7.5rem] rounded-2xl border border-slate-200 bg-white shadow-card" />
           }
         >
           <LawsuitFilters categories={categories} />
@@ -228,7 +222,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           />
         ) : (
           <>
-            <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-8 grid gap-5 sm:grid-cols-2">
               {paged.items.map((l) => (
                 <li key={l.id}>
                   <LawsuitCard lawsuit={l} />
@@ -255,7 +249,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               href="https://settlesignal.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+              className="text-link"
             >
               SettleSignal (settlesignal.com)
             </a>{' '}
@@ -264,7 +258,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               href="https://creativecommons.org/licenses/by/4.0/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+              className="text-link"
             >
               CC BY 4.0
             </a>
@@ -330,7 +324,7 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
+    <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-brand-700">
         {icon}
       </div>

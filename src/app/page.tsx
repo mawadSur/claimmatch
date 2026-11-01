@@ -1,16 +1,20 @@
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight, Search, ShieldCheck, ListChecks, ExternalLink, ClipboardCheck,
-  CheckCircle2, XCircle, Info, AlertCircle, HandCoins, Scale,
+  ArrowRight,
+  CheckCircle2,
+  HandCoins,
+  Scale,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
-import { LawsuitCard } from '@/components/LawsuitCard';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
+import { HomeSettlementList } from '@/components/home/HomeSettlementList';
+import { HomeFaq } from '@/components/home/HomeFaq';
+import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
-import { publicCostNote } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { homeWedgeAvailability, homeWedgesEnabled } from '@/lib/home-wedges';
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -19,39 +23,17 @@ import type { Metadata } from 'next';
 
 const STEPS = [
   {
-    icon: Search,
     title: 'Find an open settlement',
-    body: 'Browse settlements that are open for claims and see their deadlines.',
+    body: 'Browse settlements that are taking claims, with the payout and deadline we have on file.',
   },
   {
-    icon: ListChecks,
-    title: 'Check if you qualify',
-    body: 'Read who qualifies on the official notice. File only if it describes you.',
+    title: 'Check the official notice',
+    body: 'Read who qualifies on the official site, then file there yourself. Filing is free.',
   },
   {
-    icon: ExternalLink,
-    title: 'File on the official site',
-    body: 'Fill out the claim form on the settlement’s official website. Filing is free.',
-  },
-  {
-    icon: ClipboardCheck,
     title: 'Keep track here',
-    body: 'Tell us when you have filed and add your confirmation number. Your claims stay in one list.',
+    body: 'Save the confirmation number the official site gives you. Your claims stay in one list.',
   },
-];
-
-const WE_DO = [
-  'List settlements that are open for claims, with their deadlines',
-  'Link to the official settlement site so you can check details and file',
-  'Keep track of the claims you tell us you filed',
-  'Stay free during beta',
-];
-
-const WE_DO_NOT = [
-  'File or submit claims for you',
-  'Handle settlement payments',
-  'Give legal advice or decide whether you qualify',
-  'Sell your personal information',
 ];
 
 const homeMeta = publicPageMetadata({
@@ -81,135 +63,93 @@ async function loadHomeCatalog(): Promise<{ lawsuits: Lawsuit[]; failed: boolean
 
 export default async function HomePage() {
   const catalog = await loadHomeCatalog();
-  const closing = { rows: pickClosingSoon(catalog.lawsuits, 3), failed: catalog.failed };
+  const closing = { rows: pickClosingSoon(catalog.lawsuits, 5), failed: catalog.failed };
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
-  const weDo = disclose
-    ? WE_DO.map((t) =>
-        t === 'Stay free during beta'
-          ? 'Official filing on the administrator’s site stays free'
-          : t,
-      )
-    : WE_DO;
+  const accountFirst = flags.homeAccountFirstCta();
 
   return (
     <>
       <CaptureOnce event="landing_viewed" />
-      {/* Hero ---------------------------------------------------------------- */}
-      <section className="relative isolate overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white">
-        <div className="container-page relative py-16 sm:py-20 lg:py-24">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
-            <div className="stagger max-w-xl text-center lg:text-left">
-              <span
-                style={{ '--i': 0 } as CSSProperties}
-                className="badge-brand mx-auto gap-1.5 ring-1 ring-inset ring-brand-200/70 lg:mx-0"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Free claim assistant
-              </span>
 
-              <h1
-                style={{ '--i': 1 } as CSSProperties}
-                className="mt-5 font-display text-[2.4rem] font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.6rem]"
+      <section className="bg-brand-50">
+        <div className="container-page py-14 sm:py-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold text-brand-700">
+              {disclose ? 'Official filing stays free' : 'Free during beta'}
+            </p>
+            <h1 className="mt-3 font-display text-[2.25rem] font-bold leading-[1.1] tracking-tight sm:text-5xl">
+              Find settlement money that may be yours
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-muted">
+              Check open class-action settlements, file on the official site, and
+              keep track of your claims here.
+            </p>
+            <div className="mt-8">
+              <Link
+                href={accountFirst ? '/signup' : '/lawsuits'}
+                className="btn-primary w-full sm:w-auto"
               >
-                Find open settlements.{' '}
-                <span className="text-brand-600">File on the official site.</span>
-              </h1>
-
-              <p
-                style={{ '--i': 2 } as CSSProperties}
-                className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-ink-muted lg:mx-0"
-              >
-                Check if you qualify on the official notice, file your claim on the
-                settlement’s own website, then keep track of it here. Over the official
-                site alone, ClaimMatch adds the official link, the deadline we have, a
-                note on what we could not verify, copy-ready details, and a claim tracker.
-              </p>
-
-              <div
-                style={{ '--i': 3 } as CSSProperties}
-                className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start"
-              >
-                <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
-                  <Search className="h-4 w-4" aria-hidden /> Browse open settlements
-                </Link>
-                <Link href="/signup" className="btn-secondary w-full sm:w-auto">
-                  Create a free account <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </div>
-
-              <ul
-                style={{ '--i': 4 } as CSSProperties}
-                className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-muted lg:justify-start"
-              >
-                {[
-                  {
-                    icon: CheckCircle2,
-                    text: disclose ? 'Official filing stays free' : 'Free during beta',
-                  },
-                  { icon: HandCoins, text: 'We never handle settlement payments' },
-                  { icon: Scale, text: 'Not a law firm' },
-                ].map(({ icon: Icon, text }) => (
-                  <li key={text} className="inline-flex items-center gap-1.5">
-                    <Icon className="h-4 w-4 text-brand-600" aria-hidden /> {text}
-                  </li>
-                ))}
-              </ul>
+                {accountFirst ? 'Create a free account' : 'See open settlements'}
+              </Link>
             </div>
-
-            {/* How a claim works, at a glance ----------------------------------- */}
-            <div
-              className="reveal mx-auto w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-card sm:p-8"
-              aria-labelledby="steps-heading"
-              role="region"
-            >
-              <h2 id="steps-heading" className="text-lg font-bold">
-                How it works
-              </h2>
-              <ol className="mt-5 space-y-5">
-                {STEPS.map((s, i) => (
-                  <li key={s.title} className="flex items-start gap-4">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-700">
-                      <s.icon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold">
-                        <span className="sr-only">Step {i + 1}: </span>
-                        {s.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-ink-muted">{s.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-6 rounded-xl bg-gray-50 p-3 text-sm text-ink-muted">
-                {publicCostNote(disclose)}
-              </p>
-            </div>
+            <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-muted">
+              {[
+                {
+                  icon: CheckCircle2,
+                  text: disclose ? 'Official filing stays free' : 'Free during beta',
+                },
+                { icon: HandCoins, text: 'We never handle settlement payments' },
+                { icon: Scale, text: 'Not a law firm' },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="inline-flex items-center gap-1.5">
+                  <Icon className="h-4 w-4 text-brand-600" aria-hidden /> {text}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* Closing soon --------------------------------------------------------- */}
-      <section className="bg-gray-50 py-16 sm:py-20" aria-labelledby="closing-heading">
+      <section className="bg-white py-16 sm:py-20" aria-labelledby="steps-heading">
+        <div className="container-page">
+          <h2 id="steps-heading" className="font-display text-3xl font-bold sm:text-4xl">
+            How it works
+          </h2>
+          <ol className="mt-10 grid gap-8 sm:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <li key={step.title}>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+                  {i + 1}
+                </span>
+                <h3 className="mt-4 text-lg font-semibold">
+                  <span className="sr-only">Step {i + 1}: </span>
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="bg-brand-50 py-16 sm:py-20" aria-labelledby="open-heading">
         <div className="container-page">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 id="closing-heading" className="font-display text-3xl font-extrabold sm:text-4xl">
-                Closing soon
+              <h2 id="open-heading" className="font-display text-3xl font-bold sm:text-4xl">
+                Open settlements
               </h2>
               <p className="mt-2 text-ink-muted">
-                Open settlements with the nearest claim deadlines.
+                Payout amounts and deadlines as the listing states them.
               </p>
             </div>
-            <Link
-              href="/settlements/closing-soon"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800"
-            >
-              See settlements closing soon <ArrowRight className="h-4 w-4" aria-hidden />
+            <Link href="/lawsuits" className="text-link inline-flex min-h-tap items-center gap-1">
+              See all settlements <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
 
-          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
             <Info className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
             <p>
               <strong className="font-semibold">Unverified: check the official site.</strong>{' '}
@@ -222,7 +162,7 @@ export default async function HomePage() {
           {closing.failed ? (
             <div
               role="alert"
-              className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center"
+              className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center"
             >
               <AlertCircle className="h-8 w-8 text-danger-700" aria-hidden />
               <p className="mt-3 font-semibold text-ink">
@@ -234,7 +174,7 @@ export default async function HomePage() {
               </Link>
             </div>
           ) : closing.rows.length === 0 ? (
-            <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+            <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
               <p className="font-semibold text-ink">No deadlines coming up right now.</p>
               <p className="mt-1 text-sm text-ink-muted">
                 New settlements open all the time. See everything that is open today.
@@ -244,12 +184,8 @@ export default async function HomePage() {
               </Link>
             </div>
           ) : (
-            <div className="stagger mt-8 grid gap-6 md:grid-cols-3">
-              {closing.rows.map((l, i) => (
-                <div key={l.id} style={{ '--i': i } as CSSProperties}>
-                  <LawsuitCard lawsuit={l} />
-                </div>
-              ))}
+            <div className="mt-8">
+              <HomeSettlementList lawsuits={closing.rows} />
             </div>
           )}
         </div>
@@ -264,74 +200,13 @@ export default async function HomePage() {
         />
       )}
 
-      {/* What we do and don't do --------------------------------------------- */}
-      <section className="container-page py-16 sm:py-20" aria-labelledby="honest-heading">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 id="honest-heading" className="font-display text-3xl font-extrabold sm:text-4xl">
-            What ClaimMatch does, and doesn’t do
-          </h2>
-          <p className="mt-3 text-ink-muted">
-            {disclose
-              ? 'ClaimMatch is a claim assistant. You stay in charge of every claim.'
-              : 'ClaimMatch is a free claim assistant. You stay in charge of every claim.'}
-          </p>
-        </div>
-
-        <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
-            <h3 className="text-lg font-bold">We do</h3>
-            <ul className="mt-4 space-y-3">
-              {weDo.map((t) => (
-                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-600" aria-hidden />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
-            <h3 className="text-lg font-bold">We don’t</h3>
-            <ul className="mt-4 space-y-3">
-              {WE_DO_NOT.map((t) => (
-                <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
-                  <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger-700" aria-hidden />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-ink-muted">
-          Want the details?{' '}
-          <Link href="/how-it-works" className="font-semibold text-brand-700 underline hover:text-brand-800">
-            How it works
-          </Link>{' '}
-          ·{' '}
-          <Link href="/trust" className="font-semibold text-brand-700 underline hover:text-brand-800">
-            Is ClaimMatch legit?
-          </Link>
-        </p>
-      </section>
-
-      {/* CTA ------------------------------------------------------------------ */}
-      <section className="bg-gradient-to-b from-white to-brand-50 py-16 sm:py-20">
-        <div className="container-narrow text-center">
-          <h2 className="font-display text-3xl font-extrabold sm:text-4xl">Ready to look?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            See which settlements are open now, or create a free account to keep track
-            of the claims you file.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
-              <Search className="h-4 w-4" aria-hidden /> Browse open settlements
-            </Link>
-            <Link href="/signup" className="btn-secondary w-full sm:w-auto">
-              Create a free account
-            </Link>
-          </div>
+      <section className="bg-white py-16 sm:py-20">
+        <div className="container-page">
+          <HowWeMakeMoney />
         </div>
       </section>
+
+      <HomeFaq />
     </>
   );
 }

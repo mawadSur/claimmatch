@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, Lato } from 'next/font/google';
+import { Lexend, Source_Sans_3 } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { SITE } from '@/lib/utils';
@@ -9,16 +9,15 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-// Distinctive display face for headings, paired with a clean, readable body
-// sans — deliberately not the generic Inter default.
-const display = Bricolage_Grotesque({
+// Corporate Trust pairing (UI UX Pro Max): Lexend for headings, Source Sans 3 for body.
+const display = Lexend({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
 });
-const body = Lato({
+const body = Source_Sans_3({
   subsets: ['latin'],
-  weight: ['400', '700', '900'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
   display: 'swap',
 });
@@ -72,14 +71,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-screen flex-col bg-brand-50">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLd(orgJsonLd) }}
         />
         <PostHogProvider>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-700 focus:shadow-card focus:outline-none focus:ring-2 focus:ring-brand-400"
+          >
+            Skip to content
+          </a>
           <Nav />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
           <Footer />
         </PostHogProvider>
         <Analytics />

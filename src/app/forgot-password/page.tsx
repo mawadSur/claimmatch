@@ -14,7 +14,7 @@ export default async function ForgotPasswordPage({
 }) {
   const linkExpired = (await searchParams).link === 'expired';
   return (
-    <section className="bg-gradient-to-b from-brand-50 via-white to-white">
+    <section className="bg-brand-50">
       <div className="container-narrow py-16 sm:py-24">
         <div className="mx-auto max-w-md">
           <h1 className="text-center text-3xl font-extrabold">Forgot your password?</h1>

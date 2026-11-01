@@ -22,7 +22,7 @@ export function FeeDisclosure({
     return (
       <p className={className || 'text-sm text-ink-muted'}>
         {body}{' '}
-        <Link href="/how-we-make-money" className="font-semibold text-brand-700 hover:text-brand-800">
+        <Link href="/how-we-make-money" className="text-link">
           How ClaimMatch makes money
         </Link>
       </p>
@@ -30,12 +30,12 @@ export function FeeDisclosure({
   }
 
   return (
-    <div className={className || 'rounded-2xl border border-brand-100 bg-brand-50/60 p-5'}>
+    <div className={className || 'rounded-2xl border border-slate-200 bg-brand-50 p-5'}>
       <p className="text-sm font-semibold text-ink">Cost</p>
       <p className="mt-1 text-sm leading-relaxed text-ink-muted">{body}</p>
       <Link
         href="/how-we-make-money"
-        className="mt-3 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-800"
+        className="text-link mt-3 inline-flex text-sm"
       >
         How ClaimMatch makes money
       </Link>

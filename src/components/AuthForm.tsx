@@ -192,7 +192,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   if (status === 'check-email') {
     return (
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-success-50 text-success-600">
           <MailCheck className="h-6 w-6" />
         </div>
@@ -216,7 +216,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               setStatus('idle');
               setError('');
             }}
-            className="font-semibold text-brand-700 hover:text-brand-800"
+            className="text-link"
           >
             try a different email
           </button>
@@ -229,7 +229,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const loading = status === 'loading';
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {!isSignup && confirmed && (
           <div
@@ -326,7 +326,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </div>
           {!isSignup && (
             <p className="mt-2 text-right text-sm">
-              <Link href="/forgot-password" className="font-semibold text-brand-700 hover:underline">
+              <Link href="/forgot-password" className="text-link">
                 Forgot password?
               </Link>
             </p>
@@ -356,7 +356,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {isSignup ? 'Already have an account?' : 'New to ClaimMatch?'}{' '}
         <Link
           href={switchHref}
-          className="font-semibold text-brand-700 hover:text-brand-800"
+          className="text-link"
         >
           {isSignup ? 'Log in' : 'Create an account'}
         </Link>

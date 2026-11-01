@@ -78,7 +78,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
   const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline || activeProofNo);
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-card sm:p-5">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
       {/* Search input */}
       <div className="relative">
         <Search
@@ -106,7 +106,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
             type="button"
             onClick={() => setQ('')}
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-ink-muted hover:bg-gray-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+            className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 cursor-pointer place-items-center rounded-full text-ink-muted hover:bg-brand-50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -148,7 +148,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
             setQ('');
             commit({ q: '', category: '', hasDeadline: false, proofNo: false });
           }}
-          className="mt-3 inline-flex items-center gap-1 rounded text-xs font-semibold text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+          className="text-link mt-3 inline-flex min-h-tap items-center gap-1 text-sm"
         >
           <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear all filters
         </button>
@@ -172,10 +172,10 @@ function Pill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-full px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2',
+        'min-h-tap cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2',
         active
-          ? 'bg-brand-600 text-white shadow-sm'
-          : 'bg-white text-ink-muted ring-1 ring-gray-200 hover:bg-brand-50 hover:text-brand-700',
+          ? 'bg-brand-600 text-white'
+          : 'bg-white text-ink-muted ring-1 ring-slate-200 hover:bg-brand-50 hover:text-brand-700',
       )}
     >
       {children}
