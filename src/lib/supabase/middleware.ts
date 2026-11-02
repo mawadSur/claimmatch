@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { signedOutClaimHref } from '@/lib/signup-context';
 
 /**
  * Refreshes the Supabase auth session on every request and guards
@@ -22,16 +23,10 @@ export async function updateSession(request: NextRequest) {
   // Back to the same page after logging in, query included (for example
   // /onboarding?next=/claim/x). Login and sign-up check it with safeNextPath.
   const nextAfterLogin = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  const toLogin = () => {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    redirectUrl.search = '';
-    redirectUrl.searchParams.set('next', nextAfterLogin);
-    return NextResponse.redirect(redirectUrl);
-  };
+  const toAuth = () => NextResponse.redirect(new URL(signedOutClaimHref(nextAfterLogin), request.nextUrl.origin));
 
   if (!url || !key) {
-    if (isProtected) return toLogin();
+    if (isProtected) return toAuth();
     return supabaseResponse;
   }
 
@@ -54,7 +49,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && isProtected) return toLogin();
+  if (!user && isProtected) return toAuth();
 
   return supabaseResponse;
 }

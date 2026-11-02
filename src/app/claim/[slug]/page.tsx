@@ -14,8 +14,10 @@ import {
 import { UUID_RE, claimContext, loadSettlementBySlug, logClaimsError } from '@/lib/claims-server';
 import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
+import { signedOutClaimHref } from '@/lib/signup-context';
 import { assistedFilingAllowed } from '@/lib/filing/queue';
 import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
+import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
 import { Disclaimer } from '@/components/Disclaimer';
 import type { Profile } from '@/lib/types';
 
@@ -39,7 +41,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/claim/${slug}`)}`);
+  if (!user) redirect(signedOutClaimHref(`/claim/${slug}`));
 
   const lookup = await loadSettlementBySlug(slug);
   // A failed read is not "taken down": someone coming back from the official
@@ -148,6 +150,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section className="container-narrow py-10 sm:py-12">
+      {flags.signupContext() ? <SignupContextReturned claimPath={`/claim/${settlement.slug}`} /> : null}
       {header}
       <div className="mt-6">
         <ClaimFlow

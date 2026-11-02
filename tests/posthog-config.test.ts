@@ -28,6 +28,8 @@ describe('PostHog App Router wiring', () => {
     expect(auth).toContain('posthog?.identify(userId)');
     expect(auth).not.toMatch(/identify\([^)]*email/);
     expect(auth).toContain('signup_completed');
+    expect(auth).toContain('signup_submitted');
+    expect(auth).toContain('signup_error');
     expect(auth).toContain('attributionMetadata');
   });
 
@@ -46,5 +48,9 @@ describe('PostHog App Router wiring', () => {
     expect(settlement).toContain('settlement_viewed');
     expect(report).toContain('claim_reported_filed');
     expect(admin).toContain("capture('share_link_created'");
+    expect(read('src/app/signup/page.tsx')).toContain('signup_started');
+    expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_started');
+    expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_completed');
+    expect(read('src/components/analytics/SignupContextReturned.tsx')).toContain('signup_context_returned');
   });
 });

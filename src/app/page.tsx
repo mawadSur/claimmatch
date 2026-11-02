@@ -14,6 +14,7 @@ import { HomeTrust } from '@/components/home/HomeTrust';
 import { Testimonials } from '@/components/home/Testimonials';
 import { HomeFaq } from '@/components/home/HomeFaq';
 import { HomeFinalCta } from '@/components/home/HomeFinalCta';
+import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import type { Screen } from '@/components/home/DeviceFrame';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
@@ -133,6 +134,7 @@ export default async function HomePage() {
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
   const accountFirst = flags.homeAccountFirstCta();
+  const previewOn = flags.matchPreview();
   // Live counts only when the catalog really loaded; never a made-up number.
   const stats = !catalog.failed && catalog.lawsuits.length > 0 ? homeStats(catalog.lawsuits) : null;
 
@@ -148,6 +150,7 @@ export default async function HomePage() {
 
       <HomeHero
         primary={primary}
+        extra={previewOn ? <MatchPreviewEntry variant="hero" /> : null}
         freeLabel={freeLabel}
         stats={stats}
         desktop={SCREENS.catalogDesktop}

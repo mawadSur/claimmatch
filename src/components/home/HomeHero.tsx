@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, ExternalLink, HandCoins } from 'lucide-react';
 import type { HomeStats } from '@/lib/home-stats';
@@ -14,6 +14,7 @@ import { CountUp } from './CountUp';
  */
 export function HomeHero({
   primary,
+  extra,
   freeLabel,
   stats,
   desktop,
@@ -21,6 +22,7 @@ export function HomeHero({
   mobile,
 }: {
   primary: { href: string; label: string };
+  extra?: ReactNode;
   freeLabel: string;
   stats: HomeStats | null;
   desktop: Screen;
@@ -81,6 +83,7 @@ export function HomeHero({
               <Link href="#how-it-works" className="btn-secondary px-6 text-base">
                 How it works
               </Link>
+              {extra}
             </div>
 
             <ul

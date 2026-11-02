@@ -16,6 +16,16 @@ import {
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
+import { rememberSignupContext } from '@/lib/signup-context';
+import {
+  MIN_PASSWORD_LENGTH,
+  firstSignupFieldError,
+  signupErrorCodeFromMessage,
+  signupFieldErrorCode,
+  validateSignupFields,
+  type SignupField,
+  type SignupFieldErrors,
+} from '@/lib/signup-validation';
 import { SITE } from '@/lib/utils';
 import {
   attributionMetadata,
@@ -29,8 +39,6 @@ import {
 
 type Mode = 'login' | 'signup';
 
-/** D44: new passwords are at least 10 characters (set the same in Supabase Auth). */
-const MIN_PASSWORD_LENGTH = 10;
 /** Don't leave the button spinning if Supabase or the next page hangs. */
 const AUTH_TIMEOUT_MS = 12_000;
 const AUTH_TIMEOUT_MESSAGE = 'This is taking too long. Check your connection and try again.';
@@ -81,12 +89,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'check-email'>('idle');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
 
   const isSignup = mode === 'signup';
   const switchParams = attributionQuery(attr);
   if (next) switchParams.set('next', next);
   const switchQuery = switchParams.toString();
   const switchHref = `${isSignup ? '/login' : '/signup'}${switchQuery ? `?${switchQuery}` : ''}`;
+
+  function captureSignupError(code: string) {
+    posthog?.capture('signup_error', { code });
+  }
 
   function identifyOnly(userId: string) {
     writeBrowserCookies(attr);
@@ -105,15 +118,32 @@ export function AuthForm({ mode }: { mode: Mode }) {
       .catch(() => undefined);
   }
 
+  function describedBy(field: SignupField, extra?: string) {
+    return [extra, fieldErrors[field] ? `${field}-error` : null].filter(Boolean).join(' ') || undefined;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    // The form has noValidate, so check the new password's length here.
-    if (isSignup && password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`);
-      return;
+    setFieldErrors({});
+
+    if (isSignup) {
+      const nextErrors = validateSignupFields({ fullName, email, password });
+      const first = firstSignupFieldError(nextErrors);
+      if (first) {
+        setFieldErrors(nextErrors);
+        setError(first.message);
+        captureSignupError(signupFieldErrorCode(first.field, first.message));
+        document.getElementById(first.field === 'full_name' ? 'full_name' : first.field)?.focus();
+        return;
+      }
     }
+
     setStatus('loading');
+    if (isSignup) {
+      rememberSignupContext(next);
+      posthog?.capture('signup_submitted');
+    }
 
     const supabase = createClient();
 
@@ -141,6 +171,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
         );
 
         if (signUpError) {
+          const code = signupErrorCodeFromMessage(signUpError.message);
+          captureSignupError(code);
           setError(signUpError.message);
           setStatus('idle');
           return;
@@ -181,11 +213,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       window.location.assign(next || '/dashboard');
     } catch (err) {
-      setError(
-        err instanceof Error && err.message === AUTH_TIMEOUT_MESSAGE
-          ? AUTH_TIMEOUT_MESSAGE
-          : 'Something went wrong. Please try again.',
-      );
+      const timeout = err instanceof Error && err.message === AUTH_TIMEOUT_MESSAGE;
+      if (isSignup) {
+        captureSignupError(timeout ? 'timeout' : 'unknown');
+      }
+      setError(timeout ? AUTH_TIMEOUT_MESSAGE : 'Something went wrong. Please try again.');
       setStatus('idle');
     }
   }
@@ -215,6 +247,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             onClick={() => {
               setStatus('idle');
               setError('');
+              setFieldErrors({});
             }}
             className="text-link"
           >
@@ -230,7 +263,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>
         {!isSignup && confirmed && (
           <div
             role="status"
@@ -253,15 +286,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </span>
           </div>
         )}
-        {error && (
-          <div
-            role="alert"
-            className="flex items-start gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700"
-          >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        <div aria-live="polite" className={error ? '' : 'min-h-0'}>
+          {error && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
 
         {isSignup && (
           <div>
@@ -277,11 +312,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 autoComplete="name"
                 required
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  if (fieldErrors.full_name) {
+                    setFieldErrors((prev) => ({ ...prev, full_name: undefined }));
+                  }
+                }}
                 placeholder="Jane Doe"
                 className="field-input pl-10"
+                aria-invalid={fieldErrors.full_name ? true : undefined}
+                aria-describedby={describedBy('full_name')}
               />
             </div>
+            {fieldErrors.full_name && (
+              <p id="full_name-error" className="mt-1.5 text-xs text-danger-700">
+                {fieldErrors.full_name}
+              </p>
+            )}
           </div>
         )}
 
@@ -298,11 +345,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
               autoComplete="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) {
+                  setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                }
+              }}
               placeholder="you@email.com"
               className="field-input pl-10"
+              aria-invalid={fieldErrors.email ? true : undefined}
+              aria-describedby={describedBy('email')}
             />
           </div>
+          {fieldErrors.email && (
+            <p id="email-error" className="mt-1.5 text-xs text-danger-700">
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         <div>
@@ -319,11 +378,28 @@ export function AuthForm({ mode }: { mode: Mode }) {
               required
               minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }
+              }}
               placeholder={isSignup ? `At least ${MIN_PASSWORD_LENGTH} characters` : 'Your password'}
               className="field-input pl-10"
+              aria-invalid={fieldErrors.password ? true : undefined}
+              aria-describedby={describedBy('password', isSignup ? 'password-hint' : undefined)}
             />
           </div>
+          {isSignup && (
+            <p id="password-hint" className="mt-1.5 text-xs text-ink-muted">
+              Use at least {MIN_PASSWORD_LENGTH} characters.
+            </p>
+          )}
+          {fieldErrors.password && (
+            <p id="password-error" className="mt-1.5 text-xs text-danger-700">
+              {fieldErrors.password}
+            </p>
+          )}
           {!isSignup && (
             <p className="mt-2 text-right text-sm">
               <Link href="/forgot-password" className="text-link">

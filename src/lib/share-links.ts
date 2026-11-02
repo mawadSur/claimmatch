@@ -15,6 +15,7 @@ export const PERSONAL_REFERRAL_UTM: Attribution = {
   utm_campaign: 'personal',
   utm_content: null,
   ref: null,
+  referrer: null,
 };
 
 export interface ShareLinkRecord {
@@ -58,6 +59,7 @@ export function shareLinkAttribution(link: ShareLinkRecord): Attribution {
     utm_campaign: sanitizeUtm(link.utm_campaign),
     utm_content: sanitizeUtm(link.utm_content),
     ref: sanitizeRef(link.code),
+    referrer: null,
   };
 }
 
