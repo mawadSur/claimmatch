@@ -88,4 +88,17 @@ describe('the login redirect for signed-out visitors', () => {
     expect(location.searchParams.get('next')).toBe('/onboarding?next=%2Fclaim%2Fx');
     vi.unstubAllEnvs();
   });
+
+  it('sends signed-out /claim visits to signup when SIGNUP_CONTEXT_ENABLED=1', async () => {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '');
+    vi.stubEnv('SIGNUP_CONTEXT_ENABLED', '1');
+    const { updateSession } = await import('@/lib/supabase/middleware');
+    const res = await updateSession(new NextRequest(`${ORIGIN}/claim/real-settlement`));
+    const location = new URL(res.headers.get('location') ?? '');
+    expect(location.pathname).toBe('/signup');
+    expect(location.searchParams.get('next')).toBe('/claim/real-settlement');
+    vi.unstubAllEnvs();
+  });
 });

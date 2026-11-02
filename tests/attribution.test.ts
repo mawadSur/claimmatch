@@ -11,6 +11,7 @@ import {
   parseAttrCookie,
   parseAttribution,
   sanitizeRef,
+  sanitizeReferrer,
   sanitizeUtm,
   serializeAttrCookie,
 } from '@/lib/attribution';
@@ -39,6 +40,7 @@ describe('attribution parsing', () => {
       utm_campaign: 'launch-1',
       utm_content: 'bio_link',
       ref: 'abcd',
+      referrer: null,
     });
   });
 
@@ -51,6 +53,7 @@ describe('attribution parsing', () => {
       utm_campaign: null,
       utm_content: null,
       ref: 'aaa',
+      referrer: null,
     });
   });
 
@@ -79,6 +82,22 @@ describe('attribution parsing', () => {
     expect(props.$initial_utm_source).toBe('twitter');
     expect(props.ref).toBe('abc12');
     expect(JSON.stringify(props)).not.toMatch(/email|full_name|phone/i);
+  });
+
+  it('keeps a first-touch referrer without query strings or same-site hits', () => {
+    expect(sanitizeReferrer('https://news.example/path?email=a@b.com#x', 'https://lawsuitai.org')).toBe(
+      'https://news.example/path',
+    );
+    expect(sanitizeReferrer('https://lawsuitai.org/lawsuits', 'https://lawsuitai.org')).toBeNull();
+    expect(sanitizeReferrer('javascript:alert(1)')).toBeNull();
+    const first = firstTouch(EMPTY_ATTRIBUTION, {
+      ...EMPTY_ATTRIBUTION,
+      referrer: 'https://news.example/path',
+    });
+    expect(
+      firstTouch(first, { ...EMPTY_ATTRIBUTION, referrer: 'https://other.example' }).referrer,
+    ).toBe('https://news.example/path');
+    expect(hasAttribution({ ...EMPTY_ATTRIBUTION, referrer: 'https://news.example/path' })).toBe(true);
   });
 
   it('respects Do Not Track flags', () => {

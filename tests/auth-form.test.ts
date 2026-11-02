@@ -21,4 +21,14 @@ describe('AuthForm signed-in path', () => {
   it('shows a loading label on the signup button', () => {
     expect(src).toContain('Creating your account…');
   });
+
+  it('shows the password rule before submit and validates without spinning', () => {
+    expect(src).toContain('password-hint');
+    expect(src).toContain('Use at least {MIN_PASSWORD_LENGTH} characters.');
+    expect(src).toContain('validateSignupFields');
+    expect(src).toContain('signup_submitted');
+    expect(src).toContain('signup_error');
+    expect(src).toContain("posthog?.capture('signup_error', { code })");
+    expect(src).not.toContain("capture('signup_error', { message");
+  });
 });

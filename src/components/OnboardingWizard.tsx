@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { US_STATES } from '@/lib/utils';
 import { safeNextOr } from '@/lib/safe-next';
 import { answersFromAttributes, type AttributeAnswers } from '@/lib/profile-attributes';
+import {
+  clearStoredMatchPreview,
+  mergePreviewIntoAnswers,
+  readStoredMatchPreview,
+} from '@/lib/match-preview';
 import {
   saveOnboardingProfile,
   skipOnboarding,
@@ -40,10 +45,23 @@ export function OnboardingWizard({
   const [answers, setAnswers] = useState<AttributeAnswers>(() =>
     answersFromAttributes(initial.attributes),
   );
+  const [previewHydrated, setPreviewHydrated] = useState(false);
   const [error, setError] = useState<{ message: string; field?: OnboardingField } | null>(null);
   const [action, setAction] = useState<null | 'save' | 'skip'>(null);
   const [, startTransition] = useTransition();
   const busy = action !== null;
+
+  useEffect(() => {
+    if (previewHydrated) return;
+    const preview = readStoredMatchPreview();
+    if (!preview) {
+      setPreviewHydrated(true);
+      return;
+    }
+    if (!state && preview.state) setState(preview.state);
+    setAnswers((prev) => mergePreviewIntoAnswers(prev, preview));
+    setPreviewHydrated(true);
+  }, [previewHydrated, state]);
 
   function finish(result: Awaited<ReturnType<typeof saveOnboardingProfile>>) {
     if (!result.ok) {
@@ -55,6 +73,7 @@ export function OnboardingWizard({
       setError({ message: result.error, field: result.field });
       return;
     }
+    clearStoredMatchPreview();
     startTransition(() => {
       router.push(safeNextOr(next, '/dashboard?welcome=1'));
       router.refresh();
@@ -65,14 +84,22 @@ export function OnboardingWizard({
     setError(null);
     setAction(kind);
     try {
+      const preview = readStoredMatchPreview();
+      const merged = mergePreviewIntoAnswers(answers, preview);
       finish(
         kind === 'save'
           ? await saveOnboardingProfile({
               full_name: fullName,
-              state,
-              attributes: answers,
+              state: state || preview?.state || '',
+              attributes: merged,
             })
-          : await skipOnboarding(),
+          : preview
+            ? await saveOnboardingProfile({
+                full_name: fullName,
+                state: state || preview.state || '',
+                attributes: merged,
+              })
+            : await skipOnboarding(),
       );
     } catch {
       setAction(null);

@@ -153,4 +153,15 @@ export const flags = {
    * Off (default): "See open settlements" keeps the current browse path.
    */
   homeAccountFirstCta: () => on('HOME_ACCOUNT_FIRST_CTA_ENABLED'),
+  /**
+   * Logged-out "See matching settlements" preview on home and /lawsuits.
+   * Off: no preview entry, /preview 404s, and /api/match-preview 404s.
+   */
+  matchPreview: () => on('MATCH_PREVIEW_ENABLED'),
+  /**
+   * Claim CTAs send signed-out visitors through /signup with a safe return
+   * path so confirm-email → onboarding lands them back on that claim.
+   * Off: signed-out /claim visits still go to /login.
+   */
+  signupContext: () => on('SIGNUP_CONTEXT_ENABLED'),
 };

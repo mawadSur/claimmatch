@@ -21,6 +21,7 @@ import {
 } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
+import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { pageUrl } from '@/lib/settlement-seo';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
@@ -130,6 +131,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             the official site, file there for free, and keep track of your claim in
             ClaimMatch.
           </p>
+
+          {flags.matchPreview() && (
+            <div className="mt-6 max-w-3xl">
+              <MatchPreviewEntry variant="banner" />
+            </div>
+          )}
 
           <div className="mt-6">
             <HubLinks categories={categories} current="all" />

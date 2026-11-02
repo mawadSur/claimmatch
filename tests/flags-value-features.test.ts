@@ -36,6 +36,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.ingestHeldIsWarning()).toBe(false);
     expect(flags.homeWedgeEntries()).toBe(false);
     expect(flags.homeAccountFirstCta()).toBe(false);
+    expect(flags.matchPreview()).toBe(false);
+    expect(flags.signupContext()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -66,6 +68,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INGEST_HELD_IS_WARNING', 'true');
     vi.stubEnv('HOME_WEDGE_ENTRIES_ENABLED', 'on');
     vi.stubEnv('HOME_ACCOUNT_FIRST_CTA_ENABLED', 'on');
+    vi.stubEnv('MATCH_PREVIEW_ENABLED', 'on');
+    vi.stubEnv('SIGNUP_CONTEXT_ENABLED', 'yes');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -95,6 +99,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.ingestHeldIsWarning()).toBe(false);
     expect(flags.homeWedgeEntries()).toBe(false);
     expect(flags.homeAccountFirstCta()).toBe(false);
+    expect(flags.matchPreview()).toBe(false);
+    expect(flags.signupContext()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -125,6 +131,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INGEST_HELD_IS_WARNING', '1');
     vi.stubEnv('HOME_WEDGE_ENTRIES_ENABLED', '1');
     vi.stubEnv('HOME_ACCOUNT_FIRST_CTA_ENABLED', '1');
+    vi.stubEnv('MATCH_PREVIEW_ENABLED', '1');
+    vi.stubEnv('SIGNUP_CONTEXT_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -154,5 +162,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.ingestHeldIsWarning()).toBe(true);
     expect(flags.homeWedgeEntries()).toBe(true);
     expect(flags.homeAccountFirstCta()).toBe(true);
+    expect(flags.matchPreview()).toBe(true);
+    expect(flags.signupContext()).toBe(true);
   });
 });

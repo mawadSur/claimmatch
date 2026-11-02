@@ -159,6 +159,7 @@ export function ShareLinksManager({ initialLinks }: { initialLinks: ShareLinkSta
                 utm_campaign: link.utm_campaign,
                 utm_content: link.utm_content,
                 ref: link.code,
+                referrer: null,
               };
               const longUrl = trackedCampaignUrl(SITE.url, link.destination, attr);
               const shortUrl = shortShareUrl(SITE.url, link.code);
