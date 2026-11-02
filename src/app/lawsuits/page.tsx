@@ -120,7 +120,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
     <>
       {prevHref ? <link rel="prev" href={pageUrl(prevHref)} /> : null}
       {nextHref ? <link rel="next" href={pageUrl(nextHref)} /> : null}
-      <section className="bg-brand-50">
+      <section className="border-b border-slate-200/70 bg-white">
         <div className="container-page py-10 sm:py-14">
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
             Open settlements
@@ -149,7 +149,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
         </div>
       </section>
 
-      <section className="container-page py-10">
+      <section className="container-page py-8 sm:py-10">
         <Suspense
           fallback={
             <div className="h-[7.5rem] rounded-2xl border border-slate-200 bg-white shadow-card" />
@@ -222,7 +222,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           />
         ) : (
           <>
-            <ul className="mt-8 grid gap-5 sm:grid-cols-2">
+            <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {paged.items.map((l) => (
                 <li key={l.id}>
                   <LawsuitCard lawsuit={l} />

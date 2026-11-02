@@ -7,86 +7,155 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Anchor targets clear the sticky header. */
+    scroll-padding-top: 5rem;
     touch-action: manipulation;
   }
   body {
-    @apply bg-brand-50 text-ink antialiased;
+    @apply bg-brand-50 font-sans text-ink antialiased;
     font-feature-settings: 'kern';
+    text-rendering: optimizeLegibility;
   }
-  h1, h2, h3, h4 {
+  /* Editorial serif for page and section headlines; the app UI stays sans. */
+  h1, h2 {
     @apply font-display tracking-tight text-ink;
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
+  h3, h4 {
+    @apply font-sans tracking-tight text-ink;
+  }
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
   }
 }
 
 @layer components {
   /* Buttons ---------------------------------------------------------------- */
   .btn {
-    @apply inline-flex min-h-tap cursor-pointer items-center justify-center gap-2
-           rounded-xl px-5 py-3 text-base font-semibold transition-colors duration-200
+    @apply inline-flex min-h-tap cursor-pointer select-none items-center justify-center gap-2
+           rounded-lg px-5 py-3 text-base font-semibold
+           transition-[background-color,box-shadow,color,transform] duration-200 ease-out
            focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400
-           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
-           disabled:pointer-events-none;
+           focus-visible:ring-offset-2 active:translate-y-px disabled:cursor-not-allowed
+           disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
+    @apply btn bg-brand-700 text-white shadow-btn-primary hover:bg-brand-800 active:bg-brand-900;
   }
   .btn-secondary {
-    @apply btn bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-brand-50 hover:ring-brand-300;
+    @apply btn bg-white text-ink shadow-sm ring-1 ring-inset ring-slate-300
+           hover:bg-slate-50 hover:ring-slate-400;
   }
   .btn-success {
-    @apply btn bg-success-500 text-white hover:bg-success-600 active:bg-success-700;
+    @apply btn bg-success-600 text-white hover:bg-success-700 active:bg-success-700;
   }
   .btn-ghost {
     @apply btn text-ink-muted hover:bg-white hover:text-ink;
+  }
+  /* Light button for navy panels. */
+  .btn-on-dark {
+    @apply btn bg-white text-brand-900 hover:bg-gold-50 focus-visible:ring-gold-300
+           focus-visible:ring-offset-brand-900;
   }
 
   /* Badges ----------------------------------------------------------------- */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
   }
-  .badge-green { @apply badge bg-success-50 text-success-700; }
-  .badge-red { @apply badge bg-danger-50 text-danger-700; }
+  .badge-green { @apply badge bg-success-50 text-success-700 ring-1 ring-inset ring-success-100; }
+  .badge-red { @apply badge bg-danger-50 text-danger-700 ring-1 ring-inset ring-danger-50; }
   .badge-brand { @apply badge bg-brand-100 text-brand-700; }
-  .badge-gray { @apply badge bg-white text-ink-muted ring-1 ring-slate-200; }
-  .badge-gold { @apply badge bg-gold-50 text-gold-700; }
+  .badge-gray { @apply badge bg-white text-ink-muted ring-1 ring-inset ring-slate-200; }
+  .badge-gold { @apply badge bg-gold-50 text-gold-700 ring-1 ring-inset ring-gold-100; }
+
+  /* Small uppercase label above section headlines. */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.16em] text-brand-500;
+  }
+
+  /* Surfaces --------------------------------------------------------------- */
+  .surface {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-card;
+  }
 
   /* Settlement / lawsuit card --------------------------------------------- */
   .settlement-card {
-    @apply flex flex-col rounded-2xl border border-slate-200 bg-white
-           p-5 shadow-card transition-colors duration-200
-           hover:border-brand-300 hover:shadow-card-hover;
+    @apply flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card
+           transition-[border-color,box-shadow,transform] duration-200 ease-out
+           hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-card-hover;
   }
 
   .container-page {
-    @apply mx-auto w-full max-w-5xl px-5 sm:px-6;
+    @apply mx-auto w-full max-w-page px-5 sm:px-8;
   }
   .container-narrow {
     @apply mx-auto w-full max-w-xl px-5 sm:px-6;
+  }
+  .section-y {
+    @apply py-20 sm:py-24 lg:py-28;
   }
 
   .field-label {
     @apply mb-1.5 block text-sm font-semibold text-ink;
   }
   .field-input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-ink
-           shadow-sm outline-none transition duration-200 focus:border-brand-500
-           focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-ink
+           shadow-sm outline-none transition duration-200 placeholder:text-slate-400
+           focus:border-brand-500 focus:ring-4 focus:ring-brand-100;
   }
 
   .nav-link {
     @apply rounded-md text-sm font-semibold text-ink-muted transition-colors duration-200
-           hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2
+           hover:text-ink focus-visible:outline-none focus-visible:ring-2
            focus-visible:ring-brand-400;
   }
 
   .text-link {
-    @apply rounded font-semibold text-brand-700 underline-offset-2 transition-colors duration-200
-           hover:text-brand-800 hover:underline focus-visible:outline-none
+    @apply rounded font-semibold text-brand-700 underline-offset-4 transition-colors duration-200
+           hover:text-brand-900 hover:underline focus-visible:outline-none
            focus-visible:ring-2 focus-visible:ring-brand-400;
   }
 }
 
-/* Section reveal helper */
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* The headline serif turns heavy above semibold, and many pages ask for
+     bold/extrabold headings. Cap h1/h2 at 600 site-wide; the selector
+     outranks a single weight utility, so source order does not matter. */
+  :is(h1, h2):is(.font-bold, .font-extrabold, .font-black) {
+    font-weight: 600;
+  }
+
+  /* Faint blueprint grid, faded out toward the edges. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(30, 58, 95, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30, 58, 95, 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+  }
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 100%);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion
+   Page-load: hero pieces rise in on a short stagger (CSS only, runs without JS).
+   Scroll: sections reveal and the hero product shot tilts flat as you scroll,
+   using CSS scroll-driven animations. Browsers without support, and anyone
+   who prefers reduced motion, get the finished, static layout.
+   --------------------------------------------------------------------------- */
+
+/* Section reveal helper (legacy pages) */
 .reveal {
   @apply animate-fade-up;
 }
@@ -98,16 +167,77 @@
 }
 @keyframes float-soft {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .animate-notif { animation: notif-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.animate-float { animation: float-soft 5s ease-in-out infinite; }
+.animate-float { animation: float-soft 6s ease-in-out infinite; }
 
+/* Page-load stagger: parent gets .stagger, children set --i. */
 .stagger > * {
-  animation: fade-up 0.6s ease-out both;
-  animation-delay: calc(var(--i, 0) * 70ms);
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
 }
 
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes reveal-scale {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes tilt-flat {
+  from { transform: perspective(1800px) rotateX(14deg) scale(0.94); }
+  to { transform: perspective(1800px) rotateX(0deg) scale(1); }
+}
+@keyframes drift-up {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--drift, -80px)); }
+}
+@keyframes nav-elevate {
+  to {
+    background-color: rgba(255, 255, 255, 0.92);
+    border-bottom-color: rgba(226, 232, 240, 1);
+    box-shadow: 0 10px 30px -20px rgba(10, 22, 40, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Rises in as it enters the viewport; --reveal-at staggers siblings. */
+    [data-reveal] {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--reveal-at, 0) * 1%) entry calc(55% + var(--reveal-at, 0) * 1%);
+    }
+    [data-reveal='scale'] { animation-name: reveal-scale; }
+
+    /* Hero product shot: leans back, then lies flat over the first screen of scroll. */
+    [data-tilt] {
+      transform-origin: 50% 100%;
+      animation: tilt-flat linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 70vh;
+    }
+    /* Floating layer that outruns the page a little (parallax depth). */
+    [data-drift] {
+      animation: drift-up linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+    .nav-elevate {
+      animation: nav-elevate linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 96px;
+    }
+  }
+}
+
+/* Respect users who prefer less motion: everything lands in its final state. */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.001ms !important;

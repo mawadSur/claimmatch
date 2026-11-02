@@ -7,6 +7,7 @@ import { NavAuthLinks } from './NavAuthLinks';
 
 const LINKS = [
   { href: '/lawsuits', label: 'Settlements' },
+  { href: '/how-it-works', label: 'How it works' },
   { href: '/pricing', label: 'Pricing' },
 ] as const;
 
@@ -91,13 +92,6 @@ export function NavMenu({
                 Check a notice
               </Link>
             )}
-            <Link
-              href="/how-it-works"
-              onClick={() => setOpen(false)}
-              className="flex min-h-tap items-center rounded-lg px-2 text-base font-semibold text-ink hover:bg-brand-50 hover:text-brand-700"
-            >
-              How it works
-            </Link>
           </nav>
         </div>
       )}
