@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Lexend, Source_Sans_3 } from 'next/font/google';
+import { Newsreader, Source_Sans_3 } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { SITE } from '@/lib/utils';
@@ -9,9 +9,12 @@ import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-// Corporate Trust pairing (UI UX Pro Max): Lexend for headings, Source Sans 3 for body.
-const display = Lexend({
+// Trust & Authority pairing (UI UX Pro Max): Newsreader, an editorial serif, for
+// page and section headlines (h1/h2); Source Sans 3 for body and all app UI.
+const display = Newsreader({
   subsets: ['latin'],
+  style: ['normal', 'italic'],
+  axes: ['opsz'],
   variable: '--font-display',
   display: 'swap',
 });

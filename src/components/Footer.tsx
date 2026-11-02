@@ -6,7 +6,9 @@ import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
 import { SiteLogo } from './SiteLogo';
 
 const LINK =
-  'inline-flex min-h-tap items-center rounded hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400';
+  'inline-flex min-h-tap items-center rounded transition-colors duration-200 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:min-h-[2.25rem]';
+// Column headings are UI labels: keep them in the sans, not the headline serif.
+const HEADING = 'font-sans text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft';
 const INLINE_LINK =
   'font-semibold text-brand-700 underline decoration-brand-200 underline-offset-2 hover:text-brand-800';
 
@@ -27,7 +29,7 @@ export function Footer() {
           </div>
 
           <nav aria-label="Product">
-            <h2 className="text-sm font-semibold text-ink">Product</h2>
+            <h2 className={HEADING}>Product</h2>
             <ul className="mt-3 space-y-1 text-sm text-ink-muted">
               <li><Link href="/lawsuits" className={LINK}>Settlements</Link></li>
               {flags.noticeLookup() && (
@@ -46,7 +48,7 @@ export function Footer() {
           </nav>
 
           <nav aria-label="Company">
-            <h2 className="text-sm font-semibold text-ink">Company</h2>
+            <h2 className={HEADING}>Company</h2>
             <ul className="mt-3 space-y-1 text-sm text-ink-muted">
               <li><Link href="/about" className={LINK}>About</Link></li>
               <li><Link href="/trust" className={LINK}>Is this legit?</Link></li>

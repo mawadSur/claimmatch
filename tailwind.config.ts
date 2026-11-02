@@ -2,13 +2,18 @@ import type { Config } from 'tailwindcss';
 
 /**
  * Public-site design system (UI UX Pro Max):
- *   Style:    Minimalism & Swiss Style
- *   Pattern:  Trust & Authority + Conversion
+ *   Style:    Trust & Authority, product-led (real app screens)
+ *   Pattern:  Hero + product proof + scroll story + trust facts + CTA
  *   Palette:  Banking / traditional finance (navy + trust blue + gold)
- *   Fonts:    Corporate Trust — Lexend + Source Sans 3
+ *   Fonts:    Newsreader (editorial serif, h1/h2 only) + Source Sans 3 (UI/body)
  *
- * Light surfaces only. CTA uses navy; gold is reserved for small emphasis
- * (payout figures, badges). Avoid AI purple/pink gradients.
+ * Light surfaces, one navy panel per page at most. CTA uses navy; gold is
+ * reserved for small emphasis (payout figures, highlights on navy). Avoid AI
+ * purple/pink gradients.
+ *
+ * Font names that are not valid CSS identifiers (e.g. "Source Sans 3") MUST be
+ * quoted here: Tailwind emits them verbatim, and one invalid name voids the
+ * whole font-family declaration (the body silently fell back to Times).
  */
 const config: Config = {
   content: [
@@ -39,6 +44,9 @@ const config: Config = {
         gold: {
           50: '#FFFBEB',
           100: '#FEF3C7',
+          200: '#F8E3B0',
+          300: '#F1CD7F',
+          400: '#E6B455',
           600: '#B45309',
           700: '#92400E',
         },
@@ -61,16 +69,24 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Source Sans 3', 'system-ui', 'sans-serif'],
-        display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', '"Source Sans 3"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        display: ['var(--font-display)', 'Newsreader', 'Georgia', '"Times New Roman"', 'serif'],
       },
       borderRadius: {
         xl: '0.75rem',
         '2xl': '1rem',
+        '4xl': '2rem',
       },
       boxShadow: {
         card: '0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.12)',
         'card-hover': '0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 16px 32px -12px rgba(30, 58, 95, 0.18)',
+        // Device frames and floating product shots.
+        device:
+          '0 0 0 1px rgba(15, 23, 42, 0.06), 0 24px 48px -16px rgba(10, 22, 40, 0.28), 0 48px 96px -32px rgba(10, 22, 40, 0.30)',
+        'btn-primary': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 1px 2px 0 rgba(10, 22, 40, 0.24)',
+      },
+      maxWidth: {
+        page: '72rem',
       },
       minHeight: {
         tap: '44px',

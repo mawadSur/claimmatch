@@ -25,7 +25,8 @@ export async function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-brand-50/90 backdrop-blur-md">
+    // .nav-elevate deepens the border and adds a soft shadow once the page scrolls.
+    <header className="nav-elevate sticky top-0 z-40 border-b border-slate-200/60 bg-white/80 backdrop-blur-md backdrop-saturate-150">
       <nav className="container-page relative flex h-16 items-center justify-between">
         <SiteLogo />
         <NavMenu
