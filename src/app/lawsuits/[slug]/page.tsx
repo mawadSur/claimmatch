@@ -20,6 +20,7 @@ import {
   type CatalogLink,
 } from '@/lib/lawsuits';
 import { proofDetail } from '@/lib/proof';
+import { settlementProofDetail } from '@/lib/settlement-guides';
 import {
   displayEligibilityText,
   displayProofLabel,
@@ -270,7 +271,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                       proof_required: false,
                       eligibility: { proof: lawsuit.proof_verified ?? undefined },
                     })
-                  : proofDetail(lawsuit)}
+                  : settlementProofDetail(lawsuit)}
               </dd>
             </div>
           </dl>
