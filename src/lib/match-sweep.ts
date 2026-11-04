@@ -3,8 +3,9 @@ import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
 import { filterOpenForClaims } from '@/lib/lawsuits';
 import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import { factsFromRows } from '@/lib/profile-facts';
 import { todayInLatestUSZone } from '@/lib/utils';
-import type { Lawsuit, Profile } from '@/lib/types';
+import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchSweepResult {
   users: number;
@@ -64,12 +65,19 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     .eq('email_opt_in', true)
     .eq('onboarded', true);
   const profiles = (profileData ?? []) as Profile[];
+  const factsByUser = await loadFactsByUser(
+    supabase,
+    profiles.map((p) => p.id),
+  );
 
   let newMatches = 0;
   let emailed = 0;
 
   for (const profile of profiles) {
-    const results = matchProfile(profile, lawsuits);
+    const results = matchProfile(
+      { ...profile, facts: factsByUser.get(profile.id) ?? [] },
+      lawsuits,
+    );
 
     if (results.length > 0) {
       const rows = results.map((r) => ({
@@ -139,4 +147,27 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
   }
 
   return { users: profiles.length, newMatches, emailed };
+}
+
+async function loadFactsByUser(
+  supabase: ReturnType<typeof createServiceClient>,
+  userIds: string[],
+): Promise<Map<string, ProfileFact[]>> {
+  const facts = new Map<string, ProfileFact[]>();
+  if (userIds.length === 0) return facts;
+  const { data } = await supabase
+    .from('profile_facts')
+    .select('user_id, type, value, start_date, end_date, source')
+    .in('user_id', userIds);
+  const grouped = new Map<string, typeof data>();
+  for (const row of data ?? []) {
+    const userId = (row as { user_id: string }).user_id;
+    const list = grouped.get(userId) ?? [];
+    list.push(row);
+    grouped.set(userId, list);
+  }
+  for (const [userId, rows] of grouped) {
+    facts.set(userId, factsFromRows(rows ?? []));
+  }
+  return facts;
 }

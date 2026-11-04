@@ -4,6 +4,8 @@ import { CheckCircle2, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
+import { flags } from '@/lib/flags';
+import { factsFromRows } from '@/lib/profile-facts';
 
 export const metadata: Metadata = {
   title: 'Set up your profile',
@@ -35,11 +37,18 @@ export default async function OnboardingPage({
   const destination = safeNextOr(next, '/dashboard?welcome=1');
   const emailConfirmed = confirmed === '1' || (Array.isArray(confirmed) && confirmed[0] === '1');
 
+  const profileV2 = flags.profileV2();
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, state, attributes')
     .eq('id', user.id)
     .maybeSingle();
+  const { data: factRows } = profileV2
+    ? await supabase
+        .from('profile_facts')
+        .select('type, value, start_date, end_date, source')
+        .eq('user_id', user.id)
+    : { data: [] };
 
   return (
     <section className="bg-gradient-to-b from-brand-50 via-white to-white">
@@ -89,9 +98,11 @@ export default async function OnboardingPage({
                 fullName: profile?.full_name ?? '',
                 state: profile?.state ?? '',
                 attributes: (profile?.attributes as Record<string, unknown> | null) ?? {},
+                facts: factsFromRows(factRows),
               }}
               email={user.email ?? null}
               next={destination}
+              profileV2={profileV2}
             />
           </div>
         </div>

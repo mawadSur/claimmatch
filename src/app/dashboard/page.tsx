@@ -13,8 +13,11 @@ import {
   buildClosingSoon,
   buildDashboard,
   buildDashboardMatches,
+  buildDashboardMatchesFromStored,
   dashboardNeedsProfile,
 } from '@/components/claims/dashboard-model';
+import { factsFromRows } from '@/lib/profile-facts';
+import type { Lawsuit, Match } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
@@ -46,7 +49,7 @@ export default async function DashboardPage({
   const { welcome, denied, password } = await searchParams;
   const now = new Date();
 
-  const [{ data: profile }, claims, catalog, filingJobs] = await Promise.all([
+  const [{ data: profile }, claims, catalog, filingJobs, factRes, storedRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, onboarded, state, attributes')
@@ -58,6 +61,20 @@ export default async function DashboardPage({
     // shown as an error, never as "no deadlines coming up".
     lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
     flags.assistedFiling() ? listUserFilingJobs(user.id) : Promise.resolve([]),
+    flags.profileV2()
+      ? supabase
+          .from('profile_facts')
+          .select('type, value, start_date, end_date, source')
+          .eq('user_id', user.id)
+      : Promise.resolve({ data: [], error: null }),
+    flags.matchStore()
+      ? supabase
+          .from('matches')
+          .select('*, lawsuit:lawsuits(*)')
+          .eq('user_id', user.id)
+          .eq('dismissed', false)
+          .order('score', { ascending: false })
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
@@ -67,10 +84,21 @@ export default async function DashboardPage({
     state: (profile?.state as string | null) ?? null,
     attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],
     onboarded: Boolean(profile?.onboarded),
+    facts: factsFromRows(factRes.data),
   };
+  const storedMatches =
+    flags.matchStore() && storedRes.data
+      ? buildDashboardMatchesFromStored(
+          storedRes.data as (Match & { lawsuit?: Lawsuit | null })[],
+          now,
+          isFictionalSettlementSlug,
+        )
+      : [];
   const matches = catalog.error
     ? []
-    : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
+    : storedMatches.length > 0
+      ? storedMatches
+      : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
   const needsProfile = dashboardNeedsProfile(matchProfile);
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
@@ -138,6 +166,7 @@ export default async function DashboardPage({
           needsProfile={needsProfile}
           metricsEnabled={flags.matchMetrics()}
           fileForYou={flags.assistedFiling()}
+          canDismiss={flags.matchStore()}
         />
 
         {flags.assistedFiling() && (

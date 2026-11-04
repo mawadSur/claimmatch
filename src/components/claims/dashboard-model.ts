@@ -28,8 +28,10 @@ import {
   type MatchStrength,
 } from '@/lib/matching';
 import { profileHasMatchSignals } from '@/lib/profile-attributes';
-import type { Lawsuit, Profile } from '@/lib/types';
+import type { Lawsuit, Match, Profile } from '@/lib/types';
 import { formatDeadline } from '@/lib/utils';
+
+const NEW_MATCH_MS = 7 * 24 * 60 * 60 * 1000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -219,6 +221,8 @@ export interface DashboardMatch {
   label: string;
   officialUrl: string | null;
   score: number;
+  matchId?: string;
+  isNew?: boolean;
 }
 
 /** Possible matches shown after Strong; extras stay hidden behind the cap. */
@@ -258,7 +262,7 @@ export interface ClosingSoonItem {
  * heuristic or state-only.
  */
 export function buildDashboardMatches(
-  profile: Pick<Profile, 'state' | 'attributes'>,
+  profile: Pick<Profile, 'state' | 'attributes' | 'facts'>,
   lawsuits: Lawsuit[],
   now: Date,
   isFictional: IsFictional,
@@ -291,10 +295,53 @@ export function buildDashboardMatches(
   });
 }
 
+export function isNewStoredMatch(createdAt: string | null | undefined, now: Date): boolean {
+  if (!createdAt) return false;
+  const created = Date.parse(createdAt);
+  if (Number.isNaN(created)) return false;
+  return now.getTime() - created <= NEW_MATCH_MS;
+}
+
+export function buildDashboardMatchesFromStored(
+  rows: Array<Match & { lawsuit?: Lawsuit | null }>,
+  now: Date,
+  isFictional: IsFictional,
+): DashboardMatch[] {
+  return rows
+    .filter((row) => {
+      const lawsuit = row.lawsuit;
+      if (!lawsuit || row.dismissed) return false;
+      if (isFictional(lawsuit.slug)) return false;
+      return UUID_RE.test(lawsuit.id) && isOpenForClaims(lawsuit, now);
+    })
+    .map((row) => {
+      const lawsuit = row.lawsuit as Lawsuit;
+      const strength = classifyMatch(lawsuit);
+      return {
+        id: lawsuit.id,
+        slug: lawsuit.slug,
+        title: lawsuit.title,
+        deadlineText: deadlineText(lawsuit.deadline, now),
+        reasons: Array.isArray(row.reasons) ? row.reasons : [],
+        strength,
+        label: matchStrengthLabel(strength),
+        officialUrl: safeExternalUrl(lawsuit.claim_url),
+        score: Number(row.score) || 0,
+        matchId: row.id,
+        isNew: isNewStoredMatch(row.created_at, now),
+      };
+    })
+    .sort((a, b) => {
+      if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
+      return b.score - a.score;
+    });
+}
+
 export function dashboardNeedsProfile(
-  profile: Pick<Profile, 'state' | 'attributes' | 'onboarded'>,
+  profile: Pick<Profile, 'state' | 'attributes' | 'onboarded' | 'facts'>,
 ): boolean {
-  return !profile.onboarded || !profileHasMatchSignals(profile);
+  const hasFacts = (profile.facts ?? []).length > 0;
+  return !profile.onboarded || (!profileHasMatchSignals(profile) && !hasFacts);
 }
 
 /**

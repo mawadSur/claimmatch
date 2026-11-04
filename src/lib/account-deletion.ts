@@ -20,6 +20,7 @@ export const USER_OWNED_TABLES = [
   'match_events',
   'match_feature_snapshots',
   'match_labels',
+  'profile_facts',
 ] as const;
 
 export type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
@@ -46,6 +47,7 @@ export const DELETION_IGNORE_TABLES = [
   'administrator_form_mappings',
   'eligibility_rule_drafts',
   'ingest_alerts',
+  'admin_access_log',
 ] as const;
 
 export function tablesCreatedInMigrations(sql: string): string[] {

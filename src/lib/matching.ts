@@ -1,5 +1,7 @@
-import type { EligibilityCriteria, Lawsuit, Profile } from './types';
+import type { EligibilityCriteria, Lawsuit, LawsuitTags, Profile, ProfileFact } from './types';
 import { flags } from './flags';
+import { lawsuitHasStructuredTags, normalizeLawsuitTags } from './lawsuit-tags';
+import { dateRangesOverlap, factYearLabel } from './profile-facts';
 import { isDeadlinePassed } from './utils';
 
 export interface MatchResult {
@@ -85,6 +87,7 @@ export function scoreLawsuit(
 
   const criteria: EligibilityCriteria = lawsuit.eligibility || {};
   const attrs = profile.attributes || {};
+  const tags = normalizeLawsuitTags(lawsuit.tags);
   const reasons: string[] = [];
 
   let signals = 0; // how many criteria we could check
@@ -133,6 +136,17 @@ export function scoreLawsuit(
     }
   }
 
+  // Structured tags vs profile_facts (soft, like anyOf). Date overlap is
+  // required when both the fact and the class period have dates.
+  const facts = profile.facts ?? [];
+  const factHits = scoreProfileFacts(facts, tags);
+  for (const hit of factHits) {
+    signals += 1;
+    hits += 1;
+    reasons.push(hit.reason);
+  }
+  signals += unmatchedStructuredTagSignals(tags, facts, factHits);
+
   // No structured matching criteria → broad low-confidence, or a category /
   // keyword overlap when MATCH_UNSTRUCTURED_ENABLED=1.
   if (signals === 0) {
@@ -142,7 +156,7 @@ export function scoreLawsuit(
   const eligible = !hardFail && hits > 0;
   let score = eligible ? Math.min(1, RULE_VERIFIED_FLOOR + (hits / signals) * 0.5) : 0;
 
-  if (eligible && isStateOnlyCriteria(criteria) && flags.stateOnlyCap()) {
+  if (eligible && isStateOnlyCriteria(criteria, tags) && flags.stateOnlyCap()) {
     score = Math.min(score, STATE_ONLY_SCORE_CAP);
   }
 
@@ -179,14 +193,15 @@ export function matchStrengthLabel(strength: MatchStrength): string {
  * Strong = structured requires/anyOf rules (attribute-verified).
  * Possible = state-only or unstructured category/keyword overlap.
  */
-export function classifyMatch(lawsuit: Pick<Lawsuit, 'eligibility'>): MatchStrength {
+export function classifyMatch(lawsuit: Pick<Lawsuit, 'eligibility' | 'tags'>): MatchStrength {
   const criteria: EligibilityCriteria = lawsuit.eligibility || {};
-  if (isStateOnlyCriteria(criteria)) return 'possible';
+  const tags = normalizeLawsuitTags(lawsuit.tags);
+  if (isStateOnlyCriteria(criteria, tags)) return 'possible';
   const hasRequires = !!(criteria.requires && criteria.requires.length > 0);
   const hasAnyOf =
     !!criteria.anyOf &&
     Object.keys(criteria.anyOf).some((key) => !HEALTH_ATTRIBUTE_KEYS.has(key));
-  return hasRequires || hasAnyOf ? 'strong' : 'possible';
+  return hasRequires || hasAnyOf || lawsuitHasStructuredTags(tags) ? 'strong' : 'possible';
 }
 
 function unstructuredMatch(
@@ -229,13 +244,125 @@ function unstructuredMatch(
   };
 }
 
-function isStateOnlyCriteria(criteria: EligibilityCriteria): boolean {
+function isStateOnlyCriteria(criteria: EligibilityCriteria, tags?: LawsuitTags | null): boolean {
   const hasStates = !!(criteria.states && criteria.states.length > 0);
   const hasRequires = !!(criteria.requires && criteria.requires.length > 0);
   const hasAnyOf =
     !!criteria.anyOf &&
     Object.keys(criteria.anyOf).some((key) => !HEALTH_ATTRIBUTE_KEYS.has(key));
-  return hasStates && !hasRequires && !hasAnyOf;
+  return hasStates && !hasRequires && !hasAnyOf && !lawsuitHasStructuredTags(tags);
+}
+
+interface FactHit {
+  reason: string;
+  kind: 'brand' | 'employer' | 'location';
+}
+
+function scoreProfileFacts(facts: ProfileFact[], tags: LawsuitTags): FactHit[] {
+  if (!facts.length) return [];
+  const hits: FactHit[] = [];
+  const seenReasons = new Set<string>();
+
+  const push = (hit: FactHit) => {
+    if (seenReasons.has(hit.reason)) return;
+    seenReasons.add(hit.reason);
+    hits.push(hit);
+  };
+
+  for (const fact of facts) {
+    if (HEALTH_ATTRIBUTE_KEYS.has(fact.type) || HEALTH_ATTRIBUTE_KEYS.has(fact.value)) continue;
+    const value = fact.value.trim();
+    if (!value) continue;
+
+    if (fact.type === 'employer' && tags.employers?.length) {
+      const match = firstTagMatch(value, tags.employers);
+      if (match && factFitsClassPeriod(fact, tags)) {
+        push({ kind: 'employer', reason: employerReason(match, fact, tags) });
+      }
+    }
+
+    if (
+      (fact.type === 'brand' || fact.type === 'product' || fact.type === 'purchase' || fact.type === 'account') &&
+      tags.brands?.length
+    ) {
+      const match = firstTagMatch(value, tags.brands);
+      if (match && factFitsClassPeriod(fact, tags)) {
+        push({ kind: 'brand', reason: purchaseReason(match, fact, tags) });
+      }
+    }
+
+    if (fact.type === 'location' && tags.states?.length) {
+      const match = firstTagMatch(value, tags.states);
+      if (match) {
+        push({ kind: 'location', reason: `Lived in ${match}, a covered state` });
+      }
+    }
+  }
+
+  return hits;
+}
+
+function unmatchedStructuredTagSignals(
+  tags: LawsuitTags,
+  facts: ProfileFact[],
+  hits: FactHit[],
+): number {
+  let n = 0;
+  const hasBrandFacts = facts.some((f) =>
+    f.type === 'brand' || f.type === 'product' || f.type === 'purchase' || f.type === 'account',
+  );
+  const hasEmployerFacts = facts.some((f) => f.type === 'employer');
+  if (hasBrandFacts && tags.brands && tags.brands.length > 0 && !hits.some((h) => h.kind === 'brand')) {
+    n += 1;
+  }
+  if (hasEmployerFacts && tags.employers && tags.employers.length > 0 && !hits.some((h) => h.kind === 'employer')) {
+    n += 1;
+  }
+  return n;
+}
+
+function factFitsClassPeriod(fact: ProfileFact, tags: LawsuitTags): boolean {
+  if (!tags.class_period_start && !tags.class_period_end) return true;
+  if (!fact.start_date && !fact.end_date) return true;
+  return dateRangesOverlap(
+    fact.start_date,
+    fact.end_date,
+    tags.class_period_start,
+    tags.class_period_end,
+  );
+}
+
+function firstTagMatch(value: string, tags: string[]): string | null {
+  const needle = value.trim().toLowerCase();
+  if (!needle) return null;
+  return (
+    tags.find((tag) => {
+      const hay = tag.trim().toLowerCase();
+      return hay === needle || hay.includes(needle) || needle.includes(hay);
+    }) ?? null
+  );
+}
+
+function purchaseReason(brand: string, fact: ProfileFact, tags: LawsuitTags): string {
+  const year = factYearLabel(fact);
+  const inside =
+    Boolean(tags.class_period_start || tags.class_period_end) && factFitsClassPeriod(fact, tags);
+  if (year && inside) return `Bought ${brand} in ${year}, inside the class period`;
+  if (inside && (fact.start_date || fact.end_date)) {
+    return `Bought ${brand} during the class period`;
+  }
+  if (year) return `Bought ${brand} in ${year}`;
+  if (fact.type === 'account') return `Used ${brand}, a covered account or platform`;
+  return `Bought ${brand}`;
+}
+
+function employerReason(employer: string, fact: ProfileFact, tags: LawsuitTags): string {
+  const inside =
+    Boolean(tags.class_period_start || tags.class_period_end) && factFitsClassPeriod(fact, tags);
+  if (inside) return `Worked at ${employer} during the class period`;
+  const year = factYearLabel(fact);
+  if (year) return `Worked at ${employer} in ${year}`;
+  return `Worked at ${employer}`;
 }
 
 function categoryOverlapsProfile(

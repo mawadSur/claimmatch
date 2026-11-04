@@ -4,6 +4,7 @@ import {
   buildReport,
   digestGate,
   errorMessage,
+  matchStoreGate,
   matchSweepGate,
   missingConfigStep,
   reportHttpStatus,
@@ -41,14 +42,30 @@ describe('D50 gates', () => {
     for (const value of [undefined, '', '0', 'true', 'yes', ' 1', '1 ']) {
       vi.stubEnv('MATCH_EMAILS_ENABLED', value);
       vi.stubEnv('DIGEST_ENABLED', value);
+      vi.stubEnv('MATCH_STORE_ENABLED', value);
       expect(matchSweepGate(flags.matchEmails()).run).toBe(false);
       expect(digestGate(flags.digest()).run).toBe(false);
+      expect(matchStoreGate(flags.matchStore()).run).toBe(false);
     }
     vi.stubEnv('MATCH_EMAILS_ENABLED', '1');
     vi.stubEnv('DIGEST_ENABLED', '1');
+    vi.stubEnv('MATCH_STORE_ENABLED', '1');
     expect(matchSweepGate(flags.matchEmails()).run).toBe(true);
     expect(digestGate(flags.digest()).run).toBe(true);
+    expect(matchStoreGate(flags.matchStore()).run).toBe(true);
     vi.unstubAllEnvs();
+  });
+
+  it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {
+    expect(matchStoreGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (match store)',
+        resume: expect.stringContaining('MATCH_STORE_ENABLED=1'),
+      },
+    });
+    expect(matchStoreGate(true)).toEqual({ run: true });
   });
 });
 

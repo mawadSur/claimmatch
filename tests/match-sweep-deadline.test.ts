@@ -9,6 +9,7 @@ describe('daily match sweep deadline gate', () => {
     expect(src).toContain('todayInLatestUSZone');
     expect(src).toContain('deadline.is.null,deadline.gte.');
     expect(src).toContain('filterOpenForClaims');
-    expect(src).toContain('matchProfile(profile, lawsuits)');
+    expect(src).toContain('matchProfile(');
+    expect(src).toContain('lawsuits');
   });
 });

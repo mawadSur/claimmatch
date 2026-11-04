@@ -23,6 +23,7 @@ export function AdminNav({ counts }: Props) {
       showFiling={flags.assistedFiling()}
       showEligibilityDrafts={flags.eligibilityDrafts()}
       showHeldClosures={flags.adminHeldClosures()}
+      showUsers={flags.profileV2()}
     />
   );
 }

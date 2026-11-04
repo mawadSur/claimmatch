@@ -17,11 +17,19 @@ import {
   type OnboardingField,
 } from '@/app/onboarding/actions';
 import { ProfileAttributesFields } from './ProfileAttributesFields';
+import {
+  ProfileFactsFields,
+  draftsFromFacts,
+  draftsToPayload,
+  type DraftFact,
+} from './ProfileFactsFields';
+import type { ProfileFact } from '@/lib/types';
 
 export interface OnboardingInitial {
   fullName: string;
   state: string;
   attributes?: Record<string, unknown> | null;
+  facts?: ProfileFact[] | null;
 }
 
 /**
@@ -33,13 +41,17 @@ export function OnboardingWizard({
   initial,
   email,
   next,
+  profileV2 = false,
 }: {
   initial: OnboardingInitial;
   email: string | null;
   next: string;
+  profileV2?: boolean;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2>(1);
+  const lastStep = profileV2 ? 3 : 2;
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [facts, setFacts] = useState<DraftFact[]>(() => draftsFromFacts(initial.facts));
   const [fullName, setFullName] = useState(initial.fullName);
   const [state, setState] = useState(initial.state);
   const [answers, setAnswers] = useState<AttributeAnswers>(() =>
@@ -92,12 +104,14 @@ export function OnboardingWizard({
               full_name: fullName,
               state: state || preview?.state || '',
               attributes: merged,
+              facts: profileV2 ? draftsToPayload(facts) : undefined,
             })
           : preview
             ? await saveOnboardingProfile({
                 full_name: fullName,
                 state: state || preview.state || '',
                 attributes: merged,
+                facts: profileV2 ? draftsToPayload(facts) : undefined,
               })
             : await skipOnboarding(),
       );
@@ -113,6 +127,12 @@ export function OnboardingWizard({
     setStep(2);
   }
 
+  function continueToFacts(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setStep(3);
+  }
+
   function save(e: React.FormEvent) {
     e.preventDefault();
     void run('save');
@@ -123,12 +143,12 @@ export function OnboardingWizard({
 
   return (
     <form
-      onSubmit={step === 1 ? continueToQuestions : save}
+      onSubmit={step === 1 ? continueToQuestions : step === 2 && profileV2 ? continueToFacts : save}
       noValidate
       className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8"
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        Step {step} of 2
+        Step {step} of {lastStep}
       </p>
       {step === 1 ? (
         <>
@@ -188,7 +208,7 @@ export function OnboardingWizard({
             )}
           </div>
         </>
-      ) : (
+      ) : step === 2 ? (
         <>
           <h2 className="mt-1 text-lg font-bold">A few things that help us match you</h2>
           <p className="mt-1 text-sm text-ink-muted">
@@ -201,6 +221,17 @@ export function OnboardingWizard({
               answers={answers}
               onChange={setAnswers}
             />
+          </div>
+        </>
+      ) : (
+        <>
+          <h2 className="mt-1 text-lg font-bold">Purchases, work, and places (optional)</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Add brands, employers, or locations with dates if you remember them.
+            You can edit this later under Settings → My profile.
+          </p>
+          <div className="mt-6">
+            <ProfileFactsFields drafts={facts} onChange={setFacts} idPrefix="onboarding-facts" />
           </div>
         </>
       )}
@@ -217,10 +248,10 @@ export function OnboardingWizard({
       )}
 
       <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-        {step === 2 && (
+        {step > 1 && (
           <button
             type="button"
-            onClick={() => setStep(1)}
+            onClick={() => setStep((step - 1) as 1 | 2 | 3)}
             disabled={busy}
             className="btn-ghost"
           >
@@ -232,7 +263,7 @@ export function OnboardingWizard({
             <>
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
             </>
-          ) : step === 1 ? (
+          ) : step < lastStep ? (
             <>
               Continue <ArrowRight className="h-4 w-4" aria-hidden />
             </>

@@ -15,6 +15,7 @@ const m = vi.hoisted(() => {
     ingestAndExtract: vi.fn(),
     runAllSources: vi.fn(),
     runMatchSweep: vi.fn(),
+    persistStoredMatches: vi.fn(),
     notifyNewMatches: vi.fn(),
     claimDue: vi.fn(),
     completeJob: vi.fn(),
@@ -33,6 +34,7 @@ const m = vi.hoisted(() => {
 vi.mock('@/lib/scraper/pipeline', () => ({ ingestAndExtract: m.ingestAndExtract }));
 vi.mock('@/lib/scraper', () => ({ runAllSources: m.runAllSources }));
 vi.mock('@/lib/match-sweep', () => ({ runMatchSweep: m.runMatchSweep }));
+vi.mock('@/lib/match-store', () => ({ persistStoredMatches: m.persistStoredMatches }));
 vi.mock('@/lib/notifications', () => ({ notifyNewMatches: m.notifyNewMatches }));
 vi.mock('@/lib/jobs', () => ({
   claimDue: m.claimDue,
@@ -81,6 +83,7 @@ beforeEach(() => {
   m.ingestAndExtract.mockResolvedValue(INGEST);
   m.runAllSources.mockResolvedValue({ inserted: 1, updated: 0, bySource: {} });
   m.runMatchSweep.mockResolvedValue({ users: 1, newMatches: 1, emailed: 1 });
+  m.persistStoredMatches.mockResolvedValue({ users: 1, persisted: 1 });
   m.claimDue.mockResolvedValue([]);
   m.startIngestRun.mockResolvedValue('job-daily');
   m.finishIngestRun.mockResolvedValue(undefined);
@@ -113,10 +116,11 @@ describe('/api/cron/daily', () => {
       job: 'daily',
       ok: true,
       ranSteps: ['ingest'],
-      skippedSteps: ['matchSweep'],
+      skippedSteps: ['matchStore', 'matchSweep'],
       failedSteps: [],
       steps: {
         ingest: { status: 'ran', result: INGEST },
+        matchStore: { status: 'skipped', reason: 'paused (match store)' },
         matchSweep: { status: 'skipped', reason: 'paused (D50)' },
       },
     });
@@ -133,7 +137,18 @@ describe('/api/cron/daily', () => {
     const { status, body } = await call(daily.GET, '/api/cron/daily');
     expect(status).toBe(200);
     expect(m.runMatchSweep).toHaveBeenCalledOnce();
+    expect(m.persistStoredMatches).not.toHaveBeenCalled();
     expect(body.ranSteps).toEqual(['ingest', 'matchSweep']);
+  });
+
+  it('runs the match store only when MATCH_STORE_ENABLED=1, without emailing', async () => {
+    vi.stubEnv('MATCH_STORE_ENABLED', '1');
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.persistStoredMatches).toHaveBeenCalledOnce();
+    expect(m.runMatchSweep).not.toHaveBeenCalled();
+    expect(body.ranSteps).toEqual(['ingest', 'matchStore']);
+    expect(body.steps.matchSweep.reason).toBe('paused (D50)');
   });
 
   it('answers 500 and names the step when ingest fails', async () => {
