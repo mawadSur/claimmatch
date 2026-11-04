@@ -5,7 +5,9 @@ import {
   mergePreviewIntoAnswers,
   parseMatchPreviewDraft,
   previewMatchesFor,
+  previewMatchesForScope,
   previewProfileFromDraft,
+  scopedPreviewQuestions,
 } from '@/lib/match-preview';
 import { RETIRED_QUESTION_KEYS } from '@/lib/eligibility';
 import { makeLawsuit } from './helpers';
@@ -89,6 +91,23 @@ describe('logged-out match preview', () => {
     expect(JSON.stringify(results)).not.toMatch(/you qualify|eligib|% match/i);
     expect(previewProfileFromDraft(draft).attributes.took_medication).toBeUndefined();
   });
+
+  it('scopes results and questions to one settlement’s catalog fields', () => {
+    const draft = {
+      state: 'NY',
+      attributes: { had_data_breach: true, bought_consumer_goods: false, used_banking: false, used_streaming: false },
+    };
+    const lawsuits = [
+      makeLawsuit({ states: ['NY'], requires: ['had_data_breach'] }, { id: 'a', slug: 'breach-ny', typical_payout: '$40' }),
+      makeLawsuit({ states: ['NY'] }, { id: 'b', slug: 'state-only', typical_payout: '$10' }),
+    ];
+    const scoped = previewMatchesForScope(lawsuits, draft, 'breach-ny');
+    expect(scoped.map((r) => r.slug)).toEqual(['breach-ny']);
+    expect(scopedPreviewQuestions({ states: ['NY'], requires: ['had_data_breach'] }).map((q) => q.key)).toEqual([
+      'state',
+      'had_data_breach',
+    ]);
+  });
 });
 
 describe('match preview surfaces stay off until the flag is 1', () => {
@@ -110,9 +129,30 @@ describe('match preview surfaces stay off until the flag is 1', () => {
     const read = (rel: string) =>
       readFileSync(fileURLToPath(new URL(`../${rel}`, import.meta.url)), 'utf8');
     expect(read('src/app/preview/page.tsx')).toContain('flags.matchPreview()');
+    expect(read('src/app/preview/page.tsx')).toContain('flags.settlementPageCta()');
     expect(read('src/app/preview/page.tsx')).toContain('notFound()');
     expect(read('src/app/page.tsx')).toContain('flags.matchPreview()');
     expect(read('src/app/lawsuits/page.tsx')).toContain('flags.matchPreview()');
     expect(read('src/app/api/match-preview/route.ts')).toContain('flags.matchPreview()');
+    expect(read('src/app/api/match-preview/route.ts')).toContain('flags.settlementPageCta()');
+  });
+
+  it('allows a settlement-scoped preview API call when only the page CTA flag is on', async () => {
+    vi.resetModules();
+    vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', '1');
+    const { POST } = await import('@/app/api/match-preview/route');
+    const res = await POST(
+      new Request('http://claimmatch.test/api/match-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: 'NY',
+          attributes: { had_data_breach: true },
+          settlement: 'breach-ny',
+        }),
+      }),
+    );
+    // Catalog is empty in this unit test; the route must not 404.
+    expect(res.status).not.toBe(404);
   });
 });

@@ -9,7 +9,8 @@ import {
   RECENTLY_CLOSED_PATH,
   recentlyClosed,
 } from '@/lib/recently-closed';
-import { pageUrl } from '@/lib/settlement-seo';
+import { breadcrumbJsonLd, pageUrl } from '@/lib/settlement-seo';
+import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { formatDeadline } from '@/lib/utils';
 
@@ -35,6 +36,13 @@ export default async function RecentlyClosedPage() {
 
   return (
     <div className="bg-gradient-to-b from-brand-50 to-white">
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: 'Open settlements', path: '/lawsuits' },
+          { name: TITLE, path: RECENTLY_CLOSED_PATH },
+        ])}
+      />
       <div className="container-page py-16 sm:py-20">
         <PageBreadcrumbs
           items={[

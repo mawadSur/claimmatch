@@ -164,4 +164,21 @@ export const flags = {
    * Off: signed-out /claim visits still go to /login.
    */
   signupContext: () => on('SIGNUP_CONTEXT_ENABLED'),
+  /**
+   * Settlement-page "Check if you qualify" starts a match preview scoped to
+   * that open listing, then signup with the settlement as return context.
+   * Off: the existing CTAs still go to /claim/{slug}. Closed listings never
+   * show it.
+   */
+  settlementPageCta: () => on('SETTLEMENT_PAGE_CTA_ENABLED'),
+  /**
+   * Short, server-rendered list of other open published settlements on each
+   * settlement page (same category, then nearest deadlines). Off: hidden.
+   */
+  relatedSettlements: () => on('RELATED_SETTLEMENTS_ENABLED'),
+  /**
+   * After the nightly ingest, submit changed public URLs to IndexNow.
+   * Off: no request. Never runs in tests, even if set.
+   */
+  indexNow: () => on('INDEXNOW_ENABLED'),
 };

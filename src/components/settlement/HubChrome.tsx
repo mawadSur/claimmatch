@@ -2,6 +2,8 @@ import { AlertTriangle } from 'lucide-react';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
+import { RelatedSettlements } from '@/components/settlement/RelatedSettlements';
+import type { RelatedSettlement } from '@/lib/related-settlements';
 import type { Lawsuit } from '@/lib/types';
 
 export function HubChrome({
@@ -12,6 +14,8 @@ export function HubChrome({
   lawsuits,
   emptyTitle,
   emptyBody,
+  related,
+  relatedFromSlug,
 }: {
   title: string;
   lede: string;
@@ -20,6 +24,8 @@ export function HubChrome({
   lawsuits: Lawsuit[];
   emptyTitle: string;
   emptyBody: string;
+  related?: RelatedSettlement[];
+  relatedFromSlug?: string;
 }) {
   return (
     <>
@@ -71,6 +77,9 @@ export function HubChrome({
               </li>
             ))}
           </ul>
+        )}
+        {related && related.length > 0 && relatedFromSlug && (
+          <RelatedSettlements items={related} fromSlug={relatedFromSlug} />
         )}
       </section>
     </>

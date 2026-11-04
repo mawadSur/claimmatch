@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePostHog } from 'posthog-js/react';
+import { withFunnelAttribution } from '@/lib/funnel';
 
 /** Fire a PostHog event once per mount when the client is ready. */
 export function CaptureOnce({
@@ -17,7 +18,7 @@ export function CaptureOnce({
   useEffect(() => {
     if (sent.current || !posthog) return;
     sent.current = true;
-    posthog.capture(event, properties);
+    posthog.capture(event, withFunnelAttribution(properties));
   }, [posthog, event, properties]);
 
   return null;

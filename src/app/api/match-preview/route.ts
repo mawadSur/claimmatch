@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { flags } from '@/lib/flags';
 import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
-import { parseMatchPreviewDraft, previewMatchesFor } from '@/lib/match-preview';
+import {
+  parseMatchPreviewDraft,
+  parseSettlementScopeSlug,
+  previewMatchesForScope,
+} from '@/lib/match-preview';
 import { ipKey, rateLimit } from '@/lib/ratelimit';
 
 export const runtime = 'nodejs';
@@ -13,10 +17,6 @@ export const dynamic = 'force-dynamic';
  * only (no scores as percentages, no "you qualify").
  */
 export async function POST(req: Request) {
-  if (!flags.matchPreview()) {
-    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
-  }
-
   const limited = rateLimit(`match-preview:${ipKey(req)}`, { limit: 20, windowMs: 60_000 });
   if (!limited.ok) {
     return NextResponse.json(
@@ -33,6 +33,13 @@ export async function POST(req: Request) {
   }
 
   const draft = parseMatchPreviewDraft(body);
+  const settlement =
+    body && typeof body === 'object' && !Array.isArray(body)
+      ? parseSettlementScopeSlug((body as { settlement?: unknown }).settlement)
+      : null;
+  if (!flags.matchPreview() && !(flags.settlementPageCta() && settlement)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
   if (!draft) {
     return NextResponse.json({ error: 'Answer the questions and try again.' }, { status: 400 });
   }
@@ -46,6 +53,6 @@ export async function POST(req: Request) {
   }
 
   const open = catalog.lawsuits.filter((lawsuit) => isOpenForClaims(lawsuit));
-  const matches = previewMatchesFor(open, draft);
+  const matches = previewMatchesForScope(open, draft, settlement);
   return NextResponse.json({ matches });
 }

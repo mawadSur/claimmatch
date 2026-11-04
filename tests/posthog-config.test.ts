@@ -52,5 +52,9 @@ describe('PostHog App Router wiring', () => {
     expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_started');
     expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_completed');
     expect(read('src/components/analytics/SignupContextReturned.tsx')).toContain('signup_context_returned');
+    expect(read('src/components/settlement/SettlementQualifyCta.tsx')).toContain('settlement_cta_clicked');
+    expect(read('src/app/lawsuits/[slug]/page.tsx')).toContain('settlement_cta_viewed');
+    expect(read('src/components/settlement/RelatedSettlementLink.tsx')).toContain('related_settlement_clicked');
+    expect(read('src/components/analytics/CaptureOnce.tsx')).toContain('withFunnelAttribution');
   });
 });
