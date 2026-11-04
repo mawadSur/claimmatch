@@ -5,27 +5,39 @@ import Link from 'next/link';
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import {
-  MATCH_PREVIEW_ATTRIBUTE_KEYS,
   MATCH_PREVIEW_QUESTIONS,
   emptyMatchPreviewDraft,
   parseMatchPreviewDraft,
   readStoredMatchPreview,
+  scopedPreviewQuestions,
   writeStoredMatchPreview,
   type MatchPreviewAttributeKey,
   type MatchPreviewDraft,
   type MatchPreviewResult,
 } from '@/lib/match-preview';
+import type { EligibilityCriteria } from '@/lib/types';
 import { claimReturnPath } from '@/lib/signup-context';
 import { formatDeadline, US_STATES } from '@/lib/utils';
 
 type Step = 'questions' | 'results';
 
+export interface MatchPreviewScope {
+  slug: string;
+  title: string;
+  eligibilityText: string | null;
+  typical_payout: string | null;
+  deadline: string | null;
+  eligibility: EligibilityCriteria;
+}
+
 export function MatchPreview({
   signupContextEnabled,
   feeNote,
+  scope,
 }: {
   signupContextEnabled: boolean;
   feeNote: ReactNode;
+  scope?: MatchPreviewScope | null;
 }) {
   const posthog = usePostHog();
   const started = useRef(false);
@@ -36,7 +48,9 @@ export function MatchPreview({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const questions = MATCH_PREVIEW_QUESTIONS;
+  const questions = scope
+    ? scopedPreviewQuestions(scope.eligibility)
+    : MATCH_PREVIEW_QUESTIONS;
   const current = questions[index];
   const last = index >= questions.length - 1;
 
@@ -83,7 +97,7 @@ export function MatchPreview({
       const res = await fetch('/api/match-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(scope ? { ...payload, settlement: scope.slug } : payload),
       });
       const json = (await res.json().catch(() => null)) as
         | { matches?: MatchPreviewResult[]; error?: string }
@@ -118,8 +132,9 @@ export function MatchPreview({
   }
 
   function signupHref(slug?: string) {
-    if (signupContextEnabled && slug) {
-      const nextPath = claimReturnPath(slug);
+    const target = scope?.slug || slug;
+    if ((signupContextEnabled || scope) && target) {
+      const nextPath = claimReturnPath(target);
       return nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup';
     }
     return '/signup';
@@ -135,7 +150,7 @@ export function MatchPreview({
           qualify. The official notice has the rules.
         </p>
 
-        {matches.length === 0 ? (
+        {matches.length === 0 && !scope ? (
           <div className="mt-6 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
             <p className="font-semibold text-ink">No matching open settlements from these answers.</p>
             <p className="mt-1 text-sm text-ink-muted">
@@ -145,6 +160,28 @@ export function MatchPreview({
             <Link href="/lawsuits" className="btn-secondary mt-5">
               Browse open settlements
             </Link>
+          </div>
+        ) : matches.length === 0 && scope ? (
+          <div className="mt-6 rounded-2xl border border-slate-200 p-4">
+            <h3 className="text-lg font-bold leading-snug">{scope.title}</h3>
+            {scope.eligibilityText && (
+              <p className="mt-2 text-sm text-ink-muted">
+                Our listing says: {scope.eligibilityText} This is a short
+                summary, not the official rules.
+              </p>
+            )}
+            <p className="mt-3 text-sm text-ink-muted">
+              These answers did not produce a match for this listing. That is
+              not a decision that you qualify. The official notice has the rules.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Link href={`/claim/${scope.slug}`} className="btn-primary">
+                Start this claim <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link href={signupHref(scope.slug)} className="btn-secondary">
+                Save with a free account
+              </Link>
+            </div>
           </div>
         ) : (
           <ul className="mt-6 space-y-4">

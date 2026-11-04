@@ -93,6 +93,8 @@ export type IngestSummary = {
   proposeCloseSlugs: string[];
   /** True when this run planned writes and applied none. */
   dryRun: boolean;
+  /** Public listing slugs this run updated or closed (for IndexNow). */
+  changedSlugs: string[];
   /** Sources that returned nothing (outage, error or empty feed). */
   emptySources: string[];
   /** Writes or reads that failed. */
@@ -136,6 +138,7 @@ function emptySummary(): IngestSummary {
     proposeClose: 0,
     proposeCloseSlugs: [],
     dryRun: false,
+    changedSlugs: [],
     emptySources: [],
     failed: 0,
     bySource: {},
@@ -425,6 +428,9 @@ function recordPlannedUpdate(
   update: PlannedUpdate,
   extras?: UpdateExtras,
 ): void {
+  if (update.slug && !summary.changedSlugs.includes(update.slug)) {
+    summary.changedSlugs.push(update.slug);
+  }
   if (update.deadlineChange) summary.deadlineChanges += 1;
   if (update.reopens) summary.reopened += 1;
   if (update.closes) {

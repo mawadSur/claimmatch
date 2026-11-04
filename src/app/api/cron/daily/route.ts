@@ -14,6 +14,7 @@ import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { processFilingQueue } from '@/lib/filing/queue';
 import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
+import { submitIndexNowUrls } from '@/lib/indexnow';
 import {
   buildReport,
   checkIngestStep,
@@ -120,6 +121,18 @@ async function handle(req: Request) {
     // Hobby allows two crons; the weekly checker piggybacks on Monday UTC.
     if (flags.linkCheck() && new Date().getUTCDay() === 1) {
       await runOfficialLinkCheck();
+    }
+    const ingestResult = steps.ingest?.status === 'ran' || steps.ingest?.status === 'warning'
+      ? steps.ingest.result
+      : null;
+    const changedSlugs =
+      ingestResult && typeof ingestResult === 'object' && Array.isArray((ingestResult as { changedSlugs?: unknown }).changedSlugs)
+        ? ((ingestResult as { changedSlugs: string[] }).changedSlugs)
+        : [];
+    if (!dryRun && changedSlugs.length > 0) {
+      await submitIndexNowUrls(changedSlugs, { dryRun }).catch((err) => {
+        console.warn('[cron/daily] indexnow failed:', errorMessage(err));
+      });
     }
     return NextResponse.json({ ...report, dryRun, jobId }, { status: reportHttpStatus(report) });
   } catch (err) {

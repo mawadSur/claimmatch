@@ -175,3 +175,57 @@ export function clearStoredMatchPreview(): void {
     /* private mode */
   }
 }
+
+const SETTLEMENT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
+
+/** A catalog slug safe to put on /preview?settlement= and the preview API. */
+export function parseSettlementScopeSlug(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const slug = raw.trim();
+  if (!SETTLEMENT_SLUG.test(slug)) return null;
+  return slug;
+}
+
+/** Preview URL scoped to one settlement. */
+export function settlementPreviewPath(slug: string): string | null {
+  const safe = parseSettlementScopeSlug(slug);
+  return safe ? `/preview?settlement=${encodeURIComponent(safe)}` : null;
+}
+
+/**
+ * Questions for a settlement-scoped preview. Only onboarding keys the listing
+ * actually uses (state / requires / anyOf) and that the short preview already
+ * asks. Never invents a question from eligibility_text. If the row has no
+ * structured preview keys, the standard short set is used.
+ */
+export function scopedPreviewQuestions(
+  eligibility: Lawsuit['eligibility'] | null | undefined,
+): EligibilityQuestion[] {
+  const criteria = eligibility || {};
+  const wanted = new Set<string>();
+  if (criteria.states && criteria.states.length > 0) wanted.add('state');
+  for (const key of criteria.requires ?? []) {
+    if (key === 'state' || PREVIEW_KEY_SET.has(key)) wanted.add(key);
+  }
+  for (const key of Object.keys(criteria.anyOf ?? {})) {
+    if (PREVIEW_KEY_SET.has(key)) wanted.add(key);
+  }
+  const scoped = MATCH_PREVIEW_QUESTIONS.filter((q) => wanted.has(q.key));
+  if (scoped.length === 0) return MATCH_PREVIEW_QUESTIONS;
+  if (!scoped.some((q) => q.key === 'state')) {
+    const state = MATCH_PREVIEW_QUESTIONS.find((q) => q.key === 'state');
+    if (state) return [state, ...scoped];
+  }
+  return scoped;
+}
+
+export function previewMatchesForScope(
+  lawsuits: Lawsuit[],
+  draft: MatchPreviewDraft,
+  slug: string | null,
+  now: Date = new Date(),
+): MatchPreviewResult[] {
+  const safe = parseSettlementScopeSlug(slug);
+  const pool = safe ? lawsuits.filter((row) => row.slug === safe) : lawsuits;
+  return previewMatchesFor(pool, draft, now);
+}

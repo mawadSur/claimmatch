@@ -38,6 +38,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.homeAccountFirstCta()).toBe(false);
     expect(flags.matchPreview()).toBe(false);
     expect(flags.signupContext()).toBe(false);
+    expect(flags.settlementPageCta()).toBe(false);
+    expect(flags.relatedSettlements()).toBe(false);
+    expect(flags.indexNow()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -70,6 +73,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('HOME_ACCOUNT_FIRST_CTA_ENABLED', 'on');
     vi.stubEnv('MATCH_PREVIEW_ENABLED', 'on');
     vi.stubEnv('SIGNUP_CONTEXT_ENABLED', 'yes');
+    vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', 'yes');
+    vi.stubEnv('RELATED_SETTLEMENTS_ENABLED', 'on');
+    vi.stubEnv('INDEXNOW_ENABLED', 'true');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -101,6 +107,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.homeAccountFirstCta()).toBe(false);
     expect(flags.matchPreview()).toBe(false);
     expect(flags.signupContext()).toBe(false);
+    expect(flags.settlementPageCta()).toBe(false);
+    expect(flags.relatedSettlements()).toBe(false);
+    expect(flags.indexNow()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -133,6 +142,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('HOME_ACCOUNT_FIRST_CTA_ENABLED', '1');
     vi.stubEnv('MATCH_PREVIEW_ENABLED', '1');
     vi.stubEnv('SIGNUP_CONTEXT_ENABLED', '1');
+    vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', '1');
+    vi.stubEnv('RELATED_SETTLEMENTS_ENABLED', '1');
+    vi.stubEnv('INDEXNOW_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -164,5 +176,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.homeAccountFirstCta()).toBe(true);
     expect(flags.matchPreview()).toBe(true);
     expect(flags.signupContext()).toBe(true);
+    expect(flags.settlementPageCta()).toBe(true);
+    expect(flags.relatedSettlements()).toBe(true);
+    expect(flags.indexNow()).toBe(true);
   });
 });

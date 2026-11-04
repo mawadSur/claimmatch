@@ -12,6 +12,8 @@ import {
   resolveCategoryName,
   settlementPath,
 } from '@/lib/settlement-seo';
+import { flags } from '@/lib/flags';
+import { relatedSettlements } from '@/lib/related-settlements';
 import { HubChrome } from '@/components/settlement/HubChrome';
 import { JsonLd } from '@/components/settlement/JsonLd';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
@@ -77,6 +79,11 @@ export default async function CategoryHubPage({ params }: Params) {
   const lawsuits = lawsuitsInCategory(catalog.lawsuits, category);
   const { title, description } = categoryCopy(category);
   const path = categoryHubPath(category);
+  const listed = new Set(lawsuits.map((row) => row.slug));
+  const related = flags.relatedSettlements()
+    ? relatedSettlements({ slug: `hub-${categorySlug(category)}`, category: '' }, catalog.lawsuits)
+        .filter((item) => !listed.has(item.slug))
+    : [];
 
   return (
     <>
@@ -103,6 +110,8 @@ export default async function CategoryHubPage({ params }: Params) {
         lawsuits={lawsuits}
         emptyTitle={`No open ${category.toLowerCase()} settlements right now`}
         emptyBody="Nothing in this category is taking claims today. Browse every open settlement, or see what is closing soon."
+        related={related}
+        relatedFromSlug={`hub-${categorySlug(category)}`}
       />
     </>
   );

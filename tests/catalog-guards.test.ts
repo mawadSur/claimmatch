@@ -56,7 +56,7 @@ describe('robots.txt', () => {
     const group = rules as { userAgent: string; allow: string; disallow: string[] };
     expect(group.userAgent).toBe('*');
     expect(group.disallow).toEqual(
-      expect.arrayContaining(['/admin', '/dashboard', '/settings', '/api', '/claim', '/onboarding', '/unsubscribe']),
+      expect.arrayContaining(['/admin', '/dashboard', '/settings', '/api', '/claim', '/onboarding', '/unsubscribe', '/preview']),
     );
   });
 });

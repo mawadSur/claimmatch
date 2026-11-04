@@ -19,6 +19,8 @@ import {
   settleSignalPageFor,
   type CatalogLink,
 } from '@/lib/lawsuits';
+import { settlementPreviewPath } from '@/lib/match-preview';
+import { relatedSettlements } from '@/lib/related-settlements';
 import { proofDetail } from '@/lib/proof';
 import { settlementProofDetail } from '@/lib/settlement-guides';
 import {
@@ -50,7 +52,10 @@ import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
+import { RelatedSettlements } from '@/components/settlement/RelatedSettlements';
 import { SettlementFaq } from '@/components/settlement/SettlementFaq';
+import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
+import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
 import { Disclaimer } from '@/components/Disclaimer';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import type { Lawsuit } from '@/lib/types';
@@ -148,6 +153,11 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const facts = overlayVerifiedFacts(settlementAnswerFacts(lawsuit), lawsuit);
   const faqs = settlementFaqs(lawsuit);
   const claimHref = `/claim/${lawsuit.slug}`;
+  const qualifyEnabled = flags.settlementPageCta() && open;
+  const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
+  const related = flags.relatedSettlements()
+    ? relatedSettlements(lawsuit, await getLawsuits())
+    : [];
   const crumbs = [
     { name: 'Home', path: '/' },
     { name: 'Open settlements', path: '/lawsuits' },
@@ -161,6 +171,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
         event="settlement_viewed"
         properties={{ lawsuit_id: lawsuit.id, slug: lawsuit.slug }}
       />
+      {qualifyEnabled && qualifyHref && (
+        <CaptureOnce
+          event="settlement_cta_viewed"
+          properties={{ lawsuit_id: lawsuit.id, slug: lawsuit.slug }}
+        />
+      )}
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit)} />
@@ -203,17 +219,36 @@ export default async function LawsuitDetailPage({ params }: Params) {
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
 
-          <AnswerBlock facts={facts} open={open} claimHref={claimHref} official={official} />
+          <AnswerBlock
+            facts={facts}
+            open={open}
+            claimHref={claimHref}
+            official={official}
+            qualifyHref={qualifyHref ?? undefined}
+            qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
+            qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
+          />
 
           {open && (
             // On phones the sidebar comes last, so offer the next step up here too.
             <div className="mt-6 lg:hidden">
-              <Link
-                href={claimHref}
-                className="btn-primary w-full justify-center sm:w-auto"
-              >
-                Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              {qualifyHref ? (
+                <SettlementQualifyCta
+                  href={qualifyHref}
+                  slug={lawsuit.slug}
+                  lawsuitId={lawsuit.id}
+                  className="btn-primary w-full justify-center sm:w-auto"
+                >
+                  Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </SettlementQualifyCta>
+              ) : (
+                <Link
+                  href={claimHref}
+                  className="btn-primary w-full justify-center sm:w-auto"
+                >
+                  Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
               <p className="mt-2 text-xs text-ink-muted">
                 Free. You file on the official site yourself.
               </p>
@@ -245,7 +280,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       )}
 
       {/* Body --------------------------------------------------------------- */}
-      <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
+      <section className={`container-page grid gap-8 py-10 lg:grid-cols-3${qualifyHref ? ' pb-28 lg:pb-10' : ''}`}>
         <div className="lg:col-span-2">
           <dl className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
             {deadlineText(lawsuit) && (
@@ -354,6 +389,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
           <SettlementFaq items={faqs} />
 
+          {related.length > 0 && (
+            <RelatedSettlements items={related} fromSlug={lawsuit.slug} />
+          )}
+
           <div className="mt-10">
             <HubLinks categories={[lawsuit.category]} />
           </div>
@@ -425,12 +464,23 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   We’ll guide you to the official site, where you file for free, and help
                   you keep track of your claim.
                 </p>
-                <Link
-                  href={claimHref}
-                  className="btn-primary mt-5 w-full justify-center"
-                >
-                  Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                {qualifyHref ? (
+                  <SettlementQualifyCta
+                    href={qualifyHref}
+                    slug={lawsuit.slug}
+                    lawsuitId={lawsuit.id}
+                    className="btn-primary mt-5 w-full justify-center"
+                  >
+                    Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </SettlementQualifyCta>
+                ) : (
+                  <Link
+                    href={claimHref}
+                    className="btn-primary mt-5 w-full justify-center"
+                  >
+                    Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                )}
                 <Link
                   href={claimHref}
                   className="btn-secondary mt-3 w-full justify-center"
@@ -488,6 +538,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
           </div>
         </aside>
       </section>
+      {qualifyHref && (
+        <StickyQualifyCta
+          href={qualifyHref}
+          slug={lawsuit.slug}
+          lawsuitId={lawsuit.id}
+        />
+      )}
     </>
   );
 }
