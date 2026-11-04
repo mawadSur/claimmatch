@@ -67,8 +67,8 @@ function footerNote(reason: string, to?: string): string {
   return `
         <tr><td style="padding:22px 8px 0 8px;">
           <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
-          ${postal ? `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(postal)}</p>` : ''}
-          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(reason)}${unsub}</p>
+          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(SITE.name)}${postal ? `<br>${esc(postal)}` : ''}</p>
+          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. ${esc(reason)}${unsub}</p>
         </td></tr>`;
 }
 
