@@ -23,11 +23,15 @@ describe('self-serve account deletion coverage', () => {
     expect(USER_OWNED_TABLES).toContain('claims');
     expect(USER_OWNED_TABLES).toContain('recoveries');
     expect(USER_OWNED_TABLES).toContain('match_events');
+    expect(USER_OWNED_TABLES).toContain('profile_facts');
+    expect(USER_OWNED_TABLES).toContain('consent');
+    expect(USER_OWNED_TABLES).toContain('matches');
   });
 
   it('exposes the delete control on settings', () => {
     const settings = readFileSync(join(process.cwd(), 'src/app/settings/page.tsx'), 'utf8');
     expect(settings).toContain('DeleteAccount');
+    expect(settings).toContain('DownloadMyData');
     const button = readFileSync(join(process.cwd(), 'src/components/DeleteAccount.tsx'), 'utf8');
     expect(button).toContain('Delete my account and data');
     expect(button).toContain('DELETE');

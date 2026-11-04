@@ -52,6 +52,17 @@ describe('Terms and Privacy', () => {
     expect(privacy).toMatch(/You can request a copy/);
   });
 
+  it('privacy describes profile facts, consent, stored matches, and download', () => {
+    expect(privacy).toMatch(/brands, products, and accounts/i);
+    expect(privacy).toMatch(/employers and work history/i);
+    expect(privacy).toMatch(/locations/i);
+    expect(privacy).toMatch(/purchases/i);
+    expect(privacy).toMatch(/Consent records/);
+    expect(privacy).toMatch(/Stored match results/);
+    expect(privacy).toMatch(/download a JSON copy/i);
+    expect(privacy).toMatch(/new accounts start opted out/i);
+  });
+
   it('terms have no filing, fee or e-signature terms', () => {
     expect(terms).not.toMatch(/\be-?sign|\bsignature|\bauthoriz/i);
     expect(terms).not.toMatch(/\bour fee\b|\bfee of\b|percent of/i);

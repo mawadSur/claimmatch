@@ -3,6 +3,11 @@ import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
 import { filterOpenForClaims } from '@/lib/lawsuits';
 import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import {
+  isEmailableStoredMatch,
+  MATCH_EMAIL_SCORE_THRESHOLD,
+  wantsInstantMatchEmails,
+} from '@/lib/match-email';
 import { factsFromRows } from '@/lib/profile-facts';
 import { todayInLatestUSZone } from '@/lib/utils';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
@@ -15,8 +20,11 @@ export interface MatchSweepResult {
 }
 
 /**
- * Recompute matches for every opted-in, onboarded user and email them about
- * brand-new matches (notified_at IS NULL), marking those as notified.
+ * Recompute matches for every opted-in, onboarded user and email instant
+ * subscribers about brand-new matches (notified_at IS NULL, score at or
+ * above MATCH_EMAIL_SCORE_THRESHOLD), marking those as notified. Weekly
+ * subscribers are stored but emailed by the digest. Unsubscribed accounts
+ * (email_opt_in false) are never loaded.
  *
  * Only settlements open for claims count (isOpenForClaims: published, not
  * fictional, open status, deadline not passed). This runs with the
@@ -97,19 +105,26 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
       }
     }
 
-    // Find not-yet-notified, active matches for this user.
+    if (!wantsInstantMatchEmails(profile)) continue;
+
+    // Find not-yet-notified, active matches above the email score floor.
     const { data: pending } = await supabase
       .from('matches')
-      .select('id, lawsuit_id')
+      .select('id, lawsuit_id, score, dismissed, notified_at')
       .eq('user_id', profile.id)
       .eq('dismissed', false)
-      .is('notified_at', null);
+      .is('notified_at', null)
+      .gte('score', MATCH_EMAIL_SCORE_THRESHOLD);
 
     // Only matches on settlements that are open for claims right now. Others
     // stay un-notified, so nothing is marked sent that was never emailed.
-    const pendingRows = ((pending ?? []) as { id: string; lawsuit_id: string }[]).filter(
-      (row) => lawsuitById.has(row.lawsuit_id),
-    );
+    const pendingRows = ((pending ?? []) as {
+      id: string;
+      lawsuit_id: string;
+      score: number;
+      dismissed: boolean;
+      notified_at: string | null;
+    }[]).filter((row) => lawsuitById.has(row.lawsuit_id) && isEmailableStoredMatch(row));
     if (pendingRows.length === 0) continue;
     newMatches += pendingRows.length;
 

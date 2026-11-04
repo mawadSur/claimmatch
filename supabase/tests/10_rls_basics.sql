@@ -92,7 +92,7 @@ create function pg_temp.tables_tested_elsewhere() returns text[]
 language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
                'match_events', 'match_feature_snapshots', 'match_labels',
-               'profile_facts']
+               'profile_facts', 'consent']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as

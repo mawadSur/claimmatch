@@ -106,6 +106,11 @@ describe('parseSettingsInput', () => {
       ok: true,
       patch: { email_opt_in: false, phone: '+1 (555) 123-4567' },
     });
+    expect(parseSettingsInput({ email_frequency: 'weekly' })).toEqual({
+      ok: true,
+      patch: { email_frequency: 'weekly' },
+    });
+    expect(parseSettingsInput({ email_frequency: 'daily' }).ok).toBe(false);
   });
 
   it('accepts a known state in any case and clears emptied fields', () => {
