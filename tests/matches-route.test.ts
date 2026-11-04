@@ -31,6 +31,13 @@ vi.mock('@/lib/supabase/server', () => ({
           }),
         };
       }
+      if (table === 'profile_facts') {
+        return {
+          select: () => ({
+            eq: async () => ({ data: [], error: null }),
+          }),
+        };
+      }
       if (table === 'matches') {
         return {
           upsert: async (rows: Record<string, unknown>[]) => {

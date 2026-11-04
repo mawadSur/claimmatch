@@ -84,13 +84,15 @@ language sql immutable as $$
                'share_links', 'share_link_clicks',
                'administrators', 'administrator_form_mappings',
                'eligibility_rule_drafts', 'ingest_alerts',
-               'account_deletion_audit', 'held_closure_decisions']
+               'account_deletion_audit', 'held_closure_decisions',
+               'admin_access_log']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
 language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
-               'match_events', 'match_feature_snapshots', 'match_labels']
+               'match_events', 'match_feature_snapshots', 'match_labels',
+               'profile_facts']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as
@@ -363,7 +365,11 @@ begin
     $q$insert into public.held_closure_decisions (slug, decision, change_fingerprint)
        values ('rls-test-by-anon', 'dismissed', 'x')$q$,
     $q$update public.held_closure_decisions set decision = 'approved'$q$,
-    $q$delete from public.held_closure_decisions$q$
+    $q$delete from public.held_closure_decisions$q$,
+    $q$insert into public.admin_access_log (admin_id, action)
+       values ('a0000000-0000-4000-8000-00000000000a', 'list')$q$,
+    $q$update public.admin_access_log set action = 'reveal'$q$,
+    $q$delete from public.admin_access_log$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -518,7 +524,11 @@ begin
     $q$insert into public.held_closure_decisions (slug, decision, change_fingerprint)
        values ('rls-test-by-a', 'dismissed', 'x')$q$,
     $q$update public.held_closure_decisions set decision = 'approved'$q$,
-    $q$delete from public.held_closure_decisions$q$
+    $q$delete from public.held_closure_decisions$q$,
+    $q$insert into public.admin_access_log (admin_id, action)
+       values ('a0000000-0000-4000-8000-00000000000a', 'list')$q$,
+    $q$update public.admin_access_log set action = 'reveal'$q$,
+    $q$delete from public.admin_access_log$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then

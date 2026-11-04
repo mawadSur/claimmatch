@@ -181,4 +181,15 @@ export const flags = {
    * Off: no request. Never runs in tests, even if set.
    */
   indexNow: () => on('INDEXNOW_ENABLED'),
+  /**
+   * Richer profile: profile_facts collection, onboarding v2 step, /settings/profile,
+   * and /admin/users. Off: those surfaces 404 or stay hidden.
+   */
+  profileV2: () => on('PROFILE_V2_ENABLED'),
+  /**
+   * Persist matcher results into public.matches after nightly ingest.
+   * Off: the dashboard live-computes; the store job is skipped.
+   * Separate from MATCH_EMAILS_ENABLED.
+   */
+  matchStore: () => on('MATCH_STORE_ENABLED'),
 };

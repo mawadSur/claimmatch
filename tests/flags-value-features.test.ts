@@ -41,6 +41,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.settlementPageCta()).toBe(false);
     expect(flags.relatedSettlements()).toBe(false);
     expect(flags.indexNow()).toBe(false);
+    expect(flags.profileV2()).toBe(false);
+    expect(flags.matchStore()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -76,6 +78,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', 'yes');
     vi.stubEnv('RELATED_SETTLEMENTS_ENABLED', 'on');
     vi.stubEnv('INDEXNOW_ENABLED', 'true');
+    vi.stubEnv('PROFILE_V2_ENABLED', 'true');
+    vi.stubEnv('MATCH_STORE_ENABLED', 'yes');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -110,6 +114,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.settlementPageCta()).toBe(false);
     expect(flags.relatedSettlements()).toBe(false);
     expect(flags.indexNow()).toBe(false);
+    expect(flags.profileV2()).toBe(false);
+    expect(flags.matchStore()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -145,6 +151,8 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', '1');
     vi.stubEnv('RELATED_SETTLEMENTS_ENABLED', '1');
     vi.stubEnv('INDEXNOW_ENABLED', '1');
+    vi.stubEnv('PROFILE_V2_ENABLED', '1');
+    vi.stubEnv('MATCH_STORE_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -179,5 +187,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.settlementPageCta()).toBe(true);
     expect(flags.relatedSettlements()).toBe(true);
     expect(flags.indexNow()).toBe(true);
+    expect(flags.profileV2()).toBe(true);
+    expect(flags.matchStore()).toBe(true);
   });
 });

@@ -141,6 +141,36 @@ export interface Lawsuit {
   third_party_fee_status?: 'unknown' | 'allowed' | 'barred';
   /** 0023: generated true only when status is allowed. */
   third_party_fee_allowed?: boolean;
+  /** 0027: conservative structured tags extracted during ingest. */
+  tags?: LawsuitTags | null;
+}
+
+export type ProfileFactType =
+  | 'brand'
+  | 'product'
+  | 'account'
+  | 'employer'
+  | 'location'
+  | 'purchase';
+
+/** Structured purchase / employer / location history used by the v2 matcher. */
+export interface ProfileFact {
+  id?: string;
+  type: ProfileFactType;
+  value: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  source?: string | null;
+  created_at?: string;
+}
+
+/** Conservative lawsuit tags. Null/empty means unknown — never invent values. */
+export interface LawsuitTags {
+  brands?: string[] | null;
+  employers?: string[] | null;
+  states?: string[] | null;
+  class_period_start?: string | null;
+  class_period_end?: string | null;
 }
 
 /** 0014: signed-in crowd signal. Never shown as a public fact. */
@@ -183,6 +213,10 @@ export interface Profile {
   is_internal?: boolean;
   /** 0020: first-touch soft-launch tag (soft-1, soft-2, …). */
   cohort?: string | null;
+  /** 0027: structured facts (brands, employers, purchases). Loaded when PROFILE_V2 is on. */
+  facts?: ProfileFact[];
+  /** 0028: instant | weekly. Absent until the privacy/alerts migration. */
+  email_frequency?: 'instant' | 'weekly' | null;
   created_at: string;
   updated_at: string;
 }

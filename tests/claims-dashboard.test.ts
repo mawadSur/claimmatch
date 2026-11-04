@@ -4,6 +4,7 @@ import {
   buildClosingSoon,
   buildDashboard,
   buildDashboardMatches,
+  buildDashboardMatchesFromStored,
   dashboardNeedsProfile,
   groupDashboardMatches,
   type DashboardSettlement,
@@ -281,5 +282,62 @@ describe('buildDashboardMatches', () => {
     expect(dashboardNeedsProfile({ state: 'CA', attributes: { had_data_breach: true }, onboarded: true })).toBe(
       false,
     );
+    expect(
+      dashboardNeedsProfile({
+        state: null,
+        attributes: {},
+        onboarded: true,
+        facts: [{ type: 'purchase', value: 'Toyota' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('maps stored matches with a new badge and drops dismissed or closed rows', () => {
+    const openId = uuid();
+    const items = buildDashboardMatchesFromStored(
+      [
+        {
+          id: 'match-new',
+          user_id: 'u1',
+          lawsuit_id: openId,
+          score: 0.9,
+          reasons: ['Bought Toyota in 2021, inside the class period'],
+          notified_at: null,
+          dismissed: false,
+          created_at: NOW.toISOString(),
+          lawsuit: makeLawsuit({ requires: ['owns_vehicle'] }, {
+            id: openId,
+            slug: 'toyota-brakes',
+            title: 'Toyota Brakes',
+            deadline: '2026-12-01',
+          }),
+        },
+        {
+          id: 'match-dismissed',
+          user_id: 'u1',
+          lawsuit_id: uuid(),
+          score: 0.8,
+          reasons: [],
+          notified_at: null,
+          dismissed: true,
+          created_at: NOW.toISOString(),
+          lawsuit: makeLawsuit({ requires: ['owns_vehicle'] }, {
+            id: uuid(),
+            slug: 'other',
+            title: 'Other',
+            deadline: '2026-12-01',
+          }),
+        },
+      ],
+      NOW,
+      isFictional,
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      slug: 'toyota-brakes',
+      isNew: true,
+      matchId: 'match-new',
+      reasons: ['Bought Toyota in 2021, inside the class period'],
+    });
   });
 });

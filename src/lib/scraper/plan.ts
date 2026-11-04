@@ -5,6 +5,7 @@ import type {
 } from '@/lib/types';
 import { isOpenForClaims } from '@/lib/lawsuits';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
+import { tagsFromScraped } from '@/lib/lawsuit-tags';
 import { isDeadlinePassed, slugify } from '@/lib/utils';
 
 /**
@@ -70,6 +71,7 @@ export interface NewRow {
   status: 'open';
   last_seen_at: string;
   missed_feed_count: 0;
+  tags: ReturnType<typeof tagsFromScraped>;
 }
 
 export interface PlannedUpdate {
@@ -161,6 +163,7 @@ function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string, now: D
     status: 'open',
     last_seen_at: now.toISOString(),
     missed_feed_count: 0,
+    tags: tagsFromScraped(item),
   };
 }
 
@@ -231,6 +234,7 @@ function planUnlocked(row: ExistingRow, item: ScrapedLawsuit, now: Date): Planne
     source_url: item.source_url ?? null,
     claim_url: item.claim_url ?? null,
     raw_source_text: rawText.slice(0, RAW_TEXT_LIMIT),
+    tags: tagsFromScraped(item),
   };
   const changes = ['content refreshed (not yet reviewed)'];
   let deadlineChange: PlannedUpdate['deadlineChange'] = null;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck, Send, ListChecks, PauseCircle } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck, Send, ListChecks, PauseCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AdminNavCounts } from './AdminNav';
 
@@ -50,18 +50,28 @@ const HELD_CLOSURES_LINK = {
   countKey: null,
 };
 
+const USERS_LINK = {
+  href: '/admin/users',
+  label: 'Users',
+  Icon: Users,
+  exact: false,
+  countKey: null,
+};
+
 export function AdminNavLinks({
   counts,
   showRecoveries,
   showFiling = false,
   showEligibilityDrafts = false,
   showHeldClosures = false,
+  showUsers = false,
 }: {
   counts?: AdminNavCounts;
   showRecoveries: boolean;
   showFiling?: boolean;
   showEligibilityDrafts?: boolean;
   showHeldClosures?: boolean;
+  showUsers?: boolean;
 }) {
   const pathname = usePathname();
   const links = [
@@ -70,6 +80,7 @@ export function AdminNavLinks({
     ...(showEligibilityDrafts ? [ELIGIBILITY_LINK] : []),
     ...(showFiling ? [FILING_LINK] : []),
     ...(showRecoveries ? [RECOVERIES_LINK] : []),
+    ...(showUsers ? [USERS_LINK] : []),
   ];
 
   return (

@@ -8,6 +8,7 @@ import {
   type IngestRunStep,
 } from '@/lib/jobs';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
+import { persistStoredMatches } from '@/lib/match-store';
 import { runMatchSweep } from '@/lib/match-sweep';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
@@ -19,6 +20,7 @@ import {
   buildReport,
   checkIngestStep,
   errorMessage,
+  matchStoreGate,
   matchSweepGate,
   missingConfigStep,
   reportHttpStatus,
@@ -35,8 +37,10 @@ import {
  *      closures, failed writes and empty sources make the step fail (500)
  *      unless INGEST_HELD_IS_WARNING=1 and the only problem is held closures
  *      (then 200 + a warning jobs row). Every run is stored as a jobs row.
- *   2. matchSweep: recompute matches and email new ones. Paused by D50; runs
- *      only when MATCH_EMAILS_ENABLED=1.
+ *   2. matchStore: upsert per-user matches (score, reasons). Off unless
+ *      MATCH_STORE_ENABLED=1. Separate from email.
+ *   3. matchSweep: email new matches. Paused by D50; runs only when
+ *      MATCH_EMAILS_ENABLED=1.
  * The JSON reports each step as ran, skipped or failed; any failure makes the
  * response a 500.
  *
@@ -98,6 +102,15 @@ async function handle(req: Request) {
       );
     }
     await maybeRecordIngestAlert('daily', steps.ingest);
+
+    const storeGate = matchStoreGate(flags.matchStore());
+    if (!storeGate.run) {
+      steps.matchStore = storeGate.step;
+    } else {
+      steps.matchStore = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/matchStore', persistStoredMatches);
+    }
 
     const gate = matchSweepGate(flags.matchEmails());
     if (!gate.run) {

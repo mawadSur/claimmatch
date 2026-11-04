@@ -48,6 +48,20 @@ export function matchSweepGate(matchEmailsEnabled: boolean): Gate {
   return matchEmailsEnabled ? { run: true } : { run: false, step: pausedByD50('MATCH_EMAILS_ENABLED') };
 }
 
+/** Persist computed matches. Separate from MATCH_EMAILS_ENABLED. */
+export function matchStoreGate(matchStoreEnabled: boolean): Gate {
+  return matchStoreEnabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (match store)',
+          resume: 'Set MATCH_STORE_ENABLED=1 to persist nightly matches without emailing.',
+        },
+      };
+}
+
 /** D50: the Monday digest. */
 export function digestGate(digestEnabled: boolean): Gate {
   return digestEnabled ? { run: true } : { run: false, step: pausedByD50('DIGEST_ENABLED') };
