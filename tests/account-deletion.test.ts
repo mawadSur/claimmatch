@@ -26,6 +26,7 @@ describe('self-serve account deletion coverage', () => {
     expect(USER_OWNED_TABLES).toContain('profile_facts');
     expect(USER_OWNED_TABLES).toContain('consent');
     expect(USER_OWNED_TABLES).toContain('matches');
+    expect(USER_OWNED_TABLES).toContain('claim_reminder_sends');
   });
 
   it('exposes the delete control on settings', () => {

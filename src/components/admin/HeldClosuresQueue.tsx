@@ -2,10 +2,23 @@
 
 import { useMemo, useState } from 'react';
 import type { HeldClosureQueueItem } from '@/lib/held-closures';
+import {
+  groupHeldClosureSuggestions,
+  heldTriageGroupHint,
+  heldTriageGroupLabel,
+  HELD_TRIAGE_GROUP_ORDER,
+  type HeldClosureSuggestion,
+} from '@/lib/held-closure-triage';
 
 const PAGE_SIZE = 25;
 
-export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) {
+export function HeldClosuresQueue({
+  items,
+  triage = false,
+}: {
+  items: HeldClosureQueueItem[];
+  triage?: boolean;
+}) {
   const [rows, setRows] = useState(items);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -18,6 +31,16 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
     () => rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
     [rows, safePage],
   );
+
+  const groups = useMemo(() => {
+    if (!triage) return null;
+    return groupHeldClosureSuggestions(
+      rows.map((row) => ({
+        ...row,
+        suggestion: row.suggestion ?? 'unknown',
+      })),
+    );
+  }, [rows, triage]);
 
   function removeSlugs(slugs: string[]) {
     const drop = new Set(slugs);
@@ -65,8 +88,7 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
     setBusy(null);
   }
 
-  async function bulkApprove() {
-    const slugs = rows.filter((row) => selected[row.slug]).map((row) => row.slug);
+  async function bulkApprove(slugs: string[]) {
     if (slugs.length === 0) {
       setMessage('Select at least one listing to approve.');
       return;
@@ -77,6 +99,25 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
       const result = await post({ slugs, action: 'bulk_approve' });
       if (!result.ok) {
         setMessage(result.error ?? 'Could not approve the selected listings.');
+        setBusy(null);
+        return;
+      }
+      removeSlugs(slugs);
+    } catch {
+      setMessage('Could not reach ClaimMatch.');
+    }
+    setBusy(null);
+  }
+
+  async function approveGroup(group: HeldClosureSuggestion) {
+    const slugs = (groups?.[group] ?? []).map((row) => row.slug);
+    if (slugs.length === 0) return;
+    setBusy(`group:${group}`);
+    setMessage(null);
+    try {
+      const result = await post({ action: 'bulk_approve_group', group });
+      if (!result.ok) {
+        setMessage(result.error ?? 'Could not approve this group.');
         setBusy(null);
         return;
       }
@@ -105,6 +146,32 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
           {message}
         </p>
       )}
+      {groups && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {HELD_TRIAGE_GROUP_ORDER.map((key) => {
+            const count = groups[key].length;
+            return (
+              <div key={key} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-card">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-ink">{heldTriageGroupLabel(key)}</h3>
+                    <p className="mt-1 text-xs text-ink-muted">{heldTriageGroupHint(key)}</p>
+                  </div>
+                  <p className="text-lg font-extrabold tabular-nums text-ink">{count}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary mt-3"
+                  disabled={busy !== null || count === 0}
+                  onClick={() => approveGroup(key)}
+                >
+                  Approve all in this group
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
           {rows.length.toLocaleString()} held
@@ -114,67 +181,26 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
           type="button"
           className="btn-primary"
           disabled={busy !== null || selectedCount === 0}
-          onClick={bulkApprove}
+          onClick={() =>
+            bulkApprove(rows.filter((row) => selected[row.slug]).map((row) => row.slug))
+          }
         >
           Approve selected
         </button>
       </div>
       <ul className="space-y-3">
         {visible.map((row) => (
-          <li key={row.slug} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4"
-                checked={Boolean(selected[row.slug])}
-                onChange={(event) =>
-                  setSelected((current) => ({ ...current, [row.slug]: event.target.checked }))
-                }
-                aria-label={`Select ${row.title}`}
-              />
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold text-ink">{row.title}</h3>
-                <p className="mt-1 font-mono text-xs text-ink-muted">{row.slug}</p>
-                <p className="mt-2 text-sm text-ink-muted">
-                  Now: {row.status ?? 'not in catalog'}
-                  {row.deadline ? ` · deadline ${row.deadline}` : ' · no deadline on file'}
-                </p>
-                <p className="mt-1 text-sm text-ink">
-                  Close would change: {row.changes.length ? row.changes.join('; ') : 'status → closed'}
-                </p>
-                {row.officialHref ? (
-                  <a
-                    href={row.officialHref}
-                    className="mt-2 inline-block text-sm font-semibold text-brand-700 underline"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {row.officialLabel ?? 'Official link'}
-                  </a>
-                ) : (
-                  <p className="mt-2 text-sm text-ink-muted">No official link on file.</p>
-                )}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={busy !== null}
-                    onClick={() => act(row, 'approve')}
-                  >
-                    Approve close
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    disabled={busy !== null}
-                    onClick={() => act(row, 'dismiss')}
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            </div>
-          </li>
+          <HeldClosureRow
+            key={row.slug}
+            row={row}
+            selected={Boolean(selected[row.slug])}
+            busy={busy !== null}
+            triage={triage}
+            onSelect={(checked) =>
+              setSelected((current) => ({ ...current, [row.slug]: checked }))
+            }
+            onAct={act}
+          />
         ))}
       </ul>
       {totalPages > 1 && (
@@ -201,5 +227,88 @@ export function HeldClosuresQueue({ items }: { items: HeldClosureQueueItem[] }) 
         </nav>
       )}
     </div>
+  );
+}
+
+function HeldClosureRow({
+  row,
+  selected,
+  busy,
+  triage,
+  onSelect,
+  onAct,
+}: {
+  row: HeldClosureQueueItem;
+  selected: boolean;
+  busy: boolean;
+  triage: boolean;
+  onSelect: (checked: boolean) => void;
+  onAct: (row: HeldClosureQueueItem, action: 'approve' | 'dismiss') => void;
+}) {
+  return (
+    <li className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4"
+          checked={selected}
+          onChange={(event) => onSelect(event.target.checked)}
+          aria-label={`Select ${row.title}`}
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-bold text-ink">{row.title}</h3>
+          <p className="mt-1 font-mono text-xs text-ink-muted">{row.slug}</p>
+          {triage && row.suggestion && (
+            <p className="mt-2 text-sm font-semibold text-ink">
+              Suggested: {heldTriageGroupLabel(row.suggestion)}
+            </p>
+          )}
+          {triage && row.suggestionEvidence && row.suggestionEvidence.length > 0 && (
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-ink-muted">
+              {row.suggestionEvidence.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-sm text-ink-muted">
+            Now: {row.status ?? 'not in catalog'}
+            {row.deadline ? ` · deadline ${row.deadline}` : ' · no deadline on file'}
+          </p>
+          <p className="mt-1 text-sm text-ink">
+            Close would change: {row.changes.length ? row.changes.join('; ') : 'status → closed'}
+          </p>
+          {row.officialHref ? (
+            <a
+              href={row.officialHref}
+              className="mt-2 inline-block text-sm font-semibold text-brand-700 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {row.officialLabel ?? 'Official link'}
+            </a>
+          ) : (
+            <p className="mt-2 text-sm text-ink-muted">No official link on file.</p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => onAct(row, 'approve')}
+            >
+              Approve close
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={busy}
+              onClick={() => onAct(row, 'dismiss')}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </li>
   );
 }

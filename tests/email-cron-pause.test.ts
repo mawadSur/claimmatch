@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   D50_PAUSED,
   buildReport,
+  deadlineRemindersGate,
   digestGate,
   errorMessage,
+  heldTriageGate,
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
@@ -54,6 +56,27 @@ describe('D50 gates', () => {
     expect(digestGate(flags.digest()).run).toBe(true);
     expect(matchStoreGate(flags.matchStore()).run).toBe(true);
     vi.unstubAllEnvs();
+  });
+
+  it('pauses held-closure triage and deadline reminders unless their flags are on', () => {
+    expect(heldTriageGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (held-closure triage)',
+        resume: expect.stringContaining('HELD_CLOSURE_TRIAGE_ENABLED=1'),
+      },
+    });
+    expect(deadlineRemindersGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (deadline reminders)',
+        resume: expect.stringContaining('DEADLINE_REMINDERS_ENABLED=1'),
+      },
+    });
+    expect(heldTriageGate(true)).toEqual({ run: true });
+    expect(deadlineRemindersGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

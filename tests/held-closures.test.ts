@@ -253,4 +253,35 @@ describe('POST /api/admin/held-closures', () => {
     expect(body.updated).toBe(1);
     expect(h.lastUpdate).toEqual({ status: 'closed' });
   });
+
+  it('bulk-approves one triage group when that flag is on', async () => {
+    h.queue = [
+      {
+        slug: 'acme-breach',
+        fingerprint: 'status open -> closed',
+        changes: ['status open -> closed'],
+        patch: { status: 'closed' },
+        suggestion: 'safe_to_close',
+      },
+      {
+        slug: 'keep-me',
+        fingerprint: 'status open -> closed',
+        changes: ['status open -> closed'],
+        patch: { status: 'closed' },
+        suggestion: 'likely_keep',
+      },
+    ];
+    vi.stubEnv('HELD_CLOSURE_TRIAGE_ENABLED', '1');
+    const res = await post({ action: 'bulk_approve_group', group: 'safe_to_close' });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.updated).toBe(1);
+    expect(body.results).toEqual([expect.objectContaining({ slug: 'acme-breach', ok: true })]);
+  });
+
+  it('hides group approve when triage is off', async () => {
+    const res = await post({ action: 'bulk_approve_group', group: 'safe_to_close' });
+    expect(res.status).toBe(404);
+    expect(h.lastUpdate).toBeNull();
+  });
 });

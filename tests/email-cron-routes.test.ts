@@ -116,12 +116,14 @@ describe('/api/cron/daily', () => {
       job: 'daily',
       ok: true,
       ranSteps: ['ingest'],
-      skippedSteps: ['matchStore', 'matchSweep'],
+      skippedSteps: ['matchStore', 'matchSweep', 'heldTriage', 'deadlineReminders'],
       failedSteps: [],
       steps: {
         ingest: { status: 'ran', result: INGEST },
         matchStore: { status: 'skipped', reason: 'paused (match store)' },
         matchSweep: { status: 'skipped', reason: 'paused (D50)' },
+        heldTriage: { status: 'skipped', reason: 'paused (held-closure triage)' },
+        deadlineReminders: { status: 'skipped', reason: 'paused (deadline reminders)' },
       },
     });
   });

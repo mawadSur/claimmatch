@@ -43,6 +43,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.indexNow()).toBe(false);
     expect(flags.profileV2()).toBe(false);
     expect(flags.matchStore()).toBe(false);
+    expect(flags.heldClosureTriage()).toBe(false);
+    expect(flags.heldAutoClosePastDeadline()).toBe(false);
+    expect(flags.deadlineReminders()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -80,6 +83,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INDEXNOW_ENABLED', 'true');
     vi.stubEnv('PROFILE_V2_ENABLED', 'true');
     vi.stubEnv('MATCH_STORE_ENABLED', 'yes');
+    vi.stubEnv('HELD_CLOSURE_TRIAGE_ENABLED', 'yes');
+    vi.stubEnv('HELD_AUTO_CLOSE_PAST_DEADLINE', 'true');
+    vi.stubEnv('DEADLINE_REMINDERS_ENABLED', 'on');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -116,6 +122,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.indexNow()).toBe(false);
     expect(flags.profileV2()).toBe(false);
     expect(flags.matchStore()).toBe(false);
+    expect(flags.heldClosureTriage()).toBe(false);
+    expect(flags.heldAutoClosePastDeadline()).toBe(false);
+    expect(flags.deadlineReminders()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -153,6 +162,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INDEXNOW_ENABLED', '1');
     vi.stubEnv('PROFILE_V2_ENABLED', '1');
     vi.stubEnv('MATCH_STORE_ENABLED', '1');
+    vi.stubEnv('HELD_CLOSURE_TRIAGE_ENABLED', '1');
+    vi.stubEnv('HELD_AUTO_CLOSE_PAST_DEADLINE', '1');
+    vi.stubEnv('DEADLINE_REMINDERS_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -189,5 +201,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.indexNow()).toBe(true);
     expect(flags.profileV2()).toBe(true);
     expect(flags.matchStore()).toBe(true);
+    expect(flags.heldClosureTriage()).toBe(true);
+    expect(flags.heldAutoClosePastDeadline()).toBe(true);
+    expect(flags.deadlineReminders()).toBe(true);
   });
 });

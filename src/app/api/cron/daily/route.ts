@@ -15,11 +15,15 @@ import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { processFilingQueue } from '@/lib/filing/queue';
 import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
+import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
+import { sendDeadlineReminders } from '@/lib/deadline-reminders';
 import { submitIndexNowUrls } from '@/lib/indexnow';
 import {
   buildReport,
   checkIngestStep,
+  deadlineRemindersGate,
   errorMessage,
+  heldTriageGate,
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
@@ -120,6 +124,24 @@ async function handle(req: Request) {
       steps.matchSweep = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/matchSweep', runMatchSweep);
+    }
+
+    const triageGate = heldTriageGate(flags.heldClosureTriage());
+    if (!triageGate.run) {
+      steps.heldTriage = triageGate.step;
+    } else {
+      steps.heldTriage = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/heldTriage', () => runHeldClosureSiteChecks());
+    }
+
+    const reminderGate = deadlineRemindersGate(flags.deadlineReminders());
+    if (!reminderGate.run) {
+      steps.deadlineReminders = reminderGate.step;
+    } else {
+      steps.deadlineReminders = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/deadlineReminders', () => sendDeadlineReminders());
     }
 
     const report = buildReport('daily', steps);

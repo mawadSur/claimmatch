@@ -6,6 +6,7 @@ import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
   applyCloseBreaker,
   EXISTING_ROW_COLUMNS,
+  heldChangeFingerprint,
   heldClosureLogLines,
   maxCloseShareFromEnv,
   planIngest,
@@ -27,6 +28,13 @@ import {
   type StaleCandidate,
   type WouldCloseRow,
 } from './stale';
+import {
+  recordCatalogWriteFailure,
+  writeLawsuitRow,
+  type CatalogFailureSample,
+} from './catalog-failures';
+import { partitionHeldPastDeadline } from '@/lib/held-closure-triage';
+import { recordHeldClosureDecision } from '@/lib/held-closures';
 
 export type { HeldClosure } from './plan';
 export type { WouldCloseRow } from './stale';
@@ -99,6 +107,14 @@ export type IngestSummary = {
   emptySources: string[];
   /** Writes or reads that failed. */
   failed: number;
+  /**
+   * Capped sample of those failures (first 20): slug/id, operation, and the
+   * Postgres/PostgREST code + message. Safe to store on jobs.result and show
+   * on /admin — no secrets, no personal data.
+   */
+  failureSamples: CatalogFailureSample[];
+  /** Held rows this run closed because the stored deadline had passed (flag). */
+  autoClosedPastDeadline: number;
   bySource: Record<string, number>;
 };
 
@@ -141,6 +157,8 @@ function emptySummary(): IngestSummary {
     changedSlugs: [],
     emptySources: [],
     failed: 0,
+    failureSamples: [],
+    autoClosedPastDeadline: 0,
     bySource: {},
   };
 }
@@ -164,11 +182,7 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
   const maxShare = maxCloseShareFromEnv(process.env.INGEST_MAX_CLOSE_SHARE);
   const closeAfter = missingFeedCloseAfterFromEnv(process.env.INGEST_MISSING_FEED_CLOSE_AFTER);
 
-  const loadedCloseable = await loadCloseableRows(supabase);
-  if (!loadedCloseable) {
-    console.error('[pipeline] cannot read open rows; deadline and miss tracking skipped.');
-    summary.failed += 1;
-  }
+  const loadedCloseable = await loadCloseableRows(supabase, summary);
 
   // Deadline closes do not depend on the feed. A down or empty feed still
   // expires rows whose claim window has ended. Those ids are then left out of
@@ -189,6 +203,7 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
       maxShare,
       dryRun,
       extrasById: extrasFromCandidates(loadedCloseable),
+      now,
     });
   }
 
@@ -198,7 +213,11 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
     const source = await resolveSource(supabase, adapter);
     if (!source) {
       console.error(`[pipeline] ${adapter.slug}: cannot read or create its sources row; skipped.`);
-      summary.failed += 1;
+      recordCatalogWriteFailure(
+        summary,
+        { message: `cannot read or create sources row for ${adapter.slug}` },
+        { operation: 'read_source', slug: adapter.slug },
+      );
       continue;
     }
     if (!source.enabled) {
@@ -222,12 +241,8 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
     summary.ingested += items.length;
     summary.bySource[adapter.slug] = items.length;
 
-    const existing = await loadExisting(supabase, items.map((i) => i.external_id));
-    if (!existing) {
-      console.error(`[pipeline] ${adapter.slug}: cannot read existing rows; nothing changed.`);
-      summary.failed += 1;
-      continue;
-    }
+    const existing = await loadExisting(supabase, items.map((i) => i.external_id), summary);
+    if (!existing) continue;
 
     let planned = planIngest({ items, existing, sourceId: source.id, now });
 
@@ -264,6 +279,7 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
         ...existingAsCandidates(existing),
         ...(remainingCloseable ?? []),
       ]),
+      now,
     });
 
     if (!dryRun) await touchSource(supabase, source.id);
@@ -329,10 +345,24 @@ async function applyPlanned(
     maxShare: number;
     dryRun: boolean;
     extrasById: Map<string, UpdateExtras>;
+    now: Date;
   },
 ): Promise<void> {
-  const { summary, adapterSlug, openCount, maxShare, dryRun, extrasById } = opts;
-  const { plan, held, allowed } = applyCloseBreaker(planned, { openCount, maxShare });
+  const { summary, adapterSlug, openCount, maxShare, dryRun, extrasById, now } = opts;
+  const broken = applyCloseBreaker(planned, { openCount, maxShare });
+  let plan = broken.plan;
+  let held = broken.held;
+  const allowed = broken.allowed;
+  const autoCloseSlugs = new Set<string>();
+
+  if (held.length > 0 && flags.heldAutoClosePastDeadline()) {
+    const split = partitionHeldPastDeadline(held, extrasById, now);
+    if (split.autoClose.length > 0) {
+      plan = { ...plan, updates: [...plan.updates, ...split.autoClose] };
+      held = split.remainHeld;
+      for (const row of split.autoClose) autoCloseSlugs.add(row.slug);
+    }
+  }
 
   if (held.length > 0) {
     summary.held += held.length;
@@ -370,14 +400,18 @@ async function applyPlanned(
     }
     const results = await Promise.all(
       chunk.map(async (row) => {
-        const { error } = await supabase.from('lawsuits').insert(row);
+        const { error } = await writeLawsuitRow(supabase, {
+          operation: 'insert',
+          slug: row.slug,
+          row,
+        });
         return { row, error };
       }),
     );
     for (const { row, error } of results) {
       if (error) {
         console.error(`[pipeline] insert failed for ${row.slug}: ${error.message}`);
-        summary.failed += 1;
+        recordCatalogWriteFailure(summary, error, { operation: 'insert', slug: row.slug });
         continue;
       }
       summary.inserted += 1;
@@ -391,20 +425,53 @@ async function applyPlanned(
       for (const update of chunk) {
         summary.updated += 1;
         recordPlannedUpdate(summary, update, extrasById.get(update.id));
+        if (autoCloseSlugs.has(update.slug)) summary.autoClosedPastDeadline += 1;
       }
       continue;
     }
     const results = await Promise.all(
       chunk.map(async (update) => {
-        const { error } = await supabase.from('lawsuits').update(update.patch).eq('id', update.id);
+        const { error } = await writeLawsuitRow(supabase, {
+          operation: 'update',
+          slug: update.slug,
+          id: update.id,
+          patch: update.patch,
+        });
         return { update, error };
       }),
     );
     for (const { update, error } of results) {
       if (error) {
         console.error(`[pipeline] update failed for ${update.slug}: ${error.message}`);
-        summary.failed += 1;
+        recordCatalogWriteFailure(summary, error, {
+          operation: 'update',
+          slug: update.slug,
+          id: update.id,
+        });
+        if (autoCloseSlugs.has(update.slug)) {
+          summary.held += 1;
+          summary.heldSlugs.push(update.slug);
+          summary.heldClosures.push({
+            source: adapterSlug,
+            slug: update.slug,
+            changes: update.changes,
+            id: update.id,
+            patch: update.patch,
+            closeReason: update.closeReason,
+          });
+        }
         continue;
+      }
+      if (autoCloseSlugs.has(update.slug) && !dryRun) {
+        summary.autoClosedPastDeadline += 1;
+        await recordHeldClosureDecision({
+          slug: update.slug,
+          decision: 'auto_closed',
+          fingerprint: heldChangeFingerprint(update.changes),
+          adminId: null,
+          patch: update.patch,
+          source: 'auto_past_deadline',
+        });
       }
       if (update.deadlineChange) {
         console.log(
@@ -447,7 +514,10 @@ function recordPlannedUpdate(
 }
 
 /** Open or closing-soon rows, or null if they cannot be read. */
-async function loadCloseableRows(supabase: Db): Promise<StaleCandidate[] | null> {
+async function loadCloseableRows(
+  supabase: Db,
+  summary: IngestSummary,
+): Promise<StaleCandidate[] | null> {
   const rows: StaleCandidate[] = [];
   const page = 500;
   for (let from = 0; ; from += page) {
@@ -458,6 +528,7 @@ async function loadCloseableRows(supabase: Db): Promise<StaleCandidate[] | null>
       .range(from, from + page - 1);
     if (error) {
       console.error('[pipeline] reading open rows failed:', error.message);
+      recordCatalogWriteFailure(summary, error, { operation: 'read_open' });
       return null;
     }
     rows.push(...((data ?? []) as StaleCandidate[]));
@@ -467,7 +538,11 @@ async function loadCloseableRows(supabase: Db): Promise<StaleCandidate[] | null>
 }
 
 /** Existing rows that share an external_id with the feed, or null if they cannot be read. */
-async function loadExisting(supabase: Db, externalIds: string[]): Promise<ExistingRow[] | null> {
+async function loadExisting(
+  supabase: Db,
+  externalIds: string[],
+  summary: IngestSummary,
+): Promise<ExistingRow[] | null> {
   const ids = Array.from(new Set(externalIds.filter(Boolean)));
   const rows: ExistingRow[] = [];
   const chunks: string[][] = [];
@@ -484,6 +559,7 @@ async function loadExisting(supabase: Db, externalIds: string[]): Promise<Existi
     for (const { data, error } of results) {
       if (error) {
         console.error('[pipeline] reading existing rows failed:', error.message);
+        recordCatalogWriteFailure(summary, error, { operation: 'read_existing' });
         return null;
       }
       rows.push(...((data ?? []) as ExistingRow[]));
