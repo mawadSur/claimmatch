@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
 /**
  * Copy guard: banned phrases must never appear in anything a user can read.
  *
- * Scans src/**\/*.{ts,tsx}. Matching is case-insensitive, and any run of
- * whitespace (including a line break inside wrapped JSX text) counts as one
- * space. Comments are skipped, using the TypeScript parser to find them, so
+ * Scans src/**\/*.{ts,tsx} and the native app's mobile/src/**\/*.{ts,tsx}.
+ * Matching is case-insensitive, and any run of whitespace (including a line
+ * break inside wrapped JSX text) counts as one space. Comments are skipped,
+ * using the TypeScript parser to find them, so
  * code notes about legacy data do not trip the guard; strings, template
  * literals and JSX text are all checked.
  *
@@ -78,6 +79,49 @@ const RULES: Rule[] = [
   { id: 'we decided you', pattern: /\bwe\s+(?:determined|decided)\s+(?:that\s+)?you\b/gi },
   // C16 / E4: filling the official form (C10 copy-ready packet order is fine).
   { id: 'autofill official', pattern: /\bautofill(?:s|ing)?\s+(?:the\s+)?official\b/gi },
+  // Rephrased verdicts, payout promises and filing claims (mobile review). "Check that you
+  // qualify", "be sure you qualify", "if/whether you qualify" and "settlements you qualify
+  // for" stay allowed; "you qualify for this" has its own rule above.
+  {
+    id: 'you qualify',
+    pattern: /(?<!\b(?:if|whether|sure|check\s+that|see\s+that)\s+)\byou\s+qualify\b(?!\s+for\b)/gi,
+    negatable: true,
+  },
+  {
+    id: 'you qualify for a payment',
+    pattern: /\byou\s+qualify\s+for\s+(?:up\s+to\b|a\s+(?:payment|payout|share|refund)\b|\$)/gi,
+    negatable: true,
+  },
+  {
+    id: 'likely eligible',
+    pattern:
+      /\byou(?:['’]re|\s+are|\s+(?:may|might|could|would|should)\s+be)?\s+(?:likely|probably|definitely|certainly|almost\s+certainly)\s+(?:to\s+)?(?:be\s+)?(?:eligible|qualify|qualified)\b/gi,
+  },
+  {
+    id: 'you will be paid',
+    pattern:
+      /\byou(?:['’]ll|\s+will)\s+(?:(?:definitely|likely|probably|soon)\s+)?(?:(?:receive|get|be\s+paid|be\s+sent)\s+(?:up\s+to\s+|about\s+|around\s+|at\s+least\s+|roughly\s+)?(?:\$|a\s+(?:payment|payout|check|refund|share)\b|your\s+(?:payment|payout|money|share|check)\b)|get\s+paid\b)/gi,
+    negatable: true,
+  },
+  {
+    id: 'guaranteed payout',
+    pattern:
+      /\bguaranteed?\s+(?:payouts?|payments?|money|cash|refunds?|compensation|approval)\b|\b(?:payouts?|payments?|approval)\s+(?:is|are)\s+guaranteed\b/gi,
+    negatable: true,
+  },
+  { id: 'being filed', pattern: /\b(?:is|are|was|were)\s+being\s+(?:filed|submitted)\b/gi, negatable: true },
+  {
+    id: 'filed by claimmatch',
+    pattern: /\b(?:filed|submitted|sent)\s+(?:by|through|via)\s+(?:claimmatch|our\s+team|us)\b/gi,
+    negatable: true,
+  },
+  {
+    id: 'we send your claim',
+    pattern:
+      /\b(?:we|claimmatch|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:sends?|sent|forwards?|forwarded|transmits?|transmitted|delivers?|delivered)\s+(?:your|the|this|each)\s+claims?\b/gi,
+    negatable: true,
+  },
+  { id: 'match score', pattern: /\bmatch(?:ing)?\s+scores?\b|\bscore\s*:?\s*\d{1,3}\s*(?:%|\/\s*100\b|out\s+of\s+100\b)/gi },
 ];
 
 /**
@@ -94,6 +138,11 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> =
     file: 'src/components/claims/CorrectiveNoticeList.tsx',
     rule: 'claim filed',
     reason: 'Quotes the wrong “Claim filed” message the old flow showed, in order to correct it (D42).',
+  },
+  {
+    file: 'mobile/src/copy/notices.ts',
+    rule: 'claim filed',
+    reason: 'The app’s copy of the CorrectiveNotice text: quotes the same wrong “Claim filed” message, in order to correct it (D42).',
   },
   {
     file: 'src/lib/copy.ts',
@@ -254,6 +303,24 @@ describe('copy guard rules', () => {
     ['const a = "We determined you meet the rules";', 'we decided you'],
     ['const a = "We decided that you can file";', 'we decided you'],
     ['const a = "this bookmarklet autofills the official form";', 'autofill official'],
+    ['const a = "You qualify!";', 'you qualify'],
+    ['const a = "Good news: you qualify.";', 'you qualify'],
+    ['const a = "Looks like you qualify";', 'you qualify'],
+    ['const a = "You qualify for up to $250";', 'you qualify for a payment'],
+    ["const a = \"You're likely eligible for this settlement\";", 'likely eligible'],
+    ['const a = "You are probably eligible";', 'likely eligible'],
+    ['const a = "you likely qualify";', 'likely eligible'],
+    ['const a = "You will receive up to $250";', 'you will be paid'],
+    ['const a = "You’ll get a payment in March";', 'you will be paid'],
+    ['const a = "You’ll get paid";', 'you will be paid'],
+    ['const a = "Guaranteed payout";', 'guaranteed payout'],
+    ['const a = "Your payment is guaranteed";', 'guaranteed payout'],
+    ['const a = "Your claim is being filed";', 'being filed'],
+    ['const a = "Your claim was submitted by ClaimMatch";', 'filed by claimmatch'],
+    ['const a = "We send your claim to the administrator";', 'we send your claim'],
+    ['const a = "ClaimMatch forwards the claim for you";', 'we send your claim'],
+    ['const a = "Match score: 87";', 'match score'],
+    ['const a = "Score: 87%";', 'match score'],
   ])('flags %s', (text, rule) => {
     expect(flagged(text, text.includes('<') ? 'snippet.tsx' : 'snippet.ts')).toContain(rule);
   });
@@ -302,6 +369,16 @@ describe('copy guard rules', () => {
     'const a = "A listing does not mean you qualify";',
     'const a = "copy-ready details in the official form’s order";',
     'const a = "Filing a claim you don’t qualify for can be against the law.";',
+    'const a = "Check that you qualify";',
+    'const a = "Read the official notice to be sure you qualify before you file.";',
+    'const a = "Find settlements you qualify for";',
+    'const a = "settlements you may qualify for";',
+    'const a = "A listing does not mean you qualify or that you will be paid.";',
+    'const a = "We do not promise that you will receive any payment.";',
+    'const a = "We don’t guarantee payment";',
+    'const a = "Nothing is being filed for you";',
+    'const a = "ClaimMatch never sends your claim anywhere";',
+    'const a = { score: 0, reasons: [] };',
   ])('allows %s', (text) => {
     expect(flagged(text)).toEqual([]);
   });
@@ -371,7 +448,7 @@ describe('copy guard', () => {
   });
 
   // Fails until every Phase 0 branch that owns the remaining surfaces merges.
-  it('no banned phrase anywhere in src', () => {
-    expect(scanFiles(sourceFiles('src'))).toEqual([]);
+  it('no banned phrase anywhere in src or the native app (mobile/src)', () => {
+    expect(scanFiles([...sourceFiles('src'), ...sourceFiles('mobile/src')])).toEqual([]);
   });
 });
