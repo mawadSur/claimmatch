@@ -67,6 +67,34 @@ export function digestGate(digestEnabled: boolean): Gate {
   return digestEnabled ? { run: true } : { run: false, step: pausedByD50('DIGEST_ENABLED') };
 }
 
+/** Official-site checks that feed held-closure triage groups. */
+export function heldTriageGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (held-closure triage)',
+          resume: 'Set HELD_CLOSURE_TRIAGE_ENABLED=1 to classify held closures from cron.',
+        },
+      };
+}
+
+/** 7-day and 1-day reminders for tracked, unfiled claims. */
+export function deadlineRemindersGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (deadline reminders)',
+          resume: 'Set DEADLINE_REMINDERS_ENABLED=1 to email opted-in users before a tracked deadline.',
+        },
+      };
+}
+
 /**
  * Missing server config the jobs need, or null. Without the service role key
  * the server client falls back to the anon key, row-level security blocks the

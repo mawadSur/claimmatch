@@ -270,6 +270,88 @@ export async function sendClosingSoonEmail(to: string, opts: ClosingSoonEmailOpt
   }
 }
 
+export type DeadlineReminderEmailKind = '7d' | '1d';
+
+export interface DeadlineReminderEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  deadline: string;
+  kind: DeadlineReminderEmailKind;
+  to?: string;
+}
+
+export function renderDeadlineReminderEmail(opts: DeadlineReminderEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const when = opts.kind === '1d' ? 'tomorrow' : 'in 7 days';
+  const subjectLine =
+    opts.kind === '1d' ? 'A tracked settlement deadline is tomorrow' : 'A tracked settlement deadline is in 7 days';
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(subjectLine)}</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(subjectLine)}</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a settlement you are tracking has a listed claim deadline ${esc(when)}. Check the official notice and file there yourself if you qualify. ${esc(SITE.name)} never files for you.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(opts.title)}</div>
+                <div style="font-size:13px;color:#6b6480;margin-top:8px;">Listed deadline: ${esc(formatDeadline(opts.deadline))}</div>
+                <div style="margin-top:16px;">
+                  <a href="${lawsuitUrl(opts.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">Review this settlement →</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">See your tracked claims on your <a href="${SITE.url.replace(/\/$/, '')}/dashboard" style="color:${BRAND};text-decoration:underline;">dashboard</a>.</p>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${SITE.name} and are tracking this settlement.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Send a 7-day or 1-day claim deadline reminder. Returns true only when Resend
+ * accepted the send, so the caller can record idempotency after a real send.
+ */
+export async function sendDeadlineReminderEmail(
+  to: string,
+  opts: DeadlineReminderEmailOpts,
+): Promise<boolean> {
+  if (!to || !opts?.slug || !opts.deadline) return false;
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping deadline reminder.');
+    return false;
+  }
+  const subject =
+    opts.kind === '1d'
+      ? `A tracked settlement deadline is tomorrow on ${SITE.name}`
+      : `A tracked settlement deadline is in 7 days on ${SITE.name}`;
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject,
+      html: renderDeadlineReminderEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send deadline reminder:', err);
+    return false;
+  }
+}
+
 /** Send the welcome email. No-ops (logs) when Resend isn't configured. */
 export async function sendWelcomeEmail(to: string, name?: string): Promise<void> {
   if (!to) return;

@@ -22,6 +22,7 @@ export const USER_OWNED_TABLES = [
   'match_labels',
   'profile_facts',
   'consent',
+  'claim_reminder_sends',
 ] as const;
 
 export type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

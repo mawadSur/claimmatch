@@ -85,7 +85,8 @@ language sql immutable as $$
                'administrators', 'administrator_form_mappings',
                'eligibility_rule_drafts', 'ingest_alerts',
                'account_deletion_audit', 'held_closure_decisions',
-               'admin_access_log']
+               'admin_access_log', 'held_closure_site_checks',
+               'claim_reminder_sends']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -369,7 +370,16 @@ begin
     $q$insert into public.admin_access_log (admin_id, action)
        values ('a0000000-0000-4000-8000-00000000000a', 'list')$q$,
     $q$update public.admin_access_log set action = 'reveal'$q$,
-    $q$delete from public.admin_access_log$q$
+    $q$delete from public.admin_access_log$q$,
+    $q$insert into public.held_closure_site_checks (slug, signal)
+       values ('rls-test-by-a', 'gone')$q$,
+    $q$update public.held_closure_site_checks set signal = 'still_open'$q$,
+    $q$delete from public.held_closure_site_checks$q$,
+    $q$insert into public.claim_reminder_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
+    $q$update public.claim_reminder_sends set kind = '1d'$q$,
+    $q$delete from public.claim_reminder_sends$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -528,7 +538,16 @@ begin
     $q$insert into public.admin_access_log (admin_id, action)
        values ('a0000000-0000-4000-8000-00000000000a', 'list')$q$,
     $q$update public.admin_access_log set action = 'reveal'$q$,
-    $q$delete from public.admin_access_log$q$
+    $q$delete from public.admin_access_log$q$,
+    $q$insert into public.held_closure_site_checks (slug, signal)
+       values ('rls-test-by-a', 'gone')$q$,
+    $q$update public.held_closure_site_checks set signal = 'still_open'$q$,
+    $q$delete from public.held_closure_site_checks$q$,
+    $q$insert into public.claim_reminder_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
+    $q$update public.claim_reminder_sends set kind = '1d'$q$,
+    $q$delete from public.claim_reminder_sends$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then

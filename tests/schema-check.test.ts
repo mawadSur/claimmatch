@@ -34,6 +34,12 @@ describe('checkRequiredSchema', () => {
     expect(result.ok).toBe(true);
     expect(result.missing).toEqual([]);
     expect(result.present).toContain('lawsuits.last_seen_at');
+    expect(result.present).toContain('lawsuits.tags');
+    expect(result.present).toContain('profiles.email_frequency');
+    expect(result.present).toContain('profile_facts');
+    expect(result.present).toContain('consent');
+    expect(result.present).toContain('held_closure_site_checks');
+    expect(result.present).toContain('claim_reminder_sends');
     expect(result.present).toContain('persist_first_attribution');
   });
 

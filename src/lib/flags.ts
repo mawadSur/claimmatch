@@ -192,4 +192,22 @@ export const flags = {
    * Separate from MATCH_EMAILS_ENABLED.
    */
   matchStore: () => on('MATCH_STORE_ENABLED'),
+  /**
+   * Group the held-closure queue by a suggested decision (deadline / official
+   * site) and allow "approve all in this group". Official-site checks run from
+   * cron only. Never auto-closes. Off: the flat queue stays as it is.
+   */
+  heldClosureTriage: () => on('HELD_CLOSURE_TRIAGE_ENABLED'),
+  /**
+   * Nightly ingest may close a held row whose *stored* deadline is already
+   * past, and writes that to held_closure_decisions. Off: those rows stay
+   * in the review queue. Never closes a row with no stored deadline.
+   */
+  heldAutoClosePastDeadline: () => on('HELD_AUTO_CLOSE_PAST_DEADLINE'),
+  /**
+   * Email opted-in users 7 days and 1 day before a tracked, unfiled claim
+   * deadline. Off: the daily cron skips the step. Idempotent; never sends
+   * without email_opt_in.
+   */
+  deadlineReminders: () => on('DEADLINE_REMINDERS_ENABLED'),
 };

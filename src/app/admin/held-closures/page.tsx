@@ -12,6 +12,7 @@ export default async function HeldClosuresPage() {
   await requireAdmin('/admin/held-closures');
   if (!flags.adminHeldClosures()) notFound();
   const items = await listHeldClosureQueue();
+  const triage = flags.heldClosureTriage();
 
   return (
     <div className="space-y-6">
@@ -20,10 +21,13 @@ export default async function HeldClosuresPage() {
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
           Closures the nightly ingest held because they exceeded the close-share
           limit. Approving applies only that close. Dismissed slugs stay off this
-          list until the planned change is different. Nothing is auto-closed.
+          list until the planned change is different.
+          {triage
+            ? ' Suggestions come from the stored deadline and a cron check of the official site. Nothing is closed unless you approve it.'
+            : ' Nothing is auto-closed from this page.'}
         </p>
       </header>
-      <HeldClosuresQueue items={items} />
+      <HeldClosuresQueue items={items} triage={triage} />
     </div>
   );
 }
