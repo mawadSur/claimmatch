@@ -3,23 +3,14 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AlertCircle, ArrowRight, CheckCircle2, LayoutDashboard, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { lookupLawsuits } from '@/lib/lawsuits';
-import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
+import { loadDashboardData } from '@/lib/dashboard-server';
 import { ClaimList } from '@/components/claims/ClaimList';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
 import { CorrectiveNoticeList } from '@/components/claims/CorrectiveNoticeList';
 import { YourMatches } from '@/components/claims/YourMatches';
-import {
-  buildClosingSoon,
-  buildDashboard,
-  buildDashboardMatches,
-  dashboardNeedsProfile,
-} from '@/components/claims/dashboard-model';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
-import { listUserFilingJobs } from '@/lib/filing/queue';
-import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
   title: 'Your claims',
@@ -46,34 +37,8 @@ export default async function DashboardPage({
   const { welcome, denied, password } = await searchParams;
   const now = new Date();
 
-  const [{ data: profile }, claims, catalog, filingJobs] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('full_name, onboarded, state, attributes')
-      .eq('id', user.id)
-      .maybeSingle(),
-    loadUserClaims(user.id),
-    // Only settlements open for claims (the shared rule); buildClosingSoon
-    // applies the same rule again and drops tracked ones. A failed query is
-    // shown as an error, never as "no deadlines coming up".
-    lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
-    flags.assistedFiling() ? listUserFilingJobs(user.id) : Promise.resolve([]),
-  ]);
-
-  const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
-  const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
-  const closingSoon = buildClosingSoon(catalog.lawsuits, tracked, now, isFictionalSettlementSlug);
-  const matchProfile = {
-    state: (profile?.state as string | null) ?? null,
-    attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],
-    onboarded: Boolean(profile?.onboarded),
-  };
-  const matches = catalog.error
-    ? []
-    : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
-  const needsProfile = dashboardNeedsProfile(matchProfile);
-
-  const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
+  const { profile, claims, catalog, filingJobs, rows, notices, closingSoon, matches, needsProfile, firstName } =
+    await loadDashboardData(supabase, user.id, now);
 
   return (
     <div className="bg-gray-50">

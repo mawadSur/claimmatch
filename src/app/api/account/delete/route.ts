@@ -1,23 +1,40 @@
 import { NextResponse } from 'next/server';
-import { USER_OWNED_TABLES } from '@/lib/account-deletion';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { EXPLICIT_DELETE_ORDER } from '@/lib/account-deletion';
+import { isJsonRequest } from '@/lib/json-request';
+import { rateLimit } from '@/lib/ratelimit';
+import { AUTH_UNAVAILABLE, getRequestUser } from '@/lib/supabase/request-user';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/account/delete — self-serve deletion. Body must be { confirm: "DELETE" }.
- * Removes owned rows and the auth user. Writes an audit row with no PII.
+ * Writes an audit row with no PII, removes owned rows, then the auth user,
+ * whose ON DELETE CASCADE takes the profile and claim events with it.
  */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Please log in again.' }, { status: 401 });
+  const auth = await getRequestUser(req);
+  if (!auth.user) {
+    return auth.unavailable
+      ? NextResponse.json(AUTH_UNAVAILABLE, { status: 503, headers: { 'Cache-Control': 'no-store' } })
+      : NextResponse.json({ error: 'Please log in again.' }, { status: 401 });
+  }
+  const { user } = auth;
+
+  const limit = rateLimit(`account-delete:${user.id}`, { limit: 3, windowMs: 10 * 60_000 });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please try again in 10 minutes.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
   }
 
+  // JSON only: a same-site form or text/plain post cannot reach this route
+  // without a CORS preflight (defense in depth on top of SameSite cookies).
+  if (!isJsonRequest(req)) {
+    return NextResponse.json({ error: 'Send the request as JSON.' }, { status: 415 });
+  }
   let body: unknown;
   try {
     body = await req.json();
@@ -39,13 +56,14 @@ export async function POST(req: Request) {
     console.error('[account-delete] audit failed', err);
   }
 
-  for (const table of USER_OWNED_TABLES) {
+  // The profile is never deleted here: if deleteUser failed after that, the
+  // user would keep a valid session with no profile row.
+  for (const table of EXPLICIT_DELETE_ORDER) {
     try {
-      if (table === 'referrals') {
-        await svc.from(table).delete().eq('referrer_id', user.id);
-        continue;
-      }
-      const { error } = await svc.from(table).delete().eq(table === 'profiles' ? 'id' : 'user_id', user.id);
+      const { error } = await svc
+        .from(table)
+        .delete()
+        .eq(table === 'referrals' ? 'referrer_id' : 'user_id', user.id);
       if (error) console.error('[account-delete] row delete failed', { table, code: error.code });
     } catch (err) {
       console.error('[account-delete] row delete failed', { table, err });

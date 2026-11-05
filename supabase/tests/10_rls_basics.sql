@@ -493,6 +493,8 @@ begin
     $q$insert into public.jobs (type) values ('inserted by A')$q$,
     $q$update public.jobs set error = 'changed by A'$q$,
     $q$delete from public.jobs$q$,
+    -- 0027 revoked this from authenticated too; anon is probed in section 6.
+    $q$insert into public.subscribers (email) values ('rls-by-a@example.test')$q$,
     $q$insert into public.notifications (user_id, email, type)
        values ('a0000000-0000-4000-8000-00000000000a', 'rls-user-a@example.test', 'inserted by A')$q$,
     $q$update public.notifications set subject = 'changed by A'$q$,
@@ -597,9 +599,10 @@ rollback;
 -- ---------------------------------------------------------------------------
 -- 6. A signed-in user cannot make themselves an admin or rewrite the profile
 --    columns the server owns (0002 grants UPDATE only on editable columns).
---    Not yet checked: INSERT. The "own profile upsert" policy still lets a
---    user who has no profile row insert one with is_admin = true (SEC-9).
---    Add that check in the same change as the migration that revokes it.
+--    Nor can an API role create a row only the server creates (0027): a user
+--    with no profile row cannot insert one with is_admin = true (SEC-9; the
+--    signup trigger creates every profile), and anon cannot add a subscriber
+--    (/api/subscribe is retired).
 -- ---------------------------------------------------------------------------
 \echo '  6 a signed-in user cannot write server-owned profile columns'
 begin;
@@ -640,4 +643,50 @@ begin
     raise exception 'user A''s server-owned profile columns changed';
   end if;
 end $$;
+rollback;
+
+\echo '  6 a signed-in user with no profile row cannot insert one'
+begin;
+call pg_temp.load_fixtures();
+-- As the superuser, remove user A's profile row: the state SEC-9 needs.
+delete from public.profiles where id = 'a0000000-0000-4000-8000-00000000000a';
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-00000000000a';
+do $$
+declare
+  n bigint;
+begin
+  n := pg_temp.rows_changed(
+    $q$insert into public.profiles (id, is_admin) values (auth.uid(), true)$q$);
+  if n is not null then
+    raise exception 'user A, with no profile row, inserted one with is_admin = true (% row(s))', n;
+  end if;
+end $$;
+reset role;
+do $$
+begin
+  if exists (select 1 from public.profiles
+             where id = 'a0000000-0000-4000-8000-00000000000a') then
+    raise exception 'user A created their own profile row';
+  end if;
+end $$;
+rollback;
+
+\echo '  6 anon cannot add a subscriber'
+begin;
+call pg_temp.load_fixtures();
+call pg_temp.save_protected_tables();
+set local role anon;
+do $$
+declare
+  n bigint;
+begin
+  n := pg_temp.rows_changed(
+    $q$insert into public.subscribers (email) values ('rls-by-anon@example.test')$q$);
+  if n is not null then
+    raise exception 'anon inserted % row(s) into public.subscribers', n;
+  end if;
+end $$;
+reset role;
+call pg_temp.assert_protected_tables_unchanged('anon');
 rollback;

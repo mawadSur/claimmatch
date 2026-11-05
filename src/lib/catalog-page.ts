@@ -1,7 +1,7 @@
-import { eligibilitySummary } from '@/lib/claim-input';
-import { cleanSearchTerm, searchCatalog } from '@/lib/lawsuits';
-import { displayProofStatus } from '@/lib/verified-fields';
-import type { Lawsuit } from '@/lib/types';
+import { eligibilitySummary } from './claim-input';
+import { cleanSearchTerm, searchCatalog } from './lawsuit-display';
+import { displayProofStatus } from './verified-fields';
+import type { Lawsuit } from './types';
 
 /** Cards per page on /lawsuits. Keep HTML small enough to cache. */
 export const LAWSUITS_PAGE_SIZE = 24;

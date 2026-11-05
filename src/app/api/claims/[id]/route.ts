@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { AUTH_UNAVAILABLE, getRequestUser } from '@/lib/supabase/request-user';
 import {
   CLAIMS_UNAVAILABLE_MESSAGE,
   SETTLEMENT_UNAVAILABLE_MESSAGE,
@@ -18,6 +18,7 @@ import {
   serviceRoleConfigured,
 } from '@/lib/claims-server';
 import { rateLimit } from '@/lib/ratelimit';
+import { isJsonRequest } from '@/lib/json-request';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,11 +43,9 @@ function reply(body: unknown, status = 200, headers: Record<string, string> = {}
  */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return reply({ error: 'Please log in again.' }, 401);
+  const auth = await getRequestUser(req);
+  if (!auth.user) return auth.unavailable ? reply(AUTH_UNAVAILABLE, 503) : reply({ error: 'Please log in again.' }, 401);
+  const { supabase, user } = auth;
 
   const limit = rateLimit(`claims:${user.id}`, { limit: 30, windowMs: 60_000 });
   if (!limit.ok) {
@@ -60,7 +59,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // JSON only: a cross-site form or text/plain post cannot reach this route
   // without a CORS preflight (defense in depth on top of SameSite cookies).
-  if (!req.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+  if (!isJsonRequest(req)) {
     return reply({ error: 'Send the request as JSON.' }, 415);
   }
   let body: unknown;

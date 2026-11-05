@@ -5,9 +5,10 @@ import { US_STATES } from './utils';
 const STATE_CODES = new Set(US_STATES.map((s) => s.code));
 
 /**
- * What a signed-in user may change from Settings. z.object drops unknown keys,
- * so the retired SMS opt-in (sms_opt_in) and anything else a client sends is
- * never written. There is no SMS feature.
+ * What a signed-in user may change from Settings (and from the native app's
+ * onboarding, which cannot call the web's server action). z.object drops
+ * unknown keys, so the retired SMS opt-in (sms_opt_in) and anything else a
+ * client sends is never written. There is no SMS feature.
  */
 const SettingsInput = z.object({
   email_opt_in: z.boolean().optional(),
@@ -29,6 +30,9 @@ const SettingsInput = z.object({
   city: z.string().trim().max(120, 'Keep the city under 120 characters.').optional(),
   prefill_consent_at: z.string().trim().max(40).optional(),
   match_metrics_consent: z.boolean().optional(),
+  // Finishing or skipping onboarding, as the web's onboarding action does. It
+  // is never undone from here, so false is rejected rather than stored.
+  onboarded: z.literal(true).optional(),
 });
 
 export interface SettingsPatch {
@@ -42,6 +46,7 @@ export interface SettingsPatch {
   prefill_consent_at?: string | null;
   match_metrics_consent_at?: string | null;
   attributes?: Record<string, unknown>;
+  onboarded?: true;
 }
 
 export type SettingsParseResult =
@@ -68,6 +73,7 @@ export function parseSettingsInput(body: unknown): SettingsParseResult {
     city,
     prefill_consent_at,
     match_metrics_consent,
+    onboarded,
   } = parsed.data;
   const patch: SettingsPatch = {};
   if (email_opt_in !== undefined) patch.email_opt_in = email_opt_in;
@@ -82,6 +88,7 @@ export function parseSettingsInput(body: unknown): SettingsParseResult {
   if (prefill_consent_at) patch.prefill_consent_at = prefill_consent_at;
   if (match_metrics_consent === true) patch.match_metrics_consent_at = new Date().toISOString();
   if (match_metrics_consent === false) patch.match_metrics_consent_at = null;
+  if (onboarded) patch.onboarded = true;
 
   if ('attributes' in body) {
     const attrs = parseAttributeAnswers((body as { attributes?: unknown }).attributes);

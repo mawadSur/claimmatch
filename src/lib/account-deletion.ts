@@ -24,6 +24,34 @@ export const USER_OWNED_TABLES = [
 
 export type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
 
+/**
+ * Removed only by ON DELETE CASCADE when the auth user is deleted, never by an
+ * explicit delete. Deleting the profile first would leave a signed-in user
+ * with no profile row if deleteUser then failed, and the service role has no
+ * DELETE on claim_events (0006_claim_states.sql).
+ */
+export const CASCADE_ONLY_TABLES = ['profiles', 'claim_events'] as const;
+
+/**
+ * What POST /api/account/delete deletes, in this order, before deleting the
+ * auth user. filing_jobs goes before claim_authorizations because
+ * filing_jobs.authorization_id is ON DELETE RESTRICT (0015_assisted_filing.sql).
+ * referrals is keyed by referrer_id, every other table by user_id.
+ */
+export const EXPLICIT_DELETE_ORDER = [
+  'filing_jobs',
+  'claim_authorizations',
+  'match_feature_snapshots',
+  'match_events',
+  'match_labels',
+  'proof_feedback',
+  'recoveries',
+  'notifications',
+  'referrals',
+  'matches',
+  'claims',
+] as const;
+
 const CREATE_TABLE_RE =
   /create table if not exists public\.([a-z0-9_]+)/gi;
 

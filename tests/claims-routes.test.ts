@@ -55,9 +55,47 @@ vi.mock('@/lib/claims-server', async (importOriginal) => {
   };
 });
 
+// The app's bearer path: Supabase Auth checks the token, then the routes read
+// with a separate client that carries it.
+const b = vi.hoisted(() => ({
+  user: null as { id: string } | null,
+  authDown: false,
+  checked: [] as string[],
+  filters: [] as [string, unknown][],
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: {
+      getUser: async (jwt: string) => {
+        b.checked.push(jwt);
+        if (b.user) return { data: { user: b.user }, error: null };
+        return {
+          data: { user: null },
+          error: b.authDown
+            ? { name: 'AuthRetryableFetchError', message: 'fetch failed', status: 0 }
+            : { name: 'AuthApiError', message: 'invalid JWT', status: 403, code: 'bad_jwt' },
+        };
+      },
+    },
+    from: () => {
+      const chain = {
+        select: () => chain,
+        eq: (column: string, value: unknown) => {
+          b.filters.push([column, value]);
+          return chain;
+        },
+        maybeSingle: async () => ({ data: h.claimRow, error: h.claimError }),
+      };
+      return chain;
+    },
+  }),
+}));
+
 import { PATCH } from '@/app/api/claims/[id]/route';
 import { POST } from '@/app/api/claims/route';
 import { POST as FILE_ALL } from '@/app/api/claims/file-all/route';
+import { AUTH_UNAVAILABLE } from '@/lib/supabase/request-user';
 
 const CLAIM_ID = '00000000-0000-4000-8000-0000000000c1';
 const LAWSUIT_ID = '00000000-0000-4000-8000-0000000000d1';
@@ -97,12 +135,12 @@ function patch(body: unknown, opts: { id?: string; contentType?: string } = {}) 
   });
   return PATCH(req, { params: Promise.resolve({ id: opts.id ?? CLAIM_ID }) });
 }
-function post(body: unknown) {
+function post(body: unknown, contentType = 'application/json') {
   return POST(
     new Request('http://localhost/api/claims', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 'content-type': contentType },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
     }),
   );
 }
@@ -132,6 +170,8 @@ describe('PATCH /api/claims/[id]', () => {
     h.rateOk = true;
     expect((await patch({ action: 'report_filed' }, { id: 'not-a-uuid' })).status).toBe(404);
     expect((await patch('action=report_filed', { contentType: 'text/plain' })).status).toBe(415);
+    // Only the media type counts: a parameter cannot smuggle JSON past the check.
+    expect((await patch('action=report_filed', { contentType: 'text/plain; x=application/json' })).status).toBe(415);
   });
 
   it('answers bad input with 400, never 500', async () => {
@@ -226,6 +266,13 @@ describe('PATCH /api/claims/[id]', () => {
 });
 
 describe('POST /api/claims', () => {
+  it('refuses a body that is not JSON, even when a parameter names JSON', async () => {
+    const body = JSON.stringify({ lawsuit_id: LAWSUIT_ID });
+    expect((await post(body, 'text/plain')).status).toBe(415);
+    expect((await post(body, 'text/plain; x=application/json')).status).toBe(415);
+    expect(h.started).toHaveLength(0);
+  });
+
   it('refuses the retired e-sign payload with 410', async () => {
     const res = await post({ lawsuit_id: LAWSUIT_ID, signature_name: 'Jo Smith', form_data: {} });
     expect(res.status).toBe(410);
@@ -350,5 +397,95 @@ describe('POST /api/claims/file-all', () => {
   it('is gone', async () => {
     const res = await FILE_ALL();
     expect(res.status).toBe(410);
+  });
+});
+
+describe('bearer auth (the native app)', () => {
+  const JWT = 'app-header.app-payload.app-signature';
+
+  function bearerPost(body: unknown, authorization = `Bearer ${JWT}`) {
+    return POST(
+      new Request('http://localhost/api/claims', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization },
+        body: JSON.stringify(body),
+      }),
+    );
+  }
+  function bearerPatch(body: unknown, authorization = `Bearer ${JWT}`) {
+    const req = new Request(`http://localhost/api/claims/${CLAIM_ID}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', authorization },
+      body: JSON.stringify(body),
+    });
+    return PATCH(req, { params: Promise.resolve({ id: CLAIM_ID }) });
+  }
+
+  beforeEach(() => {
+    h.user = null; // no cookie session unless a test sets one
+    b.user = { id: 'user-b' };
+    b.authDown = false;
+    b.checked = [];
+    b.filters = [];
+  });
+
+  it('POST starts tracking for the token user, reading with the token client', async () => {
+    h.claimRow = null;
+    const res = await bearerPost({ lawsuit_id: LAWSUIT_ID });
+    expect(res.status).toBe(201);
+    expect(b.checked).toEqual([JWT]);
+    expect(b.filters).toEqual([
+      ['user_id', 'user-b'],
+      ['lawsuit_id', LAWSUIT_ID],
+    ]);
+    expect(h.started[0]).toMatchObject({ userId: 'user-b', lawsuitId: LAWSUIT_ID });
+  });
+
+  it('PATCH reports filing for the token user, reading with the token client', async () => {
+    h.claimRow = row({ user_id: 'user-b' });
+    const res = await bearerPatch({ action: 'report_filed' });
+    expect(res.status).toBe(200);
+    expect(b.filters).toEqual([['id', CLAIM_ID]]);
+    expect(h.applied[0]).toMatchObject({ claimId: CLAIM_ID, userId: 'user-b', plan: { toStatus: 'reported_filed' } });
+  });
+
+  it('the token user wins over a cookie session for someone else', async () => {
+    h.user = { id: 'user-a' };
+    h.claimRow = row({ user_id: 'user-a' });
+    expect((await bearerPatch({ action: 'report_filed' })).status).toBe(404);
+    expect(h.applied).toHaveLength(0);
+    h.claimRow = null;
+    expect((await bearerPost({ lawsuit_id: LAWSUIT_ID })).status).toBe(201);
+    expect(h.started[0]).toMatchObject({ userId: 'user-b' });
+  });
+
+  it('a malformed or rejected token gets 401, never the cookie session', async () => {
+    h.user = { id: 'user-a' };
+    for (const authorization of ['Bearer abc', 'Bearer a.b', `Bearer ${JWT} extra`]) {
+      expect((await bearerPost({ lawsuit_id: LAWSUIT_ID }, authorization)).status).toBe(401);
+      expect((await bearerPatch({ action: 'report_filed' }, authorization)).status).toBe(401);
+    }
+    expect(b.checked).toEqual([]);
+    b.user = null;
+    expect((await bearerPost({ lawsuit_id: LAWSUIT_ID })).status).toBe(401);
+    expect((await bearerPatch({ action: 'report_filed' })).status).toBe(401);
+    expect(h.started).toHaveLength(0);
+    expect(h.applied).toHaveLength(0);
+  });
+
+  it('answers 503, not 401, when Supabase Auth cannot check the token, and changes nothing', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    h.user = { id: 'user-a' };
+    b.user = null;
+    b.authDown = true;
+    const responses = [await bearerPost({ lawsuit_id: LAWSUIT_ID }), await bearerPatch({ action: 'report_filed' })];
+    errorLog.mockRestore();
+    for (const res of responses) {
+      expect(res.status).toBe(503);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+      expect(await res.json()).toEqual(AUTH_UNAVAILABLE);
+    }
+    expect(h.started).toHaveLength(0);
+    expect(h.applied).toHaveLength(0);
   });
 });

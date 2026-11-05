@@ -19,7 +19,7 @@ import {
   type SettlementContext,
 } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
-import type { Profile } from '@/lib/types';
+import type { ClaimFlowSettlement, PacketProfile } from '@/lib/claim-screen';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
 import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
@@ -29,26 +29,8 @@ import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { AuthorizeFiling } from './AuthorizeFiling';
 import { ReportPayout } from './ReportPayout';
 
-export interface ClaimFlowSettlement {
-  id: string;
-  slug: string;
-  title: string;
-  deadline: string | null;
-  /** The official claim site (claim_url), when we have a real link. */
-  officialUrl: string | null;
-  /** Where the listing came from (not an official site). */
-  sourceUrl: string | null;
-  sourceHost: string | null;
-  /** The listing's eligibility text, or null when it is only a placeholder. */
-  eligibility: string | null;
-  proof: ProofNeed;
-  /** C10: official-form field order when stored. */
-  formFieldOrder?: string[] | null;
-  /** Full-service filing is on (ASSISTED_FILING_ENABLED=1). */
-  assistedFilingAllowed?: boolean;
-  /** C4: show "I got paid" amount form when the claim is already submitted. */
-  payoutReportEnabled?: boolean;
-}
+// Defined in @/lib/claim-screen so the native app shares it; re-exported for existing imports.
+export type { ClaimFlowSettlement } from '@/lib/claim-screen';
 
 const PROOF_TEXT: Record<ProofNeed, string> = {
   required: 'Proof: required. Have your receipts, account statements or the notice you got ready.',
@@ -73,7 +55,7 @@ export function ClaimFlow({
   context: SettlementContext;
   initialClaim: ClaimView | null;
   nowIso: string;
-  profile?: Profile | null;
+  profile?: PacketProfile | null;
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -364,7 +346,7 @@ function FilingSteps({
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
   claim: ClaimView | null;
-  profile: Profile | null;
+  profile: PacketProfile | null;
   onChange: (claim: ClaimView, message: string) => void;
   onOpenOfficialForm: () => void;
 }) {
