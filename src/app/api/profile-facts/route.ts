@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { recordFactConsent } from '@/lib/consent';
 import { flags } from '@/lib/flags';
 import { parseProfileFacts } from '@/lib/profile-facts';
 import { createClient } from '@/lib/supabase/server';
@@ -75,6 +76,7 @@ export async function PUT(req: Request) {
       console.error('[profile-facts] replace insert failed', { code: insErr.code });
       return NextResponse.json({ error: 'We couldn’t save your profile facts.' }, { status: 500 });
     }
+    await recordFactConsent(supabase, user.id, parsed.facts);
   }
   return NextResponse.json({ ok: true, count: parsed.facts.length });
 }

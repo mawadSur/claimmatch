@@ -5,7 +5,12 @@ import { sendClosingSoonEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
 import { closingSoonEmailGate, pickClosingSoonEmailRows } from '@/lib/closing-soon-email';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
-import type { Lawsuit, Profile } from '@/lib/types';
+import {
+  isEmailableStoredMatch,
+  MATCH_EMAIL_SCORE_THRESHOLD,
+  wantsWeeklyMatchEmails,
+} from '@/lib/match-email';
+import type { Lawsuit, Match, Profile } from '@/lib/types';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { recordCronFailure } from '@/lib/jobs';
 import {
@@ -75,10 +80,10 @@ async function handle(req: Request) {
 }
 
 /**
- * The pre-D50 digest: email every opted-in, onboarded user a summary of their
- * current matches on published settlements. Before this is switched back on
- * (Phase 1), it must use the shared open-for-claims rule and the Phase 1 send
- * path instead of this matches query.
+ * Weekly new-match digest: opted-in weekly subscribers only. Emails
+ * unnotified stored matches at or above MATCH_EMAIL_SCORE_THRESHOLD via
+ * Resend, then marks notified_at. Instant subscribers are handled by the
+ * daily sweep. Unsubscribed accounts are never loaded.
  */
 async function sendDigest(): Promise<{ users: number; emailed: number }> {
   const supabase = createServiceClient();
@@ -87,9 +92,10 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
     .from('profiles')
     .select('*')
     .eq('email_opt_in', true)
-    .eq('onboarded', true);
+    .eq('onboarded', true)
+    .eq('email_frequency', 'weekly');
   if (profileError) throw new Error(`profiles query failed (code ${profileError.code ?? 'unknown'})`);
-  const profiles = (profileData ?? []) as Profile[];
+  const profiles = ((profileData ?? []) as Profile[]).filter(wantsWeeklyMatchEmails);
 
   let emailed = 0;
   for (const profile of profiles) {
@@ -97,17 +103,23 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
 
     const { data: matchRows, error: matchError } = await supabase
       .from('matches')
-      .select('*, lawsuit:lawsuits(*)')
+      .select('id, score, dismissed, notified_at, lawsuit:lawsuits(*)')
       .eq('user_id', profile.id)
       .eq('dismissed', false)
-      .order('score', { ascending: false })
-      .limit(6);
+      .is('notified_at', null)
+      .gte('score', MATCH_EMAIL_SCORE_THRESHOLD)
+      .order('score', { ascending: false });
     if (matchError) throw new Error(`matches query failed (code ${matchError.code ?? 'unknown'})`);
 
-    const rows = (matchRows ?? []) as { lawsuit?: Lawsuit }[];
-    const items: MatchNotifyItem[] = rows
+    const rows = (matchRows ?? []) as (Pick<Match, 'id' | 'score' | 'dismissed' | 'notified_at'> & {
+      lawsuit?: Lawsuit | null;
+    })[];
+    const pending = rows.filter(
+      (row) => isEmailableStoredMatch(row) && !!row.lawsuit && row.lawsuit.review_status === 'published',
+    );
+    const items: MatchNotifyItem[] = pending
       .map((m) => m.lawsuit)
-      .filter((l): l is Lawsuit => !!l && l.review_status === 'published')
+      .filter((l): l is Lawsuit => !!l)
       .map((l) => ({
         title: l.title,
         slug: l.slug,
@@ -121,6 +133,14 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
       { id: profile.id, email: profile.email, full_name: profile.full_name },
       items,
     );
+    const ids = pending.map((row) => row.id);
+    const { error: markErr } = await supabase
+      .from('matches')
+      .update({ notified_at: new Date().toISOString() })
+      .in('id', ids);
+    if (markErr) {
+      console.error(`[digest] mark notified failed for ${profile.id}:`, markErr);
+    }
     emailed += 1;
   }
 

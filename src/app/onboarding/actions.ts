@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { flags } from '@/lib/flags';
 import { createClient } from '@/lib/supabase/server';
 import { mergeAttributes, parseAttributeAnswers } from '@/lib/profile-attributes';
+import { recordFactConsent } from '@/lib/consent';
 import { parseProfileFacts } from '@/lib/profile-facts';
 import { US_STATES } from '@/lib/utils';
 
@@ -81,6 +82,7 @@ export async function saveOnboardingProfile(input: {
     if (!facts.ok) return { ok: false, error: facts.error, field: 'facts' };
     const replaced = await replaceOwnFacts(supabase, user.id, facts.facts);
     if (!replaced.ok) return replaced;
+    await recordFactConsent(supabase, user.id, facts.facts);
   }
 
   return { ok: true };

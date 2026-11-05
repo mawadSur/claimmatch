@@ -6,7 +6,7 @@ import type { Job } from '@/lib/types';
 const m = vi.hoisted(() => {
   const thenable = (result: unknown) => {
     const q: Record<string, unknown> = {};
-    for (const name of ['select', 'eq', 'order', 'limit']) q[name] = () => q;
+    for (const name of ['select', 'eq', 'order', 'limit', 'is', 'gte', 'in', 'update']) q[name] = () => q;
     q.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
       Promise.resolve(result).then(resolve, reject);
     return q;
@@ -285,13 +285,32 @@ describe('/api/cron/digest', () => {
   it('runs only when DIGEST_ENABLED=1', async () => {
     vi.stubEnv('DIGEST_ENABLED', '1');
     m.tables.profiles = {
-      data: [{ id: 'u1', email: 'jane@example.com', full_name: 'Jane' }],
+      data: [{
+        id: 'u1',
+        email: 'jane@example.com',
+        full_name: 'Jane',
+        email_opt_in: true,
+        email_frequency: 'weekly',
+        onboarded: true,
+      }],
       error: null,
     };
     m.tables.matches = {
       data: [
-        { lawsuit: { title: 'Real', slug: 'real', review_status: 'published', typical_payout: null, deadline: null } },
-        { lawsuit: { title: 'Hidden', slug: 'hidden', review_status: 'pending_review' } },
+        {
+          id: 'm1',
+          score: 0.7,
+          dismissed: false,
+          notified_at: null,
+          lawsuit: { title: 'Real', slug: 'real', review_status: 'published', typical_payout: null, deadline: null },
+        },
+        {
+          id: 'm2',
+          score: 0.8,
+          dismissed: false,
+          notified_at: null,
+          lawsuit: { title: 'Hidden', slug: 'hidden', review_status: 'pending_review' },
+        },
       ],
       error: null,
     };

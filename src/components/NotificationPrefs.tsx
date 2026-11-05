@@ -16,6 +16,9 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
   const [state, setState] = useState(profile.state ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [emailOptIn, setEmailOptIn] = useState(profile.email_opt_in);
+  const [emailFrequency, setEmailFrequency] = useState<'instant' | 'weekly'>(
+    profile.email_frequency === 'weekly' ? 'weekly' : 'instant',
+  );
   const [metricsConsent, setMetricsConsent] = useState(Boolean(profile.match_metrics_consent_at));
   const [answers, setAnswers] = useState<AttributeAnswers>(() =>
     answersFromAttributes(profile.attributes),
@@ -36,6 +39,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
           state,
           phone,
           email_opt_in: emailOptIn,
+          email_frequency: emailFrequency,
           match_metrics_consent: metricsConsent,
           attributes: answers,
         }),
@@ -126,9 +130,39 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
           id="email-opt-in"
           checked={emailOptIn}
           onChange={setEmailOptIn}
-          label="Email me about new settlements"
-          hint="These emails are paused for now. Leave this on to get them when they restart. Account emails and important notices about your claims come either way."
+          label="Email me about new settlements (optional)"
+          hint="Off unless you turn this on. New accounts start opted out. These emails stay paused until match alerts are enabled. Account emails and important notices about your claims come either way. You can unsubscribe from any email."
         />
+        {emailOptIn && (
+          <fieldset className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <legend className="text-sm font-semibold text-ink">How often</legend>
+            <p className="mt-1 text-xs text-ink-muted">
+              Instant emails go out after we store a new match. Weekly is a Monday digest.
+            </p>
+            <div className="mt-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="email-frequency"
+                  value="instant"
+                  checked={emailFrequency === 'instant'}
+                  onChange={() => setEmailFrequency('instant')}
+                />
+                Instant — when a new match is stored
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="email-frequency"
+                  value="weekly"
+                  checked={emailFrequency === 'weekly'}
+                  onChange={() => setEmailFrequency('weekly')}
+                />
+                Weekly digest
+              </label>
+            </div>
+          </fieldset>
+        )}
         <Toggle
           id="match-metrics-consent"
           checked={metricsConsent}

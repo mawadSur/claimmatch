@@ -9,7 +9,7 @@ begin
   foreach col in array array[
     'full_name', 'state', 'zip', 'phone', 'address_line1', 'address_line2', 'city',
     'attributes', 'email_opt_in', 'sms_opt_in', 'onboarded', 'prefill_consent_at',
-    'match_metrics_consent_at'
+    'match_metrics_consent_at', 'email_frequency'
   ] loop
     if not has_column_privilege('authenticated', 'public.profiles', col, 'UPDATE') then
       raise exception '0025: authenticated cannot update profiles.%', col;

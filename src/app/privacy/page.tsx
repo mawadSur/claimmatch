@@ -11,7 +11,7 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/privacy',
 });
 
-const LAST_UPDATED = 'October 26, 2026';
+const LAST_UPDATED = 'November 4, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 /** Service providers that process personal information for us (or, for SettleSignal, none). */
@@ -101,6 +101,24 @@ export default function PrivacyPage() {
                 messages.
               </li>
               <li>
+                <span className="font-semibold text-ink">Profile facts you choose to add:</span>{' '}
+                brands, products, and accounts; employers and work history; locations
+                and dates you lived or shopped; and purchases with dates, when you
+                type them on onboarding or My profile. We do not invent these. Each
+                category is stored only after you save it.
+              </li>
+              <li>
+                <span className="font-semibold text-ink">Consent records:</span> when
+                you save profile facts, we record the data category, the time you
+                granted it, and the privacy-policy version then in effect.
+              </li>
+              <li>
+                <span className="font-semibold text-ink">Stored match results:</span>{' '}
+                a score and plain-language reasons for settlements we think may
+                apply to you, plus whether you dismissed one. This is a ranking
+                aid, not a legal determination that you qualify.
+              </li>
+              <li>
                 <span className="font-semibold text-ink">Claims you track:</span> which
                 settlements you’re tracking, the status you report (for example “Reported
                 filed by you”) and any confirmation numbers you add.
@@ -154,8 +172,9 @@ export default function PrivacyPage() {
                 notices about claims you track.
               </li>
               <li>
-                To send settlement alert emails, only while you leave them turned on in
-                Settings. These emails are paused for now.
+                To send settlement alert emails, only if you opt in in Settings
+                (new accounts start opted out) and choose instant or weekly. These
+                emails are also paused unless the matching email flags are on.
               </li>
               <li>To understand how the Service is used, fix problems and improve it.</li>
               <li>To keep the Service secure, prevent abuse and follow the law.</li>
@@ -226,8 +245,10 @@ export default function PrivacyPage() {
               We send account emails, such as the link to confirm your email address. We
               may also send important notices about claims you track, such as a correction;
               these come even if you turn off other emails, because they’re about your
-              claims. Settlement alert emails are paused for now, and you can turn them off
-              at any time in Settings.
+              claims.               Settlement alert emails are off for new accounts until you opt in,
+              and you can turn them off at any time in Settings or with the
+              unsubscribe link in every alert. They stay paused site-wide unless
+              the matching email flags are on.
             </p>
           </section>
 
@@ -243,10 +264,12 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">9. Your choices and rights</h2>
             <p>
-              You can update your name, state and phone number, and turn alert emails on or
-              off, in Settings. You can request a copy of the personal information we have
-              about you, including any answers you gave to our earlier questions, and you
-              can ask us to correct it or to delete your account and data.
+              You can update your name, state and phone number, edit profile facts,
+              and turn alert emails on or off (and choose instant or weekly), in
+              Settings. You can download a JSON copy of your data from Settings. You can request a copy
+              of the personal information we have about you, including
+              any answers you gave to our earlier questions, and you can ask us to
+              correct it or to delete your account and data.
               Depending on where you live, you may have other rights under state law.
             </p>
             {contact.email && (

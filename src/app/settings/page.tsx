@@ -7,6 +7,7 @@ import { legalContact } from '@/lib/legal-contact';
 import { NotificationPrefs } from '@/components/NotificationPrefs';
 import { ReferralCard } from '@/components/ReferralCard';
 import { DeleteAccount } from '@/components/DeleteAccount';
+import { DownloadMyData } from '@/components/DownloadMyData';
 import { flags } from '@/lib/flags';
 
 export const metadata: Metadata = { title: 'Settings' };
@@ -34,7 +35,7 @@ export default async function SettingsPage() {
       state: null,
       zip: null,
       attributes: {},
-      email_opt_in: true,
+      email_opt_in: false,
       onboarded: false,
       is_admin: false,
       phone: null,
@@ -126,6 +127,7 @@ export default async function SettingsPage() {
             Match-quality logging is optional. It never includes optional health
             answers. You can turn it on or off in the form above.
           </p>
+          <DownloadMyData />
           <DeleteAccount />
         </section>
 
