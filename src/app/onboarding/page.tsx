@@ -6,6 +6,7 @@ import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
+import { WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 import { factsFromRows } from '@/lib/profile-facts';
 
 export const metadata: Metadata = {
@@ -107,6 +108,7 @@ export default async function OnboardingPage({
               email={user.email ?? null}
               next={destination}
               profileV2={profileV2}
+              storeNote={flags.panelTrustCopy() ? WHAT_WE_STORE_MINIMAL : undefined}
             />
           </div>
         </div>

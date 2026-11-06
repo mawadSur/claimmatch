@@ -3,24 +3,22 @@ import Link from 'next/link';
 import { ArrowRight, Search, HelpCircle, CheckCircle2, XCircle, BadgeCheck } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy } from '@/lib/copy';
+import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
-const BETA_METADATA: Metadata = publicPageMetadata({
-  title: 'Pricing',
-  description:
-    'ClaimMatch is free during beta. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid. You file on the official settlement site.',
-  path: '/pricing',
-});
-
 export function generateMetadata(): Metadata {
-  if (!flags.feeDisclosure()) return BETA_METADATA;
-  const body = feeEveryClaimCopy();
+  if (flags.feeDisclosure()) {
+    return publicPageMetadata({
+      title: 'Pricing',
+      description: feeEveryClaimCopy(),
+      path: '/pricing',
+    });
+  }
   return publicPageMetadata({
     title: 'Pricing',
-    description: body,
+    description: `${publicBetaFeeCopy()} You file on the official settlement site.`,
     path: '/pricing',
   });
 }
@@ -62,7 +60,7 @@ function pricingFaq(disclose: boolean) {
   return [
     {
       q: 'Does ClaimMatch cost anything?',
-      a: 'ClaimMatch is free during beta. We don’t charge you to browse settlements, create an account or keep track of your claims. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+      a: `${publicBetaFeeCopy()} We don’t charge you to browse settlements, create an account or keep track of your claims.`,
     },
     {
       q: 'Do you handle my settlement money?',
@@ -74,7 +72,7 @@ function pricingFaq(disclose: boolean) {
     },
     {
       q: 'How does ClaimMatch make money?',
-      a: 'ClaimMatch is free during beta. We don’t run ads or sell paid plans today, and we do not sell your personal information. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+      a: `${publicBetaFeeCopy()} We don’t run ads or sell paid plans today, and we do not sell your personal information.`,
     },
   ];
 }
@@ -101,14 +99,18 @@ export default function PricingPage() {
               ) : (
                 <>
                   Free during beta.{' '}
-                  <span className="text-brand-600">We may introduce a fee later.</span>
+                  <span className="text-brand-600">
+                    {flags.panelTrustCopy()
+                      ? 'Any future pricing will be shown before you use it.'
+                      : 'We may introduce a fee later.'}
+                  </span>
                 </>
               )}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               {disclose
                 ? `${feeEveryClaimCopy()} You file on the official settlement site, and the settlement administrator pays you directly.`
-                : `${BETA_FEE_COPY} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
+                : `${publicBetaFeeCopy()} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
             </p>
           </div>
         </div>

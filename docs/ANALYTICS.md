@@ -95,7 +95,9 @@ form click is not a filing.
 | `profile_completed` | Onboarding **save** succeeded with name and/or state | `evidence=onboarding_saved`, `has_name`, `has_state`, `onboarded=true` | Skip onboarding; empty save |
 | `matches_viewed` | Dashboard rendered ≥1 matcher row | `match_count` ≥ 1, `strong_count`, `possible_count` | Empty / failed catalog |
 | `match_viewed` | Claim flow mounted | `lawsuit_id`, `slug`, `source=claim_flow` | “You qualify” |
-| `official_form_opened` | Click on the official claim-form link | `lawsuit_id`, `slug`, `intent=official_form`, `is_filing=false` | Filed |
+| `official_form_opened` | Click on the official claim-form link (claim flow or signed-out settlement page) | `lawsuit_id`, `slug`, `intent=official_form`, `is_filing=false`; settlement-page clicks also send `source=settlement_page` | Filed |
+| `eligibility_quiz_started` | First answer on the signed-out settlement checklist | `lawsuit_id`, `slug`, `prompt_count`, `signed_out=true` | A qualify verdict |
+| `eligibility_quiz_completed` | User submitted the checklist | `lawsuit_id`, `slug`, `checks_yes`, `checks_no`, `checks_total`, `is_filing=false`, `is_qualify_verdict=false` | “You qualify” |
 | `prefill_opened` | Prefill packet mounted | `lawsuit_id`, `slug` | Filed |
 | `prefill_completed` | Copy-all or save of the packet | `lawsuit_id`, `slug`, `method` | Filed |
 | `claim_tracking_started` | Claim row created to track | — | Filed |
@@ -171,6 +173,9 @@ These names did not exist or never fired before this change. Do not backfill.
 | Matches listed | `matches_viewed` | `properties.match_count >= 1` |
 | Claim flow opened | `match_viewed` | `properties.source = 'claim_flow'` |
 | Official form intent | `official_form_opened` | `properties.intent = 'official_form' AND properties.is_filing = false` |
+| Signed-out official form | `official_form_opened` | `properties.source = 'settlement_page' AND properties.is_filing = false` |
+| Eligibility checklist started | `eligibility_quiz_started` | `properties.signed_out = true` |
+| Eligibility checklist finished | `eligibility_quiz_completed` | `properties.is_qualify_verdict = false AND properties.is_filing = false` |
 | User-confirmed filing | `claim_reported_filed` | `properties.evidence = 'user_reported_and_saved' AND properties.is_filing = true` |
 
 Do not chart `match_feedback` as filed. Do not chart `$pageview` on `/api*`

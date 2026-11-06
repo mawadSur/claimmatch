@@ -44,11 +44,13 @@ export function OnboardingWizard({
   email,
   next,
   profileV2 = false,
+  storeNote,
 }: {
   initial: OnboardingInitial;
   email: string | null;
   next: string;
   profileV2?: boolean;
+  storeNote?: string;
 }) {
   const router = useRouter();
   const posthog = usePostHog();
@@ -167,6 +169,7 @@ export function OnboardingWizard({
             All optional. Next we&rsquo;ll ask a few short questions so we can
             find settlements that may apply to you.
           </p>
+          {storeNote && <p className="mt-2 text-xs leading-relaxed text-ink-muted">{storeNote}</p>}
 
           <div className="mt-6 space-y-5">
             <div>

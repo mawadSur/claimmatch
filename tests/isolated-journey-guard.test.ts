@@ -14,6 +14,11 @@ describe('isolated journey is not production E2E', () => {
     expect(runner).toContain('supabase.co');
     expect(runner).toContain('refusing to point the isolated runner at a real host');
     expect(runner).toContain('ISOLATED_JOURNEY=1');
+    expect(runner).toContain('already in use');
+    expect(runner).toContain('PANEL_TRUST_COPY_ENABLED=1');
+    expect(runner).toContain('CATALOG_VALUE_RANK_ENABLED=1');
+    expect(runner).toContain('SETTLEMENT_QUIZ_ENABLED=1');
+    expect(runner).toContain('Production leaves these unset');
   });
 
   it('post-deploy smoke cannot load authenticated isolated specs', () => {

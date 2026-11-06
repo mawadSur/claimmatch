@@ -69,7 +69,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * came from after logging in. Must be rendered inside <Suspense> because it
  * calls useSearchParams().
  */
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({ mode, storeNote }: { mode: Mode; storeNote?: string }) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   // Only a path on this site (no "//host", "/\host" or control characters), so
@@ -408,6 +408,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </p>
           )}
         </div>
+
+        {isSignup && storeNote && (
+          <p className="text-xs leading-relaxed text-ink-muted">{storeNote}</p>
+        )}
 
         <button
           type="submit"

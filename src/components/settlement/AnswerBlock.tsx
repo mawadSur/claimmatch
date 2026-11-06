@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import type { CatalogLink } from '@/lib/lawsuits';
 import type { AnswerFacts } from '@/lib/settlement-seo';
+import { OfficialFormLink } from '@/components/settlement/OfficialFormLink';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 
 export function AnswerBlock({
@@ -9,6 +10,8 @@ export function AnswerBlock({
   open,
   claimHref,
   official,
+  lawsuitId,
+  slug,
   qualifyHref,
   qualifySlug,
   qualifyLawsuitId,
@@ -17,10 +20,14 @@ export function AnswerBlock({
   open: boolean;
   claimHref: string;
   official: CatalogLink | null;
+  lawsuitId?: string;
+  slug?: string;
   qualifyHref?: string;
   qualifySlug?: string;
   qualifyLawsuitId?: string;
 }) {
+  const formId = lawsuitId ?? qualifyLawsuitId;
+  const formSlug = slug ?? qualifySlug;
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
       <h2 className="text-lg font-bold">The short answer</h2>
@@ -29,9 +36,9 @@ export function AnswerBlock({
       </p>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
         {facts.qualifies && <Fact label="Who qualifies" value={facts.qualifies} wide />}
-        <Fact label="Listed payout" value={facts.payout} />
+        {facts.payout && <Fact label="Listed payout" value={facts.payout} />}
         {facts.deadline && <Fact label="Claim deadline" value={facts.deadline} />}
-        <Fact label="Proof needed" value={facts.proof} />
+        {facts.proof && <Fact label="Proof needed" value={facts.proof} />}
         {facts.administrator && <Fact label="Administrator" value={facts.administrator} />}
       </dl>
       {facts.missing.length > 0 && (
@@ -53,7 +60,18 @@ export function AnswerBlock({
               Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
-          {official?.kind === 'official' && (
+          {official?.kind === 'official' && formId && formSlug ? (
+            <OfficialFormLink
+              href={official.href}
+              lawsuitId={formId}
+              slug={formSlug}
+              className="btn-secondary justify-center"
+            >
+              Official claim site ({official.host})
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </OfficialFormLink>
+          ) : official?.kind === 'official' ? (
             <a
               href={official.href}
               target="_blank"
@@ -64,7 +82,7 @@ export function AnswerBlock({
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
-          )}
+          ) : null}
         </div>
       )}
     </div>

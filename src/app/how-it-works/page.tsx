@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
-import { feeEveryClaimCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
@@ -272,9 +272,7 @@ export default function HowItWorksPage() {
         <div className="container-narrow text-center">
           <h2 className="text-3xl font-extrabold">Ready to look?</h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            {disclose
-              ? feeEveryClaimCopy()
-              : 'It’s free during beta. We may introduce a fee later.'}
+            {disclose ? feeEveryClaimCopy() : publicBetaFeeCopy()}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">

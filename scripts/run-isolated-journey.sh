@@ -31,6 +31,32 @@ if [[ "$SUPABASE_URL" == *supabase.co* || "$SUPABASE_URL" == *lawsuitai.org* ]];
   exit 1
 fi
 
+port_busy() {
+  local port="$1"
+  python3 - "$port" <<'PY'
+import socket, sys
+port = int(sys.argv[1])
+s = socket.socket()
+s.settimeout(0.3)
+try:
+    s.connect(("127.0.0.1", port))
+except OSError:
+    raise SystemExit(1)
+finally:
+    s.close()
+raise SystemExit(0)
+PY
+}
+
+if port_busy "$BACKEND_PORT"; then
+  echo "isolated backend port $BACKEND_PORT is already in use; refusing to attach to a stale process" >&2
+  exit 1
+fi
+if port_busy "$APP_PORT"; then
+  echo "isolated app port $APP_PORT is already in use; refusing to attach to a stale process" >&2
+  exit 1
+fi
+
 export HOST BACKEND_PORT
 export NEXT_TELEMETRY_DISABLED=1
 export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
@@ -42,8 +68,12 @@ export NEXT_PUBLIC_SITE_URL="http://127.0.0.1:${APP_PORT}"
 export ISOLATED_JOURNEY=1
 export PLAYWRIGHT_BASE_URL="http://127.0.0.1:${APP_PORT}"
 export ARTIFACTS_DIR="$ARTIFACTS"
-# Flags stay off: live beta, self-file only.
+# Production product flags stay off: live beta, self-file only.
 unset FEE_DISCLOSURE_ENABLED ASSISTED_FILING_ENABLED PROFILE_V2_ENABLED MATCH_STORE_ENABLED HOME_ACCOUNT_FIRST_CTA || true
+# Isolated-only: verify panel-objection UI. Production leaves these unset.
+export PANEL_TRUST_COPY_ENABLED=1
+export CATALOG_VALUE_RANK_ENABLED=1
+export SETTLEMENT_QUIZ_ENABLED=1
 
 PIDS=()
 cleanup() {

@@ -49,6 +49,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.onboardingDrip()).toBe(false);
     expect(flags.profileCompleteness()).toBe(false);
     expect(flags.softInviteLanding()).toBe(false);
+    expect(flags.panelTrustCopy()).toBe(false);
+    expect(flags.catalogValueRank()).toBe(false);
+    expect(flags.settlementQuiz()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -92,6 +95,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('ONBOARDING_DRIP_ENABLED', 'yes');
     vi.stubEnv('PROFILE_COMPLETENESS_ENABLED', 'true');
     vi.stubEnv('SOFT_INVITE_LANDING_ENABLED', 'on');
+    vi.stubEnv('PANEL_TRUST_COPY_ENABLED', 'on');
+    vi.stubEnv('CATALOG_VALUE_RANK_ENABLED', 'yes');
+    vi.stubEnv('SETTLEMENT_QUIZ_ENABLED', 'true');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -134,6 +140,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.onboardingDrip()).toBe(false);
     expect(flags.profileCompleteness()).toBe(false);
     expect(flags.softInviteLanding()).toBe(false);
+    expect(flags.panelTrustCopy()).toBe(false);
+    expect(flags.catalogValueRank()).toBe(false);
+    expect(flags.settlementQuiz()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -177,6 +186,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('ONBOARDING_DRIP_ENABLED', '1');
     vi.stubEnv('PROFILE_COMPLETENESS_ENABLED', '1');
     vi.stubEnv('SOFT_INVITE_LANDING_ENABLED', '1');
+    vi.stubEnv('PANEL_TRUST_COPY_ENABLED', '1');
+    vi.stubEnv('CATALOG_VALUE_RANK_ENABLED', '1');
+    vi.stubEnv('SETTLEMENT_QUIZ_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -219,5 +231,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.onboardingDrip()).toBe(true);
     expect(flags.profileCompleteness()).toBe(true);
     expect(flags.softInviteLanding()).toBe(true);
+    expect(flags.panelTrustCopy()).toBe(true);
+    expect(flags.catalogValueRank()).toBe(true);
+    expect(flags.settlementQuiz()).toBe(true);
   });
 });

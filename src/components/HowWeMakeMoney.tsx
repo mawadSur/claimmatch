@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { HandCoins, CheckCircle2 } from 'lucide-react';
-import { feeEveryClaimCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { FeeDisclosure } from './FeeDisclosure';
 
@@ -29,7 +29,7 @@ export function HowWeMakeMoney({
         'ClaimMatch is free during beta. We don’t run ads or sell paid plans today.',
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',
-        'We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+        publicBetaFeeCopy(),
       ];
 
   return (

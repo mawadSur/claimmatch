@@ -59,6 +59,8 @@ export function eventsFromPostData(raw: string | null): CapturedEvent[] {
       'matches_viewed',
       'match_viewed',
       'official_form_opened',
+      'eligibility_quiz_started',
+      'eligibility_quiz_completed',
       'claim_tracking_started',
       'claim_reported_filed',
       'landing_viewed',

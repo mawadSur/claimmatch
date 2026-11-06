@@ -18,6 +18,8 @@ export const ANALYTICS_EVENTS = {
   matches_viewed: 'matches_viewed',
   match_viewed: 'match_viewed',
   official_form_opened: 'official_form_opened',
+  eligibility_quiz_started: 'eligibility_quiz_started',
+  eligibility_quiz_completed: 'eligibility_quiz_completed',
   prefill_opened: 'prefill_opened',
   prefill_completed: 'prefill_completed',
   claim_tracking_started: 'claim_tracking_started',
