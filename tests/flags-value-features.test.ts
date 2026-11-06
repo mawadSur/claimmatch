@@ -46,6 +46,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.heldClosureTriage()).toBe(false);
     expect(flags.heldAutoClosePastDeadline()).toBe(false);
     expect(flags.deadlineReminders()).toBe(false);
+    expect(flags.onboardingDrip()).toBe(false);
+    expect(flags.profileCompleteness()).toBe(false);
+    expect(flags.softInviteLanding()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -86,6 +89,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('HELD_CLOSURE_TRIAGE_ENABLED', 'yes');
     vi.stubEnv('HELD_AUTO_CLOSE_PAST_DEADLINE', 'true');
     vi.stubEnv('DEADLINE_REMINDERS_ENABLED', 'on');
+    vi.stubEnv('ONBOARDING_DRIP_ENABLED', 'yes');
+    vi.stubEnv('PROFILE_COMPLETENESS_ENABLED', 'true');
+    vi.stubEnv('SOFT_INVITE_LANDING_ENABLED', 'on');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -125,6 +131,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.heldClosureTriage()).toBe(false);
     expect(flags.heldAutoClosePastDeadline()).toBe(false);
     expect(flags.deadlineReminders()).toBe(false);
+    expect(flags.onboardingDrip()).toBe(false);
+    expect(flags.profileCompleteness()).toBe(false);
+    expect(flags.softInviteLanding()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -165,6 +174,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('HELD_CLOSURE_TRIAGE_ENABLED', '1');
     vi.stubEnv('HELD_AUTO_CLOSE_PAST_DEADLINE', '1');
     vi.stubEnv('DEADLINE_REMINDERS_ENABLED', '1');
+    vi.stubEnv('ONBOARDING_DRIP_ENABLED', '1');
+    vi.stubEnv('PROFILE_COMPLETENESS_ENABLED', '1');
+    vi.stubEnv('SOFT_INVITE_LANDING_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -204,5 +216,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.heldClosureTriage()).toBe(true);
     expect(flags.heldAutoClosePastDeadline()).toBe(true);
     expect(flags.deadlineReminders()).toBe(true);
+    expect(flags.onboardingDrip()).toBe(true);
+    expect(flags.profileCompleteness()).toBe(true);
+    expect(flags.softInviteLanding()).toBe(true);
   });
 });

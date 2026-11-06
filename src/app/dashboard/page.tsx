@@ -22,6 +22,8 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
 import { listUserFilingJobs } from '@/lib/filing/queue';
+import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
+import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
 import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
@@ -100,6 +102,11 @@ export default async function DashboardPage({
       ? storedMatches
       : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
   const needsProfile = dashboardNeedsProfile(matchProfile);
+  const completeness =
+    flags.profileCompleteness() && !catalog.error
+      ? profileCompleteness(matchProfile, catalog.lawsuits, now)
+      : null;
+  const showCompleteness = completeness ? shouldShowCompletenessCard(completeness) : false;
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
 
@@ -138,6 +145,8 @@ export default async function DashboardPage({
         {/* Always rendered (it shows nothing without notices) so its answers stay
             on screen after router.refresh() drops the answered rows. */}
         <CorrectiveNoticeList items={notices} />
+
+        {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
 
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">

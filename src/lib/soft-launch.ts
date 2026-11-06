@@ -34,6 +34,71 @@ export const EMPTY_SOFT_LAUNCH_COUNTS: SoftLaunchCounts = {
   filingsReported: 0,
 };
 
+/**
+ * Gate 0 bars from the soft-launch / growth plan: the soft-invite cohort
+ * should reach these before outreach. Read-only; never invent progress.
+ * Signups 20 is the bottom of the 20–50 invite; onboarded 50% is the
+ * completion bar; 10 official-form clicks and 5 filings reported are the
+ * live-claim readout.
+ */
+export const GATE_0_THRESHOLDS = {
+  signups: 20,
+  onboardedPercent: 50,
+  officialFormClicks: 10,
+  filingsReported: 5,
+} as const;
+
+export interface Gate0Metric {
+  current: number;
+  target: number;
+  met: boolean;
+}
+
+export interface Gate0Progress {
+  signups: Gate0Metric;
+  onboardedPercent: Gate0Metric;
+  officialFormClicks: Gate0Metric;
+  filingsReported: Gate0Metric;
+  allMet: boolean;
+}
+
+export function onboardedPercent(counts: SoftLaunchCounts): number {
+  if (counts.signups <= 0) return 0;
+  return Math.round((counts.onboarded / counts.signups) * 100);
+}
+
+export function gate0Progress(counts: SoftLaunchCounts): Gate0Progress {
+  const onboarded = onboardedPercent(counts);
+  const signups: Gate0Metric = {
+    current: counts.signups,
+    target: GATE_0_THRESHOLDS.signups,
+    met: counts.signups >= GATE_0_THRESHOLDS.signups,
+  };
+  const onboardedPct: Gate0Metric = {
+    current: onboarded,
+    target: GATE_0_THRESHOLDS.onboardedPercent,
+    met: onboarded >= GATE_0_THRESHOLDS.onboardedPercent,
+  };
+  const officialFormClicks: Gate0Metric = {
+    current: counts.officialFormClicks,
+    target: GATE_0_THRESHOLDS.officialFormClicks,
+    met: counts.officialFormClicks >= GATE_0_THRESHOLDS.officialFormClicks,
+  };
+  const filingsReported: Gate0Metric = {
+    current: counts.filingsReported,
+    target: GATE_0_THRESHOLDS.filingsReported,
+    met: counts.filingsReported >= GATE_0_THRESHOLDS.filingsReported,
+  };
+  return {
+    signups,
+    onboardedPercent: onboardedPct,
+    officialFormClicks,
+    filingsReported,
+    allMet:
+      signups.met && onboardedPct.met && officialFormClicks.met && filingsReported.met,
+  };
+}
+
 export function tallySoftLaunch(rows: {
   onboarded?: boolean | null;
   is_internal?: boolean | null;

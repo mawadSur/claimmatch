@@ -40,6 +40,7 @@ describe('checkRequiredSchema', () => {
     expect(result.present).toContain('consent');
     expect(result.present).toContain('held_closure_site_checks');
     expect(result.present).toContain('claim_reminder_sends');
+    expect(result.present).toContain('drip_email_sends');
     expect(result.present).toContain('persist_first_attribution');
   });
 

@@ -14,6 +14,7 @@ const ROBOTS_DISALLOW = [
   '/onboarding',
   '/unsubscribe',
   '/preview',
+  '/invite',
 ];
 
 export default function robots(): MetadataRoute.Robots {

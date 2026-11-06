@@ -210,4 +210,19 @@ export const flags = {
    * without email_opt_in.
    */
   deadlineReminders: () => on('DEADLINE_REMINDERS_ENABLED'),
+  /**
+   * Incomplete-onboarding (+24h) and "did you file?" (+3 days after official-
+   * form intent) drips. Off: the daily cron skips the step. Idempotent; never
+   * sends without email_opt_in, a postal address, and a verified sender.
+   */
+  onboardingDrip: () => on('ONBOARDING_DRIP_ENABLED'),
+  /**
+   * Dashboard card: unanswered matcher questions vs how many additional open
+   * catalog settlements those answers could unlock. Off: hidden.
+   */
+  profileCompleteness: () => on('PROFILE_COMPLETENESS_ENABLED'),
+  /**
+   * Public /invite landing for the soft-invite cohort. Off: that path 404s.
+   */
+  softInviteLanding: () => on('SOFT_INVITE_LANDING_ENABLED'),
 };
