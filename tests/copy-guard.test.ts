@@ -145,6 +145,11 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> =
     reason: 'The app’s copy of the CorrectiveNotice text: quotes the same wrong “Claim filed” message, in order to correct it (D42).',
   },
   {
+    file: 'src/app/privacy/page.tsx',
+    rule: 'you qualify',
+    reason: 'Negated: stored match results are “not a legal determination that you qualify” (the “not” is five words back, past the four-word window).',
+  },
+  {
     file: 'src/lib/copy.ts',
     rule: 'we file',
     reason: 'Owner: full-service primary CTA (“We’ll file it for you”), shown only when ASSISTED_FILING_ENABLED=1.',
