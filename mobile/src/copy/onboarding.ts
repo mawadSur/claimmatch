@@ -53,13 +53,13 @@ export const onboarding = defineCopy({
   },
 
   // Wizard (src/components/OnboardingWizard.tsx) -----------------------------
-  /** "{step} 1 {ofTwo}" */
+  /** "{step} 1 {of} 2": the web counts its steps ("Step {step} of {lastStep}"); the app has 2. */
   step: {
     text: 'Step',
     source: 'src/components/OnboardingWizard.tsx',
   },
-  ofTwo: {
-    text: 'of 2',
+  of: {
+    text: 'of',
     source: 'src/components/OnboardingWizard.tsx',
   },
   detailsTitle: {
@@ -135,9 +135,12 @@ export const onboarding = defineCopy({
   },
 });
 
+/** The app's onboarding steps (the web adds a third, profile facts, when PROFILE_V2_ENABLED=1). */
+const ONBOARDING_STEPS = 2;
+
 /** "Step 1 of 2" */
 export function stepOfTwoText(step: 1 | 2): string {
-  return `${onboarding.step.text} ${step} ${onboarding.ofTwo.text}`;
+  return `${onboarding.step.text} ${step} ${onboarding.of.text} ${ONBOARDING_STEPS}`;
 }
 
 /** "Signed in as {email}." */

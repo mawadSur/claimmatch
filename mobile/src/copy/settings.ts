@@ -96,11 +96,11 @@ export const settings = defineCopy({
     source: 'src/components/NotificationPrefs.tsx',
   },
   emailOptInLabel: {
-    text: 'Email me about new settlements',
+    text: 'Email me about new settlements (optional)',
     source: 'src/components/NotificationPrefs.tsx',
   },
   emailOptInHint: {
-    text: 'These emails are paused for now. Leave this on to get them when they restart. Account emails and important notices about your claims come either way.',
+    text: 'Off unless you turn this on. New accounts start opted out. These emails stay paused until match alerts are enabled. Account emails and important notices about your claims come either way. You can unsubscribe from any email.',
     source: 'src/components/NotificationPrefs.tsx',
   },
   metricsLabel: {

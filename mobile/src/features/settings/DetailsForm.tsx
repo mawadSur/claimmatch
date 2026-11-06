@@ -45,8 +45,8 @@ function initialValues(profile: AppProfile | null): DetailsValues {
     addressLine2: profile?.address_line2 ?? '',
     city: profile?.city ?? '',
     addressConsent: false,
-    // A missing profile row reads like the web's default profile.
-    emailOptIn: profile?.email_opt_in ?? true,
+    // A missing profile row reads like the web's default profile (opted out, 0028).
+    emailOptIn: profile?.email_opt_in ?? false,
     metricsConsent: Boolean(profile?.match_metrics_consent_at),
     answers: answersFromAttributes(profile?.attributes),
   };

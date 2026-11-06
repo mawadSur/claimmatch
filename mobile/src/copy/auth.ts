@@ -41,14 +41,14 @@ export const auth = defineCopy({
     text: 'characters',
     source: 'src/components/AuthForm.tsx',
   },
-  /** "{useAtLeast} 10 {charactersForYourPassword}" */
+  /** "{useAtLeast} 10 {charactersForYourPassword}", AuthForm's signup check (validateSignupFields). */
   useAtLeast: {
     text: 'Use at least',
-    source: 'src/components/AuthForm.tsx',
+    source: 'src/lib/signup-validation.ts',
   },
   charactersForYourPassword: {
     text: 'characters for your password.',
-    source: 'src/components/AuthForm.tsx',
+    source: 'src/lib/signup-validation.ts',
   },
   forgotPasswordLink: {
     text: 'Forgot password?',
@@ -209,12 +209,13 @@ export const auth = defineCopy({
     source: 'src/components/auth/ForgotPasswordForm.tsx',
   },
 
-  // On-device checks with no web text (the web form sends these to Supabase) --
+  // On-device checks ---------------------------------------------------------
+  /** AuthForm's signup check for an empty email (validateSignupFields); the app shows it for a malformed one too. */
   enterYourEmail: {
     text: 'Enter your email address.',
-    source: 'plan 3.3 (Auth: errors next to fields)',
-    mobileOnly: true,
+    source: 'src/lib/signup-validation.ts',
   },
+  /** No web text: the web login form sends an empty password to Supabase. */
   enterYourPassword: {
     text: 'Enter your password.',
     source: 'plan 3.3 (Auth: errors next to fields)',
