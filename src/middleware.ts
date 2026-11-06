@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { jsonApiNotFound } from '@/lib/api-not-found';
+import { isMalformedApiPath } from '@/lib/analytics/traffic';
 import { isCronApiPath } from '@/lib/cron-auth';
 import { updateSession } from '@/lib/supabase/middleware';
 
@@ -13,6 +15,9 @@ import { updateSession } from '@/lib/supabase/middleware';
  */
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
+  if (isMalformedApiPath(pathname)) {
+    return jsonApiNotFound();
+  }
   if (isCronApiPath(pathname)) {
     return NextResponse.next({ request });
   }

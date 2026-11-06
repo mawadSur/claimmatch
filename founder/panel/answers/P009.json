@@ -1,0 +1,13 @@
+{
+  "id": "P009",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I saw a TikTok about a no-proof settlement and my first thought was I am not handing my identity to some startup called lawsuitai.org. These 'free money' sites are scams until proven otherwise, and free-during-beta with an account is exactly how they harvest you.",
+  "objection": "I don't want a startup storing my identity details — and I don't believe a random site that admits its listings aren't even verified.",
+  "would_change_my_mind": "If I could browse and open the official administrator's claim form with no account and no personal information stored by you, and I already recognized that administrator's name.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 30
+}

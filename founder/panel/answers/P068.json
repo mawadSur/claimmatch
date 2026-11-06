@@ -1,0 +1,13 @@
+{
+  "id": "P068",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and the first thing I thought was I don't want a startup storing my identity. I'm not creating an account so I can still go file the claim myself on some other site.",
+  "objection": "You want my personal details and the listings aren't even verified until I check the official site anyway — that feels like a scam with extra steps.",
+  "would_change_my_mind": "If I could browse with no account and you never collected my name, address, or anything that could identify me.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 20
+}

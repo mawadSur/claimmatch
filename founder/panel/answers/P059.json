@@ -1,0 +1,13 @@
+{
+  "id": "P059",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "I googled that no-proof settlement from TikTok because I thought there might be money, then remembered these things pay like ten dollars. I am not making an account to browse a list of claims I still have to file myself for that.",
+  "objection": "The payouts are like $10 and I still have to go fill out the form on some other site, so this is extra steps for money that is not worth my time.",
+  "would_change_my_mind": "If it showed me one settlement I clearly qualify for, no proof needed, with a real payout of a couple hundred dollars, and the official form took five minutes.",
+  "price_too_cheap": 0,
+  "price_cheap": 1,
+  "price_expensive": 3,
+  "price_too_expensive": 5
+}

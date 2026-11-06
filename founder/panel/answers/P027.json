@@ -1,0 +1,13 @@
+{
+  "id": "P027",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I am already looking up a named breach, and lawsuitai.org plus 'free money if you make an account' is exactly the kind of site I assume is a scam. Even if it is real, the checks are like ten dollars and I still have to file on the official site myself, so I would just Google the administrator and skip this.",
+  "objection": "The payouts are like $10, not worth it — and I am not handing my email to an unverified settlement site after I already got breached.",
+  "would_change_my_mind": "Let me search the exact breach with no account and land on the official claims-administrator page I already recognize, with a payout that is not ten dollars. I still would not pay for a list of links.",
+  "price_too_cheap": 0,
+  "price_cheap": 2,
+  "price_expensive": 5,
+  "price_too_expensive": 10
+}

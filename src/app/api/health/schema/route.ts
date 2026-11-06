@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { checkRequiredSchema } from '@/lib/schema-check';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 /**
  * Post-deploy schema check. Confirms the columns and functions the code
@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function handle(req: Request) {
-  if (!authorizeCron(req)) {
+  if (!authorizeCron(req) || !isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 

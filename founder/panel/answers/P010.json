@@ -1,0 +1,13 @@
+{
+  "id": "P010",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I saw a TikTok about some no-proof settlement and my first thought was how a random site would even know I qualify. I'm not making an account on lawsuitai.org so they can harvest my info — if I actually cared I'd Google the case myself.",
+  "objection": "How do you even know I qualify? And why should I trust a site that admits its listings aren't verified and then asks me to file somewhere else anyway?",
+  "would_change_my_mind": "If I could check that one TikTok settlement against an official claims page I already recognize, with no account, and I actually saw my bank or phone company named on the notice.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

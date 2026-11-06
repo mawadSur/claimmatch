@@ -16,7 +16,9 @@ export function posthogMatchEventName(type: MatchEventType): string {
     case 'open_form':
       return 'official_form_opened';
     case 'filed':
-      return 'match_filed';
+      // Feedback that the person tapped "I submitted this". Not a filing:
+      // confirmed filings are claim_reported_filed after the claim row saves.
+      return 'match_feedback';
     case 'user_reported_payout':
       return 'match_payout_reported';
     default:

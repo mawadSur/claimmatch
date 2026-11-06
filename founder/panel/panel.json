@@ -1,0 +1,79 @@
+{
+ "n": 100,
+ "seed": 20261106,
+ "customer": {
+  "business": "ClaimMatch (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.",
+  "target": "Hypothesis, not observed customers: US adults 25-55 who use mainstream banks, retailers, telecoms and apps, and have heard of settlement checks but rarely file",
+  "where": "United States, online",
+  "age": [
+   25,
+   55
+  ],
+  "segments": [
+   {
+    "name": "Busy working adult (hypothesis)",
+    "share": 0.45,
+    "income": [
+     40000,
+     95000
+    ]
+   },
+   {
+    "name": "Money-optimizer (hypothesis)",
+    "share": 0.3,
+    "income": [
+     35000,
+     120000
+    ]
+   },
+   {
+    "name": "Data-breach victim searching a named breach (hypothesis)",
+    "share": 0.25,
+    "income": [
+     30000,
+     150000
+    ]
+   }
+  ],
+  "behaviours": [
+   {
+    "name": "Skeptic of 'free money' sites",
+    "share": 0.25,
+    "how": "Assumes settlement sites are scams until proven otherwise."
+   },
+   {
+    "name": "Deal hunter",
+    "share": 0.2,
+    "how": "Looks for easy claims. Hypothesis only — the product does not tell people to file ineligible or no-proof claims."
+   },
+   {
+    "name": "Procrastinator",
+    "share": 0.2,
+    "how": "Means to file, misses the deadline."
+   },
+   {
+    "name": "Privacy-cautious",
+    "share": 0.15,
+    "how": "Won't give an address or phone to a startup."
+   },
+   {
+    "name": "Search-driven one-timer",
+    "share": 0.2,
+    "how": "Arrives from Google for one settlement and leaves."
+   }
+  ],
+  "objections": [
+   "Is this a scam or a data grab?",
+   "If it's free during beta, what's the catch later?",
+   "The payouts are like $10, not worth it",
+   "I don't want a startup storing my identity details",
+   "How do you even know I qualify?",
+   "I'll just use Top Class Actions"
+  ],
+  "habits": [
+   "you get settlement notice emails and assume they're spam",
+   "you saw a TikTok about a no-proof settlement"
+  ]
+ },
+ "pitch": "ClaimMatch (lawsuitai.org) is a free-during-beta assistant for open US class-action settlements.\nYou browse listings, read who may qualify, and open the official notice and claim form. You file on the administrator’s site yourself. Filing there is free.\nClaimMatch does not file for you, does not handle settlement money, and is not a law firm. Listings are unverified until checked against the official site.\nOnly file if the official notice describes you. If it requires proof you do not have, do not file.\nCreating an account is free. A paid model may come later; nothing paid is live today. We will tell you before any fee applies."
+}

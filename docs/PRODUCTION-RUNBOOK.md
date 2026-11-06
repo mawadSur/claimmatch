@@ -180,9 +180,13 @@ Then confirm schema health (cron secret; no row data returned):
 
 ```bash
 curl -sS -D - \
-  'https://lawsuitai.org/api/health/schema' \
+  "https://lawsuitai.org/api/health/schema" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
+
+The quotes are for the shell. Do not open `/api/health/schema'` (trailing
+apostrophe) in a browser; that used to return HTML 404 and inflate PostHog
+pageviews. Unmatched `/api/*` paths now return JSON 404.
 
 Expected: HTTP 200 with `ok: true`. If 503, the `missing` list names the
 column or table that is not on production yet. Apply that file and re-check.
