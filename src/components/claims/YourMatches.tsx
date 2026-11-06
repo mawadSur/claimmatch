@@ -7,6 +7,7 @@ import {
 } from './dashboard-model';
 import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { MatchFeedback } from './MatchFeedback';
+import { DismissMatchButton } from './DismissMatchButton';
 
 /**
  * Ranked matches for the signed-in user. Strong first; Possible is collapsed
@@ -18,6 +19,7 @@ export function YourMatches({
   needsProfile = false,
   metricsEnabled = false,
   fileForYou = false,
+  canDismiss = false,
 }: {
   items: DashboardMatch[];
   failed?: boolean;
@@ -25,6 +27,7 @@ export function YourMatches({
   metricsEnabled?: boolean;
   /** ASSISTED_FILING_ENABLED: primary CTA authorizes ClaimMatch to file. */
   fileForYou?: boolean;
+  canDismiss?: boolean;
 }) {
   const grouped = groupDashboardMatches(items);
   const hasAny = items.length > 0;
@@ -74,7 +77,12 @@ export function YourMatches({
                 </p>
               </div>
             ) : (
-              <MatchList items={grouped.strong} metricsEnabled={metricsEnabled} fileForYou={fileForYou} />
+              <MatchList
+                items={grouped.strong}
+                metricsEnabled={metricsEnabled}
+                fileForYou={fileForYou}
+                canDismiss={canDismiss}
+              />
             )}
           </div>
 
@@ -90,7 +98,12 @@ export function YourMatches({
                 <p className="pt-3 text-sm text-ink-muted">
                   These are state-only or broader fits. Showing up to {POSSIBLE_MATCH_CAP}.
                 </p>
-                <MatchList items={grouped.possible} metricsEnabled={metricsEnabled} fileForYou={fileForYou} />
+                <MatchList
+                  items={grouped.possible}
+                  metricsEnabled={metricsEnabled}
+                  fileForYou={fileForYou}
+                  canDismiss={canDismiss}
+                />
               </div>
             </details>
           )}
@@ -135,10 +148,12 @@ function MatchList({
   items,
   metricsEnabled,
   fileForYou,
+  canDismiss,
 }: {
   items: DashboardMatch[];
   metricsEnabled: boolean;
   fileForYou: boolean;
+  canDismiss: boolean;
 }) {
   return (
     <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
@@ -157,6 +172,9 @@ function MatchList({
                 <Sparkles className="h-3 w-3" aria-hidden />
                 {item.label}
               </span>
+              {item.isNew && (
+                <span className="badge-brand gap-1">New</span>
+              )}
             </div>
             <Link
               href={`/claim/${item.slug}`}
@@ -174,6 +192,9 @@ function MatchList({
                   <li key={reason}>{reason}</li>
                 ))}
               </ul>
+            )}
+            {canDismiss && item.matchId && (
+              <DismissMatchButton matchId={item.matchId} title={item.title} />
             )}
             {metricsEnabled && (
               <MatchFeedback

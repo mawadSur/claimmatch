@@ -15,6 +15,7 @@ export const PERSONAL_REFERRAL_UTM: Attribution = {
   utm_campaign: 'personal',
   utm_content: null,
   ref: null,
+  referrer: null,
 };
 
 export interface ShareLinkRecord {
@@ -33,6 +34,14 @@ export interface ShareLinkStats extends ShareLinkRecord {
   created_at: string;
   clicks: number;
   signups: number;
+}
+
+/** Suggested same-site destinations for the share-link manager, including /invite. */
+export const SHARE_LINK_DESTINATIONS = ['/', '/invite', '/signup', '/lawsuits', '/how-it-works'] as const;
+
+export function isShareLinkDestination(path: string): boolean {
+  const pathname = path.split('?')[0]?.split('#')[0] ?? path;
+  return (SHARE_LINK_DESTINATIONS as readonly string[]).includes(pathname);
 }
 
 /** Same-site path only. `/` when missing or unsafe (never a protocol-relative URL). */
@@ -58,6 +67,7 @@ export function shareLinkAttribution(link: ShareLinkRecord): Attribution {
     utm_campaign: sanitizeUtm(link.utm_campaign),
     utm_content: sanitizeUtm(link.utm_content),
     ref: sanitizeRef(link.code),
+    referrer: null,
   };
 }
 

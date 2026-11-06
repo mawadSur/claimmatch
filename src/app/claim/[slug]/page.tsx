@@ -5,7 +5,10 @@ import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2, ExternalLink } from 'lu
 import { createClient } from '@/lib/supabase/server';
 import { loadClaimScreen } from '@/lib/claim-screen-server';
 import { formatDeadline } from '@/lib/utils';
+import { flags } from '@/lib/flags';
+import { signedOutClaimHref } from '@/lib/signup-context';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
+import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
 import { Disclaimer } from '@/components/Disclaimer';
 
 export const metadata: Metadata = {
@@ -28,7 +31,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/claim/${slug}`)}`);
+  if (!user) redirect(signedOutClaimHref(`/claim/${slug}`));
 
   const now = new Date();
   const screen = await loadClaimScreen(supabase, user.id, slug, now);
@@ -102,6 +105,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section className="container-narrow py-10 sm:py-12">
+      {flags.signupContext() ? <SignupContextReturned claimPath={`/claim/${settlement.slug}`} /> : null}
       {header}
       <div className="mt-6">
         <ClaimFlow

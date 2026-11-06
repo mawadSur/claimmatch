@@ -3,8 +3,14 @@ import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
 import { filterOpenForClaims } from '@/lib/lawsuits';
 import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import {
+  isEmailableStoredMatch,
+  MATCH_EMAIL_SCORE_THRESHOLD,
+  wantsInstantMatchEmails,
+} from '@/lib/match-email';
+import { factsFromRows } from '@/lib/profile-facts';
 import { todayInLatestUSZone } from '@/lib/utils';
-import type { Lawsuit, Profile } from '@/lib/types';
+import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchSweepResult {
   users: number;
@@ -14,8 +20,11 @@ export interface MatchSweepResult {
 }
 
 /**
- * Recompute matches for every opted-in, onboarded user and email them about
- * brand-new matches (notified_at IS NULL), marking those as notified.
+ * Recompute matches for every opted-in, onboarded user and email instant
+ * subscribers about brand-new matches (notified_at IS NULL, score at or
+ * above MATCH_EMAIL_SCORE_THRESHOLD), marking those as notified. Weekly
+ * subscribers are stored but emailed by the digest. Unsubscribed accounts
+ * (email_opt_in false) are never loaded.
  *
  * Only settlements open for claims count (isOpenForClaims: published, not
  * fictional, open status, deadline not passed). This runs with the
@@ -64,12 +73,19 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     .eq('email_opt_in', true)
     .eq('onboarded', true);
   const profiles = (profileData ?? []) as Profile[];
+  const factsByUser = await loadFactsByUser(
+    supabase,
+    profiles.map((p) => p.id),
+  );
 
   let newMatches = 0;
   let emailed = 0;
 
   for (const profile of profiles) {
-    const results = matchProfile(profile, lawsuits);
+    const results = matchProfile(
+      { ...profile, facts: factsByUser.get(profile.id) ?? [] },
+      lawsuits,
+    );
 
     if (results.length > 0) {
       const rows = results.map((r) => ({
@@ -89,19 +105,26 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
       }
     }
 
-    // Find not-yet-notified, active matches for this user.
+    if (!wantsInstantMatchEmails(profile)) continue;
+
+    // Find not-yet-notified, active matches above the email score floor.
     const { data: pending } = await supabase
       .from('matches')
-      .select('id, lawsuit_id')
+      .select('id, lawsuit_id, score, dismissed, notified_at')
       .eq('user_id', profile.id)
       .eq('dismissed', false)
-      .is('notified_at', null);
+      .is('notified_at', null)
+      .gte('score', MATCH_EMAIL_SCORE_THRESHOLD);
 
     // Only matches on settlements that are open for claims right now. Others
     // stay un-notified, so nothing is marked sent that was never emailed.
-    const pendingRows = ((pending ?? []) as { id: string; lawsuit_id: string }[]).filter(
-      (row) => lawsuitById.has(row.lawsuit_id),
-    );
+    const pendingRows = ((pending ?? []) as {
+      id: string;
+      lawsuit_id: string;
+      score: number;
+      dismissed: boolean;
+      notified_at: string | null;
+    }[]).filter((row) => lawsuitById.has(row.lawsuit_id) && isEmailableStoredMatch(row));
     if (pendingRows.length === 0) continue;
     newMatches += pendingRows.length;
 
@@ -139,4 +162,27 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
   }
 
   return { users: profiles.length, newMatches, emailed };
+}
+
+async function loadFactsByUser(
+  supabase: ReturnType<typeof createServiceClient>,
+  userIds: string[],
+): Promise<Map<string, ProfileFact[]>> {
+  const facts = new Map<string, ProfileFact[]>();
+  if (userIds.length === 0) return facts;
+  const { data } = await supabase
+    .from('profile_facts')
+    .select('user_id, type, value, start_date, end_date, source')
+    .in('user_id', userIds);
+  const grouped = new Map<string, typeof data>();
+  for (const row of data ?? []) {
+    const userId = (row as { user_id: string }).user_id;
+    const list = grouped.get(userId) ?? [];
+    list.push(row);
+    grouped.set(userId, list);
+  }
+  for (const [userId, rows] of grouped) {
+    facts.set(userId, factsFromRows(rows ?? []));
+  }
+  return facts;
 }

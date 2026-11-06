@@ -1,6 +1,7 @@
 /**
- * Read-only probes that the code needs after migrations 0010–0012.
- * Used by /api/health/schema. Never returns row data or secrets.
+ * Read-only probes for columns and tables the ingest, profile-v2, and
+ * alerts/privacy paths need. Used by /api/health/schema. Never returns
+ * row data or secrets.
  */
 
 export interface SchemaProbeError {
@@ -21,10 +22,18 @@ export interface SchemaProbeClient {
 }
 
 export const REQUIRED_COLUMNS: Record<string, string[]> = {
-  lawsuits: ['last_seen_at', 'missed_feed_count'],
-  profiles: ['first_ref'],
+  lawsuits: ['last_seen_at', 'missed_feed_count', 'tags'],
+  profiles: ['first_ref', 'email_opt_in', 'email_frequency'],
   share_links: ['id'],
   share_link_clicks: ['id'],
+  profile_facts: ['id', 'user_id', 'type', 'value'],
+  consent: ['id', 'user_id', 'category', 'granted_at', 'policy_version'],
+  admin_access_log: ['id'],
+  matches: ['notified_at'],
+  held_closure_decisions: ['slug', 'decision', 'change_fingerprint'],
+  held_closure_site_checks: ['slug', 'signal', 'checked_at'],
+  claim_reminder_sends: ['claim_id', 'kind', 'sent_at'],
+  drip_email_sends: ['user_id', 'kind', 'sent_at'],
 };
 
 export const REQUIRED_FUNCTIONS = ['persist_first_attribution'] as const;

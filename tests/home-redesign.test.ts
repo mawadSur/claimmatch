@@ -83,6 +83,13 @@ describe('home page redesign', () => {
     expect(await render()).not.toMatch(/\bmatch(?:ed|es|ing)?\b/i);
   });
 
+  it('adds the logged-out preview entry only when MATCH_PREVIEW_ENABLED=1', async () => {
+    expect(await render()).not.toContain('See matching settlements');
+    vi.stubEnv('MATCH_PREVIEW_ENABLED', '1');
+    expect(await render()).toContain('See matching settlements');
+    expect(await render()).toContain('href="/preview"');
+  });
+
   it('every screenshot it references exists, at the size the page declares', () => {
     const src = readFileSync(root('src/app/page.tsx'), 'utf8');
     const screens = [...src.matchAll(/src: '(\/screens\/[^']+\.webp)',\s*width: (\d+),\s*height: (\d+)/g)];

@@ -27,9 +27,14 @@ in this order. Every file is additive: nothing is deleted.
 20. `0023_third_party_fee.sql` — `third_party_fee_status` / generated `third_party_fee_allowed`. Additive.
 21. `0024_account_deletion.sql` — PII-free deletion audit table. Additive.
 22. `0025_profile_consent_grant.sql` — grant `profiles.match_metrics_consent_at` update to authenticated. Additive. Already applied on production.
-23. `0026_held_closure_decisions.sql` — `held_closure_decisions` (admin approve/dismiss of ingest circuit-breaker holds) and `ingest_alerts.reason` may be `warning`. Additive. **Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
+23. `0026_held_closure_decisions.sql` — `held_closure_decisions` (admin approve/dismiss of ingest circuit-breaker holds) and `ingest_alerts.reason` may be `warning`. Additive.
+24. `0027_profile_v2.sql` — `profile_facts`, `lawsuits.tags`, `admin_access_log`. Additive. Applied on production on 5 Nov 2026.
+25. `0028_alerts_privacy.sql` — `profiles.email_frequency`, `consent`, new-user `email_opt_in` default false. Additive. Applied on production on 5 Nov 2026.
+26. `0029_held_closure_triage.sql` — `held_closure_site_checks` and `held_closure_decisions.source` / `auto_closed`. Additive. **Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
+27. `0030_claim_deadline_reminders.sql` — `claim_reminder_sends` (idempotent 7-day / 1-day reminder log). Additive. Applied on production.
+28. `0031_drip_email_sends.sql` — `drip_email_sends` (idempotent incomplete-onboarding / did-you-file send log). Additive. **Not applied on production. Owner applies this in the SQL editor after Mohammed’s yes; do not run it from this PR.**
 
-CI applies 0001–0026 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0031 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -37,7 +42,7 @@ CI applies 0001–0026 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED` and `INGEST_HELD_IS_WARNING`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `MATCH_PREVIEW_ENABLED`, `SIGNUP_CONTEXT_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED`, `HELD_CLOSURE_TRIAGE_ENABLED`, `HELD_AUTO_CLOSE_PAST_DEADLINE`, `DEADLINE_REMINDERS_ENABLED`, `ONBOARDING_DRIP_ENABLED`, `PROFILE_COMPLETENESS_ENABLED`, `SOFT_INVITE_LANDING_ENABLED`, `INGEST_HELD_IS_WARNING`, `PROFILE_V2_ENABLED` and `MATCH_STORE_ENABLED`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing except the `jobs` row), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
@@ -152,11 +157,54 @@ These are bug-fixes to the intended nightly path, not new product behavior:
 | `INGEST_HELD_IS_WARNING` | off | When the only ingest problem is held closures, the jobs row is `done` with `payload.phase=held_warning`, the cron answers **200** with the held count, and `ingest_alerts.reason=warning`. Failed writes and empty sources still 500. Off: held-only nights still 500. Needs `0026` only for the `warning` alert reason. |
 | `HOME_WEDGE_ENTRIES_ENABLED` | off | Home cards for "Data breach & privacy" and "No proof required" when the live catalog has at least one matching open listing. `HOME_NARROWING_ENABLED` is the older name for the same cards. No match language, no invented counts. |
 | `HOME_ACCOUNT_FIRST_CTA_ENABLED` | off | Home hero primary button goes to `/signup` instead of `/lawsuits`. Off keeps “See open settlements”. |
+| `MATCH_PREVIEW_ENABLED` | off | Logged-out “See matching settlements” preview from home and `/lawsuits`. Off: no entry, `/preview` 404s, `/api/match-preview` 404s. |
+| `SIGNUP_CONTEXT_ENABLED` | off | Signed-out claim visits go through `/signup` with a safe `next=/claim/{slug}` so confirm-email → onboarding returns to that claim. Off keeps `/login`. |
 
 `0026_held_closure_decisions.sql` is **not** applied on production. After
 merge, the owner runs it in the Supabase SQL editor (additive, re-runnable).
 The new flags stay unset until then. SEO and smoke-workflow changes are
 fixes and do not need a flag.
+
+## After this PR merges (ingest diagnostics + held triage + reminders)
+
+Do **not** apply these from the PR or from CI. In the Supabase SQL editor, on
+production, in this order, after the deploy is live:
+
+1. `0029_held_closure_triage.sql` — adds `held_closure_site_checks` and
+   widens `held_closure_decisions` (`source`, `auto_closed`). Additive and
+   safe to re-run. Closes nothing.
+2. `0030_claim_deadline_reminders.sql` — adds `claim_reminder_sends`. Additive
+   and safe to re-run. Sends nothing.
+
+Then confirm schema health (cron secret; no row data returned):
+
+```bash
+curl -sS -D - \
+  'https://lawsuitai.org/api/health/schema' \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Expected: HTTP 200 with `ok: true`. If 503, the `missing` list names the
+column or table that is not on production yet. Apply that file and re-check.
+
+**Leave these unset** until you have run the SQL and want the behavior:
+
+| Flag | Default | Effect when set to exactly `1` |
+| --- | --- | --- |
+| `HELD_CLOSURE_TRIAGE_ENABLED` | off | `/admin/held-closures` groups the queue (safe to close / likely close / likely keep / unknown) with counts and “Approve all in this group”. Official-site checks run from the daily cron only (rate-limited, time-boxed). Needs `0029` and `ADMIN_HELD_CLOSURES_ENABLED=1`. **Never auto-closes.** |
+| `HELD_AUTO_CLOSE_PAST_DEADLINE` | off | Nightly ingest may close a held row whose **stored** deadline is already past, and writes `held_closure_decisions` (`decision=auto_closed`, `source=auto_past_deadline`). Needs `0029`. Rows with no stored deadline stay held. |
+| `DEADLINE_REMINDERS_ENABLED` | off | Daily cron emails opted-in users 7 days and 1 day before a tracked, unfiled claim deadline. Unsubscribe link included. Idempotent via `claim_reminder_sends`. Needs `0030`, `RESEND_API_KEY`, and the user `email_opt_in`. |
+| `ONBOARDING_DRIP_ENABLED` | off | Daily cron emails opted-in users who have not finished onboarding after 24h, and a per-claim “did you file?” note 3 days after official-form intent. Idempotent via `drip_email_sends`. Needs `0031`, a postal address, a verified `RESEND_FROM`, and `email_opt_in`. Apply `0031` only after Mohammed’s yes. |
+| `PROFILE_COMPLETENESS_ENABLED` | off | Dashboard card: unanswered matcher questions vs additional open catalog settlements those answers could unlock. Hidden when complete or when the profile has no matcher signals. |
+| `SOFT_INVITE_LANDING_ENABLED` | off | Public `/invite` landing (noindex). Off: that path 404s. Share-link destinations may point at `/invite`. |
+
+Ingest failure samples (first 20 catalog read/write failures on the jobs row,
+shown on `/admin`) ship on with no flag: they do not change listings or email.
+
+`0027` and `0028` are already on production (5 Nov 2026). They added
+`lawsuits.tags` (the likely cause of the 5 Nov 1:49 AM ET ingest “43 catalog
+reads or writes failed” night) plus `profile_facts`, `consent`, and
+`profiles.email_frequency`. Schema health now probes those objects.
 
 ### Manual dry run in production (after merge)
 

@@ -13,6 +13,8 @@ const ROBOTS_DISALLOW = [
   '/claim',
   '/onboarding',
   '/unsubscribe',
+  '/preview',
+  '/invite',
 ];
 
 export default function robots(): MetadataRoute.Robots {

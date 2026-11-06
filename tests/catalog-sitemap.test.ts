@@ -69,4 +69,23 @@ describe('sitemap', () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls.every((u) => !u.includes('/lawsuits/'))).toBe(true);
   });
+
+  it('uses each settlement row’s own updated_at for lastmod', async () => {
+    listed.lawsuits = [
+      lawsuit({ slug: 'older-row', updated_at: '2026-01-15T12:00:00Z' }),
+      lawsuit({
+        id: '2',
+        slug: 'newer-row',
+        updated_at: '2026-10-20T08:30:00Z',
+        eligibility_text: 'People who bought a widget.',
+        administrator: 'Angeion',
+      }),
+    ];
+    const entries = await sitemap();
+    const older = entries.find((e) => e.url.endsWith('/lawsuits/older-row'));
+    const newer = entries.find((e) => e.url.endsWith('/lawsuits/newer-row'));
+    expect(older?.lastModified).toEqual(new Date('2026-01-15T12:00:00Z'));
+    expect(newer?.lastModified).toEqual(new Date('2026-10-20T08:30:00Z'));
+    expect(older?.lastModified).not.toEqual(newer?.lastModified);
+  });
 });

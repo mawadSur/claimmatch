@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {
   attributionPersonProperties,
   doNotTrackEnabled,
+  documentReferrerAttribution,
   firstTouch,
   hasAttribution,
   parseAttribution,
@@ -48,7 +49,8 @@ function AttributionSync() {
 
   useEffect(() => {
     const incoming = parseAttribution(searchParams);
-    const merged = firstTouch(readBrowserCookies(), incoming);
+    const fromDocument = documentReferrerAttribution(window.location.origin);
+    const merged = firstTouch(firstTouch(readBrowserCookies(), incoming), fromDocument);
     if (!hasAttribution(merged)) return;
     writeBrowserCookies(merged);
     const props = attributionPersonProperties(merged);

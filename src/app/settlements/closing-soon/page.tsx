@@ -8,6 +8,8 @@ import {
   pageUrl,
   settlementPath,
 } from '@/lib/settlement-seo';
+import { flags } from '@/lib/flags';
+import { relatedSettlements } from '@/lib/related-settlements';
 import { HubChrome } from '@/components/settlement/HubChrome';
 import { JsonLd } from '@/components/settlement/JsonLd';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
@@ -40,6 +42,11 @@ export default async function ClosingSoonHubPage() {
   if (catalog.error) throw new Error('Settlement catalog lookup failed');
   const lawsuits = hubClosingSoon(catalog.lawsuits);
   const categories = categoriesOf(catalog.lawsuits);
+  const listed = new Set(lawsuits.map((row) => row.slug));
+  const related = flags.relatedSettlements()
+    ? relatedSettlements({ slug: 'hub-closing-soon', category: '' }, catalog.lawsuits)
+        .filter((item) => !listed.has(item.slug))
+    : [];
 
   return (
     <>
@@ -66,6 +73,8 @@ export default async function ClosingSoonHubPage() {
         lawsuits={lawsuits}
         emptyTitle="No upcoming deadlines in the catalog"
         emptyBody="Nothing open has a listed deadline right now. Browse every open settlement, or check new listings."
+        related={related}
+        relatedFromSlug="hub-closing-soon"
       />
     </>
   );

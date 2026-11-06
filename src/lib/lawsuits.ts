@@ -3,6 +3,7 @@ import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { FICTIONAL_SLUGS, isFictionalSlug } from './fictional-slugs';
 import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
+import { applySettlementGuide, applySettlementGuides } from './settlement-guides';
 import { todayInLatestUSZone } from './utils';
 import {
   categoriesOf,
@@ -105,7 +106,12 @@ export async function lookupLawsuits(
     }
     // The query already applies the rule; filtering again keeps this list
     // correct even if the query and the rule ever drift apart.
-    return { lawsuits: filterOpenForClaims((data ?? []) as Lawsuit[], now), error: false };
+    // Official-notice guides overlay a few high-interest rows at read time.
+    // They never insert listings or change ingest / verified_at.
+    return {
+      lawsuits: applySettlementGuides(filterOpenForClaims((data ?? []) as Lawsuit[], now)),
+      error: false,
+    };
   } catch (err) {
     console.error('[lawsuits] catalog query threw:', err instanceof Error ? err.message : err);
     return { lawsuits: [], error: true };
@@ -147,7 +153,7 @@ export const lookupLawsuitBySlug = cache(async (slug: string): Promise<LawsuitLo
     }
     const lawsuit = data as Lawsuit | null;
     if (!lawsuit || !isPublicLawsuit(lawsuit)) return { status: 'missing' };
-    return { status: 'found', lawsuit };
+    return { status: 'found', lawsuit: applySettlementGuide(lawsuit) };
   } catch (err) {
     console.error('[lawsuits] settlement lookup threw:', err instanceof Error ? err.message : err);
     return { status: 'error' };
@@ -195,7 +201,7 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
       return { lawsuits: [], error: true };
     }
     return {
-      lawsuits: ((data ?? []) as Lawsuit[]).filter(isPublicLawsuit),
+      lawsuits: applySettlementGuides(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit)),
       error: false,
     };
   } catch (err) {

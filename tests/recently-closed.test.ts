@@ -86,6 +86,7 @@ describe('/settlements/recently-closed', () => {
     const html = renderToStaticMarkup(await RecentlyClosedPage());
     expect(html).toContain(CLOSED_ARCHIVE_LABEL);
     expect(html).toContain('Just closed settlement');
+    expect(html).toContain('"@type":"BreadcrumbList"');
     expect(html).not.toMatch(/\d+\s*%/);
     expect(html).not.toMatch(/claim rate/i);
   });

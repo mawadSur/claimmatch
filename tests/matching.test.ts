@@ -472,4 +472,102 @@ describe('classifyMatch — labels people see', () => {
     expect(matchStrengthLabel('strong')).toBe('Strong match');
     expect(matchStrengthLabel('possible')).toBe('Possible match');
   });
+
+  it('treats brand/employer tags as structured (strong), not state-only', () => {
+    expect(
+      classifyMatch(makeLawsuit({}, { tags: { brands: ['Toyota'] } })),
+    ).toBe('strong');
+    expect(
+      classifyMatch(makeLawsuit({ states: ['CA'] }, { tags: { brands: ['Toyota'] } })),
+    ).toBe('strong');
+  });
+});
+
+describe('scoreLawsuit — profile_facts vs lawsuit tags', () => {
+  it('scores a purchase inside the class period with a plain-language reason', () => {
+    const result = scoreLawsuit(
+      makeProfile({
+        facts: [{ type: 'purchase', value: 'Toyota', start_date: '2021-06-01', end_date: '2021-06-01' }],
+      }),
+      makeLawsuit(
+        {},
+        {
+          tags: {
+            brands: ['Toyota'],
+            class_period_start: '2019-01-01',
+            class_period_end: '2022-12-31',
+          },
+        },
+      ),
+    );
+    expect(result.eligible).toBe(true);
+    expect(result.score).toBeGreaterThanOrEqual(0.5);
+    expect(result.reasons).toContain('Bought Toyota in 2021, inside the class period');
+  });
+
+  it('does not count a dated purchase outside the class period', () => {
+    const result = scoreLawsuit(
+      makeProfile({
+        facts: [{ type: 'purchase', value: 'Toyota', start_date: '2015-01-01', end_date: '2015-12-31' }],
+      }),
+      makeLawsuit(
+        {},
+        {
+          tags: {
+            brands: ['Toyota'],
+            class_period_start: '2019-01-01',
+            class_period_end: '2022-12-31',
+          },
+        },
+      ),
+    );
+    expect(result.eligible).toBe(false);
+    expect(result.score).toBe(0);
+    expect(result.reasons.join(' ')).not.toMatch(/Toyota/);
+  });
+
+  it('matches an employer fact during the class period', () => {
+    const result = scoreLawsuit(
+      makeProfile({
+        facts: [{ type: 'employer', value: 'Acme Logistics', start_date: '2020-01-01', end_date: '2021-12-31' }],
+      }),
+      makeLawsuit(
+        {},
+        {
+          tags: {
+            employers: ['Acme Logistics'],
+            class_period_start: '2018-01-01',
+            class_period_end: '2022-12-31',
+          },
+        },
+      ),
+    );
+    expect(result.eligible).toBe(true);
+    expect(result.reasons).toContain('Worked at Acme Logistics during the class period');
+  });
+
+  it('does not change existing scores when the profile has no facts', () => {
+    const withoutTags = scoreLawsuit(
+      makeProfile({ attributes: { had_data_breach: true } }),
+      makeLawsuit({ requires: ['had_data_breach'] }),
+    );
+    const withUnusedTags = scoreLawsuit(
+      makeProfile({ attributes: { had_data_breach: true } }),
+      makeLawsuit({ requires: ['had_data_breach'] }, { tags: { brands: ['Toyota'] } }),
+    );
+    expect(withUnusedTags.score).toBe(withoutTags.score);
+    expect(withUnusedTags.eligible).toBe(true);
+  });
+
+  it('never mentions health and never uses a leftover medication attribute', () => {
+    const result = scoreLawsuit(
+      makeProfile({
+        attributes: { took_medication: true },
+        facts: [{ type: 'purchase', value: 'Toyota', start_date: '2021-01-01' }],
+      }),
+      makeLawsuit({ requires: ['took_medication'] }, { tags: { brands: ['Toyota'] } }),
+    );
+    expect(result.eligible).toBe(false);
+    expect(result.reasons.join(' ')).not.toMatch(/medic/i);
+  });
 });

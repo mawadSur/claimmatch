@@ -1,8 +1,11 @@
 'use server';
 
 import { z } from 'zod';
+import { flags } from '@/lib/flags';
 import { createClient } from '@/lib/supabase/server';
 import { mergeAttributes, parseAttributeAnswers } from '@/lib/profile-attributes';
+import { recordFactConsent } from '@/lib/consent';
+import { parseProfileFacts } from '@/lib/profile-facts';
 import { US_STATES } from '@/lib/utils';
 
 const STATE_CODES = new Set(US_STATES.map((s) => s.code));
@@ -15,7 +18,7 @@ const ProfileSchema = z.object({
     .refine((v) => v === '' || STATE_CODES.has(v), 'Pick your state from the list.'),
 });
 
-export type OnboardingField = 'full_name' | 'state' | 'attributes';
+export type OnboardingField = 'full_name' | 'state' | 'attributes' | 'facts';
 export type OnboardingResult =
   | { ok: true }
   | { ok: false; error: string; field?: OnboardingField; signedOut?: boolean };
@@ -29,6 +32,7 @@ export async function saveOnboardingProfile(input: {
   full_name: string;
   state: string;
   attributes?: unknown;
+  facts?: unknown;
 }): Promise<OnboardingResult> {
   const parsed = ProfileSchema.safeParse(input);
   if (!parsed.success) {
@@ -58,7 +62,7 @@ export async function saveOnboardingProfile(input: {
     .eq('id', user.id)
     .maybeSingle();
 
-  return writeProfile(
+  const saved = await writeProfile(
     {
       full_name: parsed.data.full_name,
       state: parsed.data.state || null,
@@ -71,6 +75,45 @@ export async function saveOnboardingProfile(input: {
     user.id,
     supabase,
   );
+  if (!saved.ok) return saved;
+
+  if (flags.profileV2() && input.facts !== undefined) {
+    const facts = parseProfileFacts(input.facts, { source: 'onboarding' });
+    if (!facts.ok) return { ok: false, error: facts.error, field: 'facts' };
+    const replaced = await replaceOwnFacts(supabase, user.id, facts.facts);
+    if (!replaced.ok) return replaced;
+    await recordFactConsent(supabase, user.id, facts.facts);
+  }
+
+  return { ok: true };
+}
+
+async function replaceOwnFacts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  facts: Array<{ type: string; value: string; start_date?: string | null; end_date?: string | null; source?: string | null }>,
+): Promise<OnboardingResult> {
+  const { error: delErr } = await supabase.from('profile_facts').delete().eq('user_id', userId);
+  if (delErr) {
+    console.error('[onboarding] profile_facts delete failed', { code: delErr.code ?? null });
+    return { ok: false, error: 'We couldn’t save your profile facts. Please try again.', field: 'facts' };
+  }
+  if (facts.length === 0) return { ok: true };
+  const { error: insErr } = await supabase.from('profile_facts').insert(
+    facts.map((fact) => ({
+      user_id: userId,
+      type: fact.type,
+      value: fact.value,
+      start_date: fact.start_date ?? null,
+      end_date: fact.end_date ?? null,
+      source: fact.source ?? 'onboarding',
+    })),
+  );
+  if (insErr) {
+    console.error('[onboarding] profile_facts insert failed', { code: insErr.code ?? null });
+    return { ok: false, error: 'We couldn’t save your profile facts. Please try again.', field: 'facts' };
+  }
+  return { ok: true };
 }
 
 /** "Skip for now": no details saved, and the dashboard stops asking. */

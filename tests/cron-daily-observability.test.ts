@@ -22,6 +22,7 @@ vi.mock('@/lib/scraper/pipeline', () => ({
   },
 }));
 vi.mock('@/lib/match-sweep', () => ({ runMatchSweep: m.runMatchSweep }));
+vi.mock('@/lib/match-store', () => ({ persistStoredMatches: vi.fn().mockResolvedValue({ users: 0, persisted: 0 }) }));
 vi.mock('@/lib/jobs', () => ({
   startIngestRun: (...args: unknown[]) => {
     m.order.push('start');

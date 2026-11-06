@@ -186,7 +186,7 @@ export default async function AdminOverviewPage() {
               . Nothing is auto-closed.
             </p>
           </div>
-          <HeldClosuresQueue items={heldClosureQueue} />
+          <HeldClosuresQueue items={heldClosureQueue} triage={flags.heldClosureTriage()} />
         </section>
       ) : null}
 
@@ -487,6 +487,7 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
                 ['Deadline changes', run.summary.deadlineChanges],
                 ['Flagged for a look', run.summary.flagged],
                 ['Failed reads or writes', run.summary.failed],
+                ['Auto-closed past deadline', run.summary.autoClosedPastDeadline],
               ] as [string, number | undefined][]
             ).map(([label, value]) => (
               <div key={label}>
@@ -495,6 +496,37 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
               </div>
             ))}
           </dl>
+          {Array.isArray(run.summary.failureSamples) && run.summary.failureSamples.length > 0 && (
+            <details className="rounded-xl bg-red-50 p-4" open>
+              <summary className="cursor-pointer text-sm font-semibold text-ink">
+                {run.summary.failureSamples.length.toLocaleString()}
+                {typeof run.summary.failed === 'number' && run.summary.failed > run.summary.failureSamples.length
+                  ? ` of ${run.summary.failed.toLocaleString()}`
+                  : ''}{' '}
+                catalog read/write failures (sample stored on the jobs row)
+              </summary>
+              <ul className="mt-3 max-h-96 space-y-2 overflow-y-auto text-sm text-ink">
+                {run.summary.failureSamples.map((sample, index) => (
+                  <li key={`${sample.operation}:${sample.slug ?? sample.id ?? index}`}>
+                    <span className="font-mono text-xs uppercase text-ink-muted">{sample.operation}</span>
+                    {sample.slug ? (
+                      <>
+                        {' '}
+                        <span className="font-mono text-ink">{sample.slug}</span>
+                      </>
+                    ) : null}
+                    {sample.code ? (
+                      <>
+                        {' '}
+                        <span className="font-mono text-xs text-ink-muted">{sample.code}</span>
+                      </>
+                    ) : null}
+                    <div className="text-ink-muted">{sample.message}</div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           {held.length > 0 && (
             <details className="rounded-xl bg-gray-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold text-ink">

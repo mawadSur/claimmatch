@@ -3,7 +3,7 @@
 // configured. Only server code should import this (it reads server env vars).
 import { SITE, formatDeadline } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
-import { closingSoonEmailGate } from '@/lib/closing-soon-email';
+import { closingSoonEmailGate, commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { legalContact } from '@/lib/legal-contact';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
 
@@ -50,6 +50,14 @@ function lawsuitUrl(slug: string): string {
   return `${SITE.url.replace(/\/$/, '')}/lawsuits/${encodeURIComponent(slug)}`;
 }
 
+function claimPageUrl(slug: string): string {
+  return `${SITE.url.replace(/\/$/, '')}/claim/${encodeURIComponent(slug)}`;
+}
+
+function onboardingUrl(): string {
+  return `${SITE.url.replace(/\/$/, '')}/onboarding`;
+}
+
 /**
  * Unsubscribe link for email footers. It opens a confirm page; nothing changes
  * until the reader presses the button. Token format: see @/lib/unsubscribe.
@@ -67,8 +75,8 @@ function footerNote(reason: string, to?: string): string {
   return `
         <tr><td style="padding:22px 8px 0 8px;">
           <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
-          ${postal ? `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(postal)}</p>` : ''}
-          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(reason)}${unsub}</p>
+          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(SITE.name)}${postal ? `<br>${esc(postal)}` : ''}</p>
+          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. ${esc(reason)}${unsub}</p>
         </td></tr>`;
 }
 
@@ -267,6 +275,230 @@ export async function sendClosingSoonEmail(to: string, opts: ClosingSoonEmailOpt
     });
   } catch (err) {
     console.error(`[email] Failed to send closing-soon email to ${to}:`, err);
+  }
+}
+
+export type DeadlineReminderEmailKind = '7d' | '1d';
+
+export interface DeadlineReminderEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  deadline: string;
+  kind: DeadlineReminderEmailKind;
+  to?: string;
+}
+
+export function renderDeadlineReminderEmail(opts: DeadlineReminderEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const when = opts.kind === '1d' ? 'tomorrow' : 'in 7 days';
+  const subjectLine =
+    opts.kind === '1d' ? 'A tracked settlement deadline is tomorrow' : 'A tracked settlement deadline is in 7 days';
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(subjectLine)}</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(subjectLine)}</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a settlement you are tracking has a listed claim deadline ${esc(when)}. Check the official notice and file there yourself if you qualify. ${esc(SITE.name)} never files for you.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(opts.title)}</div>
+                <div style="font-size:13px;color:#6b6480;margin-top:8px;">Listed deadline: ${esc(formatDeadline(opts.deadline))}</div>
+                <div style="margin-top:16px;">
+                  <a href="${lawsuitUrl(opts.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">Review this settlement →</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">See your tracked claims on your <a href="${SITE.url.replace(/\/$/, '')}/dashboard" style="color:${BRAND};text-decoration:underline;">dashboard</a>.</p>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${SITE.name} and are tracking this settlement.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Send a 7-day or 1-day claim deadline reminder. Returns true only when Resend
+ * accepted the send, so the caller can record idempotency after a real send.
+ */
+export async function sendDeadlineReminderEmail(
+  to: string,
+  opts: DeadlineReminderEmailOpts,
+): Promise<boolean> {
+  if (!to || !opts?.slug || !opts.deadline) return false;
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping deadline reminder.');
+    return false;
+  }
+  const subject =
+    opts.kind === '1d'
+      ? `A tracked settlement deadline is tomorrow on ${SITE.name}`
+      : `A tracked settlement deadline is in 7 days on ${SITE.name}`;
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject,
+      html: renderDeadlineReminderEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send deadline reminder:', err);
+    return false;
+  }
+}
+
+export interface IncompleteOnboardingEmailOpts {
+  name?: string;
+  to?: string;
+}
+
+export function renderIncompleteOnboardingEmail(opts: IncompleteOnboardingEmailOpts = {}): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Finish your ${esc(SITE.name)} profile</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Finish your profile</h1>
+          <p style="margin:0 0 18px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} you started a ${esc(SITE.name)} account but have not finished your profile. A few answers help us find open US settlements that may apply to you. You still file on the official site yourself — ${esc(SITE.name)} never files for you.</p>
+          <div>
+            <a href="${onboardingUrl()}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 20px;border-radius:8px;">Complete your profile →</a>
+          </div>
+          <p style="margin:20px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">It takes about two minutes. You can skip any question you do not want to answer.</p>
+        </td></tr>
+        ${footerNote(`You're receiving this because you signed up at ${SITE.name} and opted in to email.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export interface DidYouFileEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  to?: string;
+}
+
+export function renderDidYouFileEmail(opts: DidYouFileEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const href = claimPageUrl(opts.slug);
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Did you file this settlement claim?</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Did you file this claim?</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a few days ago you opened the official claim form for a settlement you are tracking. If you already submitted it on the official site, tell us so we can keep it on your dashboard. If not, you can still file there yourself. ${esc(SITE.name)} never files for you.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(opts.title)}</div>
+                <div style="margin-top:16px;">
+                  <a href="${href}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">I filed this claim →</a>
+                </div>
+                <div style="margin-top:12px;">
+                  <a href="${href}" style="color:${BRAND};font-size:13px;text-decoration:underline;">Review this settlement</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${SITE.name} and started a claim.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Incomplete-onboarding drip. Returns true only when Resend accepted the send.
+ * Refuses without a postal address and a verified sender (same helpers as
+ * closing-soon). Tests must mock Resend — this never sends when the gate fails.
+ */
+export async function sendIncompleteOnboardingEmail(
+  to: string,
+  opts: IncompleteOnboardingEmailOpts = {},
+): Promise<boolean> {
+  if (!to) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] incomplete-onboarding email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping incomplete-onboarding email.');
+    return false;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `Finish your ${SITE.name} profile`,
+      html: renderIncompleteOnboardingEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send incomplete-onboarding email:', err);
+    return false;
+  }
+}
+
+/**
+ * "Did you file?" drip. Returns true only when Resend accepted the send.
+ * Deep-links to the claim page. Same sender/postal refuse as closing-soon.
+ */
+export async function sendDidYouFileEmail(to: string, opts: DidYouFileEmailOpts): Promise<boolean> {
+  if (!to || !opts?.slug) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] did-you-file email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping did-you-file email.');
+    return false;
+  }
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `Did you file your ${opts.title} claim?`,
+      html: renderDidYouFileEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send did-you-file email:', err);
+    return false;
   }
 }
 

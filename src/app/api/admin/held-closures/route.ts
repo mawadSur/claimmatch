@@ -25,6 +25,11 @@ const BulkSchema = z.object({
   action: z.literal('bulk_approve'),
 });
 
+const GroupSchema = z.object({
+  action: z.literal('bulk_approve_group'),
+  group: z.enum(['safe_to_close', 'likely_close', 'likely_keep', 'unknown']),
+});
+
 /**
  * GET /api/admin/held-closures — list the review queue (flag on).
  * POST — approve (apply that closure only), dismiss, or bulk-approve.
@@ -56,6 +61,38 @@ export async function POST(req: Request) {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+  }
+
+  const group = GroupSchema.safeParse(body);
+  if (group.success) {
+    if (!flags.heldClosureTriage()) {
+      return NextResponse.json({ error: 'Held-closure triage is off.' }, { status: 404 });
+    }
+    const queue = await listHeldClosureQueue();
+    const slugs = queue
+      .filter((item) => item.suggestion === group.data.group)
+      .map((item) => item.slug);
+    if (slugs.length === 0) {
+      return NextResponse.json({ ok: true, updated: 0, results: [] });
+    }
+    const bySlug = new Map(queue.map((item) => [item.slug, item]));
+    const results: Array<{ slug: string; ok: boolean; error?: string }> = [];
+    for (const slug of slugs) {
+      const item = bySlug.get(slug);
+      const applied = await applyHeldClosure({
+        slug,
+        adminId: admin.id,
+        fingerprint: item?.fingerprint,
+        changes: item?.changes ?? [],
+        storedPatch: item?.patch ?? null,
+      });
+      results.push(applied.ok ? { slug, ok: true } : { slug, ok: false, error: applied.error });
+    }
+    return NextResponse.json({
+      ok: results.every((r) => r.ok),
+      updated: results.filter((r) => r.ok).length,
+      results,
+    });
   }
 
   const bulk = BulkSchema.safeParse(body);
@@ -98,6 +135,7 @@ export async function POST(req: Request) {
       decision: 'dismissed',
       fingerprint,
       adminId: admin.id,
+      source: 'admin',
     });
     if (!recorded.ok) {
       return NextResponse.json({ error: recorded.error }, { status: 400 });

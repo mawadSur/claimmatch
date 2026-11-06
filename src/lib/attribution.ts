@@ -1,7 +1,7 @@
 /**
  * First-touch campaign attribution: utm_source, utm_medium, utm_campaign,
- * utm_content and a `ref` code. Existing values win so a later click never
- * overwrites the first one.
+ * utm_content, a `ref` code, and a sanitized document referrer. Existing
+ * values win so a later click never overwrites the first one.
  */
 
 export const REF_COOKIE = 'cm_ref';
@@ -17,6 +17,8 @@ export interface Attribution {
   utm_campaign: string | null;
   utm_content: string | null;
   ref: string | null;
+  /** Origin + pathname of the first external document.referrer. No query. */
+  referrer: string | null;
 }
 
 export const EMPTY_ATTRIBUTION: Attribution = {
@@ -25,10 +27,38 @@ export const EMPTY_ATTRIBUTION: Attribution = {
   utm_campaign: null,
   utm_content: null,
   ref: null,
+  referrer: null,
 };
 
 const UTM_SAFE = /[^a-zA-Z0-9._:-]/g;
 const REF_SAFE = /[^a-zA-Z0-9_-]/g;
+
+/**
+ * First-touch HTTP referrer: https origin + pathname only. Drops query and
+ * hash (those can hold emails). Same-site and non-http(s) values are ignored.
+ */
+export function sanitizeReferrer(raw: unknown, currentOrigin?: string | null, max = 200): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (url.username || url.password) return null;
+    if (currentOrigin) {
+      try {
+        if (url.origin === new URL(currentOrigin).origin) return null;
+      } catch {
+        /* ignore a bad current origin */
+      }
+    }
+    const path = url.pathname && url.pathname !== '/' ? url.pathname : '';
+    const cleaned = `${url.origin}${path}`;
+    return cleaned.slice(0, max) || null;
+  } catch {
+    return null;
+  }
+}
 
 /** Campaign tag: letters, numbers, and . _ : - only. */
 export function sanitizeUtm(raw: unknown, max = 80): string | null {
@@ -50,7 +80,14 @@ export function emptyAttribution(): Attribution {
 
 export function hasAttribution(attr: Attribution | null | undefined): boolean {
   if (!attr) return false;
-  return Boolean(attr.ref || attr.utm_source || attr.utm_medium || attr.utm_campaign || attr.utm_content);
+  return Boolean(
+    attr.ref ||
+      attr.utm_source ||
+      attr.utm_medium ||
+      attr.utm_campaign ||
+      attr.utm_content ||
+      attr.referrer,
+  );
 }
 
 function readParam(
@@ -72,6 +109,9 @@ export function parseAttribution(
     utm_campaign: sanitizeUtm(readParam(input, 'utm_campaign')),
     utm_content: sanitizeUtm(readParam(input, 'utm_content')),
     ref: sanitizeRef(readParam(input, 'ref')),
+    // Referrer is never taken from the query string (that would be spoofable
+    // and could carry PII). Capture it from document.referrer instead.
+    referrer: null,
   };
 }
 
@@ -83,6 +123,7 @@ export function firstTouch(existing: Attribution, incoming: Attribution): Attrib
     utm_campaign: existing.utm_campaign || incoming.utm_campaign,
     utm_content: existing.utm_content || incoming.utm_content,
     ref: existing.ref || incoming.ref,
+    referrer: existing.referrer || incoming.referrer,
   };
 }
 
@@ -113,6 +154,7 @@ export function serializeAttrCookie(attr: Attribution): string {
     utm_medium: attr.utm_medium,
     utm_campaign: attr.utm_campaign,
     utm_content: attr.utm_content,
+    referrer: attr.referrer,
   });
 }
 
@@ -120,12 +162,16 @@ export function parseAttrCookie(raw: string | null | undefined): Attribution {
   if (!raw) return emptyAttribution();
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return parseAttribution({
+    const parsedAttr = parseAttribution({
       utm_source: typeof parsed.utm_source === 'string' ? parsed.utm_source : null,
       utm_medium: typeof parsed.utm_medium === 'string' ? parsed.utm_medium : null,
       utm_campaign: typeof parsed.utm_campaign === 'string' ? parsed.utm_campaign : null,
       utm_content: typeof parsed.utm_content === 'string' ? parsed.utm_content : null,
     });
+    return {
+      ...parsedAttr,
+      referrer: sanitizeReferrer(typeof parsed.referrer === 'string' ? parsed.referrer : null),
+    };
   } catch {
     return emptyAttribution();
   }
@@ -161,12 +207,20 @@ export function attributionSetCookies(
   if (attr.ref) {
     cookies.push(`${REF_COOKIE}=${encodeURIComponent(attr.ref)}; ${cookieFlags(maxAge, secure)}`);
   }
-  if (attr.utm_source || attr.utm_medium || attr.utm_campaign || attr.utm_content) {
+  if (attr.utm_source || attr.utm_medium || attr.utm_campaign || attr.utm_content || attr.referrer) {
     cookies.push(
       `${ATTR_COOKIE}=${encodeURIComponent(serializeAttrCookie(attr))}; ${cookieFlags(maxAge, secure)}`,
     );
   }
   return cookies;
+}
+
+/** First-touch referrer from this document, or empty attribution. */
+export function documentReferrerAttribution(currentOrigin?: string | null): Attribution {
+  if (typeof document === 'undefined') return emptyAttribution();
+  const origin =
+    currentOrigin ?? (typeof window !== 'undefined' ? window.location.origin : null);
+  return { ...emptyAttribution(), referrer: sanitizeReferrer(document.referrer, origin) };
 }
 
 export function writeBrowserCookies(attr: Attribution): void {
@@ -199,6 +253,10 @@ export function attributionPersonProperties(attr: Attribution): Record<string, s
   if (attr.ref) {
     props.ref = attr.ref;
     props.initial_ref = attr.ref;
+  }
+  if (attr.referrer) {
+    props.referrer = attr.referrer;
+    props.$initial_referrer = attr.referrer;
   }
   return props;
 }

@@ -7,6 +7,8 @@ import { legalContact } from '@/lib/legal-contact';
 import { NotificationPrefs } from '@/components/NotificationPrefs';
 import { ReferralCard } from '@/components/ReferralCard';
 import { DeleteAccount } from '@/components/DeleteAccount';
+import { DownloadMyData } from '@/components/DownloadMyData';
+import { flags } from '@/lib/flags';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -33,7 +35,7 @@ export default async function SettingsPage() {
       state: null,
       zip: null,
       attributes: {},
-      email_opt_in: true,
+      email_opt_in: false,
       onboarded: false,
       is_admin: false,
       phone: null,
@@ -82,6 +84,18 @@ export default async function SettingsPage() {
       </p>
 
       <div className="mt-8 space-y-6">
+        {flags.profileV2() && (
+          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
+            <h2 className="text-lg font-bold">My profile</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Edit brands, employers, locations, and purchases used to find
+              settlements that may apply to you.
+            </p>
+            <Link href="/settings/profile" className="btn-primary mt-4">
+              Edit my profile
+            </Link>
+          </section>
+        )}
         <NotificationPrefs profile={profile} />
 
         <section
@@ -113,6 +127,7 @@ export default async function SettingsPage() {
             Match-quality logging is optional. It never includes optional health
             answers. You can turn it on or off in the form above.
           </p>
+          <DownloadMyData />
           <DeleteAccount />
         </section>
 

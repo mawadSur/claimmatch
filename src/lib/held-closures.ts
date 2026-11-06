@@ -1,5 +1,11 @@
 import { flags } from '@/lib/flags';
 import { officialLinkFor } from '@/lib/lawsuits';
+import { loadHeldSiteChecks } from '@/lib/held-closure-site-checks';
+import {
+  suggestHeldClosureDecision,
+  type HeldClosureSuggestion,
+  type HeldSiteCheck,
+} from '@/lib/held-closure-triage';
 import {
   heldChangeFingerprint,
   heldClosureApplyPatch,
@@ -12,7 +18,8 @@ import type { LawsuitStatus } from '@/lib/types';
 export const HELD_CLOSURE_JOB_LOOKBACK = 8;
 export const HELD_CLOSURE_QUEUE_CAP = 400;
 
-export type HeldClosureDecisionKind = 'approved' | 'dismissed';
+export type HeldClosureDecisionKind = 'approved' | 'dismissed' | 'auto_closed';
+export type HeldClosureDecisionSource = 'admin' | 'auto_past_deadline';
 
 export interface HeldClosureDecision {
   slug: string;
@@ -20,6 +27,7 @@ export interface HeldClosureDecision {
   decided_by: string | null;
   decided_at: string;
   change_fingerprint: string;
+  source?: HeldClosureDecisionSource | null;
 }
 
 export interface HeldClosureQueueItem {
@@ -34,6 +42,11 @@ export interface HeldClosureQueueItem {
   officialLabel: string | null;
   lawsuitId: string | null;
   patch: { status?: LawsuitStatus; deadline?: string };
+  suggestion?: HeldClosureSuggestion;
+  suggestionEvidence?: string[];
+  siteSignal?: HeldSiteCheck['signal'] | null;
+  siteHttpStatus?: number | null;
+  siteCheckedAt?: string | null;
 }
 
 export function asHeldClosures(value: unknown): HeldClosure[] {
@@ -160,6 +173,11 @@ async function loadLawsuitsBySlug(
 export function toQueueItem(
   held: HeldClosure,
   lawsuit: LawsuitLite | undefined,
+  triage?: {
+    suggestion: HeldClosureSuggestion;
+    evidence: string[];
+    site?: HeldSiteCheck | null;
+  },
 ): HeldClosureQueueItem {
   const official = lawsuit ? officialLinkFor(lawsuit) : null;
   return {
@@ -174,16 +192,26 @@ export function toQueueItem(
     officialLabel: official ? `${official.label} (${official.host})` : null,
     lawsuitId: lawsuit?.id ?? held.id ?? null,
     patch: heldClosureApplyPatch(held.changes, held.patch),
+    ...(triage
+      ? {
+          suggestion: triage.suggestion,
+          suggestionEvidence: triage.evidence,
+          siteSignal: triage.site?.signal ?? null,
+          siteHttpStatus: triage.site?.http_status ?? null,
+          siteCheckedAt: triage.site?.checked_at ?? null,
+        }
+      : {}),
   };
 }
 
 /**
  * Held closures from recent ingest jobs, deduped by slug, minus decisions
- * whose fingerprint still matches. Empty when the queue flag is off.
+ * whose fingerprint still matches. Used by the admin queue and by the
+ * cron site-check (which must run even when the admin UI flag is off).
  */
-export async function listHeldClosureQueue(): Promise<HeldClosureQueueItem[]> {
-  if (!flags.adminHeldClosures()) return [];
-  const svc = createServiceClient();
+export async function loadHeldClosureCandidates(
+  svc: ReturnType<typeof createServiceClient> = createServiceClient(),
+): Promise<HeldClosureQueueItem[]> {
   const held = await loadRecentHeldFromJobs(svc);
   if (held.length === 0) return [];
   const slugs = held.map((h) => h.slug);
@@ -201,26 +229,61 @@ export async function listHeldClosureQueue(): Promise<HeldClosureQueueItem[]> {
   return items;
 }
 
+async function attachTriage(
+  items: HeldClosureQueueItem[],
+  svc: ReturnType<typeof createServiceClient>,
+  now: Date = new Date(),
+): Promise<HeldClosureQueueItem[]> {
+  if (!flags.heldClosureTriage() || items.length === 0) return items;
+  const checks = await loadHeldSiteChecks(
+    svc,
+    items.map((item) => item.slug),
+  );
+  return items.map((item) => {
+    const site = checks.get(item.slug) ?? null;
+    const triage = suggestHeldClosureDecision({ deadline: item.deadline, site }, now);
+    return {
+      ...item,
+      suggestion: triage.suggestion,
+      suggestionEvidence: triage.evidence,
+      siteSignal: site?.signal ?? null,
+      siteHttpStatus: site?.http_status ?? null,
+      siteCheckedAt: site?.checked_at ?? null,
+    };
+  });
+}
+
+/**
+ * Held closures from recent ingest jobs, deduped by slug, minus decisions
+ * whose fingerprint still matches. Empty when the queue flag is off.
+ */
+export async function listHeldClosureQueue(): Promise<HeldClosureQueueItem[]> {
+  if (!flags.adminHeldClosures()) return [];
+  const svc = createServiceClient();
+  const items = await loadHeldClosureCandidates(svc);
+  return attachTriage(items, svc);
+}
+
 export async function recordHeldClosureDecision(input: {
   slug: string;
   decision: HeldClosureDecisionKind;
   fingerprint: string;
-  adminId: string;
+  adminId?: string | null;
   patch?: Record<string, unknown> | null;
+  source?: HeldClosureDecisionSource;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const svc = createServiceClient();
   const now = new Date().toISOString();
-  const { error } = await svc.from('held_closure_decisions').upsert(
-    {
-      slug: input.slug,
-      decision: input.decision,
-      decided_by: input.adminId,
-      decided_at: now,
-      change_fingerprint: input.fingerprint,
-      applied_patch: input.patch ?? null,
-    },
-    { onConflict: 'slug' },
-  );
+  const row: Record<string, unknown> = {
+    slug: input.slug,
+    decision: input.decision,
+    decided_by: input.adminId ?? null,
+    decided_at: now,
+    change_fingerprint: input.fingerprint,
+    applied_patch: input.patch ?? null,
+  };
+  if (input.source) row.source = input.source;
+  const { error } = await svc.from('held_closure_decisions').upsert(row, { onConflict: 'slug' });
   if (error) {
     console.error('[held-closures] decision write failed:', error.message);
     return { ok: false, error: 'Could not store the decision.' };
@@ -257,6 +320,7 @@ export async function applyHeldClosure(input: {
     fingerprint,
     adminId: input.adminId,
     patch,
+    source: 'admin',
   });
   if (!recorded.ok) return { ok: false, error: recorded.error, status: 400 };
   return { ok: true, lawsuitId: lawsuit.id as string };

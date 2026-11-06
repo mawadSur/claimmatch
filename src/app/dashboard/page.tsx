@@ -11,6 +11,8 @@ import { YourMatches } from '@/components/claims/YourMatches';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
+import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
+import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
 
 export const metadata: Metadata = {
   title: 'Your claims',
@@ -37,8 +39,25 @@ export default async function DashboardPage({
   const { welcome, denied, password } = await searchParams;
   const now = new Date();
 
-  const { profile, claims, catalog, filingJobs, rows, notices, closingSoon, matches, needsProfile, firstName } =
-    await loadDashboardData(supabase, user.id, now);
+  const {
+    profile,
+    claims,
+    catalog,
+    filingJobs,
+    rows,
+    notices,
+    closingSoon,
+    matchProfile,
+    matches,
+    needsProfile,
+    firstName,
+  } = await loadDashboardData(supabase, user.id, now);
+  // Web only (the app's dashboard endpoint does not send it yet).
+  const completeness =
+    flags.profileCompleteness() && !catalog.error
+      ? profileCompleteness(matchProfile, catalog.lawsuits, now)
+      : null;
+  const showCompleteness = completeness ? shouldShowCompletenessCard(completeness) : false;
 
   return (
     <div className="bg-gray-50">
@@ -76,6 +95,8 @@ export default async function DashboardPage({
             on screen after router.refresh() drops the answered rows. */}
         <CorrectiveNoticeList items={notices} />
 
+        {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
+
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
             <div className="flex items-start gap-3">
@@ -103,6 +124,7 @@ export default async function DashboardPage({
           needsProfile={needsProfile}
           metricsEnabled={flags.matchMetrics()}
           fileForYou={flags.assistedFiling()}
+          canDismiss={flags.matchStore()}
         />
 
         {flags.assistedFiling() && (

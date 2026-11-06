@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
+import { factsFromRows } from '@/lib/profile-facts';
 import type { Lawsuit, Match, Profile } from '@/lib/types';
 import { isDeadlinePassed } from '@/lib/utils';
 
@@ -29,6 +30,11 @@ export async function POST() {
     .eq('id', user.id)
     .maybeSingle();
 
+  const { data: factRows } = await supabase
+    .from('profile_facts')
+    .select('type, value, start_date, end_date, source')
+    .eq('user_id', user.id);
+
   const profile: Profile =
     (profileRow as Profile) ??
     ({
@@ -43,6 +49,7 @@ export async function POST() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     } as Profile);
+  profile.facts = factsFromRows(factRows);
 
   const catalog = await lookupLawsuits();
   if (catalog.error) {
@@ -107,4 +114,47 @@ export async function GET() {
     (m) => !!m.lawsuit && isOpenForClaims(m.lawsuit, now),
   );
   return NextResponse.json({ matches });
+}
+
+/**
+ * PATCH /api/matches — dismiss (or restore) one of the current user's stored
+ * matches. Body: { matchId | lawsuit_id, dismissed }.
+ */
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+  }
+  const payload = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+  const dismissed = payload?.dismissed;
+  if (typeof dismissed !== 'boolean') {
+    return NextResponse.json({ error: 'Set dismissed to true or false.' }, { status: 400 });
+  }
+  const matchId = typeof payload?.matchId === 'string' ? payload.matchId : null;
+  const lawsuitId = typeof payload?.lawsuit_id === 'string' ? payload.lawsuit_id : null;
+  if (!matchId && !lawsuitId) {
+    return NextResponse.json({ error: 'Which match should we update?' }, { status: 400 });
+  }
+
+  let query = supabase.from('matches').update({ dismissed }).eq('user_id', user.id);
+  query = matchId ? query.eq('id', matchId) : query.eq('lawsuit_id', lawsuitId as string);
+  const { data, error } = await query.select('id');
+  if (error) {
+    console.error('[matches] dismiss failed:', error.message);
+    return NextResponse.json({ error: 'We couldn’t update that match.' }, { status: 500 });
+  }
+  if (!data?.length) {
+    return NextResponse.json({ error: 'Match not found.' }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
 }

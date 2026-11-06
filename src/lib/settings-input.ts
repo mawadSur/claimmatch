@@ -12,6 +12,7 @@ const STATE_CODES = new Set(US_STATES.map((s) => s.code));
  */
 const SettingsInput = z.object({
   email_opt_in: z.boolean().optional(),
+  email_frequency: z.enum(['instant', 'weekly']).optional(),
   full_name: z.string().trim().max(120, 'Keep your name under 120 characters.').optional(),
   state: z
     .string()
@@ -37,6 +38,7 @@ const SettingsInput = z.object({
 
 export interface SettingsPatch {
   email_opt_in?: boolean;
+  email_frequency?: 'instant' | 'weekly';
   full_name?: string | null;
   state?: string | null;
   phone?: string | null;
@@ -65,6 +67,7 @@ export function parseSettingsInput(body: unknown): SettingsParseResult {
 
   const {
     email_opt_in,
+    email_frequency,
     full_name,
     state,
     phone,
@@ -77,6 +80,7 @@ export function parseSettingsInput(body: unknown): SettingsParseResult {
   } = parsed.data;
   const patch: SettingsPatch = {};
   if (email_opt_in !== undefined) patch.email_opt_in = email_opt_in;
+  if (email_frequency !== undefined) patch.email_frequency = email_frequency;
   // An emptied field clears the stored value instead of saving "".
   if (full_name !== undefined) patch.full_name = full_name || null;
   if (state !== undefined) patch.state = state || null;

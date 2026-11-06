@@ -199,4 +199,76 @@ export const flags = {
    * Off (default): "See open settlements" keeps the current browse path.
    */
   homeAccountFirstCta: () => on('HOME_ACCOUNT_FIRST_CTA_ENABLED'),
+  /**
+   * Logged-out "See matching settlements" preview on home and /lawsuits.
+   * Off: no preview entry, /preview 404s, and /api/match-preview 404s.
+   */
+  matchPreview: () => on('MATCH_PREVIEW_ENABLED'),
+  /**
+   * Claim CTAs send signed-out visitors through /signup with a safe return
+   * path so confirm-email → onboarding lands them back on that claim.
+   * Off: signed-out /claim visits still go to /login.
+   */
+  signupContext: () => on('SIGNUP_CONTEXT_ENABLED'),
+  /**
+   * Settlement-page "Check if you qualify" starts a match preview scoped to
+   * that open listing, then signup with the settlement as return context.
+   * Off: the existing CTAs still go to /claim/{slug}. Closed listings never
+   * show it.
+   */
+  settlementPageCta: () => on('SETTLEMENT_PAGE_CTA_ENABLED'),
+  /**
+   * Short, server-rendered list of other open published settlements on each
+   * settlement page (same category, then nearest deadlines). Off: hidden.
+   */
+  relatedSettlements: () => on('RELATED_SETTLEMENTS_ENABLED'),
+  /**
+   * After the nightly ingest, submit changed public URLs to IndexNow.
+   * Off: no request. Never runs in tests, even if set.
+   */
+  indexNow: () => on('INDEXNOW_ENABLED'),
+  /**
+   * Richer profile: profile_facts collection, onboarding v2 step, /settings/profile,
+   * and /admin/users. Off: those surfaces 404 or stay hidden.
+   */
+  profileV2: () => on('PROFILE_V2_ENABLED'),
+  /**
+   * Persist matcher results into public.matches after nightly ingest.
+   * Off: the dashboard live-computes; the store job is skipped.
+   * Separate from MATCH_EMAILS_ENABLED.
+   */
+  matchStore: () => on('MATCH_STORE_ENABLED'),
+  /**
+   * Group the held-closure queue by a suggested decision (deadline / official
+   * site) and allow "approve all in this group". Official-site checks run from
+   * cron only. Never auto-closes. Off: the flat queue stays as it is.
+   */
+  heldClosureTriage: () => on('HELD_CLOSURE_TRIAGE_ENABLED'),
+  /**
+   * Nightly ingest may close a held row whose *stored* deadline is already
+   * past, and writes that to held_closure_decisions. Off: those rows stay
+   * in the review queue. Never closes a row with no stored deadline.
+   */
+  heldAutoClosePastDeadline: () => on('HELD_AUTO_CLOSE_PAST_DEADLINE'),
+  /**
+   * Email opted-in users 7 days and 1 day before a tracked, unfiled claim
+   * deadline. Off: the daily cron skips the step. Idempotent; never sends
+   * without email_opt_in.
+   */
+  deadlineReminders: () => on('DEADLINE_REMINDERS_ENABLED'),
+  /**
+   * Incomplete-onboarding (+24h) and "did you file?" (+3 days after official-
+   * form intent) drips. Off: the daily cron skips the step. Idempotent; never
+   * sends without email_opt_in, a postal address, and a verified sender.
+   */
+  onboardingDrip: () => on('ONBOARDING_DRIP_ENABLED'),
+  /**
+   * Dashboard card: unanswered matcher questions vs how many additional open
+   * catalog settlements those answers could unlock. Off: hidden.
+   */
+  profileCompleteness: () => on('PROFILE_COMPLETENESS_ENABLED'),
+  /**
+   * Public /invite landing for the soft-invite cohort. Off: that path 404s.
+   */
+  softInviteLanding: () => on('SOFT_INVITE_LANDING_ENABLED'),
 };

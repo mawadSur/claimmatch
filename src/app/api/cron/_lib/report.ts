@@ -48,9 +48,65 @@ export function matchSweepGate(matchEmailsEnabled: boolean): Gate {
   return matchEmailsEnabled ? { run: true } : { run: false, step: pausedByD50('MATCH_EMAILS_ENABLED') };
 }
 
+/** Persist computed matches. Separate from MATCH_EMAILS_ENABLED. */
+export function matchStoreGate(matchStoreEnabled: boolean): Gate {
+  return matchStoreEnabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (match store)',
+          resume: 'Set MATCH_STORE_ENABLED=1 to persist nightly matches without emailing.',
+        },
+      };
+}
+
 /** D50: the Monday digest. */
 export function digestGate(digestEnabled: boolean): Gate {
   return digestEnabled ? { run: true } : { run: false, step: pausedByD50('DIGEST_ENABLED') };
+}
+
+/** Official-site checks that feed held-closure triage groups. */
+export function heldTriageGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (held-closure triage)',
+          resume: 'Set HELD_CLOSURE_TRIAGE_ENABLED=1 to classify held closures from cron.',
+        },
+      };
+}
+
+/** 7-day and 1-day reminders for tracked, unfiled claims. */
+export function deadlineRemindersGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (deadline reminders)',
+          resume: 'Set DEADLINE_REMINDERS_ENABLED=1 to email opted-in users before a tracked deadline.',
+        },
+      };
+}
+
+/** Incomplete-onboarding and "did you file?" drips. */
+export function onboardingDripGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (onboarding drip)',
+          resume: 'Set ONBOARDING_DRIP_ENABLED=1 to email opted-in users who stalled onboarding or filing.',
+        },
+      };
 }
 
 /**

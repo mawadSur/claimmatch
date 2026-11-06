@@ -2,17 +2,24 @@ import Link from 'next/link';
 import { ArrowRight, ExternalLink } from 'lucide-react';
 import type { CatalogLink } from '@/lib/lawsuits';
 import type { AnswerFacts } from '@/lib/settlement-seo';
+import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 
 export function AnswerBlock({
   facts,
   open,
   claimHref,
   official,
+  qualifyHref,
+  qualifySlug,
+  qualifyLawsuitId,
 }: {
   facts: AnswerFacts;
   open: boolean;
   claimHref: string;
   official: CatalogLink | null;
+  qualifyHref?: string;
+  qualifySlug?: string;
+  qualifyLawsuitId?: string;
 }) {
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
@@ -32,9 +39,20 @@ export function AnswerBlock({
       )}
       {open && (
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Link href={claimHref} className="btn-primary justify-center">
-            Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          {qualifyHref && qualifySlug && qualifyLawsuitId ? (
+            <SettlementQualifyCta
+              href={qualifyHref}
+              slug={qualifySlug}
+              lawsuitId={qualifyLawsuitId}
+              className="btn-primary justify-center"
+            >
+              Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </SettlementQualifyCta>
+          ) : (
+            <Link href={claimHref} className="btn-primary justify-center">
+              Check if you qualify <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
           {official?.kind === 'official' && (
             <a
               href={official.href}

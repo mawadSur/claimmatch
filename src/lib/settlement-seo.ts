@@ -1,6 +1,7 @@
 import { eligibilitySummary } from './claim-input';
 import { officialLinkFor } from './lawsuit-display';
-import { proofDetail, proofLabel } from './proof';
+import { proofLabel } from './proof';
+import { settlementGuideFaqs, settlementProofDetail } from './settlement-guides';
 import { LAWSUIT_CATEGORIES, type Lawsuit } from './types';
 import { formatDeadline, SITE, slugify } from './utils';
 
@@ -187,7 +188,7 @@ export function settlementFaqs(lawsuit: Lawsuit): FaqItem[] {
     },
     {
       q: `Do I need proof to file a ${name} claim?`,
-      a: proofDetail(lawsuit),
+      a: settlementProofDetail(lawsuit),
     },
     {
       q: `How much does the ${name} pay?`,
@@ -205,6 +206,7 @@ export function settlementFaqs(lawsuit: Lawsuit): FaqItem[] {
       q: `How do I file a claim for the ${name}?`,
       a: `Check that you qualify on the official notice, then file on the official site yourself. Filing there is free.${officialHow}`,
     },
+    ...settlementGuideFaqs(lawsuit.slug),
   ];
 }
 
