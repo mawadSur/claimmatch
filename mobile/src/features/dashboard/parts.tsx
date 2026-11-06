@@ -12,18 +12,33 @@ import { colors, radii, space } from '@/theme/tokens';
  */
 
 /**
- * A section's title with its action beside it (wrapping under it at large
- * text sizes), and the description across the full width below: a long
- * description next to a button would be squeezed into a narrow column.
+ * A section's title, the description across the full width below it (a long
+ * description next to a button would be squeezed into a narrow column), and
+ * the action: beside the title and centered on it, or under the description
+ * (see SectionHeader's actionPlacement).
  */
-export function SectionTitle({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+export function SectionTitle({
+  title,
+  description,
+  action,
+  actionPlacement,
+  testID,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+  actionPlacement?: 'beside' | 'below';
+  testID?: string;
+}) {
   return (
-    <View style={styles.sectionTitle}>
-      <SectionHeader title={title} action={action} />
-      <AppText variant="caption" color="textMuted">
-        {description}
-      </AppText>
-    </View>
+    <SectionHeader
+      title={title}
+      description={description}
+      descriptionColor="textMuted"
+      action={action}
+      actionPlacement={actionPlacement}
+      testID={testID}
+    />
   );
 }
 
@@ -87,9 +102,6 @@ export function SectionError({
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    gap: space[1],
-  },
   dashed: {
     gap: space[4],
     padding: space[5],

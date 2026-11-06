@@ -110,7 +110,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
   const fieldErrorShown = firstDetailsError(errors) !== null;
 
   return (
-    <Screen testID="settings-details-form">
+    <Screen hasTextFields testID="settings-details-form">
       <AppText variant="body" color="textMuted">
         {settings.detailsIntro.text}
       </AppText>

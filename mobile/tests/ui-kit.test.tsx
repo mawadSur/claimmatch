@@ -13,6 +13,7 @@ import {
   ListItem,
   Notice,
   Screen,
+  SectionHeader,
   TextField,
 } from '@/components/ui';
 import { X } from '@/components/ui/icons';
@@ -274,6 +275,45 @@ describe('form controls', () => {
     await rerender(<CheckboxRow appearance="plain" label="Save this address" checked onChange={onChange} />);
     expect(screen.getByRole('checkbox', { name: 'Save this address' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Save this address' })).toHaveStyle({ minHeight: 44 });
+  });
+});
+
+describe('SectionHeader', () => {
+  function withFontScale(fontScale: number) {
+    return jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 402, height: 874, scale: 3, fontScale });
+  }
+  const editProfile = <Button label="Edit profile" variant="ghost" onPress={() => undefined} />;
+
+  it('centers an action on the title beside it, without making the row taller than the title', async () => {
+    const dimensions = withFontScale(1);
+    await render(<SectionHeader title="Your matches" description="Settlements that may apply to you." action={editProfile} testID="matches" />);
+    const row = screen.getByTestId('matches-title-row');
+    expect(row).toHaveStyle({ flexDirection: 'row', alignItems: 'center' });
+    expect(row).toContainElement(screen.getByRole('button', { name: 'Edit profile' }));
+    // A 48 pt button beside a 24 pt line: 12 pt above and below sit outside the row.
+    expect(screen.getByTestId('matches-action-beside')).toHaveStyle({ marginVertical: -12 });
+    expect(screen.queryByTestId('matches-action-below')).toBeNull();
+    dimensions.mockRestore();
+  });
+
+  it('puts a wide outlined action under the description at every size', async () => {
+    const dimensions = withFontScale(1);
+    const browse = <Button label="Browse all settlements" variant="secondary" onPress={() => undefined} />;
+    await render(
+      <SectionHeader title="Closing soon" description="Open settlements in our list." action={browse} actionPlacement="below" testID="closing" />,
+    );
+    expect(screen.getByTestId('closing-title-row')).not.toContainElement(screen.getByRole('button', { name: 'Browse all settlements' }));
+    expect(screen.getByTestId('closing-action-below')).toContainElement(screen.getByRole('button', { name: 'Browse all settlements' }));
+    dimensions.mockRestore();
+  });
+
+  it('moves the action under the description at large text sizes', async () => {
+    const dimensions = withFontScale(2.643);
+    await render(<SectionHeader title="Your matches" description="Settlements that may apply to you." action={editProfile} testID="matches" />);
+    expect(screen.getByTestId('matches-title-row')).not.toContainElement(screen.getByRole('button', { name: 'Edit profile' }));
+    expect(screen.getByTestId('matches-action-below')).toContainElement(screen.getByRole('button', { name: 'Edit profile' }));
+    expect(screen.getByRole('header', { name: 'Your matches' })).toBeOnTheScreen();
+    dimensions.mockRestore();
   });
 });
 

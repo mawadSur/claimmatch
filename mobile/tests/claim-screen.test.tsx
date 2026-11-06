@@ -47,7 +47,10 @@ jest.mock('@/providers/ConfigProvider', () => ({
 }));
 const mockRouter = { push: jest.fn(), dismissTo: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () => '/claim/acme-data-breach' }));
-jest.mock('expo-router/react-navigation', () => ({ HeaderHeightContext: require('react').createContext(undefined) }));
+jest.mock('expo-router/react-navigation', () => ({
+  HeaderHeightContext: require('react').createContext(undefined),
+  NavigationContext: require('react').createContext(undefined),
+}));
 jest.mock('@/data/focus', () => ({ useRefetchOnFocus: jest.fn() }));
 jest.mock('@/data/dashboard', () => ({ refreshDashboardSoon: jest.fn() }));
 jest.mock('@/lib/reminders', () => ({ cancelAllReminders: jest.fn(async () => undefined) }));

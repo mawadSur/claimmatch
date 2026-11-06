@@ -259,10 +259,11 @@ describe('SignedOutPrompt', () => {
     await render(<SignedOutPrompt next={next} />);
   }
 
-  it('welcomes back and opens log in and sign-up with the checked next path', async () => {
+  it('offers log in or a free account, without "Welcome back" for someone who may be new, and opens both with the checked next path', async () => {
     const user = userEvent.setup();
     await renderPrompt('/dashboard');
-    expect(screen.getByRole('header', { name: shared.welcomeBack.text })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: shared.claimLoginTitle.text })).toBeOnTheScreen();
+    expect(screen.queryByText(shared.welcomeBack.text)).toBeNull();
     expect(screen.getByText(shared.logInToSeeClaims.text)).toBeOnTheScreen();
     expect(screen.queryByText(common.loggedOut.text)).toBeNull();
 
@@ -272,7 +273,7 @@ describe('SignedOutPrompt', () => {
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/signup', params: { next: '/dashboard' } });
   });
 
-  it('says "You were logged out." above the prompt when the session ended under the person', async () => {
+  it('says "You were logged out." and "Welcome back" when the session ended under the person', async () => {
     await render(<SignedOutPrompt next="/dashboard" loggedOut />);
     expect(screen.getByText(common.loggedOut.text)).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: shared.welcomeBack.text })).toBeOnTheScreen();
@@ -287,7 +288,8 @@ describe('SignedOutPrompt', () => {
   it('drops a next path that could leave the app', async () => {
     const user = userEvent.setup();
     await renderPrompt('https://evil.example/claim/x');
-    expect(screen.getByRole('header', { name: shared.welcomeBack.text })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: shared.claimLoginTitle.text })).toBeOnTheScreen();
+    expect(screen.getByText(shared.logInToSeeClaims.text)).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: common.logIn.text }));
     expect(mockPush).toHaveBeenLastCalledWith('/login');
   });

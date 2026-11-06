@@ -75,7 +75,7 @@ export function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen>
+    <Screen hasTextFields>
       <AuthHeader title={auth.forgotTitle.text} body={auth.forgotIntro.text} />
       {linkExpired ? <Notice tone="unverified" body={auth.resetLinkExpired.text} announce /> : null}
       <Card style={styles.form}>

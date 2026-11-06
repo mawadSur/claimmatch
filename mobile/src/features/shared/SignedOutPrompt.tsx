@@ -28,18 +28,22 @@ export interface SignedOutPromptProps {
 
 /**
  * The signed-out state of a personal screen, worded like the web's log-in
- * page (src/app/login/page.tsx): "Welcome back", or for a claim (a `next`
- * under /claim/) "Log in or create a free account". Log in and Create a free
+ * page (src/app/login/page.tsx). The title is "Log in or create a free
+ * account": the Your claims tab shows this to everyone, first-time visitors
+ * included, and the web keeps "Welcome back" from people who are likely new.
+ * "Welcome back" stays for someone whose session just ended. A claim (a
+ * `next` under /claim/) gets the web's claim body. Log in and Create a free
  * account open the auth screens with the checked `next` path.
  */
 export function SignedOutPrompt({ next, loggedOut = false, style, testID }: SignedOutPromptProps) {
   const router = useRouter();
   const safeNext = safeNextPath(next);
   const fromClaim = safeNext?.startsWith('/claim/') ?? false;
+  const returning = loggedOut && !fromClaim;
   const prompt = (
     <EmptyState
       icon={LogIn}
-      title={fromClaim ? shared.claimLoginTitle.text : shared.welcomeBack.text}
+      title={returning ? shared.welcomeBack.text : shared.claimLoginTitle.text}
       body={fromClaim ? shared.claimLoginBody.text : shared.logInToSeeClaims.text}
       style={loggedOut ? undefined : style}
       testID={testID}

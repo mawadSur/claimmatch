@@ -3,10 +3,11 @@ import { isOpenForClaims } from '@shared/lib/open-for-claims';
 import { formatDeadline } from '@shared/lib/utils';
 import { displayProofLabel } from '@shared/lib/verified-fields';
 import { memo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { AppText, Button, Card } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
+import { STACK_VALUE_FONT_SCALE } from '@/components/ui/ListItem';
 import { catalog } from '@/copy/catalog';
 import { fillCopy, shared } from '@/copy/shared';
 import type { CatalogLawsuit } from '@/data/catalog';
@@ -30,8 +31,9 @@ export interface CatalogCardProps {
  * opens the details), the summary, Deadline / Proof / "Payout, as listed",
  * the unverified line with the official link, and "Start your claim" with
  * "Details" while the settlement is open for claims, or "Claims closed".
- * Memoized: a row renders again only when its settlement, the day or the
- * server flags change.
+ * At large text sizes the two buttons stack, full width, so neither label
+ * breaks inside a word. Memoized: a row renders again only when its
+ * settlement, the day, the server flags or the text size change.
  */
 export const CatalogCard = memo(function CatalogCard({ lawsuit, now, onStartClaim, onShowDetails }: CatalogCardProps) {
   // Read through the config, so the card renders again when the server flags arrive.
@@ -42,6 +44,8 @@ export const CatalogCard = memo(function CatalogCard({ lawsuit, now, onStartClai
   const proof = displayProofLabel(lawsuit);
   const payout = lawsuit.typical_payout?.trim() || catalog.notStated.text;
   const showDetails = () => onShowDetails(lawsuit.slug);
+  // Side by side, "Details" gets about a third of the row; a large label would wrap inside the word.
+  const stackActions = useWindowDimensions().fontScale >= STACK_VALUE_FONT_SCALE;
 
   return (
     <Card style={styles.card} testID={`catalog-card-${lawsuit.slug}`}>
@@ -84,21 +88,21 @@ export const CatalogCard = memo(function CatalogCard({ lawsuit, now, onStartClai
       {verified ? null : <UnverifiedLine lawsuit={lawsuit} />}
 
       {open ? (
-        <View style={styles.actions}>
+        <View style={stackActions ? styles.actionsStacked : styles.actions} testID={`catalog-card-actions-${lawsuit.slug}`}>
           <Button
             label={catalog.startYourClaim.text}
             accessibilityLabel={fillCopy(shared.linkForTitle.text, { label: catalog.startYourClaim.text, title: lawsuit.title })}
             icon={ArrowRight}
             iconPosition="trailing"
             onPress={() => onStartClaim(lawsuit.slug)}
-            style={styles.start}
+            style={stackActions ? styles.stackedAction : styles.start}
           />
           <Button
             label={catalog.details.text}
             accessibilityLabel={fillCopy(catalog.detailsAbout.text, { title: lawsuit.title })}
             variant="secondary"
             onPress={showDetails}
-            style={styles.details}
+            style={stackActions ? styles.stackedAction : styles.details}
           />
         </View>
       ) : (
@@ -177,6 +181,14 @@ const styles = StyleSheet.create({
   details: {
     flexGrow: 1,
     flexBasis: 80,
+    paddingHorizontal: space[3],
+  },
+  actionsStacked: {
+    gap: space[2],
+    paddingTop: space[1],
+  },
+  stackedAction: {
+    alignSelf: 'stretch',
     paddingHorizontal: space[3],
   },
   closed: {

@@ -1,5 +1,5 @@
 import { AuthRetryableFetchError } from '@supabase/supabase-js';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth } from '@/copy/auth';
@@ -154,17 +154,44 @@ describe('LoginScreen', () => {
     await user.press(screen.getByRole('button', { name: shared.createFreeAccount.text }));
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/signup', params: { next: '/claim/acme' } });
 
-    await user.press(screen.getByRole('link', { name: auth.createAnAccount.text }));
-    expect(mockRouter.replace).toHaveBeenLastCalledWith({ pathname: '/signup', params: { next: '/claim/acme' } });
+    // "New to ClaimMatch?" once: the button above, without the "Create an account" link repeating it.
+    expect(screen.getAllByText(shared.newToClaimMatch.text)).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: auth.createAnAccount.text })).toBeNull();
   });
 
-  it('says "Welcome back" otherwise and opens forgot password', async () => {
+  it('says "Welcome back" otherwise, links to sign-up and opens forgot password', async () => {
     const user = userEvent.setup();
     await renderLogin();
     expect(screen.getByRole('header', { name: shared.welcomeBack.text })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: shared.createFreeAccount.text })).toBeNull();
+    await user.press(screen.getByRole('link', { name: auth.createAnAccount.text }));
+    expect(mockRouter.replace).toHaveBeenLastCalledWith('/signup');
     await user.press(screen.getByRole('link', { name: auth.forgotPasswordLink.text }));
     expect(mockRouter.push).toHaveBeenCalledWith('/forgot-password');
+  });
+
+  it('keeps the email and password editable while signing in, so iOS does not offer to save an unchecked password', async () => {
+    const user = userEvent.setup();
+    let answer: (value: unknown) => void = () => undefined;
+    mockSignIn.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderLogin();
+
+    await user.type(screen.getByLabelText(auth.emailLabel.text), 'ana@example.com');
+    await user.type(screen.getByLabelText(auth.passwordLabel.text), 'not-the-password');
+    await user.press(screen.getByRole('button', { name: common.logIn.text }));
+
+    // Signing in: only the button waits.
+    expect(screen.getByRole('button', { name: auth.signingIn.text })).toBeDisabled();
+    expect(screen.getByLabelText(auth.emailLabel.text)).toHaveProp('editable', true);
+    expect(screen.getByLabelText(auth.passwordLabel.text)).toHaveProp('editable', true);
+    // A second submit from the keyboard while the first one runs sends nothing.
+    await fireEvent(screen.getByLabelText(auth.passwordLabel.text), 'submitEditing');
+    expect(mockSignIn).toHaveBeenCalledTimes(1);
+
+    await act(async () => answer({ data: { user: null, session: null }, error: { message: 'Invalid login credentials', status: 400 } }));
+    expect(await screen.findByTestId('login-error')).toBeOnTheScreen();
+    expect(screen.getByLabelText(auth.passwordLabel.text)).toHaveProp('editable', true);
+    expect(mockRouter.dismissTo).not.toHaveBeenCalled();
   });
 
   it('says the email is confirmed after a confirmation link', async () => {

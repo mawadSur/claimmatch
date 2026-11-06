@@ -78,8 +78,13 @@ export const settings = defineCopy({
     text: '(555) 123-4567',
     source: 'src/components/NotificationPrefs.tsx',
   },
+  /**
+   * The web's hint starts with "We’ll only use this to help you fill in claim
+   * forms, once that feature is ready." That feature has shipped (a claim's
+   * copy-ready details show the phone), so the app keeps the second sentence.
+   */
   phoneHint: {
-    text: 'We’ll only use this to help you fill in claim forms, once that feature is ready. We don’t send text messages.',
+    text: 'We don’t send text messages.',
     source: 'src/components/NotificationPrefs.tsx',
   },
   matchingTitle: {

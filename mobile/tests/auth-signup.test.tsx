@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
@@ -148,6 +148,23 @@ describe('SignupScreen', () => {
     expect(screen.queryByText(auth.bulletOfficialFilingFree.text)).toBeNull();
     await user.press(screen.getByRole('link', { name: common.logIn.text }));
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/login', params: { next: '/dashboard' } });
+  });
+
+  it('keeps the fields editable while creating the account, so iOS does not offer to save the password early', async () => {
+    const user = userEvent.setup();
+    let answer: (value: unknown) => void = () => undefined;
+    mockSignUp.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderScreen(<SignupScreen />);
+    await fillForm(user);
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+
+    expect(screen.getByRole('button', { name: auth.creatingAccount.text })).toBeDisabled();
+    for (const label of [auth.fullNameLabel.text, auth.emailLabel.text, auth.passwordLabel.text]) {
+      expect(screen.getByLabelText(label)).toHaveProp('editable', true);
+    }
+    await act(async () => answer({ data: { user: null, session: null }, error: { message: 'User already registered', status: 422 } }));
+    expect(await screen.findByTestId('signup-error')).toBeOnTheScreen();
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
   });
 
   it('shows the fee-disclosure bullet when FEE_DISCLOSURE_ENABLED is on', async () => {

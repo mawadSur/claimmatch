@@ -57,6 +57,9 @@ export function LoginScreen() {
     if (emailProblem || passwordProblem) return;
 
     Keyboard.dismiss();
+    // Only the button waits. The fields stay editable: iOS Password AutoFill
+    // reads fields that turn non-editable as a finished sign-in and offers to
+    // save the password before the server has checked it.
     setLoading(true);
     try {
       const { data, error } = await withTimeout(signInWithPassword(email, password));
@@ -77,7 +80,7 @@ export function LoginScreen() {
   const confirmedText = `${auth.emailConfirmed.text}${fromClaim ? ` ${auth.toYourClaim.text}` : ''}.`;
 
   return (
-    <Screen>
+    <Screen hasTextFields>
       <AuthHeader
         title={fromClaim ? shared.claimLoginTitle.text : shared.welcomeBack.text}
         body={fromClaim ? shared.claimLoginBody.text : shared.logInToSeeClaims.text}
@@ -106,7 +109,6 @@ export function LoginScreen() {
           returnKeyType="next"
           submitBehavior="submit"
           onSubmitEditing={() => passwordRef.current?.focus()}
-          disabled={loading}
           testID="login-email"
         />
         <View>
@@ -129,7 +131,6 @@ export function LoginScreen() {
             returnKeyType="go"
             submitBehavior="blurAndSubmit"
             onSubmitEditing={() => void submit()}
-            disabled={loading}
             testID="login-password"
           />
           <TextLink
@@ -151,11 +152,14 @@ export function LoginScreen() {
         />
       </Card>
 
-      <SwitchPrompt
-        prompt={shared.newToClaimMatch.text}
-        link={auth.createAnAccount.text}
-        onPress={() => router.replace(signupHref(next))}
-      />
+      {/* From a claim, "Create a free account" below already offers sign-up, so the link would repeat it. */}
+      {fromClaim ? null : (
+        <SwitchPrompt
+          prompt={shared.newToClaimMatch.text}
+          link={auth.createAnAccount.text}
+          onPress={() => router.replace(signupHref(next))}
+        />
+      )}
 
       {fromClaim ? (
         <View style={styles.newAccount}>

@@ -29,10 +29,7 @@ jest.mock('@/lib/api', () => {
 const mockAuth = { status: 'signedIn', user: { id: 'user-1' } as { id: string } | null, sessionEnded: false };
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => mockAuth }));
 
-jest.mock('@/lib/reminders', () => ({
-  reminderEpoch: () => 0,
-  syncReminders: jest.fn(async () => ({ status: 'off' })),
-}));
+jest.mock('@/lib/reminders', () => ({ reminderEpoch: () => 0, syncReminders: jest.fn(async () => ({ status: 'off' })) }));
 
 const mockFlags: Record<string, boolean> = {};
 jest.mock('@/providers/ConfigProvider', () => ({
@@ -194,7 +191,9 @@ describe('signed out', () => {
     const user = userEvent.setup();
     await renderDashboard();
 
-    expect(screen.getByText(shared.welcomeBack.text)).toBeOnTheScreen();
+    // The tab is there for first-time visitors too: no "Welcome back".
+    expect(screen.getByText(shared.claimLoginTitle.text)).toBeOnTheScreen();
+    expect(screen.queryByText(shared.welcomeBack.text)).toBeNull();
     expect(screen.getByText(shared.logInToSeeClaims.text)).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: common.logIn.text }));
     expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/login', params: { next: '/dashboard' } });

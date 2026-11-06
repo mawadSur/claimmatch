@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, within } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Dimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { catalog } from '@/copy/catalog';
@@ -466,6 +466,24 @@ describe('CatalogCard', () => {
     expect(screen.getByText('Verified on Oct 27, 2026')).toBeOnTheScreen();
     expect(screen.queryByText(shared.unverifiedLineLabel.text)).not.toBeOnTheScreen();
     expect(screen.getByLabelText('Proof: Not required')).toBeOnTheScreen();
+  });
+
+  it('keeps "Start your claim" and "Details" side by side, and stacks them full width at large text sizes', async () => {
+    const regular = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 402, height: 874, scale: 3, fontScale: 1 });
+    await renderCard(ACME);
+    expect(screen.getByTestId('catalog-card-actions-acme-data-breach')).toHaveStyle({ flexDirection: 'row' });
+    regular.mockRestore();
+    screen.unmount();
+
+    // Accessibility sizes: "Details" broke as "Detail" / "s" in the narrow right-hand button.
+    const large = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 402, height: 874, scale: 3, fontScale: 2.643 });
+    await renderCard(ACME);
+    expect(screen.getByTestId('catalog-card-actions-acme-data-breach')).not.toHaveStyle({ flexDirection: 'row' });
+    for (const name of ['Start your claim for Acme Data Breach', 'Details about Acme Data Breach']) {
+      expect(screen.getByRole('button', { name })).toHaveStyle({ alignSelf: 'stretch' });
+      expect(screen.getByRole('button', { name })).not.toHaveStyle({ flexBasis: 80 });
+    }
+    large.mockRestore();
   });
 
   it('never shows a match score in place of the category', async () => {

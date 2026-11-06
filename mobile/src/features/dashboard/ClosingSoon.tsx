@@ -52,6 +52,9 @@ export function ClosingSoon({ closingSoon, nav }: { closingSoon: DashboardRespon
         title={dashboard.closingSoonTitle.text}
         description={dashboard.closingSoonIntro.text}
         action={<Button label={dashboard.browseAllSettlements.text} variant="secondary" onPress={nav.openSettlements} />}
+        // An outlined button too wide to sit beside the title: under the description, as on the web's narrow layout.
+        actionPlacement="below"
+        testID="dashboard-closing-soon-title"
       />
       {content}
     </View>

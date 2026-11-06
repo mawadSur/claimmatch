@@ -43,6 +43,9 @@ export function ResetPasswordScreen() {
     setConfirmError(!tooShort && password !== confirm ? auth.passwordsDontMatch.text : null);
     if (tooShort || password !== confirm) return;
     Keyboard.dismiss();
+    // Only the button waits: fields that turn non-editable read to iOS as a
+    // finished change, and it would offer to save a password the server may
+    // still refuse (see LoginScreen).
     setSaving(true);
     try {
       const { error: failed } = await withTimeout(getSupabase().auth.updateUser({ password }));
@@ -61,7 +64,7 @@ export function ResetPasswordScreen() {
   }
 
   return (
-    <Screen>
+    <Screen hasTextFields>
       <AuthHeader title={auth.resetTitle.text} body={auth.resetIntro.text} />
       <Card style={styles.form}>
         <TextField
@@ -83,7 +86,6 @@ export function ResetPasswordScreen() {
           returnKeyType="next"
           submitBehavior="submit"
           onSubmitEditing={() => confirmRef.current?.focus()}
-          disabled={saving}
           testID="reset-password"
         />
         <TextField
@@ -104,7 +106,6 @@ export function ResetPasswordScreen() {
           returnKeyType="done"
           submitBehavior="blurAndSubmit"
           onSubmitEditing={() => void submit()}
-          disabled={saving}
           testID="reset-confirm"
         />
         {formError ? <Notice tone="error" body={formError} testID="reset-error" /> : null}

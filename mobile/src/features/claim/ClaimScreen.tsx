@@ -10,6 +10,7 @@ import { claimLoadErrorWhat, useClaimScreen, type ClaimScreenResult, type FlowCl
 import { userFacingError } from '@/data/errors';
 import { useRefetchOnFocus } from '@/data/focus';
 import { CompactDisclaimer, SettleSignalCredit, usePullToRefresh } from '@/features/shared';
+import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useAuth } from '@/providers/AuthProvider';
 import { colors, layout, space } from '@/theme/tokens';
@@ -67,6 +68,7 @@ function FlowScreen({
   const insets = useSafeAreaInsets();
   const headerHeight = useContext(HeaderHeightContext) ?? 0;
   const reduceMotion = useReducedMotion();
+  const keyboardInsets = useKeyboardInsetsActive(true);
   const android = Platform.OS === 'android';
   // How much of the scroll view a header covers: all of the header when the
   // content runs under it (a transparent header), none when it sits above.
@@ -87,7 +89,7 @@ function FlowScreen({
         onLayout={measureCover}
         style={styles.scroll}
         contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustKeyboardInsets
+        automaticallyAdjustKeyboardInsets={keyboardInsets}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={android ? 'on-drag' : 'interactive'}
         contentContainerStyle={[styles.content, { paddingBottom: space[8] + (android ? insets.bottom : 0) }]}

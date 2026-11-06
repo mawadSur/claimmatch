@@ -19,6 +19,7 @@ import {
   useNow,
   usePullToRefresh,
 } from '@/features/shared';
+import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { useConfig } from '@/providers/ConfigProvider';
 import { colors, layout, radii, space } from '@/theme/tokens';
 
@@ -55,6 +56,8 @@ export function CatalogScreen() {
   const verifiedFieldsOn = isFlagOn('VERIFIED_FIELDS_ENABLED');
   const { data: lawsuits, status, error, isFetching, isRefetchError, refetch } = useCatalog();
   const { refreshing, onRefresh } = usePullToRefresh(refetch);
+  // The search field: only while this tab is focused, so another screen's keyboard leaves the list alone.
+  const keyboardInsets = useKeyboardInsetsActive(true);
   const filters = useCatalogFilters();
   const { q, category, hasDeadline, proofNotRequired } = filters;
 
@@ -167,7 +170,7 @@ export function CatalogScreen() {
         ListFooterComponentStyle={styles.footerSpacing}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustKeyboardInsets
+        automaticallyAdjustKeyboardInsets={keyboardInsets}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'android' ? 'on-drag' : 'interactive'}
         initialNumToRender={5}

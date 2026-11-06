@@ -3,6 +3,7 @@ import { FlatList, Platform, RefreshControl, StyleSheet, View } from 'react-nati
 
 import { Notice } from '@/components/ui';
 import { CompactDisclaimer, SettleSignalCredit } from '@/features/shared';
+import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { colors, layout, space } from '@/theme/tokens';
 
 import { ClaimGroupHeader, ClaimRowCard, ClaimsEmpty, ClaimsFailed, ClaimsHeader } from './ClaimRows';
@@ -47,6 +48,9 @@ export function DashboardList({
   onRetry,
   nav,
 }: DashboardListProps) {
+  // A notice row can ask for the confirmation number: keep its field above the keyboard, while this tab is focused.
+  const keyboardInsets = useKeyboardInsetsActive(true);
+
   function content(item: DashboardItem): ReactNode {
     switch (item.type) {
       case 'header':
@@ -103,8 +107,7 @@ export function DashboardList({
       extraData={{ notices, possibleOpen, retrying, data }}
       initialNumToRender={firstBatchSize(items)}
       contentInsetAdjustmentBehavior="automatic"
-      // A notice row can ask for the confirmation number: keep its field above the keyboard.
-      automaticallyAdjustKeyboardInsets
+      automaticallyAdjustKeyboardInsets={keyboardInsets}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'android' ? 'on-drag' : 'interactive'}
       contentContainerStyle={styles.content}

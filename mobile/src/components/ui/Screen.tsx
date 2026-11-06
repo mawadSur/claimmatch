@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { useKeyboardOverlap } from '@/hooks/use-keyboard-overlap';
 import { colors, layout, space, type SpaceToken } from '@/theme/tokens';
 
@@ -37,6 +38,13 @@ export interface ScreenProps {
    * their actions in the content.
    */
   footer?: ReactNode;
+  /**
+   * The screen has text fields. While it is focused, the scroll view then
+   * insets itself for the keyboard and scrolls a covered field into view
+   * (iOS). Leave it off for screens without fields, so another screen's
+   * keyboard never moves them.
+   */
+  hasTextFields?: boolean;
   /** Set false when the route hides the native header, so content clears the status bar. */
   headerShown?: boolean;
   /** Vertical gap between direct children (default space[5]). */
@@ -62,6 +70,7 @@ export function Screen({
   refreshing = false,
   onRefresh,
   footer,
+  hasTextFields = false,
   headerShown = true,
   gap = 5,
   padded = true,
@@ -72,8 +81,10 @@ export function Screen({
   const insideTabBar = useInsideTabBar();
   const android = Platform.OS === 'android';
   const rootRef = useRef<HostInstance>(null);
-  // Only a footer needs this: without one, the scroll view insets itself for the keyboard.
+  // Only a footer needs this: without one, a scroll view with text fields insets itself for the keyboard.
   const keyboard = useKeyboardOverlap(rootRef, Boolean(footer));
+  // With a footer the whole screen already sits above the keyboard; insetting again would leave a gap.
+  const keyboardInsets = useKeyboardInsetsActive(hasTextFields && !footer);
   const bottomSafeArea = insideTabBar || keyboard.visible ? 0 : insets.bottom;
 
   const content = {
@@ -94,8 +105,7 @@ export function Screen({
         <ScrollView
           style={styles.flex}
           contentInsetAdjustmentBehavior="automatic"
-          // With a footer the whole screen already sits above the keyboard; insetting again would leave a gap.
-          automaticallyAdjustKeyboardInsets={!footer}
+          automaticallyAdjustKeyboardInsets={keyboardInsets}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={android ? 'on-drag' : 'interactive'}
           alwaysBounceVertical={!centered || Boolean(onRefresh)}
@@ -105,6 +115,7 @@ export function Screen({
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
             ) : undefined
           }
+          testID={testID ? `${testID}-scroll` : undefined}
         >
           {children}
         </ScrollView>

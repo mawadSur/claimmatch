@@ -281,7 +281,7 @@ describe('onboarding', () => {
     mockAuth.status = 'signedOut';
     mockAuth.user = null;
     await renderOnboarding();
-    expect(screen.getByRole('header', { name: shared.welcomeBack.text })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: shared.claimLoginTitle.text })).toBeOnTheScreen();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });

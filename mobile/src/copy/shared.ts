@@ -143,6 +143,7 @@ export const shared = defineCopy({
     text: 'Log in to see and update the claims you are tracking.',
     source: 'src/app/login/page.tsx',
   },
+  /** Also the signed-out prompt's title outside a claim, unless a session just ended. */
   claimLoginTitle: {
     text: 'Log in or create a free account',
     source: 'src/app/login/page.tsx',

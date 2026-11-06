@@ -65,6 +65,9 @@ export function SignupScreen() {
     if (emailProblem || passwordProblem) return;
 
     Keyboard.dismiss();
+    // Only the button waits: fields that turn non-editable read to iOS as a
+    // finished sign-up, and it would offer to save a password for an account
+    // that may not be created (see LoginScreen).
     setLoading(true);
     try {
       const { data, error } = await withTimeout(signUp({ email, password, fullName }));
@@ -88,7 +91,7 @@ export function SignupScreen() {
   }
 
   return (
-    <Screen>
+    <Screen hasTextFields>
       <AuthHeader title={auth.signupTitle.text} body={auth.signupIntro.text} />
       <View style={styles.bullets}>
         {bullets.map((bullet) => (
@@ -116,7 +119,6 @@ export function SignupScreen() {
           returnKeyType="next"
           submitBehavior="submit"
           onSubmitEditing={() => emailRef.current?.focus()}
-          disabled={loading}
           testID="signup-name"
         />
         <TextField
@@ -140,7 +142,6 @@ export function SignupScreen() {
           returnKeyType="next"
           submitBehavior="submit"
           onSubmitEditing={() => passwordRef.current?.focus()}
-          disabled={loading}
           testID="signup-email"
         />
         <TextField
@@ -163,7 +164,6 @@ export function SignupScreen() {
           returnKeyType="go"
           submitBehavior="blurAndSubmit"
           onSubmitEditing={() => void submit()}
-          disabled={loading}
           testID="signup-password"
         />
         {formError ? <Notice tone="error" body={formError} testID="signup-error" /> : null}

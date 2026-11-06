@@ -10,6 +10,7 @@ import LoginRoute from '@/app/(auth)/login';
 import SignupRoute from '@/app/(auth)/signup';
 import { auth } from '@/copy/auth';
 import { common } from '@/copy/common';
+import { shared } from '@/copy/shared';
 import { loginHref } from '@/features/shared';
 
 const mockSignIn = jest.fn();
@@ -112,7 +113,8 @@ describe('sign-in navigation', () => {
     const user = userEvent.setup();
     const result = await renderRouter(tree, { initialUrl: '/claim/acme' });
     await act(async () => router.push(loginHref('/claim/acme')));
-    await user.press(await screen.findByRole('link', { name: auth.createAnAccount.text }));
+    // From a claim the sheet offers sign-up with one button (no second "Create an account" link).
+    await user.press(await screen.findByRole('button', { name: shared.createFreeAccount.text }));
 
     expect(await screen.findByRole('button', { name: auth.createMyAccount.text })).toBeOnTheScreen();
     expect(result.getPathname()).toBe('/signup');

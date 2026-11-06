@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
@@ -165,6 +165,22 @@ describe('ResetPasswordScreen (/reset-password)', () => {
     await user.type(screen.getByLabelText(auth.newPasswordLabel.text), 'a long new password');
     await user.type(screen.getByLabelText(auth.confirmPasswordLabel.text), 'a long new password');
     await user.press(screen.getByRole('button', { name: auth.saveNewPassword.text }));
+    expect(await screen.findByText(auth.updatePasswordFailed.text)).toBeOnTheScreen();
+  });
+
+  it('keeps both fields editable while saving, so iOS does not offer to save a password the server may refuse', async () => {
+    const user = userEvent.setup();
+    let answer: (value: unknown) => void = () => undefined;
+    mockSupabaseAuth.updateUser.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderScreen(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText(auth.newPasswordLabel.text), 'a long new password');
+    await user.type(screen.getByLabelText(auth.confirmPasswordLabel.text), 'a long new password');
+    await user.press(screen.getByRole('button', { name: auth.saveNewPassword.text }));
+
+    expect(screen.getByRole('button', { name: auth.saveNewPassword.text })).toBeDisabled();
+    expect(screen.getByLabelText(auth.newPasswordLabel.text)).toHaveProp('editable', true);
+    expect(screen.getByLabelText(auth.confirmPasswordLabel.text)).toHaveProp('editable', true);
+    await act(async () => answer({ data: {}, error: { message: 'session missing' } }));
     expect(await screen.findByText(auth.updatePasswordFailed.text)).toBeOnTheScreen();
   });
 

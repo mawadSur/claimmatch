@@ -91,7 +91,7 @@ export function OnboardingWizard({ initial, email, next, emailConfirmed }: Onboa
 
   return (
     // A new Screen per step, so each step starts at the top.
-    <Screen key={step} testID={`onboarding-step-${step}`}>
+    <Screen key={step} hasTextFields testID={`onboarding-step-${step}`}>
       {/* The web keeps its header above both steps; step 2 keeps its "never files for you" sentence (plan 5). */}
       {step === 1 ? (
         <OnboardingIntro emailConfirmed={emailConfirmed} />
