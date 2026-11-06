@@ -6,15 +6,20 @@ import { daysLeftToFile } from './utils';
 /** Verified rows with a deadline in this many days may appear in the email. */
 export const CLOSING_SOON_EMAIL_DAYS = 14;
 
-export type ClosingSoonEmailSkip =
-  | 'flag_off'
+export type CommercialEmailSkip =
   | 'missing_postal_address'
   | 'missing_verified_sender'
   | 'missing_resend_key';
 
+export type ClosingSoonEmailSkip = 'flag_off' | CommercialEmailSkip;
+
 export type ClosingSoonEmailGate =
   | { ok: true }
   | { ok: false; reason: ClosingSoonEmailSkip };
+
+export type CommercialEmailGate =
+  | { ok: true }
+  | { ok: false; reason: CommercialEmailSkip };
 
 const RESEND_DEV = /@resend\.dev\b/i;
 const ONBOARDING_FROM = /onboarding@resend\.dev/i;
@@ -31,15 +36,12 @@ export function isVerifiedSender(from: string | null | undefined): boolean {
 }
 
 /**
- * Hard gate: never send unless the flag is exactly "1", a postal address
- * exists, and a verified sender is configured. Missing Resend key also refuses.
+ * Shared CAN-SPAM / sender checks used by closing-soon, deadline reminders,
+ * and onboarding drips. Does not look at a feature flag.
  */
-export function closingSoonEmailGate(
+export function commercialEmailPrereqs(
   env: Record<string, string | undefined> = process.env,
-): ClosingSoonEmailGate {
-  if (env.CLOSING_SOON_EMAIL_ENABLED !== '1') {
-    return { ok: false, reason: 'flag_off' };
-  }
+): CommercialEmailGate {
   if (!legalContact().postalAddress) {
     return { ok: false, reason: 'missing_postal_address' };
   }
@@ -50,6 +52,19 @@ export function closingSoonEmailGate(
     return { ok: false, reason: 'missing_resend_key' };
   }
   return { ok: true };
+}
+
+/**
+ * Hard gate: never send unless the flag is exactly "1", a postal address
+ * exists, and a verified sender is configured. Missing Resend key also refuses.
+ */
+export function closingSoonEmailGate(
+  env: Record<string, string | undefined> = process.env,
+): ClosingSoonEmailGate {
+  if (env.CLOSING_SOON_EMAIL_ENABLED !== '1') {
+    return { ok: false, reason: 'flag_off' };
+  }
+  return commercialEmailPrereqs(env);
 }
 
 /** Verified listings with a real deadline in the next 14 days, soonest first. */

@@ -5,7 +5,7 @@ import { Copy, Check, Link2, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { SITE } from '@/lib/utils';
 import { attributionSearch } from '@/lib/attribution';
-import { shortShareUrl, trackedCampaignUrl } from '@/lib/share-links';
+import { SHARE_LINK_DESTINATIONS, shortShareUrl, trackedCampaignUrl } from '@/lib/share-links';
 import type { ShareLinkStats } from '@/lib/share-links';
 
 export function ShareLinksManager({ initialLinks }: { initialLinks: ShareLinkStats[] }) {
@@ -113,13 +113,25 @@ export function ShareLinksManager({ initialLinks }: { initialLinks: ShareLinkSta
             onChange={setUtmContent}
             placeholder="bio"
           />
-          <Field
-            id="destination"
-            label="Destination path"
-            value={destination}
-            onChange={setDestination}
-            placeholder="/"
-          />
+          <label htmlFor="destination">
+            <span className="text-xs font-semibold text-ink-muted">Destination path</span>
+            <select
+              id="destination"
+              className="field-input mt-1"
+              value={
+                (SHARE_LINK_DESTINATIONS as readonly string[]).includes(destination)
+                  ? destination
+                  : '/'
+              }
+              onChange={(e) => setDestination(e.target.value)}
+            >
+              {SHARE_LINK_DESTINATIONS.map((path) => (
+                <option key={path} value={path}>
+                  {path === '/invite' ? '/invite (soft invite)' : path}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {error && <p className="mt-3 text-sm text-danger-700">{error}</p>}
         <button type="submit" className="btn-primary mt-4" disabled={status === 'saving'}>

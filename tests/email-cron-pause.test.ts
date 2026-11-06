@@ -3,6 +3,7 @@ import {
   D50_PAUSED,
   buildReport,
   deadlineRemindersGate,
+  onboardingDripGate,
   digestGate,
   errorMessage,
   heldTriageGate,
@@ -77,6 +78,15 @@ describe('D50 gates', () => {
     });
     expect(heldTriageGate(true)).toEqual({ run: true });
     expect(deadlineRemindersGate(true)).toEqual({ run: true });
+    expect(onboardingDripGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (onboarding drip)',
+        resume: expect.stringContaining('ONBOARDING_DRIP_ENABLED=1'),
+      },
+    });
+    expect(onboardingDripGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

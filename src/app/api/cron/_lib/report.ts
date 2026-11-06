@@ -95,6 +95,20 @@ export function deadlineRemindersGate(enabled: boolean): Gate {
       };
 }
 
+/** Incomplete-onboarding and "did you file?" drips. */
+export function onboardingDripGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (onboarding drip)',
+          resume: 'Set ONBOARDING_DRIP_ENABLED=1 to email opted-in users who stalled onboarding or filing.',
+        },
+      };
+}
+
 /**
  * Missing server config the jobs need, or null. Without the service role key
  * the server client falls back to the anon key, row-level security blocks the

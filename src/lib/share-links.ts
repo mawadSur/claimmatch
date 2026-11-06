@@ -36,6 +36,14 @@ export interface ShareLinkStats extends ShareLinkRecord {
   signups: number;
 }
 
+/** Suggested same-site destinations for the share-link manager, including /invite. */
+export const SHARE_LINK_DESTINATIONS = ['/', '/invite', '/signup', '/lawsuits', '/how-it-works'] as const;
+
+export function isShareLinkDestination(path: string): boolean {
+  const pathname = path.split('?')[0]?.split('#')[0] ?? path;
+  return (SHARE_LINK_DESTINATIONS as readonly string[]).includes(pathname);
+}
+
 /** Same-site path only. `/` when missing or unsafe (never a protocol-relative URL). */
 export function sanitizeDestination(raw: unknown): string {
   if (typeof raw !== 'string' || raw.trim() === '' || raw.trim() === '/') return '/';

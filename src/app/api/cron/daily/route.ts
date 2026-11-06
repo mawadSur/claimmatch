@@ -17,6 +17,7 @@ import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
+import { sendOnboardingDrips } from '@/lib/onboarding-drip';
 import { submitIndexNowUrls } from '@/lib/indexnow';
 import {
   buildReport,
@@ -27,6 +28,7 @@ import {
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
+  onboardingDripGate,
   reportHttpStatus,
   runStep,
   serviceConfigProblem,
@@ -142,6 +144,15 @@ async function handle(req: Request) {
       steps.deadlineReminders = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/deadlineReminders', () => sendDeadlineReminders());
+    }
+
+    const dripGate = onboardingDripGate(flags.onboardingDrip());
+    if (!dripGate.run) {
+      steps.onboardingDrip = dripGate.step;
+    } else {
+      steps.onboardingDrip = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/onboardingDrip', () => sendOnboardingDrips());
     }
 
     const report = buildReport('daily', steps);

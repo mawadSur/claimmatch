@@ -179,6 +179,7 @@ describe('share-link redirects', () => {
     expect(sanitizeDestination('https://evil.example')).toBe('/');
     expect(sanitizeDestination('//evil.example')).toBe('/');
     expect(sanitizeDestination('/lawsuits?q=1')).toBe('/lawsuits?q=1');
+    expect(sanitizeDestination('/invite')).toBe('/invite');
     expect(trackedCampaignUrl('https://claimmatch.vercel.app', '/', parseAttribution({ ref: 'ab' }))).toBe(
       'https://claimmatch.vercel.app/?ref=ab',
     );

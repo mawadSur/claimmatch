@@ -5,7 +5,9 @@ import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
 import { isInternalEmail, parseEmailList } from '@/lib/internal-users';
 import {
   EMPTY_SOFT_LAUNCH_COUNTS,
+  GATE_0_THRESHOLDS,
   cohortFromCampaign,
+  gate0Progress,
   isSoftLaunchCohort,
   tallySoftLaunch,
 } from '@/lib/soft-launch';
@@ -57,5 +59,18 @@ describe('soft-launch cohort parser', () => {
     expect(html).toContain('Soft launch');
     expect(html).toContain('Signups');
     expect(html).toMatch(/>0</);
+    expect(html).toContain('Gate 0');
+    expect(html).toContain('Gate 0 is not met.');
+    expect(html).toContain(`0 / ${GATE_0_THRESHOLDS.signups}`);
+    expect(html).toContain('0% / 50%');
+  });
+
+  it('computes Gate 0 against real cohort counts, including zeros', () => {
+    const zero = gate0Progress(EMPTY_SOFT_LAUNCH_COUNTS);
+    expect(zero.allMet).toBe(false);
+    expect(zero.signups).toEqual({ current: 0, target: 20, met: false });
+    expect(zero.onboardedPercent).toEqual({ current: 0, target: 50, met: false });
+    expect(zero.officialFormClicks).toEqual({ current: 0, target: 10, met: false });
+    expect(zero.filingsReported).toEqual({ current: 0, target: 5, met: false });
   });
 });
