@@ -17,6 +17,9 @@ describe('C7 post-deploy smoke', () => {
     expect(workflow).toContain('PLAYWRIGHT_BASE_URL');
     expect(workflow).toContain('VERCEL_AUTOMATION_BYPASS_SECRET');
     expect(workflow).toMatch(/skip=true|Smoke skipped/);
+    expect(workflow).toContain('e2e/smoke.spec.ts');
+    expect(workflow).toContain('e2e/journey-public.spec.ts');
+    expect(workflow).not.toMatch(/e2e\/isolated/);
     const playwright = read('playwright.config.ts');
     expect(playwright).toContain('x-vercel-protection-bypass');
   });

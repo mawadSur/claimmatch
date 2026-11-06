@@ -120,8 +120,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',
+      // Bundled posthog-js; skip /ingest/array remote scripts so capture still
+      // flushes when the proxy cannot load PostHog's config.js.
+      disable_external_dependency_loading: true,
+      advanced_disable_flags: true,
       loaded(ph) {
         ph.register({ [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
+        (window as Window & { posthog?: typeof ph }).posthog = ph;
       },
     });
   }, []);

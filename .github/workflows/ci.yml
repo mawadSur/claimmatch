@@ -28,7 +28,7 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
@@ -69,6 +69,23 @@ jobs:
         run: |
           npm audit --omit=dev --json > "$RUNNER_TEMP/npm-audit.json" || true
           npx tsx scripts/audit-gate.ts "$RUNNER_TEMP/npm-audit.json"
+
+      # Isolated fixture + real UI. Not production E2E. No production secrets.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Isolated authenticated journey
+        env:
+          ARTIFACTS_DIR: ${{ runner.temp }}/isolated-artifacts
+        run: bash scripts/run-isolated-journey.sh
+
+      - name: Upload isolated journey artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-journey
+          path: ${{ runner.temp }}/isolated-artifacts
+          if-no-files-found: ignore
 
   db-migrations:
     name: db-migrations

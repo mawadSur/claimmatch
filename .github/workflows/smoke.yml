@@ -61,4 +61,4 @@ jobs:
 
       - name: Run read-only smoke
         if: steps.gate.outputs.skip != 'true'
-        run: npm run test:e2e
+        run: npx playwright test e2e/smoke.spec.ts e2e/journey-public.spec.ts

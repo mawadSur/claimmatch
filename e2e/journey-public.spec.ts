@@ -3,8 +3,7 @@ import { expect, test } from '@playwright/test';
 /**
  * Public and signed-out gates of the real app journey.
  * Not the 100 simulated-buyer panel. Never signs up, never posts a claim.
- * Authenticated onboarding / matches / confirmed filing stay blocked
- * without local secrets — those paths must land on login.
+ * Authenticated paths live in e2e/isolated (fixture backend, not production).
  */
 
 test('desktop home is the live beta pitch', async ({ page }) => {

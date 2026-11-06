@@ -181,7 +181,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
           identifyOnly(data.session.user.id);
-          posthog?.capture('signup_completed', { evidence: 'session_after_signup' });
+          posthog?.capture('signup_completed', { evidence: 'session_after_signup' }, { send_instantly: true });
           // Leave this page immediately so the spinner cannot sit on a slow RSC.
           window.location.assign(onboardingPath(next));
           return;
@@ -208,7 +208,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       if (data.user) {
         identifyOnly(data.user.id);
-        posthog?.capture('login_completed', { evidence: 'password_sign_in' });
+        posthog?.capture('login_completed', { evidence: 'password_sign_in' }, { send_instantly: true });
       }
 
       window.location.assign(next || '/dashboard');

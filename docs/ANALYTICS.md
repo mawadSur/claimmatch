@@ -182,3 +182,21 @@ param (never a UTM).
 
 Playwright smoke sends `ClaimMatchSmoke/1.0` so those hits tag as `test`.
 Do not treat smoke or the 100-buyer panel as conversion.
+
+## Isolated authenticated journey (not production E2E)
+
+`npm run test:e2e:isolated` boots a **loopback GoTrue/PostgREST fixture**
+(`scripts/isolated-backend.mjs` on `127.0.0.1`) and the real Next.js UI.
+It never uses production Supabase, never sends email, and intercepts
+`/ingest` so events do not reach PostHog project 399692.
+
+| Piece | Real or mocked |
+| --- | --- |
+| Next.js UI (signup, onboarding, dashboard, claim flow) | **Real** app code |
+| Auth, profiles, catalog, claim RPCs | **Mocked** isolated backend |
+| Official administrator form | **Intercepted** `isolated-admin.claimmatch.test` HTML; no submit |
+| PostHog `/ingest` | **Intercepted**; events asserted in Playwright, not stored in 399692 |
+| Production / preview URL | **Not used** |
+
+Vitest helpers are not a substitute for this path. Post-deploy smoke stays
+read-only (`e2e/smoke.spec.ts` + `e2e/journey-public.spec.ts` only).

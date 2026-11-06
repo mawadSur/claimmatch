@@ -16,6 +16,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:isolated": "bash scripts/run-isolated-journey.sh",
     "db:test": "scripts/db-test.sh"
   },
   "dependencies": {

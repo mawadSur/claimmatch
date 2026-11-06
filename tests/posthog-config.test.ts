@@ -23,6 +23,7 @@ describe('PostHog App Router wiring', () => {
     expect(src).toContain('setPersonProperties');
     expect(src).toContain('shouldCapturePageview');
     expect(src).toContain('TRAFFIC_PROPERTY');
+    expect(src).toContain('disable_external_dependency_loading: true');
     expect(src).not.toContain('opt_out_capturing');
   });
 
