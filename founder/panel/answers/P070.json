@@ -1,0 +1,13 @@
+{
+  "id": "P070",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, so a random site saying I might qualify feels like the same scam in a nicer layout. You don't even file for me, so I'd open it once, get suspicious, and never come back.",
+  "objection": "How do you even know I qualify? The listings aren't verified and I still have to go check the official site myself.",
+  "would_change_my_mind": "If you showed me a real official notice that actually matched something I bought, with the claim form sitting there, and I didn't have to hunt or guess.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

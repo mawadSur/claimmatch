@@ -1,0 +1,13 @@
+{
+  "id": "P061",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and a free site called lawsuitai.org with unverified listings sounds like the same pitch. I'm not making an account or clicking through claim forms from a stranger on the internet.",
+  "objection": "How do you even know I qualify? If the listings aren't checked and I still have to file it myself on some other site, this just feels like a funnel, not help.",
+  "would_change_my_mind": "If my bank or a store I actually use sent me a specific case that named me, instead of a random website asking me to browse and guess.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 10,
+  "price_too_expensive": 20
+}

@@ -1,0 +1,13 @@
+{
+  "id": "P064",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I always mean to file those no-proof settlements and then miss them, but a random site asking me to make an account to 'help me find free money' is exactly how a data grab starts. You don't even file it for me, so I'd still blow the deadline anyway.",
+  "objection": "Is this a scam or are you just harvesting my email and whatever I click so you can sell it?",
+  "would_change_my_mind": "If my bank or a name I already trust sent me a direct link and I could browse without creating an account.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}
