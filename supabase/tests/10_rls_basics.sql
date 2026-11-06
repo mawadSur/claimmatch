@@ -509,7 +509,7 @@ begin
     $q$insert into public.jobs (type) values ('inserted by A')$q$,
     $q$update public.jobs set error = 'changed by A'$q$,
     $q$delete from public.jobs$q$,
-    -- 0027 revoked this from authenticated too; anon is probed in section 6.
+    -- 0032 revoked this from authenticated too; anon is probed in section 6.
     $q$insert into public.subscribers (email) values ('rls-by-a@example.test')$q$,
     $q$insert into public.notifications (user_id, email, type)
        values ('a0000000-0000-4000-8000-00000000000a', 'rls-user-a@example.test', 'inserted by A')$q$,
@@ -628,7 +628,7 @@ rollback;
 -- ---------------------------------------------------------------------------
 -- 6. A signed-in user cannot make themselves an admin or rewrite the profile
 --    columns the server owns (0002 grants UPDATE only on editable columns).
---    Nor can an API role create a row only the server creates (0027): a user
+--    Nor can an API role create a row only the server creates (0032): a user
 --    with no profile row cannot insert one with is_admin = true (SEC-9; the
 --    signup trigger creates every profile), and anon cannot add a subscriber
 --    (/api/subscribe is retired).

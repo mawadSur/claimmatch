@@ -1,5 +1,5 @@
--- ClaimMatch 0027: close direct-write holes before the native app ships.
--- EXPAND ONLY. Do not edit 0026 or earlier.
+-- ClaimMatch 0032: close direct-write holes before the native app ships.
+-- EXPAND ONLY. Do not edit 0031 or earlier.
 --
 -- profiles: the "own profile upsert" policy (0001_init.sql) let a signed-in
 -- user with no profile row insert one with is_admin = true (SEC-9). Every
@@ -8,6 +8,9 @@
 -- subscribers: the "anyone subscribe" policy (0001_init.sql) let anyone with
 -- the anon key add rows, and /api/subscribe is retired (410). No app code
 -- inserts or upserts profiles or subscribers; the service role is unaffected.
+-- That still holds with 0027-0031: onboarding, settings (email_frequency) and
+-- attribution only UPDATE the user's profile row, and profile facts and
+-- consent are written to their own tables.
 -- is_admin() keeps its EXECUTE grant: RLS policies call it as the invoking role.
 --
 -- Probed in supabase/tests/10_rls_basics.sql, section 6.

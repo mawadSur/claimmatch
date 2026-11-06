@@ -33,8 +33,9 @@ in this order. Every file is additive: nothing is deleted.
 26. `0029_held_closure_triage.sql` — `held_closure_site_checks` and `held_closure_decisions.source` / `auto_closed`. Additive. **Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
 27. `0030_claim_deadline_reminders.sql` — `claim_reminder_sends` (idempotent 7-day / 1-day reminder log). Additive. Applied on production.
 28. `0031_drip_email_sends.sql` — `drip_email_sends` (idempotent incomplete-onboarding / did-you-file send log). Additive. **Not applied on production. Owner applies this in the SQL editor after Mohammed’s yes; do not run it from this PR.**
+29. `0032_mobile_client_hardening.sql` — revokes INSERT on `profiles` and `subscribers` from `anon` and `authenticated` and drops the "own profile upsert" and "anyone subscribe" policies (SEC-9). Changes no rows. Safe before or after the deploy: no web or app code inserts those rows as `anon` or `authenticated` (the signup trigger is SECURITY DEFINER). Rollback is in the file header. **Not applied on production.**
 
-CI applies 0001–0031 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0032 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
