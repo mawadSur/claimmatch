@@ -69,7 +69,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * came from after logging in. Must be rendered inside <Suspense> because it
  * calls useSearchParams().
  */
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({ mode, storeNote }: { mode: Mode; storeNote?: string }) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   // Only a path on this site (no "//host", "/\host" or control characters), so
@@ -111,8 +111,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
       .then((res) => (res.status === 200 ? res.json() : null))
       .then((json: { internal?: boolean } | null) => {
         if (json?.internal) {
-          posthog?.identify(userId, { internal: true });
-          posthog?.opt_out_capturing();
+          posthog?.identify(userId, { internal: true, cm_traffic_kind: 'internal' });
+          posthog?.register({ cm_traffic_kind: 'internal' });
         }
       })
       .catch(() => undefined);
@@ -181,7 +181,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
           identifyOnly(data.session.user.id);
-          posthog?.capture('signup_completed');
+          posthog?.capture('signup_completed', { evidence: 'session_after_signup' }, { send_instantly: true });
           // Leave this page immediately so the spinner cannot sit on a slow RSC.
           window.location.assign(onboardingPath(next));
           return;
@@ -208,7 +208,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       if (data.user) {
         identifyOnly(data.user.id);
-        posthog?.capture('login_completed');
+        posthog?.capture('login_completed', { evidence: 'password_sign_in' }, { send_instantly: true });
       }
 
       window.location.assign(next || '/dashboard');
@@ -408,6 +408,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </p>
           )}
         </div>
+
+        {isSignup && storeNote && (
+          <p className="text-xs leading-relaxed text-ink-muted">{storeNote}</p>
+        )}
 
         <button
           type="submit"

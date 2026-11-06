@@ -1,0 +1,13 @@
+{
+  "id": "P025",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "That TikTok about a no-proof settlement got my attention, but I am not giving a startup my address or phone so I can click through to a form I could open myself. Free during beta with a paid model later reads like a data grab, not a tool.",
+  "objection": "Is this a scam or a data grab? If the listings are unverified until I check the official site anyway, why would I create an account?",
+  "would_change_my_mind": "Let me open that TikTok settlement and the official claim form with no account, no email, no phone, and no address — just a page with a link.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

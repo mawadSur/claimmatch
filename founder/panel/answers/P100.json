@@ -1,0 +1,13 @@
+{
+  "id": "P100",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I was in a named breach and I do look it up, but a free-during-beta AI site that wants an account and admits its listings are unverified is exactly the kind of thing I treat as a scam. I will only file if a notice I already trust points me to the official administrator.",
+  "objection": "If it's free during beta, what's the catch later — my data, a surprise fee, or both?",
+  "would_change_my_mind": "If the official breach notice or my state's attorney general linked here and I could search without creating an account.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 30
+}

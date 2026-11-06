@@ -1,0 +1,13 @@
+{
+  "id": "P060",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and a free site of 'unverified' listings that might qualify me sounds like the same hustle. If I have to go check the official notice anyway, I do not need another middleman asking me to create an account.",
+  "objection": "How do you even know I qualify, and why would I trust you before I have independently confirmed anything on the court or administrator site?",
+  "would_change_my_mind": "If my bank or a retailer I already use sent me one specific claim that matched something I actually bought, with a link I could verify on the official administrator site, and you never asked for a card or SSN.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

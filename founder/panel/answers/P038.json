@@ -1,0 +1,13 @@
+{
+  "id": "P038",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "I already mean to file these and then I don't, and this still makes me go fill out the form myself on some other site, so I'd bookmark it after that TikTok and never open it again. Free during beta just makes me wait for the subscription trap.",
+  "objection": "If it's free during beta, what's the catch later? I'm not making an account so you can charge me the week a deadline actually matters.",
+  "would_change_my_mind": "File it for me before the deadline so I can't flake, and tell me the price up front with no bait-and-switch after beta.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

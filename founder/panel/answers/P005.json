@@ -1,0 +1,13 @@
+{
+  "id": "P005",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "I saw that TikTok and yeah I like easy money, but it's always like ten bucks and I still have to fill out the form myself after work. I'm not making an account or paying later for a listing of claims I already know aren't worth my time.",
+  "objection": "The payouts are like $10, not worth it — and this doesn't even file for me, so it's the same hassle as clicking the TikTok link.",
+  "would_change_my_mind": "If I could see a real payout of a couple hundred dollars on a claim that actually applied to me and took two minutes, not a scavenger hunt for $10.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 7,
+  "price_too_expensive": 12
+}

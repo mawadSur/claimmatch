@@ -1,0 +1,13 @@
+{
+  "id": "P076",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already had my data leaked, so I am not making an account on some beta site I found on Google just to look up one settlement. If I file at all I will go straight to the official claims page and leave.",
+  "objection": "I don't want a startup storing my identity details — that's how I ended up searching this in the first place.",
+  "would_change_my_mind": "If I could search my named breach, get a link to the official notice, and leave without creating an account or handing over my name, email, or anything else.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 30
+}

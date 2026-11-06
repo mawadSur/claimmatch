@@ -32,7 +32,11 @@ export function MatchFeedback({
         score,
         matchedSignals: reasons,
       });
-      posthog?.capture(posthogMatchEventName(eventType), props);
+      posthog?.capture(posthogMatchEventName(eventType), {
+        ...props,
+        feedback_label: label,
+        is_filing: false,
+      });
       const payout =
         label === 'paid' && amount !== '' && Number.isFinite(Number(amount)) ? Number(amount) : null;
       const res = await fetch('/api/match-labels', {

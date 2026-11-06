@@ -1,0 +1,13 @@
+{
+  "id": "P042",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already delete settlement notice emails as spam, and a free-during-beta site that wants an account so I can go file somewhere else is the same pitch. I'm not giving a startup my identity to browse listings they admit aren't even verified.",
+  "objection": "I don't want a startup storing my identity details — that's the whole reason these 'free money' sites exist, and I assume they're scams until proven otherwise.",
+  "would_change_my_mind": "If I could browse and open the official administrator's claim form with no account and no personal information stored by you.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

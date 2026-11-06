@@ -15,6 +15,7 @@ import {
   type SettlementContext,
 } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
+import { filingConfirmedProperties } from '@/lib/analytics/events';
 import { localISODate, startTracking, updateClaim } from './claim-api';
 import { AddConfirmationForm } from './AddConfirmationForm';
 import { ClaimError, type ClaimErrorState } from './ClaimError';
@@ -142,7 +143,11 @@ function ReportForm({
       setError({ message: result.error, status: result.status });
       return;
     }
-    posthog?.capture('claim_reported_filed', { with_confirmation_number: Boolean(numberCheck.value) });
+    const filing = filingConfirmedProperties({
+      claimStatus: result.claim.status,
+      withConfirmationNumber: Boolean(numberCheck.value),
+    });
+    if (filing) posthog?.capture('claim_reported_filed', filing);
     onChange(
       result.claim,
       numberCheck.value

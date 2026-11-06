@@ -1,0 +1,13 @@
+{
+  "id": "P002",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I might tap that TikTok out of curiosity, but I am not making an account for a site that cannot tell me if I actually qualify and then sends me somewhere else to fill out a form I will never finish.",
+  "objection": "How do you even know I qualify? The listings are unverified and I still have to file on some other website myself.",
+  "would_change_my_mind": "If it already knew a store or account I actually use, showed me the official notice that matches, and filed it before I forgot. A list I have to hunt through is just another tab I will never open again.",
+  "price_too_cheap": 2,
+  "price_cheap": 5,
+  "price_expensive": 10,
+  "price_too_expensive": 20
+}

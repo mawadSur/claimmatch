@@ -21,6 +21,10 @@ describe('PostHog App Router wiring', () => {
     expect(src).toContain('$pageview');
     expect(src).toContain('doNotTrackEnabled');
     expect(src).toContain('setPersonProperties');
+    expect(src).toContain('shouldCapturePageview');
+    expect(src).toContain('TRAFFIC_PROPERTY');
+    expect(src).toContain('disable_external_dependency_loading: true');
+    expect(src).not.toContain('opt_out_capturing');
   });
 
   it('identifies with the account id only', () => {
@@ -41,7 +45,10 @@ describe('PostHog App Router wiring', () => {
     const report = read('src/components/claims/ReportFiled.tsx');
     const admin = read('src/components/admin/ShareLinksManager.tsx');
     expect(flow).toContain("capture('match_viewed'");
-    expect(flow).toContain("capture('official_form_opened')");
+    expect(flow).toContain("capture('official_form_opened'");
+    expect(read('src/components/settlement/OfficialFormLink.tsx')).toContain('ANALYTICS_EVENTS.official_form_opened');
+    expect(read('src/components/settlement/SettlementEligibilityQuiz.tsx')).toContain('eligibility_quiz_started');
+    expect(read('src/components/settlement/SettlementEligibilityQuiz.tsx')).toContain('eligibility_quiz_completed');
     expect(packet).toContain("capture('prefill_opened'");
     expect(packet).toContain("capture('prefill_completed'");
     expect(home).toContain('landing_viewed');
@@ -56,5 +63,13 @@ describe('PostHog App Router wiring', () => {
     expect(read('src/app/lawsuits/[slug]/page.tsx')).toContain('settlement_cta_viewed');
     expect(read('src/components/settlement/RelatedSettlementLink.tsx')).toContain('related_settlement_clicked');
     expect(read('src/components/analytics/CaptureOnce.tsx')).toContain('withFunnelAttribution');
+    expect(read('src/components/OnboardingWizard.tsx')).toContain('profile_completed');
+    expect(read('src/app/onboarding/page.tsx')).toContain('event="signup_completed"');
+    expect(read('src/app/onboarding/page.tsx')).toContain("evidence: 'email_confirmed'");
+    expect(read('src/app/dashboard/page.tsx')).toContain('matches_viewed');
+    expect(read('src/components/claims/ReportFiled.tsx')).toContain('filingConfirmedProperties');
+    expect(read('src/lib/analytics/events.ts')).toContain("evidence: 'user_reported_and_saved'");
+    expect(read('src/lib/match-events-shared.ts')).toContain("return 'match_feedback'");
+    expect(read('src/lib/match-events-shared.ts')).not.toContain("return 'match_filed'");
   });
 });

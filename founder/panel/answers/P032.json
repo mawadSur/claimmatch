@@ -1,0 +1,13 @@
+{
+  "id": "P032",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already get settlement emails and treat them as spam. A site that somehow knows I qualify, wants an account, and then makes me file the official form myself is the same pile — I would close the tab.",
+  "objection": "How do you even know I qualify? You're not a law firm, the listings aren't verified, and you want my email. That's how these things turn into phishing.",
+  "would_change_my_mind": "Show me the official notice for a company I actually shop at before I create an account, and file it for me before the deadline so I cannot sit on it again.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

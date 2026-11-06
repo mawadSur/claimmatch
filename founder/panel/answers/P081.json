@@ -1,0 +1,13 @@
+{
+  "id": "P081",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I clicked because that TikTok made a no-proof check sound easy, and the second I see lawsuitai.org asking me to make an account I assume it's a scam or they want my data. I'm not giving a stranger my email so I can still go fill out the official form myself, which I already ignore when it shows up in the mail.",
+  "objection": "If the listings are unverified and I have to file on the administrator's site anyway, why do you need an account? That's a data grab.",
+  "would_change_my_mind": "Show me that same no-proof settlement with a straight link to the official claim form and no account, no email, no 'we'll charge later.'",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 9,
+  "price_too_expensive": 18
+}

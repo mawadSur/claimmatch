@@ -5,7 +5,7 @@ import {
   ShieldAlert, Target,
 } from 'lucide-react';
 import { Disclaimer } from '@/components/Disclaimer';
-import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { BETA_FEE_COPY, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
@@ -57,7 +57,13 @@ export default function AboutPage() {
             }
           : v,
       )
-    : VALUES;
+    : flags.panelTrustCopy()
+      ? VALUES.map((v) =>
+          v.title === 'Free during beta'
+            ? { ...v, body: `${publicBetaFeeCopy()} We never handle settlement payments.` }
+            : v,
+        )
+      : VALUES;
 
   return (
     <>

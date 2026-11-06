@@ -1,0 +1,13 @@
+{
+  "id": "P058",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "Those settlement emails already look like spam, and I am not making an account with some site I never heard of. Ten bucks is not worth handing a startup my info.",
+  "objection": "I will not give an address or phone number to a website I do not know, and this whole thing smells like the junk I already delete.",
+  "would_change_my_mind": "If my bank or the official court notice itself sent me here, I could look without creating an account, and the payout was a few hundred dollars not ten.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

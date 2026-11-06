@@ -1,0 +1,13 @@
+{
+  "id": "P069",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I might tap a TikTok and look at one listing, but I'm not giving you an account for a free beta that still makes me file the claim myself. If it's free now, you're charging later, and I already miss the deadline without a mystery fee on top.",
+  "objection": "What's the catch once beta ends, and why would I bother if I still have to go to the administrator site and do the paperwork?",
+  "would_change_my_mind": "Tell me the exact future price up front and actually file it or nag me until I hit submit before the deadline.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

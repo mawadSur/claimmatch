@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { jsonLd } from '@/lib/jsonld';
-import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy } from '@/lib/copy';
+import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 export function homeFaqItems(disclose = flags.feeDisclosure()) {
@@ -10,7 +10,7 @@ export function homeFaqItems(disclose = flags.feeDisclosure()) {
       q: 'Is ClaimMatch free?',
       a: disclose
         ? feeEveryClaimCopy()
-        : `${BETA_FEE_COPY} ${OFFICIAL_FILING_IS_FREE}`,
+        : `${publicBetaFeeCopy()} ${OFFICIAL_FILING_IS_FREE}`,
     },
     {
       q: 'Do you file claims for me?',
@@ -24,7 +24,7 @@ export function homeFaqItems(disclose = flags.feeDisclosure()) {
       q: 'How does ClaimMatch make money?',
       a: disclose
         ? feeEveryClaimCopy()
-        : 'ClaimMatch is free during beta. We don’t run ads or sell paid plans today, and we do not sell your personal information. We may introduce a fee later. We’ll tell you before it applies, and you’ll see the price before you use anything paid.',
+        : `${publicBetaFeeCopy()} We don’t run ads or sell paid plans today, and we do not sell your personal information.`,
     },
     {
       q: 'Are these listings verified?',

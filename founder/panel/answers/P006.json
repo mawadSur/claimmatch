@@ -1,0 +1,13 @@
+{
+  "id": "P006",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already got my data dumped in a breach; I am not handing my email to a 'free during beta' settlement site that admits the listings aren't verified. If I want the claim for that breach I'll find the official administrator myself.",
+  "objection": "If it's free during beta, what's the catch later — my data, a fee, or both?",
+  "would_change_my_mind": "Search the named breach with no account and land on the official claims-administrator notice, not another signup wall.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 20,
+  "price_too_expensive": 40
+}

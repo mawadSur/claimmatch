@@ -6,6 +6,7 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { InviteSignupCta } from '@/components/invite/InviteSignupCta';
 import { FeeDisclosure } from '@/components/FeeDisclosure';
 import { isInviteLandingEnabled } from '@/lib/soft-invite';
+import { publicBetaFeeCopy } from '@/lib/copy';
 
 export const metadata: Metadata = {
   title: 'You’re invited',
@@ -83,7 +84,7 @@ export default function InvitePage() {
 
         <ul className="mx-auto mt-8 max-w-xl space-y-2 text-sm text-ink-muted">
           {[
-            'Free during beta. We may introduce a fee later.',
+            publicBetaFeeCopy(),
             'Not a law firm. Not legal advice.',
             'You always file on the official settlement website yourself.',
           ].map((line) => (

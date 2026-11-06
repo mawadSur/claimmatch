@@ -130,6 +130,9 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             Class action settlements that are taking claims now. Check who qualifies on
             the official site, file there for free, and keep track of your claim in
             ClaimMatch.
+            {flags.catalogValueRank()
+              ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
+              : ''}
           </p>
 
           {flags.matchPreview() && (

@@ -1,0 +1,13 @@
+{
+  "id": "P085",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and I am not giving a startup my address, phone, or identity just to browse listings and then file on someone else's site myself.",
+  "objection": "I don't want a startup storing my identity details. That is the first thing I thought, and creating an account for this makes it worse.",
+  "would_change_my_mind": "If I could use it with no account, no address, and no phone, and it only linked me to the official notice, I might look once.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

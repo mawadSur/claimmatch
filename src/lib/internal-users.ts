@@ -1,7 +1,8 @@
 /**
  * INTERNAL_EMAILS is a comma-separated allowlist of tester accounts.
  * Those people get profiles.is_internal = true and a PostHog `internal`
- * person property so traction counts can exclude them.
+ * person property plus `cm_traffic_kind=internal`. Events are tagged, not
+ * dropped, so traction filters can exclude them without deleting history.
  */
 
 export function parseEmailList(raw: string | undefined | null): string[] {

@@ -1,0 +1,13 @@
+{
+  "id": "P098",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "habit",
+  "reason": "I already use Top Class Actions when I even bother looking, and I am not making an account on lawsuitai.org to browse unverified listings and then file the form myself anyway.",
+  "objection": "I will not give a startup my address or phone. Settlement emails already look like spam, and a free beta that wants an account feels like a data grab.",
+  "would_change_my_mind": "If I could browse with no account, no address, and no phone, and you clearly beat Top Class Actions on settlements I actually qualify for.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

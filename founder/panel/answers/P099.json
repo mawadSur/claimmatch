@@ -1,0 +1,13 @@
+{
+  "id": "P099",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and a free lawsuit-AI site with a paid plan coming later feels like the same trap. I'm not making an account so I can go fill out a form I was never going to finish anyway.",
+  "objection": "If it's free during beta, what's the catch later — and why would I trust unverified listings from a site that doesn't even file for me?",
+  "would_change_my_mind": "If it actually filed the claim for me before the deadline, from a company I already trust, with no surprise fee after beta.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 10,
+  "price_too_expensive": 20
+}

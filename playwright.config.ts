@@ -14,6 +14,9 @@ export default defineConfig({
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
+  // Isolated authenticated specs need the loopback fixture runner
+  // (ISOLATED_JOURNEY=1). Post-deploy smoke must never load them.
+  testIgnore: process.env.ISOLATED_JOURNEY ? [] : ['**/isolated/**'],
   use: {
     baseURL,
     extraHTTPHeaders,

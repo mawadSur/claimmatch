@@ -1,0 +1,13 @@
+{
+  "id": "P084",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "I already get those settlement emails and skip them because it's usually like ten bucks. I'm not spending an evening browsing listings and then filling out the real form myself for that.",
+  "objection": "If I still have to file on some administrator site, I'll put it off and miss the deadline anyway, same as I do now. And lawsuitai.org looks like the spam I already delete.",
+  "would_change_my_mind": "If it actually submitted the claim for me before the deadline, and I could see one I clearly qualify for that pays more than fifty dollars.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

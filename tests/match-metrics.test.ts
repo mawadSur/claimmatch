@@ -54,6 +54,8 @@ describe('match event catalog', () => {
     expect(isMatchLabelKind('paid')).toBe(true);
     expect(isMatchLabelKind('maybe')).toBe(false);
     expect(posthogMatchEventName('dismiss')).toBe('match_dismissed');
+    expect(posthogMatchEventName('filed')).toBe('match_feedback');
+    expect(posthogMatchEventName('filed')).not.toBe('match_filed');
     expect(posthogMatchProperties({ lawsuitId: 'l1', score: 0.8, matchedSignals: ['had_data_breach'] })).toMatchObject({
       lawsuit_id: 'l1',
       score: 0.8,
