@@ -56,8 +56,13 @@ describe('self-serve account deletion coverage', () => {
       );
 
       const alters = sql.match(new RegExp(`alter\\s+table\\s+(?:if\\s+exists\\s+)?(?:only\\s+)?public\\.${table}\\b[^;]*;`, 'gi')) ?? [];
+      // Any dropped constraint could be the key; an added one only when it is a
+      // key (0028's email_frequency CHECK on profiles is not).
       const keyChanges = alters.filter((stmt) =>
-        new RegExp(`\\b(?:drop|add)\\s+constraint\\b|\\balter\\s+column\\s+${column}\\b`, 'i').test(stmt),
+        new RegExp(
+          `\\bdrop\\s+constraint\\b|\\badd\\s+constraint\\b[^;]*\\b(?:primary\\s+key|foreign\\s+key|references)\\b|\\b(?:alter|drop)\\s+column\\s+(?:if\\s+exists\\s+)?${column}\\b`,
+          'i',
+        ).test(stmt),
       );
       expect(keyChanges, table).toEqual([]);
     }
