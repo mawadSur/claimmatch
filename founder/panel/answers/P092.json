@@ -1,0 +1,13 @@
+{
+  "id": "P092",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "Those settlement emails already look like spam, and a site that cannot tell me if I even qualify, with listings I still have to check on the official page, is the same junk. I would Google one claim if I ever believed it and leave — I am not making an account.",
+  "objection": "How do you even know I qualify? You don't. You just show me unverified listings and send me to file it myself.",
+  "would_change_my_mind": "If I searched the one settlement I actually heard about, you showed a clear match against the official notice with no account, and the only link was the administrator I could verify myself.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}
