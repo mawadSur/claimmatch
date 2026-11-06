@@ -1,4 +1,5 @@
 import { FICTIONAL_SLUGS } from '@shared/lib/fictional-slugs';
+import { getSettlementGuide } from '@shared/lib/settlement-guides';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
@@ -76,6 +77,9 @@ function row(overrides: Partial<CatalogLawsuit> & { slug: string }): Record<stri
   };
 }
 
+/** A catalog slug src/lib/settlement-guides.ts has an official-notice guide for. */
+const GUIDED_SLUG = 'six-flags-fees-california-class-action-settlement';
+
 function calls(method: string): unknown[][] {
   return mockState.calls.filter((call) => call.method === method).map((call) => call.args);
 }
@@ -123,6 +127,24 @@ describe('catalog query', () => {
     expect(rows.map((lawsuit) => lawsuit.slug)).toEqual(['open-soon', 'no-deadline']);
   });
 
+  it('overlays the official-notice guides after the open rule, as the web does', async () => {
+    const guide = getSettlementGuide(GUIDED_SLUG);
+    if (!guide) throw new Error('expected a guide');
+    mockState.result.data = [
+      row({ slug: GUIDED_SLUG, deadline: '2026-11-30', claim_url: 'https://feed.example/six-flags' }),
+      row({ slug: 'plain' }),
+    ];
+    const rows = await fetchCatalog();
+    expect(rows[0]).toMatchObject({
+      slug: GUIDED_SLUG,
+      deadline: guide.deadline,
+      claim_url: guide.officialUrl,
+      eligibility_text: guide.eligibilityText,
+      typical_payout: guide.typicalPayout,
+    });
+    expect(rows[1]).toMatchObject({ slug: 'plain', deadline: '2026-12-01', claim_url: 'https://www.acme-settlement.example/claim' });
+  });
+
   it('drops a row it cannot show and reads bad optional fields as missing', async () => {
     mockState.result.data = [
       row({ slug: 'good', typical_payout: 42 as unknown as string, eligibility: null as unknown as CatalogLawsuit['eligibility'] }),
@@ -168,6 +190,16 @@ describe('settlement lookup', () => {
       ['review_status', 'published'],
     ]);
     expect(calls('maybeSingle')).toHaveLength(1);
+  });
+
+  it('overlays the official-notice guide when there is one (lookupLawsuitBySlug)', async () => {
+    const guide = getSettlementGuide(GUIDED_SLUG);
+    if (!guide) throw new Error('expected a guide');
+    mockState.result.data = row({ slug: GUIDED_SLUG });
+    await expect(fetchSettlementBySlug(GUIDED_SLUG)).resolves.toMatchObject({
+      status: 'found',
+      lawsuit: { slug: GUIDED_SLUG, deadline: guide.deadline, claim_url: guide.officialUrl },
+    });
   });
 
   it('never requests a fictional slug and says it was fictional', async () => {

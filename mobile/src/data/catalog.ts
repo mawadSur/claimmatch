@@ -1,5 +1,6 @@
 import { FICTIONAL_SLUGS, isFictionalSlug } from '@shared/lib/fictional-slugs';
 import { filterOpenForClaims, isPublicLawsuit, OPEN_STATUSES } from '@shared/lib/open-for-claims';
+import { applySettlementGuide, applySettlementGuides } from '@shared/lib/settlement-guides';
 import type { Lawsuit } from '@shared/lib/types';
 import { todayInDeadlineZone } from '@shared/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,10 +16,10 @@ export type { CatalogLawsuit } from './schemas';
 
 /**
  * The public catalog, read straight from Supabase under RLS (plan 1.1): the
- * same query and the same open-for-claims re-filter as the web
- * (src/lib/lawsuits.ts lookupLawsuits and lookupLawsuitBySlug). Works signed
- * out. Columns are listed so raw_source_text, reviewed_by and verified_by are
- * never downloaded.
+ * same query, the same open-for-claims re-filter and the same official-notice
+ * guide overlay as the web (src/lib/lawsuits.ts lookupLawsuits and
+ * lookupLawsuitBySlug). Works signed out. Columns are listed so
+ * raw_source_text, reviewed_by and verified_by are never downloaded.
  */
 export const CATALOG_COLUMNS =
   'id, slug, title, summary, description, category, status, review_status, typical_payout, proof_required, deadline, eligibility, eligibility_text, source_url, claim_url, external_id, is_featured, administrator, verified_at, eligibility_verified, proof_verified';
@@ -47,7 +48,7 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogLawsuit
   if (signal) query = query.abortSignal(signal);
   const { data, error, status } = await query;
   if (error) throw supabaseReadError(error, status);
-  return filterOpenForClaims(parseCatalogRows(data), at);
+  return applySettlementGuides(filterOpenForClaims(parseCatalogRows(data), at));
 }
 
 export type SettlementLookup =
@@ -73,7 +74,9 @@ export async function fetchSettlementBySlug(slug: string, signal?: AbortSignal):
   if (data == null) return { status: 'missing', fictional: false };
   const lawsuit = parseCatalogRow(data);
   if (!lawsuit) throw invalidResponse(status);
-  return isPublicLawsuit(lawsuit) ? { status: 'found', lawsuit } : { status: 'missing', fictional: false };
+  return isPublicLawsuit(lawsuit)
+    ? { status: 'found', lawsuit: applySettlementGuide(lawsuit) }
+    : { status: 'missing', fictional: false };
 }
 
 /** The open catalog (key ['catalog'], 15 minutes fresh). Errors are ApiRequestError. */

@@ -263,8 +263,23 @@ export function getSettlementGuide(slug: string): SettlementGuide | undefined {
   return GUIDES_BY_SLUG.get(slug);
 }
 
+/** The columns a guide overlays: the native app's catalog rows carry these, not every Lawsuit column. */
+export type GuidedLawsuit = Pick<
+  Lawsuit,
+  | 'slug'
+  | 'summary'
+  | 'description'
+  | 'eligibility_text'
+  | 'typical_payout'
+  | 'deadline'
+  | 'administrator'
+  | 'claim_url'
+  | 'proof_required'
+  | 'eligibility'
+>;
+
 /** Overlay official-notice fields onto a catalog row. No-op when no guide exists. */
-export function applySettlementGuide<T extends Lawsuit>(lawsuit: T): T {
+export function applySettlementGuide<T extends GuidedLawsuit>(lawsuit: T): T {
   const guide = getSettlementGuide(lawsuit.slug);
   if (!guide) return lawsuit;
 
@@ -285,7 +300,7 @@ export function applySettlementGuide<T extends Lawsuit>(lawsuit: T): T {
   };
 }
 
-export function applySettlementGuides<T extends Lawsuit>(lawsuits: T[]): T[] {
+export function applySettlementGuides<T extends GuidedLawsuit>(lawsuits: T[]): T[] {
   return lawsuits.map(applySettlementGuide);
 }
 

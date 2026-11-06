@@ -1,5 +1,6 @@
 import type { CatalogLink } from '@shared/lib/lawsuit-display';
 import { proofDetail } from '@shared/lib/proof';
+import { settlementProofDetail } from '@shared/lib/settlement-guides';
 import { formatDeadline } from '@shared/lib/utils';
 import { displayProofLabel } from '@shared/lib/verified-fields';
 import { StyleSheet, View } from 'react-native';
@@ -36,7 +37,7 @@ export function DeadlineProofFacts({ lawsuit, open, deadlinePassed, verified, te
       : settlement.notTakingClaims.text;
   const proofNote = verified
     ? proofDetail({ proof_required: false, eligibility: { proof: lawsuit.proof_verified ?? undefined } })
-    : proofDetail(lawsuit);
+    : settlementProofDetail(lawsuit);
 
   return (
     <Card style={styles.card} testID={testID}>
