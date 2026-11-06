@@ -1,0 +1,13 @@
+{
+  "id": "P082",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I would google one settlement, maybe open the official form, and leave. I am not making an account on a free-for-now lawsuit site when I already treat these emails as spam.",
+  "objection": "If it is free during beta, what is the catch later? Feels like you want my data or a fee once I am in.",
+  "would_change_my_mind": "If I landed from Google on one listing with no account, and it was clearly just a link to the official administrator form I already meant to find.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 30
+}
