@@ -1,0 +1,13 @@
+{
+  "id": "P080",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already saw the settlement on TikTok and I can Google the official form myself. I am not creating an account with a startup so it can store who I am, especially when they say the listings are unverified and I still have to file on someone else's site.",
+  "objection": "I don't want a startup storing my identity details, and a free account is exactly how that starts.",
+  "would_change_my_mind": "If I could check that one settlement with no account and no personal info, and it only sent me to the official notice, I might use it once. I still would not pay or sign up.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

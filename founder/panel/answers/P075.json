@@ -1,0 +1,13 @@
+{
+  "id": "P075",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "Those settlement checks are like ten dollars if you even get one, and I still have to file the claim myself on some other website. I am not making an account and spending an evening on that for grocery-coupon money.",
+  "objection": "If I still have to go to the administrator site and fill out the form myself, I will just forget, same as I do with every notice sitting in my inbox that I already assume is spam.",
+  "would_change_my_mind": "If it actually filed for me and showed I was in line for something like thirty dollars or more, not ten, I might try it once.",
+  "price_too_cheap": 0,
+  "price_cheap": 2,
+  "price_expensive": 5,
+  "price_too_expensive": 10
+}

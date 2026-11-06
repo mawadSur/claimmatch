@@ -124,6 +124,60 @@ Fix: quoted `/api/*` paths and unmatched API routes return **JSON 404**;
 client `$pageview` skips `/api` and quoted pathnames. Raw historical
 pageviews stay.
 
+## Parent dashboard 2315315 (do not edit from this PR)
+
+Parent owns [ClaimMatch traction](https://us.posthog.com/project/399692/dashboard/2315315)
+and the ET daily routine. This PR does not create or rewrite that dashboard.
+Use these property names on existing tiles.
+
+**Clean traction filter** (AND). Keep raw events; filter at query time.
+
+```
+(
+  properties.cm_traffic_kind IN ('product')
+  OR properties.cm_traffic_kind IS NULL
+)
+AND (properties.$virt_is_bot IS NULL OR properties.$virt_is_bot != true)
+AND (properties.$pathname IS NULL OR properties.$pathname NOT LIKE '/api%')
+AND (person.properties.internal IS NULL OR person.properties.internal != true)
+AND (
+  properties.$host IN ('lawsuitai.org', 'www.lawsuitai.org')
+  OR properties.$current_url LIKE '%lawsuitai.org%'
+)
+```
+
+Cohort **Internal / Test users** (`279065`) is empty today. Still exclude it
+explicitly (`person_id NOT IN cohort 279065`) so the tile stays correct when
+the cohort fills from tagged internal sessions. Do not rely on the empty
+cohort alone.
+
+Count unique people with `person_id`, not `distinct_id`.
+
+**ET reporting day** for 5 Nov 2026: `2026-11-05 05:00:00Z` inclusive through
+`2026-11-06 05:00:00Z` exclusive. Parent’s clean read for that day was
+**4 visitors / 5 pageviews** vs raw **17 / 21**. That gap is API/health
+HTML 404s plus bot/automation; after this deploy those paths return JSON
+and skip `$pageview`.
+
+### Tiles to add or retarget (new events)
+
+These names did not exist or never fired before this change. Do not backfill.
+
+| Tile | Event | Extra filter |
+| --- | --- | --- |
+| Signup | `signup_completed` | `properties.evidence IN ('session_after_signup','email_confirmed')` |
+| Login (not signup) | `login_completed` | `properties.evidence = 'password_sign_in'` |
+| Profile | `profile_completed` | `properties.evidence = 'onboarding_saved'` |
+| Matches listed | `matches_viewed` | `properties.match_count >= 1` |
+| Claim flow opened | `match_viewed` | `properties.source = 'claim_flow'` |
+| Official form intent | `official_form_opened` | `properties.intent = 'official_form' AND properties.is_filing = false` |
+| User-confirmed filing | `claim_reported_filed` | `properties.evidence = 'user_reported_and_saved' AND properties.is_filing = true` |
+
+Do not chart `match_feedback` as filed. Do not chart `$pageview` on `/api*`
+as product traffic. Smoke UA `ClaimMatchSmoke/1.0` sets
+`cm_traffic_kind=test`; `?cm_traffic=test|internal|bot` is the closed query
+param (never a UTM).
+
 ## Local / preview checks
 
 Playwright smoke sends `ClaimMatchSmoke/1.0` so those hits tag as `test`.
