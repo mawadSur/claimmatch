@@ -78,13 +78,8 @@ export const settings = defineCopy({
     text: '(555) 123-4567',
     source: 'src/components/NotificationPrefs.tsx',
   },
-  /**
-   * The web's hint starts with "We’ll only use this to help you fill in claim
-   * forms, once that feature is ready." That feature has shipped (a claim's
-   * copy-ready details show the phone), so the app keeps the second sentence.
-   */
   phoneHint: {
-    text: 'We don’t send text messages.',
+    text: 'We’ll only use this to help you fill in claim forms. We don’t send text messages.',
     source: 'src/components/NotificationPrefs.tsx',
   },
   matchingTitle: {
@@ -95,6 +90,10 @@ export const settings = defineCopy({
     text: 'These answers help us rank open settlements. You can change them anytime.',
     source: 'src/components/NotificationPrefs.tsx',
   },
+  /**
+   * The web's email switch. Not shown in the app while those emails are
+   * paused (DetailsForm); kept to show it again in the web's words.
+   */
   emailOptInLabel: {
     text: 'Email me about new settlements (optional)',
     source: 'src/components/NotificationPrefs.tsx',

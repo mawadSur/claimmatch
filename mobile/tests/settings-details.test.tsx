@@ -137,7 +137,6 @@ describe('Your details and emails', () => {
     expect(screen.getByLabelText(settings.phoneLabel.text)).toHaveProp('keyboardType', 'phone-pad');
 
     await user.type(screen.getByLabelText(settings.phoneLabel.text), '(555) 123-4567');
-    await user.press(screen.getByRole('switch', { name: `${settings.emailOptInLabel.text}, ${settings.emailOptInHint.text}` }));
     await user.press(screen.getByRole('switch', { name: `${settings.metricsLabel.text}, ${settings.metricsHint.text}` }));
     await user.press(screen.getByRole('checkbox', { name: /Do you use Facebook, Instagram, TikTok, or Google\?/ }));
     await user.press(screen.getByRole('button', { name: settings.saveChanges.text }));
@@ -148,11 +147,23 @@ describe('Your details and emails', () => {
       full_name: 'Ana Diaz',
       state: 'CA',
       phone: '(555) 123-4567',
-      email_opt_in: false,
       match_metrics_consent: true,
       attributes: { owns_vehicle: true, vehicle_brands: ['Ford'], used_banking: false, uses_social_media: true },
     });
     expect(JSON.stringify(body)).not.toContain('took_medication');
+  });
+
+  it('does not offer the paused new-settlement emails, and leaves the saved choice alone', async () => {
+    const user = userEvent.setup();
+    mockProfileRow.current = { ...STORED, email_opt_in: true };
+    await renderDetails();
+    expect(screen.queryByText(settings.emailOptInLabel.text)).toBeNull();
+    expect(screen.queryByText(settings.emailOptInHint.text)).toBeNull();
+    expect(screen.getAllByRole('switch')).toHaveLength(1);
+
+    await user.press(screen.getByRole('button', { name: settings.saveChanges.text }));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+    expect(sentBody()).not.toHaveProperty('email_opt_in');
   });
 
   it('asks for the consent box before saving a new address, then stamps the consent', async () => {
@@ -223,12 +234,11 @@ describe('Your details and emails', () => {
     const user = userEvent.setup();
     await renderDetails();
     await user.type(screen.getByLabelText(settings.phoneLabel.text), '555 0100');
-    await user.press(screen.getByRole('switch', { name: `${settings.emailOptInLabel.text}, ${settings.emailOptInHint.text}` }));
     await user.press(screen.getByRole('button', { name: settings.saveChanges.text }));
 
     expect(await screen.findByText(settings.saved.text)).toBeOnTheScreen();
     // Any `attributes` would replace every stored answer, took_medication included (applyAttributePatch).
-    expect(sentBody()).toEqual({ full_name: 'Ana Diaz', state: 'CA', phone: '555 0100', email_opt_in: false, match_metrics_consent: false });
+    expect(sentBody()).toEqual({ full_name: 'Ana Diaz', state: 'CA', phone: '555 0100', match_metrics_consent: false });
   });
 
   it('sends changed answers once; the next save without answer changes sends none', async () => {
@@ -321,7 +331,6 @@ describe('details form rules', () => {
     addressLine2: 'Apt 4',
     city: '',
     addressConsent: false,
-    emailOptIn: true,
     metricsConsent: false,
     answers: { owns_vehicle: false, vehicle_brands: [] },
   };

@@ -97,6 +97,7 @@ export function YourMatches({ matches, needsProfile, possibleOpen, onTogglePossi
         title={dashboard.matchesTitle.text}
         description={dashboard.matchesIntro.text}
         action={<Button label={dashboard.editProfile.text} variant="ghost" onPress={nav.openProfileSettings} />}
+        actionBleed
         testID="dashboard-matches-title"
       />
       {content}

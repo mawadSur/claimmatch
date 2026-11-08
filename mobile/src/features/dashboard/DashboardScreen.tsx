@@ -27,17 +27,18 @@ export function DashboardScreen() {
   const { status, user, sessionEnded } = useAuth();
   if (status === 'signedOut') {
     return (
-      <Screen centered testID="dashboard-signed-out">
+      <Screen centered restKey={status} testID="dashboard-signed-out">
         <SignedOutPrompt next="/dashboard" loggedOut={sessionEnded} />
       </Screen>
     );
   }
-  if (status !== 'signedIn') return <DashboardSkeleton />;
+  if (status !== 'signedIn') return <DashboardSkeleton restKey={status} />;
   // A new account starts with a fresh screen (answers, open groups).
   return <SignedInDashboard key={user?.id ?? 'signed-in'} />;
 }
 
 function SignedInDashboard() {
+  const { status } = useAuth();
   const query = useDashboard();
   const { refetch } = query;
   const nav = useDashboardNavigation();
@@ -88,10 +89,11 @@ function SignedInDashboard() {
           pulling={pull.refreshing}
           onPull={pull.onRefresh}
           onBrowse={nav.openSettlements}
+          restKey={status}
         />
       );
     }
-    return <DashboardSkeleton />;
+    return <DashboardSkeleton restKey={status} />;
   }
 
   const items = buildDashboardItems(data, {
@@ -115,6 +117,7 @@ function SignedInDashboard() {
         retrying={query.isFetching && !pull.refreshing}
         onRetry={retry}
         nav={nav}
+        restKey={status}
       />
     </Screen>
   );

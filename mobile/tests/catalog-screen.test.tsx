@@ -473,7 +473,8 @@ describe('CatalogCard', () => {
     await renderCard(ACME);
     expect(screen.getByTestId('catalog-card-actions-acme-data-breach')).toHaveStyle({ flexDirection: 'row' });
     regular.mockRestore();
-    screen.unmount();
+    // RNTL 14's unmount is async: unawaited, it overlapped the next render's act() and kept Jest from exiting.
+    await screen.unmount();
 
     // Accessibility sizes: "Details" broke as "Detail" / "s" in the narrow right-hand button.
     const large = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 402, height: 874, scale: 3, fontScale: 2.643 });

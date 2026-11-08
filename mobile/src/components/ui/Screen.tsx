@@ -6,11 +6,13 @@ import {
   StyleSheet,
   View,
   type HostInstance,
+  type ScrollViewInstance,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useHeaderScroll } from '@/hooks/use-header-scroll';
 import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { useKeyboardOverlap } from '@/hooks/use-keyboard-overlap';
 import { colors, layout, space, type SpaceToken } from '@/theme/tokens';
@@ -52,6 +54,11 @@ export interface ScreenProps {
   /** Horizontal screen padding (default true). */
   padded?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  /**
+   * A tab root passes the auth status: a screen shown after signing in or
+   * out then rests with its large title open again (useHeaderScroll).
+   */
+  restKey?: string;
   testID?: string;
 }
 
@@ -75,12 +82,18 @@ export function Screen({
   gap = 5,
   padded = true,
   contentContainerStyle,
+  restKey,
   testID,
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const insideTabBar = useInsideTabBar();
   const android = Platform.OS === 'android';
   const rootRef = useRef<HostInstance>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const headerScroll = useHeaderScroll({
+    scrollTo: (y, animated) => scrollRef.current?.scrollTo({ y, animated }),
+    restKey,
+  });
   // Only a footer needs this: without one, a scroll view with text fields insets itself for the keyboard.
   const keyboard = useKeyboardOverlap(rootRef, Boolean(footer));
   // With a footer the whole screen already sits above the keyboard; insetting again would leave a gap.
@@ -103,9 +116,11 @@ export function Screen({
     >
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           style={styles.flex}
           contentInsetAdjustmentBehavior="automatic"
           automaticallyAdjustKeyboardInsets={keyboardInsets}
+          {...headerScroll}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={android ? 'on-drag' : 'interactive'}
           alwaysBounceVertical={!centered || Boolean(onRefresh)}

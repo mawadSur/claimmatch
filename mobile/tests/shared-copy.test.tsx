@@ -9,6 +9,17 @@ import {
   showAllNoticesLabel,
 } from '@/copy/notices';
 import { fillCopy, shared } from '@/copy/shared';
+import { ConfigProvider, useConfig } from '@/providers/ConfigProvider';
+import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@shared/lib/disclaimer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
+
+// The config request fails, as offline: the app falls back to its bundled legal text.
+jest.mock('@/lib/api', () => ({
+  ...jest.requireActual('@/lib/api'),
+  getApi: () => ({ request: () => Promise.reject(new Error('offline')) }),
+}));
 
 /** The web components' sentences, assembled as they render (src/components/claims/CorrectiveNotice*.tsx). */
 describe('corrective notice copy', () => {
@@ -49,5 +60,35 @@ describe('fillCopy', () => {
       'Official site for Acme {title}',
     );
     expect(fillCopy('{a} and {b}', { a: '1' })).toBe('1 and {b}');
+  });
+});
+
+describe('legal text in the app', () => {
+  function LegalProbe() {
+    const { status, legal } = useConfig();
+    return (
+      <>
+        <Text testID="status">{status}</Text>
+        <Text testID="disclaimer">{legal.disclaimer}</Text>
+        <Text testID="short">{legal.short}</Text>
+      </>
+    );
+  }
+
+  it('falls back to the app wording of the disclaimers, which never calls the app a website', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+    await render(
+      <QueryClientProvider client={client}>
+        <ConfigProvider>
+          <LegalProbe />
+        </ConfigProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('unavailable')).toBeOnTheScreen();
+    expect(screen.getByTestId('disclaimer')).toHaveTextContent(APP_LEGAL_DISCLAIMER);
+    expect(screen.getByTestId('short')).toHaveTextContent(APP_SHORT_DISCLAIMER);
+    expect(APP_LEGAL_DISCLAIMER).toContain('Using this app or contacting us');
+    expect(`${APP_LEGAL_DISCLAIMER} ${APP_SHORT_DISCLAIMER}`).not.toMatch(/\bthis (web)?site\b/i);
+    client.clear();
   });
 });

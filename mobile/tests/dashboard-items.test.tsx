@@ -145,7 +145,7 @@ describe('notice rows', () => {
 describe('dashboard copy', () => {
   it('builds the header sentence for each fee setting', () => {
     expect(introSentence(false)).toBe(
-      'Track the claims you file on official settlement sites. ClaimMatch is free during beta. It doesn’t file for you and never handles settlement payments.',
+      'Track the claims you file on official settlement sites. ClaimMatch is free for now. It doesn’t file for you and never handles settlement payments.',
     );
     expect(introSentence(true)).toContain('Official filing stays free.');
   });

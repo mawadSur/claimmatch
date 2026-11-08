@@ -1,4 +1,4 @@
-import { LEGAL_DISCLAIMER, SHORT_DISCLAIMER } from '@shared/lib/disclaimer';
+import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@shared/lib/disclaimer';
 import { useQuery } from '@tanstack/react-query';
 import * as Application from 'expo-application';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
@@ -14,7 +14,7 @@ import { queryKeys } from '@/lib/query-client';
  * GET /api/mobile/config (plan S5): server flags, server time, legal text and
  * the minimum supported build. The endpoint needs no auth. While it has not
  * answered, or when it fails, every flag stays off, the bundled legal text
- * from src/lib/disclaimer.ts is used and the app stays usable.
+ * (src/lib/disclaimer.ts, the app's wording) is used and the app stays usable.
  */
 
 const optionalText = z.string().trim().min(1).optional().catch(undefined);
@@ -114,8 +114,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       flags,
       isFlagOn: (name) => flags[name] === true,
       legal: {
-        disclaimer: data?.legal.disclaimer ?? LEGAL_DISCLAIMER,
-        short: data?.legal.short ?? SHORT_DISCLAIMER,
+        disclaimer: data?.legal.disclaimer ?? APP_LEGAL_DISCLAIMER,
+        short: data?.legal.short ?? APP_SHORT_DISCLAIMER,
         contactEmail: data?.legal.contactEmail ?? null,
         fromServer: Boolean(data?.legal.disclaimer),
       },

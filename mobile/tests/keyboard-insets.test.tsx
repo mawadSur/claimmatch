@@ -1,7 +1,7 @@
-import { act, render, screen } from '@testing-library/react-native';
-import { NavigationContext } from 'expo-router/react-navigation';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { NavigationContext, NavigationRouteContext } from 'expo-router/react-navigation';
 import type { ComponentProps, ReactNode } from 'react';
-import { Keyboard, type KeyboardEvent } from 'react-native';
+import { Keyboard, ScrollView, type KeyboardEvent } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppText, Button, Screen } from '@/components/ui';
@@ -40,20 +40,23 @@ function fakeNavigation(initiallyFocused: boolean) {
   };
 }
 
-let keyboardListeners: Map<string, (event: KeyboardEvent) => void>;
+type KeyboardListener = (event: KeyboardEvent) => void;
+let keyboardListeners: Map<string, Set<KeyboardListener>>;
 
 beforeEach(() => {
   keyboardListeners = new Map();
   jest.spyOn(Keyboard, 'addListener').mockImplementation((name, listener) => {
-    keyboardListeners.set(name, listener as (event: KeyboardEvent) => void);
-    return { remove: () => keyboardListeners.delete(name) } as ReturnType<typeof Keyboard.addListener>;
+    const listeners = keyboardListeners.get(name) ?? new Set<KeyboardListener>();
+    listeners.add(listener as KeyboardListener);
+    keyboardListeners.set(name, listeners);
+    return { remove: () => listeners.delete(listener as KeyboardListener) } as ReturnType<typeof Keyboard.addListener>;
   });
 });
 
 afterEach(() => jest.restoreAllMocks());
 
-async function keyboard(name: 'keyboardWillShow' | 'keyboardDidHide') {
-  await act(async () => keyboardListeners.get(name)?.(KEYBOARD as unknown as KeyboardEvent));
+async function keyboard(name: 'keyboardWillShow' | 'keyboardWillHide' | 'keyboardDidHide') {
+  await act(async () => keyboardListeners.get(name)?.forEach((listener) => listener(KEYBOARD as unknown as KeyboardEvent)));
 }
 
 async function renderScreen(element: ReactNode, navigation?: NavigationValue) {
@@ -132,5 +135,144 @@ describe('Screen and the keyboard', () => {
       </Screen>,
     );
     expect(adjustsForKeyboard()).toBe(false);
+  });
+});
+
+/**
+ * The keyboard handler scrolls through React Native's scrollTo, which keeps
+ * the offset at 0 or more: a view resting under its header (a negative
+ * offset) jumped under it, and a large title collapsed. Tab roots shown
+ * after signing in or out rested under the small title.
+ */
+describe('Screen under its header', () => {
+  /** The scroll view's scrollTo (React Native's Jest mock shares it across instances). */
+  const scrollTo = (ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+
+  beforeEach(() => scrollTo.mockClear());
+
+  /** A scroll event as iOS sends it; the content is taller than the view unless `contentHeight` says otherwise. */
+  async function scrollEvent(y: number, contentHeight = 2000) {
+    await fireEvent.scroll(screen.getByTestId('screen-scroll'), {
+      nativeEvent: {
+        contentOffset: { x: 0, y },
+        contentSize: { width: 402, height: contentHeight },
+        layoutMeasurement: { width: 402, height: 812 },
+      },
+    });
+  }
+
+  function overflowEnabled(): boolean {
+    return screen.getByTestId('screen-scroll').props.scrollToOverflowEnabled === true;
+  }
+
+  async function renderTabRoot(routeKey: string, restKey: string) {
+    await renderScreen(
+      <NavigationRouteContext.Provider value={{ key: routeKey, name: 'index' } as never}>
+        <Screen restKey={restKey} testID="screen">
+          <AppText>Settings</AppText>
+        </Screen>
+      </NavigationRouteContext.Provider>,
+    );
+  }
+
+  it('lifts the scrollTo limit only while the content sits above 0, under the header', async () => {
+    await renderScreen(
+      <Screen hasTextFields testID="screen">
+        <AppText>Search</AppText>
+      </Screen>,
+    );
+    // Content laid out before the first offset arrives: still resting under the header.
+    await fireEvent(screen.getByTestId('screen-scroll'), 'contentSizeChange', 402, 2000);
+    expect(overflowEnabled()).toBe(true);
+    await scrollEvent(-168);
+    expect(overflowEnabled()).toBe(true);
+    // Scrolled into the content: the limit is back, so a view the keyboard lifted past its end settles back.
+    await scrollEvent(240);
+    expect(overflowEnabled()).toBe(false);
+    await scrollEvent(-12);
+    expect(overflowEnabled()).toBe(true);
+  });
+
+  it('keeps the limit off for content shorter than the view, and returns it to where it was when the keyboard closes', async () => {
+    await renderScreen(
+      <Screen hasTextFields testID="screen">
+        <AppText>Forgot your password?</AppText>
+      </Screen>,
+    );
+    await scrollEvent(-54, 635);
+    await keyboard('keyboardWillShow');
+    // The keyboard lifted the email field past 0: the limit would pin the view at 0, under the header.
+    await scrollEvent(24, 635);
+    expect(overflowEnabled()).toBe(true);
+    await keyboard('keyboardWillHide');
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenLastCalledWith({ y: -54, animated: true });
+  });
+
+  it('leaves a long view where the keyboard left it', async () => {
+    await renderScreen(
+      <Screen hasTextFields testID="screen">
+        <AppText>Your details and emails</AppText>
+      </Screen>,
+    );
+    await scrollEvent(-116);
+    await keyboard('keyboardWillShow');
+    await scrollEvent(260);
+    await keyboard('keyboardWillHide');
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it('moves a tab root shown after signing out to where the first one rested, again after iOS shifts it', async () => {
+    await renderTabRoot('settings-index-1', 'signedIn');
+    // Where iOS first places it: under the open large title.
+    await scrollEvent(-168);
+    await scrollEvent(400);
+    expect(scrollTo).not.toHaveBeenCalled();
+    await screen.unmount();
+
+    // Signed out: a new scroll view, placed under the small title.
+    await renderTabRoot('settings-index-1', 'signedOut');
+    await scrollEvent(-116);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenLastCalledWith({ y: -168, animated: false });
+    // Opening the large title moves the offset once more.
+    await scrollEvent(-220);
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+    expect(scrollTo).toHaveBeenLastCalledWith({ y: -168, animated: false });
+    await scrollEvent(-168);
+    await scrollEvent(-220);
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves a tab root where iOS put it when the auth status did not change, and stops for a drag', async () => {
+    await renderTabRoot('dashboard-index-1', 'signedIn');
+    await scrollEvent(-168);
+    await screen.unmount();
+
+    // The list replaces the skeleton for the same person.
+    await renderTabRoot('dashboard-index-1', 'signedIn');
+    await scrollEvent(-116);
+    expect(scrollTo).not.toHaveBeenCalled();
+    await screen.unmount();
+
+    await renderTabRoot('dashboard-index-1', 'signedOut');
+    await scrollEvent(-116);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    // Pull to refresh right away: the person's drag is never undone.
+    await fireEvent(screen.getByTestId('screen-scroll'), 'scrollBeginDrag');
+    await scrollEvent(-260);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+  });
+
+  it('never moves a screen without a restKey', async () => {
+    await renderScreen(
+      <NavigationRouteContext.Provider value={{ key: 'claim-1', name: 'claim/[slug]' } as never}>
+        <Screen testID="screen">
+          <AppText>Claim</AppText>
+        </Screen>
+      </NavigationRouteContext.Provider>,
+    );
+    await scrollEvent(-116);
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });

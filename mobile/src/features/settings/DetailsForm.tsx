@@ -45,8 +45,6 @@ function initialValues(profile: AppProfile | null): DetailsValues {
     addressLine2: profile?.address_line2 ?? '',
     city: profile?.city ?? '',
     addressConsent: false,
-    // A missing profile row reads like the web's default profile (opted out, 0028).
-    emailOptIn: profile?.email_opt_in ?? false,
     metricsConsent: Boolean(profile?.match_metrics_consent_at),
     answers: answersFromAttributes(profile?.attributes),
   };
@@ -54,10 +52,16 @@ function initialValues(profile: AppProfile | null): DetailsValues {
 
 /**
  * Your details and emails: src/components/NotificationPrefs.tsx (name, state,
- * phone, the matching answers without the health question, both email and
- * metrics switches) plus the copy-ready address of PrefillPacket with its
- * consent box. Starts from the profile once; later reloads (after a save)
- * only update whether address consent is already on file.
+ * phone, the matching answers without the health question, the metrics
+ * switch) plus the copy-ready address of PrefillPacket with its consent box.
+ * Starts from the profile once; later reloads (after a save) only update
+ * whether address consent is already on file.
+ *
+ * "Email me about new settlements" is not shown: the web's own hint says
+ * those emails stay paused until match alerts are enabled, so the app would
+ * offer a choice that sends nothing. The form never sends email_opt_in, so the
+ * choice saved on the web is kept. Show the switch again (settings.emailOptIn*)
+ * once those emails go out.
  */
 export function DetailsForm({ profile }: { profile: AppProfile | null }) {
   const save = useSaveSettings();
@@ -226,12 +230,6 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
       </Card>
 
       <SettingsGroup inset={4}>
-        <ListItem
-          title={settings.emailOptInLabel.text}
-          subtitle={settings.emailOptInHint.text}
-          toggle={{ value: values.emailOptIn, onValueChange: (on) => update('emailOptIn', on) }}
-          testID="details-email-opt-in"
-        />
         <ListItem
           title={settings.metricsLabel.text}
           subtitle={settings.metricsHint.text}

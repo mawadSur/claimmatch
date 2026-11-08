@@ -21,8 +21,18 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style' |
   iconPosition?: 'leading' | 'trailing';
   /** Stretch to the container width. */
   fullWidth?: boolean;
+  /**
+   * A ghost button in a column of text: pulls the button out by its side
+   * padding on that side ('start' for a button at the start of a line, 'end'
+   * at its end), so the label lines up with the text while the touch target
+   * keeps its full size.
+   */
+  bleed?: 'start' | 'end';
   style?: StyleProp<ViewStyle>;
 }
+
+/** A button's side padding: how far a bleeding ghost button reaches past the text column. */
+export const BUTTON_PADDING_X = space[5];
 
 interface VariantStyle {
   background: ColorToken | 'transparent';
@@ -57,6 +67,7 @@ export function Button({
   icon,
   iconPosition = 'leading',
   fullWidth = false,
+  bleed,
   style,
   onPress,
   accessibilityLabel,
@@ -86,6 +97,7 @@ export function Button({
           borderColor: look.border ? colors[look.border] : 'transparent',
         },
         fullWidth ? styles.fullWidth : null,
+        bleed === 'start' ? styles.bleedStart : bleed === 'end' ? styles.bleedEnd : null,
         disabled && !loading ? styles.disabled : null,
         style,
       ]}
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
   base: {
     minHeight: touchTarget + 4,
     minWidth: touchTarget,
-    paddingHorizontal: space[5],
+    paddingHorizontal: BUTTON_PADDING_X,
     paddingVertical: space[3],
     borderRadius: radii.lg,
     // Every variant has a 1 pt border (transparent when unused) so sizes match.
@@ -121,6 +133,12 @@ const styles = StyleSheet.create({
   },
   fullWidth: {
     alignSelf: 'stretch',
+  },
+  bleedStart: {
+    marginStart: -BUTTON_PADDING_X,
+  },
+  bleedEnd: {
+    marginEnd: -BUTTON_PADDING_X,
   },
   content: {
     flexDirection: 'row',

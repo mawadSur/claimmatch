@@ -4,6 +4,7 @@ import { StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle }
 import { space, touchTarget, typography, type TextColorToken } from '@/theme/tokens';
 
 import { AppText } from './AppText';
+import { BUTTON_PADDING_X } from './Button';
 import { STACK_VALUE_FONT_SCALE } from './ListItem';
 
 /**
@@ -28,6 +29,11 @@ export interface SectionHeaderProps {
    * size, for a wide or outlined button that would crowd the title.
    */
   actionPlacement?: 'beside' | 'below';
+  /**
+   * The action is a ghost Button: its label lines up with the title's end
+   * (beside) or the description's start (below), as Button's bleed does.
+   */
+  actionBleed?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -39,6 +45,7 @@ export function SectionHeader({
   descriptionColor,
   action,
   actionPlacement = 'beside',
+  actionBleed = false,
   style,
   testID,
 }: SectionHeaderProps) {
@@ -51,7 +58,10 @@ export function SectionHeader({
           {title}
         </AppText>
         {actionBeside ? (
-          <View style={styles.actionBeside} testID={testID ? `${testID}-action-beside` : undefined}>
+          <View
+            style={[styles.actionBeside, actionBleed ? styles.bleedEnd : null]}
+            testID={testID ? `${testID}-action-beside` : undefined}
+          >
             {action}
           </View>
         ) : null}
@@ -62,7 +72,10 @@ export function SectionHeader({
         </AppText>
       ) : null}
       {action != null && !actionBeside ? (
-        <View style={styles.actionBelow} testID={testID ? `${testID}-action-below` : undefined}>
+        <View
+          style={[styles.actionBelow, actionBleed ? styles.bleedStart : null]}
+          testID={testID ? `${testID}-action-below` : undefined}
+        >
           {action}
         </View>
       ) : null}
@@ -89,5 +102,11 @@ const styles = StyleSheet.create({
   actionBelow: {
     alignSelf: 'flex-start',
     marginTop: space[2],
+  },
+  bleedStart: {
+    marginStart: -BUTTON_PADDING_X,
+  },
+  bleedEnd: {
+    marginEnd: -BUTTON_PADDING_X,
   },
 });

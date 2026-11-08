@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   AppText,
   Button,
+  BUTTON_PADDING_X,
   CheckboxRow,
   Chip,
   ExternalLinkButton,
@@ -74,6 +75,21 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Saving' });
     expect(button).toBeBusy();
     expect(button).toBeDisabled();
+  });
+
+  it('lets a ghost button bleed by its side padding, keeping its 48 pt target', async () => {
+    await render(
+      <>
+        <Button label="Show all" variant="ghost" bleed="start" onPress={() => undefined} />
+        <Button label="Edit profile" variant="ghost" bleed="end" onPress={() => undefined} />
+        <Button label="Cancel" variant="ghost" onPress={() => undefined} />
+      </>,
+    );
+    const start = screen.getByRole('button', { name: 'Show all' });
+    expect(start).toHaveStyle({ marginStart: -BUTTON_PADDING_X, paddingHorizontal: BUTTON_PADDING_X, minHeight: 48 });
+    const end = screen.getByRole('button', { name: 'Edit profile' });
+    expect(end).toHaveStyle({ marginEnd: -BUTTON_PADDING_X, paddingHorizontal: BUTTON_PADDING_X, minHeight: 48 });
+    expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveStyle({ marginStart: -BUTTON_PADDING_X });
   });
 
   it('adds no haptic to non-primary buttons', async () => {
@@ -313,6 +329,33 @@ describe('SectionHeader', () => {
     expect(screen.getByTestId('matches-title-row')).not.toContainElement(screen.getByRole('button', { name: 'Edit profile' }));
     expect(screen.getByTestId('matches-action-below')).toContainElement(screen.getByRole('button', { name: 'Edit profile' }));
     expect(screen.getByRole('header', { name: 'Your matches' })).toBeOnTheScreen();
+    dimensions.mockRestore();
+  });
+
+  it('lines a ghost action up with the title end beside it, and with the description start below it', async () => {
+    const regular = withFontScale(1);
+    await render(
+      <SectionHeader title="Your matches" description="Settlements that may apply to you." action={editProfile} actionBleed testID="matches" />,
+    );
+    expect(screen.getByTestId('matches-action-beside')).toHaveStyle({ marginEnd: -BUTTON_PADDING_X, marginVertical: -12 });
+    regular.mockRestore();
+    await screen.unmount();
+
+    const large = withFontScale(2.643);
+    await render(
+      <SectionHeader title="Your matches" description="Settlements that may apply to you." action={editProfile} actionBleed testID="matches" />,
+    );
+    expect(screen.getByTestId('matches-action-below')).toHaveStyle({ marginStart: -BUTTON_PADDING_X });
+    large.mockRestore();
+  });
+
+  it('keeps an outlined action in line with the text', async () => {
+    const dimensions = withFontScale(1);
+    const browse = <Button label="Browse all settlements" variant="secondary" onPress={() => undefined} />;
+    await render(
+      <SectionHeader title="Closing soon" description="Open settlements in our list." action={browse} actionPlacement="below" testID="closing" />,
+    );
+    expect(screen.getByTestId('closing-action-below')).not.toHaveStyle({ marginStart: -BUTTON_PADDING_X });
     dimensions.mockRestore();
   });
 });

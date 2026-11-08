@@ -1,6 +1,6 @@
 export { AppText, type AppTextProps } from './AppText';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
-export { Button, type ButtonProps, type ButtonVariant } from './Button';
+export { Button, BUTTON_PADDING_X, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, type CardProps } from './Card';
 export { CheckboxRow, type CheckboxRowProps } from './CheckboxRow';
 export { Chip, type ChipProps } from './Chip';

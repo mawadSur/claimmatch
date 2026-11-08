@@ -28,7 +28,7 @@ export function applyFlagOverrides(values: FlagValues | null): void {
  * Whether fees are worded for FEE_DISCLOSURE_ENABLED (src/app/signup/page.tsx,
  * src/app/dashboard/page.tsx), given useConfig(). Until the server's flags are
  * known (still loading, or unreachable), the disclosed wording is used:
- * "Official filing … stays free" is true either way, while "free during beta"
+ * "Official filing … stays free" is true either way, while "free for now"
  * would be false once a fee is live (plan 5).
  */
 export function showsFeeDisclosure(config: { status: string; isFlagOn(name: ClientFlagName): boolean }): boolean {

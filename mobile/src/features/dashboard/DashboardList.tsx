@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { FlatList, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { Notice } from '@/components/ui';
 import { CompactDisclaimer, SettleSignalCredit } from '@/features/shared';
+import { useHeaderScroll } from '@/hooks/use-header-scroll';
 import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { colors, layout, space } from '@/theme/tokens';
 
@@ -29,6 +30,8 @@ export interface DashboardListProps {
   retrying: boolean;
   onRetry: () => void;
   nav: DashboardNavigation;
+  /** See useHeaderScroll: the auth status. */
+  restKey?: string;
 }
 
 /**
@@ -47,9 +50,15 @@ export function DashboardList({
   retrying,
   onRetry,
   nav,
+  restKey,
 }: DashboardListProps) {
   // A notice row can ask for the confirmation number: keep its field above the keyboard, while this tab is focused.
   const keyboardInsets = useKeyboardInsetsActive(true);
+  const listRef = useRef<FlatList<DashboardItem>>(null);
+  const headerScroll = useHeaderScroll({
+    scrollTo: (y, animated) => listRef.current?.scrollToOffset({ offset: y, animated }),
+    restKey,
+  });
 
   function content(item: DashboardItem): ReactNode {
     switch (item.type) {
@@ -100,6 +109,7 @@ export function DashboardList({
 
   return (
     <FlatList
+      ref={listRef}
       data={items}
       keyExtractor={(item) => item.key}
       renderItem={({ item }) => <View style={{ marginTop: item.gap }}>{content(item)}</View>}
@@ -108,6 +118,7 @@ export function DashboardList({
       initialNumToRender={firstBatchSize(items)}
       contentInsetAdjustmentBehavior="automatic"
       automaticallyAdjustKeyboardInsets={keyboardInsets}
+      {...headerScroll}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'android' ? 'on-drag' : 'interactive'}
       contentContainerStyle={styles.content}

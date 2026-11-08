@@ -3,7 +3,7 @@ import { formatDeadline } from '@shared/lib/utils';
 import { useState, type Ref } from 'react';
 import { Platform, Pressable, StyleSheet, View, type HostInstance } from 'react-native';
 
-import { AppText, Button, FieldError, Icon } from '@/components/ui';
+import { AppText, Button, BUTTON_PADDING_X, FieldError, Icon } from '@/components/ui';
 import { Calendar } from '@/components/ui/icons';
 import { claim as copy } from '@/copy/claim';
 import { now } from '@/lib/clock';
@@ -176,5 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space[2],
+    // The ghost buttons' labels line up with the text above (Button bleed), at the start of every line.
+    marginStart: -BUTTON_PADDING_X,
   },
 });

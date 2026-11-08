@@ -132,9 +132,15 @@ export const auth = defineCopy({
     text: 'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.',
     source: 'src/app/signup/page.tsx',
   },
-  bulletFreeDuringBeta: {
-    text: 'Free during beta. We may introduce a fee later.',
+  /**
+   * Replaces the web's "Free during beta. We may introduce a fee later."
+   * (src/app/signup/page.tsx): App Review rejects beta wording in a store app
+   * (Guideline 2.2).
+   */
+  bulletFreeForNow: {
+    text: 'Free for now. We may introduce a fee later.',
     source: 'src/app/signup/page.tsx',
+    mobileOnly: true,
   },
   bulletOfficialFilingFree: {
     text: 'Official filing on the administrator’s site stays free.',

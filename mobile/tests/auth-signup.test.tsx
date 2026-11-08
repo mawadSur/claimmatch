@@ -144,7 +144,7 @@ describe('SignupScreen', () => {
   it('shows the beta bullets, or the fee-disclosure bullets when that flag is on, and links to log in', async () => {
     const user = userEvent.setup();
     await renderScreen(<SignupScreen />, { next: '/dashboard' });
-    expect(screen.getByText(auth.bulletFreeDuringBeta.text)).toBeOnTheScreen();
+    expect(screen.getByText(auth.bulletFreeForNow.text)).toBeOnTheScreen();
     expect(screen.queryByText(auth.bulletOfficialFilingFree.text)).toBeNull();
     await user.press(screen.getByRole('link', { name: common.logIn.text }));
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/login', params: { next: '/dashboard' } });
@@ -171,7 +171,7 @@ describe('SignupScreen', () => {
     mockFlags.on = ['FEE_DISCLOSURE_ENABLED'];
     await renderScreen(<SignupScreen />);
     expect(screen.getByText(auth.bulletOfficialFilingFree.text)).toBeOnTheScreen();
-    expect(screen.queryByText(auth.bulletFreeDuringBeta.text)).toBeNull();
+    expect(screen.queryByText(auth.bulletFreeForNow.text)).toBeNull();
   });
 
   it.each(['loading', 'unavailable'])(
@@ -180,7 +180,7 @@ describe('SignupScreen', () => {
       mockFlags.status = status;
       await renderScreen(<SignupScreen />);
       expect(screen.getByText(auth.bulletOfficialFilingFree.text)).toBeOnTheScreen();
-      expect(screen.queryByText(auth.bulletFreeDuringBeta.text)).toBeNull();
+      expect(screen.queryByText(auth.bulletFreeForNow.text)).toBeNull();
     },
   );
 });

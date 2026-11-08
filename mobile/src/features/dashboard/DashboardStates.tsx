@@ -11,9 +11,9 @@ import { radii, space } from '@/theme/tokens';
  */
 
 /** Pulsing placeholders for the greeting and three cards; read as "Loading your claims…". */
-export function DashboardSkeleton() {
+export function DashboardSkeleton({ restKey }: { restKey?: string }) {
   return (
-    <Screen testID="dashboard-loading">
+    <Screen restKey={restKey} testID="dashboard-loading">
       <View
         accessible
         accessibilityLabel={dashboard.loading.text}
@@ -54,12 +54,14 @@ export interface DashboardLoadErrorProps {
   pulling: boolean;
   onPull: () => void;
   onBrowse: () => void;
+  /** The auth status (Screen restKey). */
+  restKey?: string;
 }
 
 /** "We couldn’t load your claims", Try again and Browse settlements. Never an empty or guessed list. */
-export function DashboardLoadError({ error, retrying, onRetry, pulling, onPull, onBrowse }: DashboardLoadErrorProps) {
+export function DashboardLoadError({ error, retrying, onRetry, pulling, onPull, onBrowse, restKey }: DashboardLoadErrorProps) {
   return (
-    <Screen centered refreshing={pulling} onRefresh={onPull} testID="dashboard-error">
+    <Screen centered refreshing={pulling} onRefresh={onPull} restKey={restKey} testID="dashboard-error">
       <ErrorState
         title={dashboard.errorTitle.text}
         body={loadErrorBody(error)}

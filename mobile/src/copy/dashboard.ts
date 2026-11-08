@@ -31,9 +31,14 @@ export const dashboard = defineCopy({
     text: 'Official filing stays free.',
     source: 'src/app/dashboard/page.tsx',
   },
+  /**
+   * Replaces the web's "ClaimMatch is free during beta." (src/app/dashboard/page.tsx):
+   * App Review rejects beta wording in a store app (Guideline 2.2).
+   */
   introFeeOff: {
-    text: 'ClaimMatch is free during beta.',
+    text: 'ClaimMatch is free for now.',
     source: 'src/app/dashboard/page.tsx',
+    mobileOnly: true,
   },
   introTail: {
     text: 'It doesn’t file for you and never handles settlement payments.',

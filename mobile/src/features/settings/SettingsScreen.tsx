@@ -33,7 +33,7 @@ export function SettingsScreen() {
 
 function SignedInSettings() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { status, user, signOut } = useAuth();
   const profile = useProfile();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -45,7 +45,7 @@ function SignedInSettings() {
   }
 
   return (
-    <Screen testID="settings-signed-in">
+    <Screen restKey={status} testID="settings-signed-in">
       <View style={styles.intro}>
         <AppText variant="body" color="textMuted">
           {settings.intro.text}
@@ -89,8 +89,9 @@ function SignedInSettings() {
 
 function SignedOutSettings() {
   const router = useRouter();
+  const { status } = useAuth();
   return (
-    <Screen testID="settings-signed-out">
+    <Screen restKey={status} testID="settings-signed-out">
       <SettingsGroup>
         <ListItem icon={LogIn} title={common.logIn.text} onPress={() => router.push('/login')} testID="settings-log-in" />
         <ListItem

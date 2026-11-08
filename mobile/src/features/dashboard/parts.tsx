@@ -22,12 +22,15 @@ export function SectionTitle({
   description,
   action,
   actionPlacement,
+  actionBleed,
   testID,
 }: {
   title: string;
   description: string;
   action?: ReactNode;
   actionPlacement?: 'beside' | 'below';
+  /** The action is a ghost Button (SectionHeader actionBleed). */
+  actionBleed?: boolean;
   testID?: string;
 }) {
   return (
@@ -37,6 +40,7 @@ export function SectionTitle({
       descriptionColor="textMuted"
       action={action}
       actionPlacement={actionPlacement}
+      actionBleed={actionBleed}
       testID={testID}
     />
   );

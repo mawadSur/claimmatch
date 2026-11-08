@@ -44,6 +44,7 @@ export function CompactDisclaimer({ style, testID }: DisclaimerProps) {
         <Button
           label={shared.showAll.text}
           variant="ghost"
+          bleed="start"
           onPress={() => setExpanded(true)}
           accessibilityState={{ expanded: false }}
           style={styles.showAll}
@@ -92,6 +93,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     backgroundColor: colors.surface,
+    // "Show all" reaches past this padding (Button bleed): its pressed color stops at the box's edge.
+    overflow: 'hidden',
   },
   heading: {
     flexDirection: 'row',

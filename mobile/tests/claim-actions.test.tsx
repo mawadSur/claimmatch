@@ -43,6 +43,7 @@ jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () =
 jest.mock('expo-router/react-navigation', () => ({
   HeaderHeightContext: require('react').createContext(undefined),
   NavigationContext: require('react').createContext(undefined),
+  NavigationRouteContext: require('react').createContext(undefined),
 }));
 jest.mock('@/data/focus', () => ({ useRefetchOnFocus: jest.fn() }));
 jest.mock('@/data/dashboard', () => ({ refreshDashboardSoon: jest.fn() }));

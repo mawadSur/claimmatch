@@ -1,7 +1,7 @@
 import { filterCatalog } from '@shared/lib/catalog-page';
 import { categoriesOf, isSettleSignalRecord } from '@shared/lib/lawsuit-display';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, type ReactElement } from 'react';
+import { useCallback, useMemo, useRef, type ReactElement } from 'react';
 import { FlatList, Platform, RefreshControl, StyleSheet, View, type ListRenderItem } from 'react-native';
 
 import { AppText, Button, EmptyState, ErrorState, Notice, Screen } from '@/components/ui';
@@ -19,6 +19,7 @@ import {
   useNow,
   usePullToRefresh,
 } from '@/features/shared';
+import { useHeaderScroll } from '@/hooks/use-header-scroll';
 import { useKeyboardInsetsActive } from '@/hooks/use-keyboard-insets';
 import { useConfig } from '@/providers/ConfigProvider';
 import { colors, layout, radii, space } from '@/theme/tokens';
@@ -58,6 +59,10 @@ export function CatalogScreen() {
   const { refreshing, onRefresh } = usePullToRefresh(refetch);
   // The search field: only while this tab is focused, so another screen's keyboard leaves the list alone.
   const keyboardInsets = useKeyboardInsetsActive(true);
+  const listRef = useRef<FlatList<CatalogLawsuit>>(null);
+  const headerScroll = useHeaderScroll({
+    scrollTo: (y, animated) => listRef.current?.scrollToOffset({ offset: y, animated }),
+  });
   const filters = useCatalogFilters();
   const { q, category, hasDeadline, proofNotRequired } = filters;
 
@@ -159,6 +164,7 @@ export function CatalogScreen() {
   return (
     <Screen scroll={false} testID="catalog-screen">
       <FlatList
+        ref={listRef}
         data={rows}
         keyExtractor={keyOf}
         renderItem={renderItem}
@@ -171,6 +177,7 @@ export function CatalogScreen() {
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets={keyboardInsets}
+        {...headerScroll}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'android' ? 'on-drag' : 'interactive'}
         initialNumToRender={5}

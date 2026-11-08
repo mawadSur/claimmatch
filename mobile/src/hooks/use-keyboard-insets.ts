@@ -54,10 +54,12 @@ export function useScreenFocused(): boolean {
  * focused has closed (so that keyboard's bottom inset is removed again).
  *
  * iOS runs that native handler in every mounted scroll view that has the prop,
- * whichever screen opened the keyboard. It also scrolls such a scroll view to
- * y 0, which for one resting under a large title or a see-through header
- * means scrolled under it with the title collapsed. So screens without fields
- * never set the prop, and hidden screens drop it.
+ * whichever screen opened the keyboard. So screens without fields never set
+ * the prop, and hidden screens drop it.
+ *
+ * The handler also scrolls the view, even when the field is already in view,
+ * which would move a view resting under a large title or a see-through header
+ * under it: such a scroll view also takes useHeaderScroll's props.
  */
 export function useKeyboardInsetsActive(enabled: boolean): boolean {
   const focused = useScreenFocused();

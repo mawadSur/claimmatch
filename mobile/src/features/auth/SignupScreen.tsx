@@ -50,7 +50,7 @@ export function SignupScreen() {
   const passwordRef = useRef<TextInputInstance>(null);
 
   const bullets = [
-    showsFeeDisclosure(config) ? auth.bulletOfficialFilingFree.text : auth.bulletFreeDuringBeta.text,
+    showsFeeDisclosure(config) ? auth.bulletOfficialFilingFree.text : auth.bulletFreeForNow.text,
     auth.bulletBrowse.text,
     auth.bulletKeepTrack.text,
   ];

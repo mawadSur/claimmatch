@@ -16,7 +16,6 @@ export interface DetailsValues {
   city: string;
   /** "Save this address on my profile for future claims." */
   addressConsent: boolean;
-  emailOptIn: boolean;
   metricsConsent: boolean;
   answers: AttributeAnswers;
 }
@@ -74,7 +73,9 @@ export function firstDetailsError(errors: DetailsErrors): string | null {
 
 /**
  * The POST /api/settings body for the form (the web's NotificationPrefs
- * fields plus the copy-ready address). The address is sent once consent
+ * fields plus the copy-ready address). It never sends email_opt_in: the app
+ * hides that switch while those emails are paused, so the choice saved on
+ * the web stays as it is (see DetailsForm). The address is sent once consent
  * exists, or is given now with an address; a first consent is stamped with
  * `consentAt`. The matching answers are sent only when they differ from
  * `savedAnswers` (the ones on file): the server replaces every stored answer
@@ -91,7 +92,6 @@ export function detailsBody(
     full_name: values.fullName,
     state: values.state,
     phone: values.phone,
-    email_opt_in: values.emailOptIn,
     match_metrics_consent: values.metricsConsent,
   };
   if (!sameAnswers(values.answers, savedAnswers)) body.attributes = values.answers;
