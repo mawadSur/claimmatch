@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { LEGAL_DISCLAIMER, SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { clientFlagValues } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { MOBILE_API_VERSION, type ClientConfig } from '@/lib/mobile-contract';
@@ -20,8 +20,8 @@ function minBuild(value: string | undefined): number {
 /**
  * GET /api/mobile/config: what the native app reads before anything else.
  * Flags are server env vars and read as off on a device, so the app takes the
- * allow-listed ones from here, with the server clock and the legal text. No
- * sign-in.
+ * allow-listed ones from here, with the server clock and the legal text (the
+ * app's wording of the website's disclaimers). No sign-in.
  */
 export async function GET() {
   const now = new Date();
@@ -30,7 +30,7 @@ export async function GET() {
     serverTime: now.toISOString(),
     todayDeadlineZone: todayInDeadlineZone(now),
     flags: clientFlagValues(),
-    legal: { disclaimer: LEGAL_DISCLAIMER, short: SHORT_DISCLAIMER, contactEmail: legalContact().email },
+    legal: { disclaimer: APP_LEGAL_DISCLAIMER, short: APP_SHORT_DISCLAIMER, contactEmail: legalContact().email },
     minBuild: {
       ios: minBuild(process.env.MOBILE_MIN_BUILD_IOS),
       android: minBuild(process.env.MOBILE_MIN_BUILD_ANDROID),

@@ -109,8 +109,8 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
             placeholder="(555) 123-4567"
           />
           <p id="phone-hint" className="mt-1.5 text-xs text-ink-muted">
-            We’ll only use this to help you fill in claim forms, once that feature is
-            ready. We don’t send text messages.
+            We’ll only use this to help you fill in claim forms. We don’t send text
+            messages.
           </p>
         </div>
       </div>

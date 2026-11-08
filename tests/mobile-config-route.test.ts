@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { GET } from '@/app/api/mobile/config/route';
-import { LEGAL_DISCLAIMER, SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER, LEGAL_DISCLAIMER, SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { CLIENT_FLAG_NAMES } from '@/lib/flags';
 import { MOBILE_API_VERSION, type ClientConfig } from '@/lib/mobile-contract';
 
@@ -48,11 +48,11 @@ describe('GET /api/mobile/config', () => {
     expect(JSON.stringify(on)).not.toMatch(/MATCH_EMAILS|DIRECT_FILING/);
   });
 
-  it('serves the legal text the web shows and the contact inbox', async () => {
+  it('serves the app wording of the legal text and the contact inbox', async () => {
     vi.stubEnv('NEXT_PUBLIC_CONTACT_EMAIL', 'privacy@lawsuitai.org');
     expect((await config()).body.legal).toEqual({
-      disclaimer: LEGAL_DISCLAIMER,
-      short: SHORT_DISCLAIMER,
+      disclaimer: APP_LEGAL_DISCLAIMER,
+      short: APP_SHORT_DISCLAIMER,
       contactEmail: 'privacy@lawsuitai.org',
     });
     vi.stubEnv('NEXT_PUBLIC_CONTACT_EMAIL', '{CONTACT_EMAIL}');
@@ -90,5 +90,26 @@ describe('GET /api/mobile/config', () => {
       vi.stubEnv('MOBILE_MIN_BUILD_IOS', bad);
       expect((await config()).body.minBuild.ios, bad).toBe(0);
     }
+  });
+});
+
+describe('the app wording of the disclaimers', () => {
+  it('is the website text with only "this website" and "this site" changed', () => {
+    expect(APP_LEGAL_DISCLAIMER).toBe(
+      LEGAL_DISCLAIMER.replace('The information on this website', 'The information on ClaimMatch').replace(
+        'Using this website or contacting us',
+        'Using this app or contacting us',
+      ),
+    );
+    expect(APP_SHORT_DISCLAIMER).toBe(SHORT_DISCLAIMER.replace('Using this site', 'Using this app'));
+  });
+
+  it('never calls the app a website or a site, while the website keeps its own text', () => {
+    for (const text of [APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER]) {
+      expect(text).not.toMatch(/\bthis (web)?site\b/i);
+    }
+    expect(LEGAL_DISCLAIMER).toContain('The information on this website is general information');
+    expect(LEGAL_DISCLAIMER).toContain('Using this website or contacting us');
+    expect(SHORT_DISCLAIMER).toContain('Using this site does not create');
   });
 });

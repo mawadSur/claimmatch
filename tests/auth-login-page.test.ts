@@ -21,6 +21,18 @@ describe('login page', () => {
     expect(html).not.toContain('Welcome back');
   });
 
+  it('asks "New to ClaimMatch?" once, from a claim and otherwise', async () => {
+    const fromClaim = await render('/claim/real-settlement');
+    expect(fromClaim.match(/New to ClaimMatch\?/g)).toHaveLength(1);
+    expect(fromClaim).toContain('Create a free account');
+    expect(fromClaim).not.toContain('Create an account');
+
+    const plain = await render();
+    expect(plain.match(/New to ClaimMatch\?/g)).toHaveLength(1);
+    expect(plain).toContain('Create an account');
+    expect(plain).not.toContain('Create a free account');
+  });
+
   it('stays "Welcome back" otherwise, and never builds a sign-up link from an unsafe next', async () => {
     expect(await render()).toContain('Welcome back');
     expect(await render('/dashboard')).toContain('Welcome back');

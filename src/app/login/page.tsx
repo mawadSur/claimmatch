@@ -41,7 +41,8 @@ export default async function LoginPage({
 
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
-              <AuthForm mode="login" />
+              {/* From a claim, "New to ClaimMatch?" comes once, with the button below. */}
+              <AuthForm mode="login" switchPrompt={!fromClaim} />
             </Suspense>
           </div>
 
