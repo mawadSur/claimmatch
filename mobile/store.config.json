@@ -1,0 +1,62 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2026 ClaimMatch",
+    "categories": ["FINANCE", "UTILITIES"],
+    "info": {
+      "en-US": {
+        "title": "ClaimMatch",
+        "subtitle": "Open class-action settlements",
+        "promoText": "Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims.",
+        "description": "Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims.\n\nCompanies settle class-action lawsuits over things like data breaches, hidden fees, faulty products and privacy problems. People who were affected can often file a claim. But many never hear about it in time, or aren’t sure the settlement is real.\n\nFIND AN OPEN SETTLEMENT\nBrowse settlements that are taking claims right now. Every listing shows the payout and the deadline as the source states them.\n\nCHECK WHO QUALIFIES\nEach settlement page sums up who qualifies, the payout, the deadline and whether you need proof, then links to the official notice so you can confirm it yourself.\n\nFILE ON THE OFFICIAL SITE\nOpen the official claim form and copy in the details you saved, like your name, address and email. Filing there is always free, and you send it yourself.\n\nKEEP TRACK OF EVERY CLAIM\nTell us when you have filed and save the confirmation number the official site gives you. Your claims and deadlines stay in one list.\n• Confirmation numbers in one place\n• Claims grouped by what to do next\n\nDEADLINE REMINDERS\nA reminder on this device 7 days and 1 day before each deadline, for claims you haven’t told us you filed.\n\nTHE FACTS\n• You file every claim yourself on the official settlement website. ClaimMatch never files or submits a claim for anyone.\n• If your claim is paid, the settlement administrator pays you directly. We never handle settlement payments.\n• Our listings come from SettleSignal, a public data source. We haven’t checked each one yet, so we label them “Unverified” and point you to the official site.\n• We don’t give legal advice and can’t tell you whether you qualify. The official notice decides who qualifies.\n• We use your information to run your account and keep track of your claims. We don’t sell it.\n\nClaimMatch is not a law firm, gives no legal advice, never files claims for you and never handles settlement money. The official settlement notice and website are the final word on deadlines, who qualifies and payments, so check them before you act.",
+        "keywords": [
+          "class action",
+          "lawsuit",
+          "claim",
+          "settlement",
+          "deadline",
+          "data breach",
+          "payout",
+          "notice",
+          "consumer",
+          "hidden fees"
+        ],
+        "marketingUrl": "https://lawsuitai.org",
+        "supportUrl": "https://lawsuitai.org/trust",
+        "privacyPolicyUrl": "https://lawsuitai.org/privacy"
+      }
+    },
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "INFREQUENT_OR_MILD",
+      "contests": "NONE",
+      "gamblingSimulated": "NONE",
+      "gunsOrOtherWeapons": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "gambling": false,
+      "lootBox": false,
+      "unrestrictedWebAccess": false,
+      "userGeneratedContent": false,
+      "messagingAndChat": false,
+      "advertising": false,
+      "ageAssurance": false,
+      "parentalControls": false,
+      "healthOrWellnessTopics": false,
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "ageRatingOverrideV2": "NONE",
+      "koreaAgeRatingOverride": "NONE"
+    },
+    "review": {
+      "demoRequired": true,
+      "notes": "ClaimMatch lists open class-action settlements and helps people keep track of the claims they file themselves on each settlement’s official website. ClaimMatch is not a law firm, gives no legal advice, never files claims for you and never handles settlement money. The app has no in-app purchases, subscriptions or ads.\n\nSign-in: a demo account is provided in the Sign-In Information of App Review Information in App Store Connect. Settlements can be browsed without an account. To review everything else, open the Settings tab, tap Log in and use the demo account.\n\nWhat to look at:\n1. Settlements tab: settlements open for claims, soonest deadline first. Tap a settlement to see who qualifies, the payout and the deadline as the listing states them, and the link to the official notice.\n2. Start your claim (on a settlement): the steps to file on the official site, the profile details ready to copy into the official form, and a place to save the confirmation number. The official site opens in an in-app Safari view; the app sends nothing to the settlement administrator.\n3. Your claims tab: the demo account’s claims, grouped by what to do next.\n4. Settings: profile details, optional deadline reminders (local notifications only; the app asks for notification permission only when reminders are turned on), links to the Privacy Policy and Terms, and account deletion (Settings > Delete my account and data).\n\nListings come from SettleSignal, a public settlement data source shared under the CC BY 4.0 license, and are labeled “Unverified” until checked.\n\nContact: hello@lawsuitai.org"
+    }
+  }
+}
