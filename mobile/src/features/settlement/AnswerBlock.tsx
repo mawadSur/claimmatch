@@ -6,7 +6,7 @@ import { AppText, Button, Card, ExternalLinkButton } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
 import { fillCopy } from '@/copy/shared';
 import { settlement } from '@/copy/settlement';
-import { ExternalTextLink } from '@/features/shared';
+import { ExternalTextLink, hostLabels } from '@/features/shared';
 import { colors, radii, space } from '@/theme/tokens';
 
 import { Fact } from './Fact';
@@ -55,7 +55,11 @@ export function AnswerBlock({ facts, open, official, onCheckIfYouQualify, testID
             fullWidth
           />
           {official?.kind === 'official' ? (
-            <ExternalLinkButton url={official.href} label={`${settlement.officialClaimSite.text} (${official.host})`} fullWidth />
+            <ExternalLinkButton
+              url={official.href}
+              {...hostLabels(official.host, (host) => `${settlement.officialClaimSite.text} (${host})`)}
+              fullWidth
+            />
           ) : null}
         </View>
       ) : null}
@@ -75,7 +79,10 @@ function MissingDetails({ missing, official }: { missing: string[]; official: Ca
         {`${fillCopy(settlement.missingDetails.text, { list: missing.join(', ') })}.`}
       </AppText>
       {official ? (
-        <ExternalTextLink url={official.href} label={official.kind === 'official' ? official.host : official.label} />
+        <ExternalTextLink
+          url={official.href}
+          {...(official.kind === 'official' ? hostLabels(official.host) : { label: official.label })}
+        />
       ) : null}
     </View>
   );

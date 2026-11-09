@@ -1,5 +1,5 @@
-import { useEffect, useState, type RefObject } from 'react';
-import { Keyboard, LayoutAnimation, Platform, type HostInstance, type KeyboardEvent } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Dimensions, Keyboard, LayoutAnimation, Platform, type KeyboardEvent } from 'react-native';
 
 import { useReducedMotion } from './use-reduced-motion';
 
@@ -7,8 +7,8 @@ export interface KeyboardOverlap {
   /** True while the software keyboard is shown. */
   visible: boolean;
   /**
-   * How far the keyboard covers the target view from below, in points. iOS
-   * only: Android resizes the window for the keyboard (Expo's default
+   * How far the keyboard reaches above the bottom of the window, in points.
+   * iOS only: Android resizes the window for the keyboard (Expo's default
    * softwareKeyboardLayoutMode "resize"), so this stays 0 there.
    */
   height: number;
@@ -16,19 +16,25 @@ export interface KeyboardOverlap {
 
 const HIDDEN: KeyboardOverlap = { visible: false, height: 0 };
 
-/** How far a view (frame in window coordinates) reaches below the keyboard's top edge, never negative. */
-export function overlapWithKeyboard(frame: { y: number; height: number }, keyboardTop: number): number {
-  return Math.max(0, Math.round(frame.y + frame.height - keyboardTop));
+/**
+ * How far the keyboard covers a view whose bottom edge is `viewBottom` points
+ * from the top of the screen, never negative. Both are in screen coordinates,
+ * as the keyboard events report the keyboard's top edge.
+ */
+export function overlapWithKeyboard(viewBottom: number, keyboardTop: number): number {
+  return Math.max(0, Math.round(viewBottom - keyboardTop));
 }
 
 /**
- * Tracks the software keyboard against `target`. The view is measured in
- * window coordinates, so the result is right under a native header and in a
- * sheet modal alike (RN's KeyboardAvoidingView measures against its parent
- * instead). Changes follow the keyboard's own animation, or jump when the user
- * asked to reduce motion.
+ * Tracks the software keyboard for a view that reaches the bottom of the
+ * window: a screen outside the tab bar, pushed or in a sheet modal. The view
+ * is not measured, because inside a sheet measureInWindow counts from the
+ * sheet's top, not the screen's: a footer was lifted short by the sheet's
+ * offset (62 pt on an iPhone 17) and stayed behind the keyboard. Changes
+ * follow the keyboard's own animation, or jump when the user asked to reduce
+ * motion.
  */
-export function useKeyboardOverlap(target: RefObject<HostInstance | null>, enabled: boolean): KeyboardOverlap {
+export function useKeyboardOverlap(enabled: boolean): KeyboardOverlap {
   const reduceMotion = useReducedMotion();
   const [state, setState] = useState<KeyboardOverlap>(HIDDEN);
 
@@ -45,12 +51,9 @@ export function useKeyboardOverlap(target: RefObject<HostInstance | null>, enabl
     };
 
     const show = (event: KeyboardEvent) => {
-      setState((current) => (current.visible ? current : { visible: true, height: current.height }));
-      if (!ios) return;
-      target.current?.measureInWindow((_x, y, _width, height) => {
-        followKeyboard(event);
-        setState({ visible: true, height: overlapWithKeyboard({ y, height }, event.endCoordinates.screenY) });
-      });
+      const height = ios ? overlapWithKeyboard(Dimensions.get('window').height, event.endCoordinates.screenY) : 0;
+      followKeyboard(event);
+      setState({ visible: true, height });
     };
 
     const hide = (event: KeyboardEvent) => {
@@ -63,7 +66,7 @@ export function useKeyboardOverlap(target: RefObject<HostInstance | null>, enabl
       Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', hide),
     ];
     return () => subscriptions.forEach((subscription) => subscription.remove());
-  }, [enabled, reduceMotion, target]);
+  }, [enabled, reduceMotion]);
 
   return enabled ? state : HIDDEN;
 }

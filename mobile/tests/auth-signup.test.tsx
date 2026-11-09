@@ -1,10 +1,11 @@
-import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { validateSignupFields } from '@shared/lib/signup-validation';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
 import { common } from '@/copy/common';
 import { CheckEmailScreen, checkEmailHref } from '@/features/auth/CheckEmailScreen';
-import { SignupScreen } from '@/features/auth/SignupScreen';
+import { signupFieldErrors, SignupScreen } from '@/features/auth/SignupScreen';
 import { openExternalUrl } from '@/lib/external-link';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), dismissTo: jest.fn(), back: jest.fn() };
@@ -72,6 +73,38 @@ describe('SignupScreen', () => {
     await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
     expect(screen.getByText(passwordTooShortText(10))).toBeOnTheScreen();
     expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('says what the website says for a malformed email and an empty password', async () => {
+    const user = userEvent.setup();
+    await renderScreen(<SignupScreen />);
+    await user.type(screen.getByLabelText(auth.fullNameLabel.text), 'Ana Díaz');
+    await user.type(screen.getByLabelText(auth.emailLabel.text), 'ana@example');
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+
+    expect(screen.getByText('Enter a valid email address.')).toBeOnTheScreen();
+    expect(screen.getByText('Enter a password.')).toBeOnTheScreen();
+    expect(screen.queryByText(auth.enterYourEmail.text)).toBeNull();
+    expect(screen.queryByText(passwordTooShortText(10))).toBeNull();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('picks the same message as the website’s validateSignupFields for every email and password', () => {
+    const emails = ['', '   ', 'ana', 'ana@', '@example.com', 'ana@example', 'ana@example.', 'ana@example.com', ' ana@example.com ', 'ana@@example.com', 'a@b@example.com', 'ana maria@example.com'];
+    const passwords = ['', ' ', 'short', '123456789', '1234567890', '          ', 'long enough pw'];
+    for (const email of emails) {
+      for (const password of passwords) {
+        const web = validateSignupFields({ fullName: 'Ana Díaz', email, password });
+        const app = signupFieldErrors({ email, password });
+        // The inputs ride along, so a failure names them.
+        expect({ email, password, emailError: app.email, passwordError: app.password }).toEqual({
+          email,
+          password,
+          emailError: web.email ?? null,
+          passwordError: web.password ?? null,
+        });
+      }
+    }
   });
 
   it('sets up the fields for the keyboard, AutoFill and a new password', async () => {
@@ -164,6 +197,26 @@ describe('SignupScreen', () => {
     }
     await act(async () => answer({ data: { user: null, session: null }, error: { message: 'User already registered', status: 422 } }));
     expect(await screen.findByTestId('signup-error')).toBeOnTheScreen();
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends one sign-up when the keyboard submits again while the first is still running', async () => {
+    const user = userEvent.setup();
+    let answer: (value: unknown) => void = () => undefined;
+    mockSignUp.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderScreen(<SignupScreen />);
+    await fillForm(user);
+    await fireEvent(screen.getByLabelText(auth.passwordLabel.text), 'submitEditing');
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: auth.creatingAccount.text })).toBeDisabled();
+
+    // "Go" again on the password field, then the button: neither sends a second request.
+    await fireEvent(screen.getByLabelText(auth.passwordLabel.text), 'submitEditing');
+    await user.press(screen.getByRole('button', { name: auth.creatingAccount.text }));
+    expect(mockSignUp).toHaveBeenCalledTimes(1);
+
+    await act(async () => answer({ data: { user: { id: 'user-2' }, session: null }, error: null }));
+    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledTimes(1));
     expect(mockSignUp).toHaveBeenCalledTimes(1);
   });
 

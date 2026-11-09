@@ -216,9 +216,18 @@ export const auth = defineCopy({
   },
 
   // On-device checks ---------------------------------------------------------
-  /** AuthForm's signup check for an empty email (validateSignupFields); the app shows it for a malformed one too. */
+  /** AuthForm's signup checks (validateSignupFields): an empty email, then one that is not shaped like an address. */
   enterYourEmail: {
     text: 'Enter your email address.',
+    source: 'src/lib/signup-validation.ts',
+  },
+  enterValidEmail: {
+    text: 'Enter a valid email address.',
+    source: 'src/lib/signup-validation.ts',
+  },
+  /** validateSignupFields for an empty password; a short one gets passwordTooShortText. */
+  enterAPassword: {
+    text: 'Enter a password.',
     source: 'src/lib/signup-validation.ts',
   },
   /** No web text: the web login form sends an empty password to Supabase. */

@@ -1,15 +1,53 @@
 import { NavigationRouteContext } from 'expo-router/react-navigation';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { Keyboard, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Keyboard, PixelRatio, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
-/** Where a tab root's scroll view rests with its large title open, and the restKey it was shown with. */
-interface RouteRest {
-  offset: number;
+/** What a tab root's route knows about its scroll views. */
+interface RouteRecord {
+  /**
+   * Where its scroll view rests with the large title open, by the font scale
+   * that was measured at. Kept per text size: a single Math.min across sizes
+   * kept the rest of a larger size, which then moved views past their rest
+   * once the text was smaller again.
+   */
+  rests: Map<number, number>;
+  /** The font scale of the rest measured last. */
+  lastFontScale: number | null;
+  /**
+   * A rest measured at one text size was further down than at another: the
+   * large title grows with the text. Until that is seen, a rest measured at
+   * another size is used, as the app's headers keep their font size at every
+   * text size (theme/navigation.ts), so their rest does not change.
+   */
+  followsTextSize: boolean;
+  /** The latest restKey a mounted view on the route was shown with. */
   key: string;
+  /** The key changed since a view on the route was last placed. */
+  keyChanged: boolean;
 }
 
 /** Per navigation route key; only screens that pass a restKey (the tab roots) are kept. */
-const restByRoute = new Map<string, RouteRest>();
+const routes = new Map<string, RouteRecord>();
+
+/**
+ * Records `key` as the latest restKey of `route`, noting a change. A view
+ * calls it when it mounts or its key changes, placed or not: a tab root
+ * replaced while its tab is off screen never scrolls, so placing it would
+ * miss the change.
+ */
+function noteRestKey(route: string, key: string): RouteRecord {
+  const record = routes.get(route);
+  if (!record) {
+    const fresh: RouteRecord = { rests: new Map(), lastFontScale: null, followsTextSize: false, key, keyChanged: false };
+    routes.set(route, fresh);
+    return fresh;
+  }
+  if (record.key !== key) {
+    record.key = key;
+    record.keyChanged = true;
+  }
+  return record;
+}
 
 /** How long after moving a view to its rest a further shift by iOS is still undone. */
 const SETTLE_MS = 1000;
@@ -49,12 +87,20 @@ export interface HeaderScrollProps {
  *
  * - Signing in or out. A tab root then shows a new scroll view, and iOS rests
  *   it under the small title when the large title had collapsed (the old
- *   content was scrolled). With `restKey` set, the first scroll view on the
- *   route records where it rests (its first offset, the large title open);
- *   a scroll view that first appears after the key changed is moved there.
- *   Opening the large title makes iOS shift the offset once more, so a shift
- *   past the rest right after the move is undone, unless the person is
- *   dragging.
+ *   content was scrolled). With `restKey` set, the route keeps the latest key
+ *   its mounted views were shown with, and the first scroll view on the route
+ *   records where it rests (its first offset, the large title open). A scroll
+ *   view that first appears after the key changed is moved there, also when
+ *   the views in between never appeared (their tab was off screen). Opening
+ *   the large title makes iOS shift the offset once more, so a shift past the
+ *   rest right after the move is undone, unless the person is dragging.
+ *
+ * - The text size. The rest is kept per font scale. At a size with no rest
+ *   yet, a view placed with the title open records it there; a view under the
+ *   small title is moved to the rest of the last size measured, unless the
+ *   rest has been seen to change with the text size: then nothing is known
+ *   about the rest at this size, and the view stays where iOS put it rather
+ *   than ending up past its rest.
  */
 export function useHeaderScroll({ scrollTo, restKey }: HeaderScrollOptions): HeaderScrollProps {
   const routeKey = useContext(NavigationRouteContext)?.key;
@@ -68,6 +114,10 @@ export function useHeaderScroll({ scrollTo, restKey }: HeaderScrollOptions): Hea
   useEffect(() => {
     latest.current = { scrollTo, restKey, routeKey };
   });
+
+  useEffect(() => {
+    if (routeKey !== undefined && restKey !== undefined) noteRestKey(routeKey, restKey);
+  }, [routeKey, restKey]);
 
   function updateOverflow() {
     const { y, contentHeight, height } = view.current;
@@ -101,19 +151,34 @@ export function useHeaderScroll({ scrollTo, restKey }: HeaderScrollOptions): Hea
   function place(y: number) {
     const { routeKey: route, restKey: key, scrollTo: scroll } = latest.current;
     if (route === undefined || key === undefined) return;
-    const rest = restByRoute.get(route);
-    if (!rest) {
-      restByRoute.set(route, { offset: y, key });
+    const record = noteRestKey(route, key);
+    const keyChanged = record.keyChanged;
+    record.keyChanged = false;
+    const fontScale = PixelRatio.getFontScale();
+    const measured = record.rests.get(fontScale);
+    const rest = measured ?? (record.lastFontScale === null ? undefined : record.rests.get(record.lastFontScale));
+    const measure = (offset: number) => {
+      record.rests.set(fontScale, offset);
+      record.lastFontScale = fontScale;
+    };
+    if (rest === undefined) {
+      measure(y);
       return;
     }
-    const keyChanged = rest.key !== key;
-    rest.key = key;
-    if (keyChanged && y > rest.offset + 0.5) {
-      settling.current = { target: rest.offset, until: Date.now() + SETTLE_MS };
-      scroll(rest.offset, false);
+    if (measured === undefined && y < rest - 0.5) {
+      // Further down than the rest at another text size: the large title grew with the text.
+      record.followsTextSize = true;
+      measure(y);
       return;
     }
-    rest.offset = Math.min(rest.offset, y);
+    if (keyChanged && y > rest + 0.5) {
+      if (measured === undefined && record.followsTextSize) return;
+      settling.current = { target: rest, until: Date.now() + SETTLE_MS };
+      scroll(rest, false);
+      return;
+    }
+    // Higher than a rest from another size tells nothing: the small title, or a large title that shrank.
+    if (measured !== undefined || y <= rest + 0.5) measure(Math.min(rest, y));
   }
 
   function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {

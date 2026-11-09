@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  type HostInstance,
   type ScrollViewInstance,
   type StyleProp,
   type ViewStyle,
@@ -88,14 +87,14 @@ export function Screen({
   const insets = useSafeAreaInsets();
   const insideTabBar = useInsideTabBar();
   const android = Platform.OS === 'android';
-  const rootRef = useRef<HostInstance>(null);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const headerScroll = useHeaderScroll({
     scrollTo: (y, animated) => scrollRef.current?.scrollTo({ y, animated }),
     restKey,
   });
   // Only a footer needs this: without one, a scroll view with text fields insets itself for the keyboard.
-  const keyboard = useKeyboardOverlap(rootRef, Boolean(footer));
+  // A screen with a footer is outside the tab bar, so it reaches the bottom of the window, also in a sheet.
+  const keyboard = useKeyboardOverlap(Boolean(footer));
   // With a footer the whole screen already sits above the keyboard; insetting again would leave a gap.
   const keyboardInsets = useKeyboardInsetsActive(hasTextFields && !footer);
   const bottomSafeArea = insideTabBar || keyboard.visible ? 0 : insets.bottom;
@@ -109,7 +108,6 @@ export function Screen({
 
   return (
     <View
-      ref={rootRef}
       style={[styles.root, keyboard.height > 0 ? { paddingBottom: keyboard.height } : null]}
       collapsable={false}
       testID={testID}

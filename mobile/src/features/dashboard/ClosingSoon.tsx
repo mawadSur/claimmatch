@@ -7,7 +7,7 @@ import { dashboard } from '@/copy/dashboard';
 import { fillCopy, shared } from '@/copy/shared';
 import { claimHref, isClaimHref, UnverifiedBadge } from '@/features/shared';
 import { toSafeWebUrl } from '@/lib/external-link';
-import { space } from '@/theme/tokens';
+import { space, type SpaceToken } from '@/theme/tokens';
 
 import { DashedCard, SectionError, SectionTitle } from './parts';
 import type { ClosingSoonItem, DashboardResponse } from './types';
@@ -61,11 +61,18 @@ export function ClosingSoon({ closingSoon, nav }: { closingSoon: DashboardRespon
   );
 }
 
+/**
+ * The card's padding, 16 pt. "Official site" bleeds by it rather than by its
+ * own 20 pt side padding, so its pressed color and focus frame stop at the
+ * card's edge instead of sticking out past it.
+ */
+const CARD_PADDING: SpaceToken = 4;
+
 function ClosingSoonCard({ item, onOpen }: { item: ClosingSoonItem; onOpen: (href: unknown) => void }) {
   const href = claimHref(item.slug);
   const officialUrl = toSafeWebUrl(item.officialUrl);
   return (
-    <Card padding={4} style={styles.card} testID={`closing-soon-${item.id}`}>
+    <Card padding={CARD_PADDING} style={styles.card} testID={`closing-soon-${item.id}`}>
       <AppText variant="bodyStrong">{item.title}</AppText>
       <DeadlineLine text={item.deadlineText} />
       <UnverifiedBadge />
@@ -75,6 +82,8 @@ function ClosingSoonCard({ item, onOpen }: { item: ClosingSoonItem; onOpen: (hre
             url={officialUrl}
             label={dashboard.officialSite.text}
             variant="ghost"
+            bleed="start"
+            bleedBy={space[CARD_PADDING]}
             accessibilityLabel={fillCopy(shared.linkForTitle.text, { label: dashboard.officialSite.text, title: item.title })}
           />
         ) : null}

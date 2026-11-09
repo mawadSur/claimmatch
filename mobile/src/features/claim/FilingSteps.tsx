@@ -8,7 +8,7 @@ import { AppText, Button, Card, Notice, TextLink } from '@/components/ui';
 import { ExternalLink } from '@/components/ui/icons';
 import { claim as copy, listingSourceSentence, stepHeadingLabel } from '@/copy/claim';
 import { common } from '@/copy/common';
-import { ExternalTextLink, UnverifiedBadge } from '@/features/shared';
+import { ExternalTextLink, hostLabels, UnverifiedBadge } from '@/features/shared';
 import { toSafeWebUrl } from '@/lib/external-link';
 import { colors, radii, space } from '@/theme/tokens';
 
@@ -80,7 +80,10 @@ function NoOfficialLink({ settlement }: { settlement: ClaimFlowSettlement }) {
     <View style={styles.tight}>
       <Muted>{[copy.noOfficialSite.text, middle, copy.onlyFileNamed.text].join(' ')}</Muted>
       {settlement.sourceUrl ? (
-        <ExternalTextLink url={settlement.sourceUrl} label={settlement.sourceHost ?? copy.thisSource.text} />
+        <ExternalTextLink
+          url={settlement.sourceUrl}
+          {...(settlement.sourceHost ? hostLabels(settlement.sourceHost) : { label: copy.thisSource.text })}
+        />
       ) : null}
     </View>
   );

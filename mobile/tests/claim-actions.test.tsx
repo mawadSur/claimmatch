@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { AccessibilityInfo, ScrollView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { BUTTON_PADDING_X } from '@/components/ui';
 import { claim as copy, undoWarning, undoneMessage } from '@/copy/claim';
 import { common } from '@/copy/common';
 import { ClaimScreen } from '@/features/claim';
@@ -371,6 +372,15 @@ describe('a reported claim', () => {
     ).toBeOnTheScreen();
   });
 
+  it('lines "Undo: I haven’t filed yet" up with the text above it, keeping its 48 pt target', async () => {
+    await show(flow({ claim: claimView({ status: 'reported_filed' }) }));
+    expect(screen.getByRole('button', { name: copy.undoButton.text })).toHaveStyle({
+      marginStart: -BUTTON_PADDING_X,
+      paddingHorizontal: BUTTON_PADDING_X,
+      minHeight: 48,
+    });
+  });
+
   it('offers no undo once the late window has closed', async () => {
     await show(flow({ ...LATE, context: { ...LATE.context, lateReportOpen: false }, claim: claimView({ status: 'reported_filed' }) }));
     expect(screen.getByRole('button', { name: copy.addNumber.text })).toBeOnTheScreen();
@@ -379,6 +389,15 @@ describe('a reported claim', () => {
 });
 
 describe('a submitted claim', () => {
+  it('lines "Correct the number" up with the text above it, keeping its 48 pt target', async () => {
+    await show(flow({ claim: claimView({ status: 'submitted', confirmation_number: 'ABC123' }) }));
+    expect(screen.getByRole('button', { name: copy.correctNumber.text })).toHaveStyle({
+      marginStart: -BUTTON_PADDING_X,
+      paddingHorizontal: BUTTON_PADDING_X,
+      minHeight: 48,
+    });
+  });
+
   it('corrects the confirmation number', async () => {
     const user = userEvent.setup();
     await show(flow({ claim: claimView({ status: 'submitted', confirmation_number: 'ABC123' }) }));

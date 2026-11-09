@@ -1,4 +1,4 @@
-import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
@@ -182,6 +182,29 @@ describe('ResetPasswordScreen (/reset-password)', () => {
     expect(screen.getByLabelText(auth.confirmPasswordLabel.text)).toHaveProp('editable', true);
     await act(async () => answer({ data: {}, error: { message: 'session missing' } }));
     expect(await screen.findByText(auth.updatePasswordFailed.text)).toBeOnTheScreen();
+  });
+
+  it('saves once when the keyboard submits again while the first save is still running', async () => {
+    const user = userEvent.setup();
+    let answer: (value: unknown) => void = () => undefined;
+    mockSupabaseAuth.updateUser.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    await renderScreen(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText(auth.newPasswordLabel.text), 'a long new password');
+    await user.type(screen.getByLabelText(auth.confirmPasswordLabel.text), 'a long new password');
+    await fireEvent(screen.getByLabelText(auth.confirmPasswordLabel.text), 'submitEditing');
+    expect(mockSupabaseAuth.updateUser).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: auth.saveNewPassword.text })).toBeDisabled();
+
+    // "Done" again on the last field while the first save runs: no second request.
+    await fireEvent(screen.getByLabelText(auth.confirmPasswordLabel.text), 'submitEditing');
+    expect(mockSupabaseAuth.updateUser).toHaveBeenCalledTimes(1);
+
+    await act(async () => answer({ data: {}, error: null }));
+    await waitFor(() =>
+      expect(mockRouter.dismissTo).toHaveBeenCalledWith({ pathname: '/dashboard', params: { password: 'updated' } }),
+    );
+    expect(mockSupabaseAuth.updateUser).toHaveBeenCalledTimes(1);
+    expect(mockRouter.dismissTo).toHaveBeenCalledTimes(1);
   });
 
   it('sends a signed-out visitor to request a new link', async () => {

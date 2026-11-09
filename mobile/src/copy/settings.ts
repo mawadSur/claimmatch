@@ -9,9 +9,16 @@ import { defineCopy } from './types';
  */
 export const settings = defineCopy({
   // Settings page (src/app/settings/page.tsx) --------------------------------
+  /**
+   * The web says "Update your details, the answers we use to find
+   * settlements, and which emails you get." The app has no email choice to
+   * update while those emails are paused (see emailOptInLabel), so the
+   * sentence stops before it.
+   */
   intro: {
-    text: 'Update your details, the answers we use to find settlements, and which emails you get.',
+    text: 'Update your details and the answers we use to find settlements.',
     source: 'src/app/settings/page.tsx',
+    mobileOnly: true,
   },
   yourDataTitle: {
     text: 'Your data',
@@ -38,17 +45,23 @@ export const settings = defineCopy({
     text: 'Match-quality logging is optional. It never includes optional health answers.',
     source: 'src/app/settings/page.tsx',
   },
-  /** The web says "You can turn it on or off in the form above." */
+  /** The web says "You can turn it on or off in the form above." The app names the screen (detailsTitle). */
   metricsNoteWhere: {
-    text: 'You can turn it on or off in Your details and emails.',
+    text: 'You can turn it on or off in Your details.',
     source: 'src/app/settings/page.tsx',
     mobileOnly: true,
   },
 
   // Details form (src/components/NotificationPrefs.tsx) ----------------------
+  /**
+   * The Settings row and the screen's title. The web form is "Your details
+   * and emails", but the app hides its email switch while those emails are
+   * paused (see emailOptInLabel), so it takes the title the web gives the same
+   * name and state fields in onboarding.
+   */
   detailsTitle: {
-    text: 'Your details and emails',
-    source: 'src/components/NotificationPrefs.tsx',
+    text: 'Your details',
+    source: 'src/components/OnboardingWizard.tsx',
   },
   detailsIntro: {
     text: 'We keep these on your account. We never send them to settlement sites; you enter your own details when you file on the official site.',

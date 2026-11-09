@@ -2,6 +2,7 @@ export { ClaimStatusBadge, type ClaimStatusBadgeProps } from './ClaimStatusBadge
 export { DeadlineText, type DeadlineTextProps } from './DeadlineText';
 export { CompactDisclaimer, LegalDisclaimer, ShortDisclaimer } from './Disclaimers';
 export { ExternalTextLink, type ExternalTextLinkProps } from './ExternalTextLink';
+export { breakableHost, hostLabels } from './host-label';
 export {
   CLAIM_HREF_PATTERN,
   claimHref,

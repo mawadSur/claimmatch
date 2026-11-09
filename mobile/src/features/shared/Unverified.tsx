@@ -10,6 +10,7 @@ import { fillCopy, shared } from '@/copy/shared';
 import { fontFamilies, space, typography } from '@/theme/tokens';
 
 import { ExternalTextLink } from './ExternalTextLink';
+import { hostLabels } from './host-label';
 import { useIsVerified } from './SettlementBadges';
 
 /**
@@ -91,7 +92,7 @@ function OfficialLink({ link }: { link: CatalogLink | null }) {
     return (
       <ExternalTextLink
         url={link.href}
-        label={`${shared.goToOfficialSite.text} (${link.host})`}
+        {...hostLabels(link.host, (host) => `${shared.goToOfficialSite.text} (${host})`)}
         tone="warning"
         framed
         style={styles.linkSpacing}
@@ -105,7 +106,7 @@ function OfficialLink({ link }: { link: CatalogLink | null }) {
       </AppText>
       <ExternalTextLink
         url={link.href}
-        label={`${link.label} (${link.host}, ${shared.notTheOfficialSite.text})`}
+        {...hostLabels(link.host, (host) => `${link.label} (${host}, ${shared.notTheOfficialSite.text})`)}
         tone="warning"
         framed
       />

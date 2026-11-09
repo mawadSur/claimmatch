@@ -25,9 +25,17 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style' |
    * A ghost button in a column of text: pulls the button out by its side
    * padding on that side ('start' for a button at the start of a line, 'end'
    * at its end), so the label lines up with the text while the touch target
-   * keeps its full size.
+   * keeps its full size. The content then sits on that side, and a label that
+   * wraps is aligned to it: with 'start', every line begins after the icon.
    */
   bleed?: 'start' | 'end';
+  /**
+   * How far a bleeding button reaches out, in points (default: its side
+   * padding). Inside a box padded less than that, such as a 16 pt card, pass
+   * the box's padding: the pressed color and the focus frame then stop at the
+   * box's edge, and the label sits that much further in.
+   */
+  bleedBy?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -54,6 +62,13 @@ function colorOf(token: ColorToken | 'transparent'): string {
   return token === 'transparent' ? 'transparent' : colors[token];
 }
 
+/** The margin that pulls a bleeding button out, and how its content lines up on that side. */
+function bleedLayout(bleed: 'start' | 'end', by: number) {
+  return bleed === 'start'
+    ? { button: [styles.alignStart, { marginStart: -by }], content: styles.contentStart, align: 'left' as const }
+    : { button: [styles.alignEnd, { marginEnd: -by }], content: styles.contentEnd, align: 'right' as const };
+}
+
 /**
  * Text button, at least 44 pt tall. Press feedback is a color change on
  * press-in (no layout shift); primary buttons add a light haptic. Disabled
@@ -68,6 +83,7 @@ export function Button({
   iconPosition = 'leading',
   fullWidth = false,
   bleed,
+  bleedBy = BUTTON_PADDING_X,
   style,
   onPress,
   accessibilityLabel,
@@ -76,6 +92,7 @@ export function Button({
 }: ButtonProps) {
   const look = VARIANTS[variant];
   const inactive = disabled || loading;
+  const side = bleed ? bleedLayout(bleed, bleedBy) : null;
 
   function handlePress(event: GestureResponderEvent) {
     if (variant === 'primary') lightImpact();
@@ -97,15 +114,15 @@ export function Button({
           borderColor: look.border ? colors[look.border] : 'transparent',
         },
         fullWidth ? styles.fullWidth : null,
-        bleed === 'start' ? styles.bleedStart : bleed === 'end' ? styles.bleedEnd : null,
+        side?.button,
         disabled && !loading ? styles.disabled : null,
         style,
       ]}
       {...rest}
     >
-      <View style={[styles.content, loading ? styles.hidden : null]}>
+      <View style={[styles.content, side?.content, loading ? styles.hidden : null]}>
         {icon && iconPosition === 'leading' ? <Icon icon={icon} size="sm" color={look.text} /> : null}
-        <AppText variant="label" color={look.text} align="center" style={styles.label}>
+        <AppText variant="label" color={look.text} align={side?.align ?? 'center'} style={styles.label}>
           {label}
         </AppText>
         {icon && iconPosition === 'trailing' ? <Icon icon={icon} size="sm" color={look.text} /> : null}
@@ -134,17 +151,23 @@ const styles = StyleSheet.create({
   fullWidth: {
     alignSelf: 'stretch',
   },
-  bleedStart: {
-    marginStart: -BUTTON_PADDING_X,
+  alignStart: {
+    alignItems: 'flex-start',
   },
-  bleedEnd: {
-    marginEnd: -BUTTON_PADDING_X,
+  alignEnd: {
+    alignItems: 'flex-end',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space[2],
+  },
+  contentStart: {
+    justifyContent: 'flex-start',
+  },
+  contentEnd: {
+    justifyContent: 'flex-end',
   },
   label: {
     flexShrink: 1,

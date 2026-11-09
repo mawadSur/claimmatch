@@ -174,6 +174,7 @@ function ReportedCard({ claim, context, onChange }: { claim: ClaimView; context:
                 label={copy.undoButton.text}
                 variant="ghost"
                 icon={Undo2}
+                bleed="start"
                 onPress={() => setConfirming(true)}
                 style={styles.start}
               />
@@ -225,6 +226,7 @@ function SubmittedCard({
           label={copy.correctNumber.text}
           variant="ghost"
           icon={Pencil}
+          bleed="start"
           onPress={() => setEditing(true)}
           style={styles.start}
         />

@@ -15,7 +15,6 @@ import { space } from '@/theme/tokens';
 
 import {
   authErrorText,
-  isEmailShaped,
   markSessionFlags,
   MIN_PASSWORD_LENGTH,
   thrownAuthErrorText,
@@ -24,6 +23,31 @@ import {
 import { checkEmailHref } from './CheckEmailScreen';
 import { afterSignInHref } from './navigation';
 import { AuthHeader, SwitchPrompt } from './parts';
+
+/** validateSignupFields' email shape (src/lib/signup-validation.ts): one @, unlike isEmailShaped. */
+const SIGNUP_EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export interface SignupFieldErrors {
+  email: string | null;
+  password: string | null;
+}
+
+/**
+ * The website's sign-up checks, message for message (validateSignupFields in
+ * src/lib/signup-validation.ts): an empty email, then one not shaped like an
+ * address; an empty password, then one shorter than 10 characters.
+ * validateSignupFields also asks for a name, which this form does not check.
+ */
+export function signupFieldErrors({ email, password }: { email: string; password: string }): SignupFieldErrors {
+  const address = email.trim();
+  let emailError: string | null = null;
+  if (!address) emailError = auth.enterYourEmail.text;
+  else if (!SIGNUP_EMAIL_SHAPE.test(address)) emailError = auth.enterValidEmail.text;
+  let passwordError: string | null = null;
+  if (!password) passwordError = auth.enterAPassword.text;
+  else if (password.length < MIN_PASSWORD_LENGTH) passwordError = passwordTooShortText(MIN_PASSWORD_LENGTH);
+  return { email: emailError, password: passwordError };
+}
 
 /**
  * /signup (src/app/signup/page.tsx and AuthForm in sign-up mode). Creates the
@@ -58,11 +82,10 @@ export function SignupScreen() {
   async function submit() {
     if (loading) return;
     setFormError(null);
-    const emailProblem = isEmailShaped(email) ? null : auth.enterYourEmail.text;
-    const passwordProblem = password.length < MIN_PASSWORD_LENGTH ? passwordTooShortText(MIN_PASSWORD_LENGTH) : null;
-    setEmailError(emailProblem);
-    setPasswordError(passwordProblem);
-    if (emailProblem || passwordProblem) return;
+    const problems = signupFieldErrors({ email, password });
+    setEmailError(problems.email);
+    setPasswordError(problems.password);
+    if (problems.email || problems.password) return;
 
     Keyboard.dismiss();
     // Only the button waits: fields that turn non-editable read to iOS as a

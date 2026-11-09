@@ -155,6 +155,20 @@ describe('Settings, signed in', () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
 
+  it('names the details screen for what it holds: no emails while it has no email switch', async () => {
+    const user = userEvent.setup();
+    signIn();
+    await renderWith(<SettingsScreen />);
+    // The Settings row and the screen's header (src/app/(tabs)/settings/_layout.tsx) share this title.
+    expect(settings.detailsTitle.text).toBe('Your details');
+    await user.press(screen.getByRole('button', { name: 'Your details' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/settings/details');
+    expect(screen.getByText('Update your details and the answers we use to find settlements.')).toBeOnTheScreen();
+    expect(screen.queryByText(/emails/)).toBeNull();
+    // The match-quality note points to that screen by name.
+    expect(screen.getByText(`${settings.metricsNote.text} You can turn it on or off in Your details.`)).toBeOnTheScreen();
+  });
+
   it('shares the referral link in the system share sheet, with no counts', async () => {
     const user = userEvent.setup();
     signIn();
