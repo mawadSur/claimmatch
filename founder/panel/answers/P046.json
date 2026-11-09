@@ -1,0 +1,13 @@
+{
+  "id": "P046",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and a free site listing 'money you might be owed' is the same pitch. I am not creating an account so I can still go fill out the official form myself for what is probably ten dollars.",
+  "objection": "This looks like every other free-money site that wants my email, and even if it is real the payouts are not worth my time.",
+  "would_change_my_mind": "If my bank or a court notice I already trust sent me here, and I could see a settlement I actually qualify for that pays more than twenty or thirty dollars, not ten.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

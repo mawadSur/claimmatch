@@ -1,0 +1,13 @@
+{
+  "id": "P049",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I saw that TikTok and assumed the site behind it was a scam, same as every other free-money page. I'm not making an account on lawsuitai.org because it's free during beta — that's the catch later, and I still have to file the official form myself after work.",
+  "objection": "If it's free during beta, what's the catch later? I'm not handing you my email so you can sell it or flip on a fee.",
+  "would_change_my_mind": "Let me open that TikTok settlement's official claim form with no account and no email, and stay free — not a bait-and-switch once I actually bother.",
+  "price_too_cheap": 0,
+  "price_cheap": 4,
+  "price_expensive": 10,
+  "price_too_expensive": 20
+}

@@ -1,0 +1,27 @@
+{
+  "business": "ClaimMatch: matched class-action settlement claims, free self-filing, optional assisted filing for 15% of recovery",
+  "target": "US adults 25-55 who use mainstream banks, retailers, telecoms and apps, and have heard of settlement checks but rarely file",
+  "where": "United States, online",
+  "age": [25, 55],
+  "segments": [
+    {"name": "Busy working adult", "share": 0.45, "income": [40000, 95000]},
+    {"name": "Money-optimizer (couponing, bank bonuses)", "share": 0.30, "income": [35000, 120000]},
+    {"name": "Data-breach victim searching a named breach", "share": 0.25, "income": [30000, 150000]}
+  ],
+  "behaviours": [
+    {"name": "Skeptic of 'free money' sites", "share": 0.25, "how": "Assumes settlement sites are scams until proven otherwise."},
+    {"name": "Deal hunter", "share": 0.20, "how": "Files every no-proof claim they see on Reddit or TikTok."},
+    {"name": "Procrastinator", "share": 0.20, "how": "Means to file, misses the deadline."},
+    {"name": "Privacy-cautious", "share": 0.15, "how": "Won't give an address or phone to a startup."},
+    {"name": "Search-driven one-timer", "share": 0.20, "how": "Arrives from Google for one settlement and leaves."}
+  ],
+  "objections": [
+    "Is this a scam or a data grab?",
+    "Why pay 15% when filing on the official site is free?",
+    "The payouts are like $10, not worth it",
+    "I don't want a startup filing legal forms in my name",
+    "How do you even know I qualify?",
+    "I'll just use Top Class Actions"
+  ],
+  "habits": ["you get settlement notice emails and assume they're spam", "you saw a TikTok about a no-proof settlement"]
+}

@@ -16,6 +16,7 @@ export function HomeHero({
   primary,
   extra,
   freeLabel,
+  browseNote,
   stats,
   desktop,
   phone,
@@ -24,6 +25,7 @@ export function HomeHero({
   primary: { href: string; label: string };
   extra?: ReactNode;
   freeLabel: string;
+  browseNote?: string;
   stats: HomeStats | null;
   desktop: Screen;
   phone: Screen;
@@ -72,6 +74,14 @@ export function HomeHero({
               Check open class-action settlements, read who qualifies on the official
               notice, file on the official site, and keep track of every claim here.
             </p>
+            {browseNote && (
+              <p
+                style={{ '--i': 2 } as CSSProperties}
+                className="mt-3 max-w-lg text-sm leading-relaxed text-ink-muted"
+              >
+                {browseNote}
+              </p>
+            )}
 
             <div
               style={{ '--i': 3 } as CSSProperties}

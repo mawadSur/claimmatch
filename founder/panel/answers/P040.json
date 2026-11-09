@@ -1,0 +1,13 @@
+{
+  "id": "P040",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already got burned in a data breach and I'm not handing a startup my address or phone so I can browse listings and then file somewhere else myself. If I'm searching my case I'll go to the official notice, not lawsuitai.org.",
+  "objection": "I don't want a startup storing my identity details — making an account is the whole problem, not a feature.",
+  "would_change_my_mind": "If I could search my named breach and open the official claim form with no account and no name, address, or phone collected.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 30
+}

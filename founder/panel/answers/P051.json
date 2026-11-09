@@ -1,0 +1,13 @@
+{
+  "id": "P051",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "If it's free during beta, there's a catch later, and I still have to file the claim myself on some other site. I'd just Google that TikTok settlement and go straight to the official form.",
+  "objection": "What's the catch once you start charging, and why would I trust unverified listings with an account?",
+  "would_change_my_mind": "If a friend showed me a real check from a settlement they found here and I could use it with no account and no future fee.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

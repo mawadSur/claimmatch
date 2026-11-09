@@ -14,6 +14,11 @@ import {
   readBrowserCookies,
   writeBrowserCookies,
 } from '@/lib/attribution';
+import {
+  detectTrafficKindFromBrowser,
+  shouldCapturePageview,
+  TRAFFIC_PROPERTY,
+} from '@/lib/analytics/traffic';
 import { posthogUiHost } from '@/lib/posthog-proxy';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -24,13 +29,13 @@ function PostHogPageView() {
   const ph = usePostHog();
 
   useEffect(() => {
-    if (pathname && ph) {
+    if (pathname && ph && shouldCapturePageview(pathname)) {
       let url = window.origin + pathname;
       const search = searchParams.toString();
       if (search) {
         url += '?' + search;
       }
-      ph.capture('$pageview', { $current_url: url });
+      ph.capture('$pageview', { $current_url: url, [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
     }
   }, [pathname, searchParams, ph]);
 
@@ -83,8 +88,8 @@ function IdentifySession() {
       .then((json: { internal?: boolean } | null) => {
         if (!json) return;
         if (json.internal) {
-          ph.setPersonProperties({ internal: true });
-          ph.opt_out_capturing();
+          ph.setPersonProperties({ internal: true, [TRAFFIC_PROPERTY]: 'internal' });
+          ph.register({ [TRAFFIC_PROPERTY]: 'internal' });
         }
       })
       .catch(() => {
@@ -115,6 +120,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',
+      // Bundled posthog-js; skip /ingest/array remote scripts so capture still
+      // flushes when the proxy cannot load PostHog's config.js.
+      disable_external_dependency_loading: true,
+      advanced_disable_flags: true,
+      loaded(ph) {
+        ph.register({ [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
+        (window as Window & { posthog?: typeof ph }).posthog = ph;
+      },
     });
   }, []);
 

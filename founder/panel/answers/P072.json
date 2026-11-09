@@ -1,0 +1,13 @@
+{
+  "id": "P072",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already got breached once; I am not handing a random startup my email, let alone an address or phone, just to browse listings you admit are unverified. I know the breach I'm looking up — I'll search the official notice myself.",
+  "objection": "How do you even know I qualify? And why would I make an account with you when I still have to file on the administrator's site anyway?",
+  "would_change_my_mind": "Let me look up my named breach with zero signup and land on the official claims page — no email, no phone, no address.",
+  "price_too_cheap": 1,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 25
+}

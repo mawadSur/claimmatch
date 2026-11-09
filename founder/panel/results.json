@@ -1,0 +1,224 @@
+{
+ "business": "ClaimMatch (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.",
+ "seed": 20261106,
+ "dealt": 100,
+ "answered": 100,
+ "skipped": [],
+ "buys": 0,
+ "passes": 100,
+ "buy_rate": 0.0,
+ "by_segment": [
+  [
+   "Money-optimizer (hypothesis)",
+   30,
+   0.0
+  ],
+  [
+   "Busy working adult (hypothesis)",
+   45,
+   0.0
+  ],
+  [
+   "Data-breach victim searching a named breach (hypothesis)",
+   25,
+   0.0
+  ]
+ ],
+ "by_behaviour": [
+  [
+   "Privacy-cautious",
+   15,
+   0.0
+  ],
+  [
+   "Procrastinator",
+   20,
+   0.0
+  ],
+  [
+   "Deal hunter",
+   20,
+   0.0
+  ],
+  [
+   "Search-driven one-timer",
+   20,
+   0.0
+  ],
+  [
+   "Skeptic of 'free money' sites",
+   25,
+   0.0
+  ]
+ ],
+ "by_income": [
+  [
+   "$87,000 and up",
+   34,
+   0.0
+  ],
+  [
+   "$66,000 to $87,000",
+   33,
+   0.0
+  ],
+  [
+   "under $66,000",
+   33,
+   0.0
+  ]
+ ],
+ "why_not": [
+  [
+   "trust",
+   71,
+   [
+    "If it's free during beta, you're going to charge me later or sell whatever I typed in, and I don't file these things enough to care. I'm not giving a startup my address or phone so I can click through and fill out the official form myself.",
+    "I might tap that TikTok out of curiosity, but I am not making an account for a site that cannot tell me if I actually qualify and then sends me somewhere else to fill out a form I will never finish."
+   ],
+   [
+    "P001",
+    "P002"
+   ]
+  ],
+  [
+   "need",
+   16,
+   [
+    "I saw that TikTok and yeah I like easy money, but it's always like ten bucks and I still have to fill out the form myself after work. I'm not making an account or paying later for a listing of claims I already know aren't worth my time.",
+    "I googled that one TikTok settlement out of curiosity, then remembered these checks are like ten bucks and I still have to fill the form out myself after work. I'm not making an account or browsing a list of more of the same."
+   ],
+   [
+    "P005",
+    "P014"
+   ]
+  ],
+  [
+   "habit",
+   12,
+   [
+    "I already go to Top Class Actions when I hear about a settlement. I googled one thing from a TikTok, I don't need another site to browse listings, and I'm not making an account for a claim I'll file once and forget.",
+    "I search the one settlement I heard about, open the official form, and I'm done. A free-for-now listing site that doesn't even file for me is just another tab, and I don't come back for a second one."
+   ],
+   [
+    "P004",
+    "P011"
+   ]
+  ],
+  [
+   "convenience",
+   1,
+   [
+    "I saw that TikTok and I'd grab free money if it was actually easy, but this is just a list that tells me to go read the official notice and file on some other site myself. I am not doing homework after work for a maybe-ten-dollar check."
+   ],
+   [
+    "P007"
+   ]
+  ]
+ ],
+ "why_yes": [],
+ "flip": [
+  "Let me open that TikTok no-proof settlement and the official claim form with no account, no address, no phone — and stay free, not a bait-and-switch subscription.",
+  "If it already knew a store or account I actually use, showed me the official notice that matches, and filed it before I forgot. A list I have to hunt through is just another tab I will never open again.",
+  "If I could browse without an account and a friend actually got a real check from a claim they found here.",
+  "Nothing, honestly. Top Class Actions is free and I only ever look up one claim.",
+  "If I could see a real payout of a couple hundred dollars on a claim that actually applied to me and took two minutes, not a scavenger hunt for $10.",
+  "Search the named breach with no account and land on the official claims-administrator notice, not another signup wall.",
+  "If it showed me a no-proof claim for a store or bank I actually use and I could tell in ten seconds I qualify, without making an account.",
+  "If I could search my named breach with no account and no personal info, and it only showed me the official administrator link.",
+  "If I could browse and open the official administrator's claim form with no account and no personal information stored by you, and I already recognized that administrator's name.",
+  "If I could check that one TikTok settlement against an official claims page I already recognize, with no account, and I actually saw my bank or phone company named on the notice.",
+  "Put the official claim form for the settlement I googled right in front of me with no account and no future fee on that one claim. I'm not paying a subscription for something I do once.",
+  "If a notice I actually got in the mail from my bank or the court named this site, I'd maybe look. A random website promising free help is a no.",
+  "Let me open that one settlement's official claim form with no account and no email. I'm still not paying for a Google search.",
+  "If that one settlement actually paid a couple hundred dollars and this dropped me on the official form with no account. I'm still not paying for a listings page.",
+  "If a claims administrator I already recognize from a real notice sent me here, I could open the official form with no account, and it was obviously for a bank or store I actually use.",
+  "Let me search my named breach and open the official administrator form with no account and no email, and have something that actually nags me before the deadline instead of another tab I will ignore.",
+  "If I could open the official notice for that TikTok settlement with no account, on a claims site I already recognize from my bank or a retailer I use, and it named me in a way that was obviously not a harvest.",
+  "Show me a no-proof settlement I'd actually get a few hundred dollars from, with a direct link to the official form and no account required.",
+  "If I could check that one TikTok claim against an official administrator page with no account, and it was a case Top Class Actions didn't already have.",
+  "If I could see a no-proof claim that actually named something I use, with a payout big enough to be worth twenty minutes — a couple hundred, not ten — and finish it without making an account first.",
+  "Let me open that TikTok no-proof settlement and finish the official form in a couple minutes with no account, and stay free, not a bait-and-switch later.",
+  "Show me my named breach on the official notice, no-proof, with a payout worth twenty minutes — a couple hundred, not ten — and let me open that form without making an account.",
+  "Let me open the official notice and claim form with no account, no address, no phone — and show me a no-proof claim that actually pays a couple hundred, not ten.",
+  "Let me open that no-proof claim's official form with no account, no address, and no phone — and only if it's a settlement Top Class Actions doesn't already have.",
+  "Let me open that TikTok settlement and the official claim form with no account, no email, no phone, and no address — just a page with a link.",
+  "If I could browse with no account and no personal info, and my bank or a government site sent me there instead of some domain I have never heard of.",
+  "Let me search the exact breach with no account and land on the official claims-administrator page I already recognize, with a payout that is not ten dollars. I still would not pay for a list of links.",
+  "Let me browse listings with no account, see one no-proof claim for a bank or store I actually use, and put in writing that you stay free with no cut of any payout.",
+  "If my bank or the official claims administrator pointed me here, I could check a settlement without an account, and it paid enough to be worth an evening — a couple hundred, not ten bucks.",
+  "Let me search my named breach and open the official claim form with no account, and keep it free — not a later subscription for a list I still have to double-check myself.",
+  "If Top Class Actions didn't have that TikTok claim and I could open the official notice with no account.",
+  "Show me the official notice for a company I actually shop at before I create an account, and file it for me before the deadline so I cannot sit on it again.",
+  "My named breach, no proof, a payout that is actually a few hundred dollars, and a direct link to the official form with no account. I still would not pay for a list of settlements.",
+  "Let me search that exact breach with no account and land on the official claims-administrator page I already recognize from a real notice, not a signup wall.",
+  "If you had a claim Top Class Actions doesn't, with a real payout listed, and I could open the official form with no account and no later fee.",
+  "If I could browse listings and open the official administrator form with no account and no personal info stored, and a bank or retailer I actually use sent me there instead of some random site.",
+  "If I could see whether that TikTok settlement actually applies to me without making an account or handing over my address or phone.",
+  "File it for me before the deadline so I can't flake, and tell me the price up front with no bait-and-switch after beta.",
+  "Land me on my named breach and the official claim form with no account, and a payout of a few hundred dollars, not ten. I still would not pay for a list of links.",
+  "If I could search my named breach and open the official claim form with no account and no name, address, or phone collected.",
+  "Show me the official class definition for my named breach, a clear yes or no that I match it, and the administrator claim form — no account, no later fee.",
+  "If I could browse and open the official administrator's claim form with no account and no personal information stored by you.",
+  "If I could browse easy no-proof listings and jump straight to the official claim form with no account and no personal info collected.",
+  "Show me an easy claim Top Class Actions doesn't have, with a real dollar amount, and let me open the official form with no account and no fee coming later.",
+  "If I could search my exact breach and it sent me straight to the official claims-administrator site I already recognize, with no account and no email, and it was recommended by a source I already trust — not an AI domain I found on my own.",
+  "If my bank or a court notice I already trust sent me here, and I could see a settlement I actually qualify for that pays more than twenty or thirty dollars, not ten.",
+  "Let me search my named breach with no account, open the official no-proof form, and see the actual price now instead of 'we'll tell you before we charge.'",
+  "If my bank or a news site I already trust sent me to one official notice that clearly described me and paid a couple hundred dollars, and I could open that form with no account. I still would not pay for a list of unverified ten-dollar claims.",
+  "Let me open that TikTok settlement's official claim form with no account and no email, and stay free — not a bait-and-switch once I actually bother.",
+  "Let me search the named breach I was in, open the official administrator notice, and never create an account or give an address or phone.",
+  "If a friend showed me a real check from a settlement they found here and I could use it with no account and no future fee.",
+  "If it actually filed the claim for me and the payout was more than a coffee, I might try it once. Otherwise I am gone after one search.",
+  "If I could look up the breach with no account and no name, email, or ID collected — just a link out to the official notice.",
+  "Show me a specific no-proof claim I clearly qualify for that pays at least $50 and takes two minutes, not another directory of tiny checks I have to process myself.",
+  "Let me browse without an account, and make every listing a straight link to the official administrator notice I'd already trust — or have my bank or a known consumer group stand behind it.",
+  "Show me a real settlement I clearly qualify for with a few hundred dollars in it, no account, just a link to the official form.",
+  "No account, no email, no stored personal info — just listings that deep-link to the official notice for a company I actually use.",
+  "If my bank or the official court notice itself sent me here, I could look without creating an account, and the payout was a few hundred dollars not ten.",
+  "If it showed me one settlement I clearly qualify for, no proof needed, with a real payout of a couple hundred dollars, and the official form took five minutes.",
+  "If my bank or a retailer I already use sent me one specific claim that matched something I actually bought, with a link I could verify on the official administrator site, and you never asked for a card or SSN.",
+  "If my bank or a store I actually use sent me a specific case that named me, instead of a random website asking me to browse and guess.",
+  "A notice from my bank or the court pointing me here for one settlement I already know applies, with a direct link to the official claim form and no account required. I still wouldn't pay later.",
+  "Show me I'd actually get a couple hundred dollars from something I already qualify for, with the official form one click away. Ten-dollar checks still aren't worth it.",
+  "If my bank or a name I already trust sent me a direct link and I could browse without creating an account.",
+  "A posted price with no bait-and-switch, and you flag the no-proof settlements I actually qualify for so I'm not verifying every listing myself.",
+  "Show me one settlement I actually qualify for, with a couple hundred dollars on the official administrator site, and I might click through once. I still would not pay later.",
+  "If I could browse and open the official claim form with no account, and I recognized a company I actually shopped at.",
+  "If I could browse with no account and you never collected my name, address, or anything that could identify me.",
+  "Tell me the exact future price up front and actually file it or nag me until I hit submit before the deadline.",
+  "If you showed me a real official notice that actually matched something I bought, with the claim form sitting there, and I didn't have to hunt or guess.",
+  "If I could browse listings and open the official claim page with no account and no name, email, or ID collected.",
+  "Let me look up my named breach with zero signup and land on the official claims page — no email, no phone, no address.",
+  "If I could browse with no account and it nagged me before the deadline with a link only to the official form, I might try it once.",
+  "If I could search the named breach and get a link to the official claim form with no account and no personal details collected at all.",
+  "If it actually filed for me and showed I was in line for something like thirty dollars or more, not ten, I might try it once.",
+  "If I could search my named breach, get a link to the official notice, and leave without creating an account or handing over my name, email, or anything else.",
+  "Let me search my breach by name with no account, no email, no phone, and send me straight to the official claims administrator, with the court or that administrator named on the page so I know it is real.",
+  "If my bank or a government site pointed me here, I could browse without creating an account, and every link was only the official administrator, I might look once. I still wouldn't pay.",
+  "The official administrator or court notice for my named breach linking here, with the same case number I can check myself, and a payout that is not basically ten bucks.",
+  "If I could check that one settlement with no account and no personal info, and it only sent me to the official notice, I might use it once. I still would not pay or sign up.",
+  "Show me that same no-proof settlement with a straight link to the official claim form and no account, no email, no 'we'll charge later.'",
+  "If I landed from Google on one listing with no account, and it was clearly just a link to the official administrator form I already meant to find.",
+  "If I could type the breach name with no account and see the official class definition plus a link only to the court-appointed administrator, I might check that once. I still would not pay or sign up.",
+  "If it actually submitted the claim for me before the deadline, and I could see one I clearly qualify for that pays more than fifty dollars.",
+  "If I could use it with no account, no address, and no phone, and it only linked me to the official notice, I might look once.",
+  "Tell me the real price up front, let me open that TikTok settlement and the official form with no account, and actually get the claim in before I forget.",
+  "If my bank or the official claims administrator sent me here, and I could see a settlement that clearly matched a store I shop at without making an account.",
+  "If I could search my breach by name with no account, no address, and no phone, and you showed me an official claim Top Class Actions does not have, I might click through once. I still would not sign up or pay.",
+  "If my bank or a company I actually use sent me a real official notice I could check on their site, and this just linked me there with no account, I might click through once.",
+  "If you found my exact breach, sent me only to the official form, and actually filed it before the deadline with no account and no fee later. A directory I still have to finish myself is the same thing I already flake on.",
+  "If I googled one settlement I already knew was real and this sent me straight to the official form with no account and a written promise they will never charge me.",
+  "If I searched the one settlement I actually heard about, you showed a clear match against the official notice with no account, and the only link was the administrator I could verify myself.",
+  "If I could look up that one settlement with no account and you never stored my name, email, or anything else, I might click through once. I still would not pay you later.",
+  "If you showed me the official class definition for my exact named breach and actually got the claim in before the deadline, with no account. A list I still have to finish myself is the same thing I already flake on.",
+  "If my bank or a store I already use showed me one specific settlement I qualify for and linked me to the official claim form, I might file that one. I still would not create an account to browse a list.",
+  "If my bank or a store I already shop at sent me here with no account required, and it only linked to an official no-proof claim I clearly qualified for.",
+  "If I could see, without signing up, a few listings where people like me actually got a couple hundred dollars and a one-click link to the official administrator page.",
+  "If I could browse with no account, no address, and no phone, and you clearly beat Top Class Actions on settlements I actually qualify for.",
+  "If it actually filed the claim for me before the deadline, from a company I already trust, with no surprise fee after beta.",
+  "If the official breach notice or my state's attorney general linked here and I could search without creating an account."
+ ],
+ "purchases_first_month_per_buyer": null,
+ "price_answers": 100
+}

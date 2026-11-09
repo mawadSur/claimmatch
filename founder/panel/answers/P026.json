@@ -1,0 +1,13 @@
+{
+  "id": "P026",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "Settlement emails already look like spam to me, and a new site asking me to make an account so I can go file somewhere else feels like a data grab. I am not giving a startup my address or phone for a check I was never going to claim.",
+  "objection": "Is this a scam or a data grab? Free during beta, then a paid model later, plus an account — that is the same pattern as every notice I delete.",
+  "would_change_my_mind": "If I could browse with no account and no personal info, and my bank or a government site sent me there instead of some domain I have never heard of.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

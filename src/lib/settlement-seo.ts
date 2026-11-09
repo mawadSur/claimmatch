@@ -1,6 +1,7 @@
 import { eligibilitySummary } from './claim-input';
+import { flags } from './flags';
 import { officialLinkFor } from './lawsuit-display';
-import { proofLabel } from './proof';
+import { proofLabel, proofStatus } from './proof';
 import { settlementGuideFaqs, settlementProofDetail } from './settlement-guides';
 import { LAWSUIT_CATEGORIES, type Lawsuit } from './types';
 import { formatDeadline, SITE, slugify } from './utils';
@@ -15,10 +16,12 @@ export interface FaqItem {
 export interface AnswerFacts {
   /** Listing text, or null when we have no real eligibility rule. */
   qualifies: string | null;
-  payout: string;
+  /** Listed payout, or null when unknown and hide-unknown is on. */
+  payout: string | null;
   /** Formatted deadline, or null when the listing has none. */
   deadline: string | null;
-  proof: string;
+  /** Proof label, or null when unknown and hide-unknown is on. */
+  proof: string | null;
   /** Administrator name, or null when the listing has none. */
   administrator: string | null;
   /** Human labels for empty who-qualifies / deadline / administrator. */
@@ -145,14 +148,17 @@ export function missingAnswerDetails(
 }
 
 /** Facts shown in the plain-language answer block. Only catalog fields. */
-export function settlementAnswerFacts(lawsuit: Lawsuit): AnswerFacts {
+export function settlementAnswerFacts(lawsuit: Lawsuit, hideUnknown = flags.panelTrustCopy()): AnswerFacts {
   const qualifies = eligibilitySummary(lawsuit.eligibility_text);
   const administrator = lawsuit.administrator?.trim() || null;
+  const listedPayout = lawsuit.typical_payout?.trim() || null;
+  const proof = proofLabel(lawsuit);
+  const proofUnknown = proofStatus(lawsuit) === 'unknown';
   return {
     qualifies,
-    payout: listedOrFallback(lawsuit.typical_payout, 'Not stated'),
+    payout: hideUnknown ? listedPayout : listedOrFallback(lawsuit.typical_payout, 'Not stated'),
     deadline: lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
-    proof: proofLabel(lawsuit),
+    proof: hideUnknown && proofUnknown ? null : proof,
     administrator,
     missing: missingAnswerDetails(lawsuit),
   };
@@ -259,8 +265,8 @@ export function settlementArticleJsonLd(lawsuit: Lawsuit) {
       description: [
         facts.qualifies ? `Who qualifies: ${facts.qualifies}` : null,
         facts.deadline ? `Claim deadline: ${facts.deadline}` : null,
-        `Listed payout: ${facts.payout}`,
-        `Proof: ${facts.proof}`,
+        facts.payout ? `Listed payout: ${facts.payout}` : null,
+        facts.proof ? `Proof: ${facts.proof}` : null,
         facts.administrator ? `Administrator: ${facts.administrator}` : null,
       ]
         .filter(Boolean)

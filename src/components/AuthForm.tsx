@@ -71,7 +71,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * ClaimMatch? / Already have an account?" line, for a page that offers the
  * other form itself.
  */
-export function AuthForm({ mode, switchPrompt = true }: { mode: Mode; switchPrompt?: boolean }) {
+export function AuthForm({
+  mode,
+  switchPrompt = true,
+  storeNote,
+}: {
+  mode: Mode;
+  switchPrompt?: boolean;
+  storeNote?: string;
+}) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   // Only a path on this site (no "//host", "/\host" or control characters), so
@@ -113,8 +121,8 @@ export function AuthForm({ mode, switchPrompt = true }: { mode: Mode; switchProm
       .then((res) => (res.status === 200 ? res.json() : null))
       .then((json: { internal?: boolean } | null) => {
         if (json?.internal) {
-          posthog?.identify(userId, { internal: true });
-          posthog?.opt_out_capturing();
+          posthog?.identify(userId, { internal: true, cm_traffic_kind: 'internal' });
+          posthog?.register({ cm_traffic_kind: 'internal' });
         }
       })
       .catch(() => undefined);
@@ -183,7 +191,7 @@ export function AuthForm({ mode, switchPrompt = true }: { mode: Mode; switchProm
         // Session present → email confirmation is disabled, go straight in.
         if (data.session) {
           identifyOnly(data.session.user.id);
-          posthog?.capture('signup_completed');
+          posthog?.capture('signup_completed', { evidence: 'session_after_signup' }, { send_instantly: true });
           // Leave this page immediately so the spinner cannot sit on a slow RSC.
           window.location.assign(onboardingPath(next));
           return;
@@ -210,7 +218,7 @@ export function AuthForm({ mode, switchPrompt = true }: { mode: Mode; switchProm
 
       if (data.user) {
         identifyOnly(data.user.id);
-        posthog?.capture('login_completed');
+        posthog?.capture('login_completed', { evidence: 'password_sign_in' }, { send_instantly: true });
       }
 
       window.location.assign(next || '/dashboard');
@@ -410,6 +418,10 @@ export function AuthForm({ mode, switchPrompt = true }: { mode: Mode; switchProm
             </p>
           )}
         </div>
+
+        {isSignup && storeNote && (
+          <p className="text-xs leading-relaxed text-ink-muted">{storeNote}</p>
+        )}
 
         <button
           type="submit"

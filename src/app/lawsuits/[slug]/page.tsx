@@ -54,8 +54,12 @@ import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { RelatedSettlements } from '@/components/settlement/RelatedSettlements';
 import { SettlementFaq } from '@/components/settlement/SettlementFaq';
+import { OfficialFormLink } from '@/components/settlement/OfficialFormLink';
+import { SettlementEligibilityQuiz } from '@/components/settlement/SettlementEligibilityQuiz';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
+import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT } from '@/lib/copy';
+import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import type { Lawsuit } from '@/lib/types';
@@ -155,6 +159,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const claimHref = `/claim/${lawsuit.slug}`;
   const qualifyEnabled = flags.settlementPageCta() && open;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
+  const trustCopy = flags.panelTrustCopy();
+  const quizPrompts = flags.settlementQuiz() ? eligibilityQuizPrompts(eligibility) : [];
   const related = flags.relatedSettlements()
     ? relatedSettlements(lawsuit, await getLawsuits())
     : [];
@@ -218,12 +224,19 @@ export default async function LawsuitDetailPage({ params }: Params) {
             {lawsuit.title}
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
+          {trustCopy && (
+            <p className="mt-3 max-w-2xl text-sm text-ink-muted">
+              {BROWSE_NO_ACCOUNT} {ACCOUNT_FOR_SAVE_WHY}
+            </p>
+          )}
 
           <AnswerBlock
             facts={facts}
             open={open}
             claimHref={claimHref}
             official={official}
+            lawsuitId={lawsuit.id}
+            slug={lawsuit.slug}
             qualifyHref={qualifyHref ?? undefined}
             qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
             qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
@@ -272,7 +285,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   ? 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.'
                   : 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.'}
               </p>
-              <OfficialLink link={official} />
+              <OfficialLink link={official} lawsuitId={lawsuit.id} slug={lawsuit.slug} />
             </div>
           </div>
         </div>
@@ -297,6 +310,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </dd>
             </div>
             )}
+            {(!trustCopy || facts.proof) && (
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
               <dd className="mt-1 text-base font-bold text-ink">{proofShown}</dd>
@@ -309,6 +323,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   : settlementProofDetail(lawsuit)}
               </dd>
             </div>
+            )}
           </dl>
 
           {showAbout && (
@@ -337,18 +352,26 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </p>
             )}
             {official?.kind === 'official' && (
-              <a
+              <OfficialFormLink
                 href={official.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                    className="text-link mt-3 inline-flex items-center gap-1"
+                lawsuitId={lawsuit.id}
+                slug={lawsuit.slug}
+                className="text-link mt-3 inline-flex items-center gap-1"
               >
                 Read the rules on the official site
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="sr-only"> (opens in a new tab)</span>
-              </a>
+              </OfficialFormLink>
             )}
           </div>
+
+          {open && quizPrompts.length > 0 && (
+            <SettlementEligibilityQuiz
+              eligibilityText={eligibility}
+              lawsuitId={lawsuit.id}
+              slug={lawsuit.slug}
+            />
+          )}
 
           {open && (
             <div className="mt-8">
@@ -488,18 +511,21 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <p className="mt-2 text-center text-xs text-ink-muted">
-                  You’ll sign in or create a free account first.
+                  {trustCopy ? ACCOUNT_FOR_SAVE_WHY : 'You’ll sign in or create a free account first.'}
                 </p>
                 {official?.kind === 'official' && (
-                  <a
+                  <OfficialFormLink
                     href={official.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    lawsuitId={lawsuit.id}
+                    slug={lawsuit.slug}
                     className="btn-secondary mt-4 w-full justify-center"
                   >
                     Go to the official site <ExternalLink className="h-4 w-4" aria-hidden="true" />
                     <span className="sr-only"> (opens in a new tab)</span>
-                  </a>
+                  </OfficialFormLink>
+                )}
+                {trustCopy && official?.kind === 'official' && (
+                  <p className="mt-2 text-center text-xs text-ink-muted">{BROWSE_NO_ACCOUNT}</p>
                 )}
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
                   {[
@@ -549,7 +575,15 @@ export default async function LawsuitDetailPage({ params }: Params) {
   );
 }
 
-function OfficialLink({ link }: { link: CatalogLink | null }) {
+function OfficialLink({
+  link,
+  lawsuitId,
+  slug,
+}: {
+  link: CatalogLink | null;
+  lawsuitId: string;
+  slug: string;
+}) {
   if (!link) {
     return (
       <p className="mt-3 text-sm font-semibold text-amber-900">
@@ -560,16 +594,16 @@ function OfficialLink({ link }: { link: CatalogLink | null }) {
   }
   if (link.kind === 'official') {
     return (
-      <a
+      <OfficialFormLink
         href={link.href}
-        target="_blank"
-        rel="noopener noreferrer"
+        lawsuitId={lawsuitId}
+        slug={slug}
         className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
       >
         Go to the official site ({link.host})
         <ExternalLink className="h-4 w-4" aria-hidden="true" />
         <span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      </OfficialFormLink>
     );
   }
   return (

@@ -1,0 +1,13 @@
+{
+  "id": "P062",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, so a free-during-beta site asking me to make an account before I go file on the official form feels like the same hustle. If I ever actually wanted to claim something I'd Google the case and go straight to the administrator, then leave.",
+  "objection": "If it's free now, what's the catch when they start charging — and the listings aren't even verified until I check the official site myself anyway.",
+  "would_change_my_mind": "A notice from my bank or the court pointing me here for one settlement I already know applies, with a direct link to the official claim form and no account required. I still wouldn't pay later.",
+  "price_too_cheap": 0,
+  "price_cheap": 2,
+  "price_expensive": 5,
+  "price_too_expensive": 10
+}

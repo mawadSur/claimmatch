@@ -1,5 +1,7 @@
 import { eligibilitySummary } from './claim-input';
+import { flags } from './flags';
 import { cleanSearchTerm, searchCatalog } from './lawsuit-display';
+import { proofStatus } from './proof';
 import { displayProofStatus } from './verified-fields';
 import type { Lawsuit } from './types';
 
@@ -53,6 +55,47 @@ export function sortKnownDeadlineFirst<T extends Pick<Lawsuit, 'deadline'>>(rows
   });
 }
 
+const PROOF_RANK = { no: 0, optional: 1, yes: 2, unknown: 3 } as const;
+
+type ValueRankRow = Pick<Lawsuit, 'deadline'> &
+  Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'payout_min' | 'payout_max' | 'typical_payout'>>;
+
+/** Highest listed dollar amount, or null when the catalog has no number. Never invents. */
+export function listedPayoutAmount(
+  row: Partial<Pick<Lawsuit, 'payout_min' | 'payout_max' | 'typical_payout'>>,
+): number | null {
+  if (typeof row.payout_max === 'number' && Number.isFinite(row.payout_max)) return row.payout_max;
+  if (typeof row.payout_min === 'number' && Number.isFinite(row.payout_min)) return row.payout_min;
+  const text = row.typical_payout?.trim();
+  if (!text) return null;
+  const nums = [...text.matchAll(/\$?\s*([\d,]+(?:\.\d+)?)/g)]
+    .map((m) => Number(m[1].replace(/,/g, '')))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (nums.length === 0) return null;
+  return Math.max(...nums);
+}
+
+/**
+ * No-proof first, then higher listed payout, then sooner deadline.
+ * Unknown proof and missing payouts sort after known values.
+ */
+export function sortCatalogValueFirst<T extends ValueRankRow>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const proofA = PROOF_RANK[proofStatus({ proof_required: a.proof_required ?? false, eligibility: a.eligibility ?? {} })];
+    const proofB = PROOF_RANK[proofStatus({ proof_required: b.proof_required ?? false, eligibility: b.eligibility ?? {} })];
+    if (proofA !== proofB) return proofA - proofB;
+    const payA = listedPayoutAmount(a);
+    const payB = listedPayoutAmount(b);
+    if (payA != null && payB != null && payA !== payB) return payB - payA;
+    if (payA != null && payB == null) return -1;
+    if (payA == null && payB != null) return 1;
+    if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return 0;
+  });
+}
+
 export function paginate<T>(
   items: T[],
   page: number,
@@ -77,7 +120,7 @@ export function paginate<T>(
  */
 export function filterCatalog<
   T extends Pick<Lawsuit, 'title' | 'summary' | 'category' | 'deadline'> &
-    Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text'>>,
+    Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text' | 'payout_min' | 'payout_max' | 'typical_payout'>>,
 >(
   lawsuits: T[],
   opts: { q?: string; category?: string; hasDeadline?: boolean; proof?: 'no' },
@@ -95,6 +138,7 @@ export function filterCatalog<
       eligibility_text: l.eligibility_text ?? null,
     }) === 'no');
   }
+  if (flags.catalogValueRank()) return sortCatalogValueFirst(rows);
   return sortKnownDeadlineFirst(rows);
 }
 

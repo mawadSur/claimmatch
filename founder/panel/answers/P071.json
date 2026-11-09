@@ -1,0 +1,13 @@
+{
+  "id": "P071",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and I am not giving a random startup my identity just so I can still go fill the form out myself later. I miss those deadlines even when I mean to file.",
+  "objection": "I don't want a startup storing my identity details.",
+  "would_change_my_mind": "If I could browse listings and open the official claim page with no account and no name, email, or ID collected.",
+  "price_too_cheap": 1,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 20
+}

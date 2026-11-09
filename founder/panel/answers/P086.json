@@ -1,0 +1,13 @@
+{
+  "id": "P086",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I saw a TikTok about a no-proof settlement and my first thought was the catch, not the check. I am not making an account on a free-during-beta site that still sends me to file the official form myself, which is the part I already put off until the deadline is gone.",
+  "objection": "If it's free during beta, what's the catch later — my data, a subscription, or both?",
+  "would_change_my_mind": "Tell me the real price up front, let me open that TikTok settlement and the official form with no account, and actually get the claim in before I forget.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

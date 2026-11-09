@@ -91,7 +91,7 @@ export function displayProofLabel(row: VerifiedFieldSource): string {
 export function overlayVerifiedFacts<
   T extends {
     qualifies: string | null;
-    proof: string;
+    proof: string | null;
     administrator: string | null;
     missing?: string[];
   },

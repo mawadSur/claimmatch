@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
+import { NEUTRAL_BETA_FEE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 
 export const metadata: Metadata = {
   title: 'Create your free account',
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
 const BETA_BULLETS = [
   'Free during beta. We may introduce a fee later.',
   'Browse settlements that are open for claims.',
+  'Keep track of the claims you file on official sites.',
+];
+
+const TRUST_BULLETS = [
+  NEUTRAL_BETA_FEE_COPY,
+  'Browse settlements that are open for claims — no account needed.',
   'Keep track of the claims you file on official sites.',
 ];
 
@@ -31,7 +38,8 @@ function AuthFormFallback() {
 }
 
 export default function SignupPage() {
-  const bullets = flags.feeDisclosure() ? DISCLOSED_BULLETS : BETA_BULLETS;
+  const trustCopy = flags.panelTrustCopy();
+  const bullets = flags.feeDisclosure() ? DISCLOSED_BULLETS : trustCopy ? TRUST_BULLETS : BETA_BULLETS;
 
   return (
     <section className="bg-brand-50">
@@ -59,7 +67,7 @@ export default function SignupPage() {
 
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
-              <AuthForm mode="signup" />
+              <AuthForm mode="signup" storeNote={trustCopy ? WHAT_WE_STORE_MINIMAL : undefined} />
             </Suspense>
           </div>
 

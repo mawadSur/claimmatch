@@ -66,7 +66,7 @@ export function ClaimFlow({
     posthog.capture('match_viewed', {
       lawsuit_id: settlement.id,
       slug: settlement.slug,
-      title: settlement.title,
+      source: 'claim_flow',
     });
   }, [posthog, settlement.id, settlement.slug, settlement.title]);
   const [claim, setClaim] = useState<ClaimView | null>(initialClaim);
@@ -104,7 +104,12 @@ export function ClaimFlow({
   // rules, and may find they don't qualify. The claim is saved when they tell
   // us they filed, or choose "Not yet: save to my claims".
   function openedOfficialForm() {
-    posthog?.capture('official_form_opened');
+    posthog?.capture('official_form_opened', {
+      lawsuit_id: settlement.id,
+      slug: settlement.slug,
+      intent: 'official_form',
+      is_filing: false,
+    });
   }
 
   let body: React.ReactNode;

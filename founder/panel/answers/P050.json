@@ -1,0 +1,13 @@
+{
+  "id": "P050",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, and a free account on lawsuitai.org so I can go file somewhere else is the same pitch. I got breached once — I am not giving a startup my address or phone for unverified listings.",
+  "objection": "Is this a scam or a data grab? That is the first thing I think, and 'free during beta, we might charge later' sounds like they want my identity now.",
+  "would_change_my_mind": "Let me search the named breach I was in, open the official administrator notice, and never create an account or give an address or phone.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 25
+}

@@ -31,4 +31,11 @@ describe('AuthForm signed-in path', () => {
     expect(src).toContain("posthog?.capture('signup_error', { code })");
     expect(src).not.toContain("capture('signup_error', { message");
   });
+
+  it('does not treat login as signup, and requires a session for signup_completed', () => {
+    expect(src).toContain("capture('login_completed', { evidence: 'password_sign_in' }, { send_instantly: true })");
+    expect(src).toContain("capture('signup_completed', { evidence: 'session_after_signup' }, { send_instantly: true })");
+    expect(src).toContain('if (isSignup)');
+    expect(src).toContain('signInWithPassword');
+  });
 });

@@ -1,0 +1,13 @@
+{
+  "id": "P029",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I assume these free-money sites are scams until proven otherwise, and a TikTok about a no-proof settlement is the oldest hook in the book. I'm not creating an account so I can chase ten-dollar payouts and still fill out the official form myself.",
+  "objection": "You say the listings aren't verified and a paid model may come later — so I give you my info now for unverified claims, and then you start charging. What's the catch?",
+  "would_change_my_mind": "If my bank or the official claims administrator pointed me here, I could check a settlement without an account, and it paid enough to be worth an evening — a couple hundred, not ten bucks.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

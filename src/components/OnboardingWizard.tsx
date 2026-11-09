@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePostHog } from 'posthog-js/react';
+import { profileCompletedProperties } from '@/lib/analytics/events';
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { US_STATES } from '@/lib/utils';
 import { safeNextOr } from '@/lib/safe-next';
@@ -42,13 +44,16 @@ export function OnboardingWizard({
   email,
   next,
   profileV2 = false,
+  storeNote,
 }: {
   initial: OnboardingInitial;
   email: string | null;
   next: string;
   profileV2?: boolean;
+  storeNote?: string;
 }) {
   const router = useRouter();
+  const posthog = usePostHog();
   const lastStep = profileV2 ? 3 : 2;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [facts, setFacts] = useState<DraftFact[]>(() => draftsFromFacts(initial.facts));
@@ -75,7 +80,10 @@ export function OnboardingWizard({
     setPreviewHydrated(true);
   }, [previewHydrated, state]);
 
-  function finish(result: Awaited<ReturnType<typeof saveOnboardingProfile>>) {
+  function finish(
+    result: Awaited<ReturnType<typeof saveOnboardingProfile>>,
+    saved: { profile: boolean; hasName: boolean; hasState: boolean },
+  ) {
     if (!result.ok) {
       setAction(null);
       if (result.signedOut) {
@@ -84,6 +92,13 @@ export function OnboardingWizard({
       }
       setError({ message: result.error, field: result.field });
       return;
+    }
+    if (saved.profile) {
+      const props = profileCompletedProperties({
+        hasName: saved.hasName,
+        hasState: saved.hasState,
+      });
+      if (props) posthog?.capture('profile_completed', props);
     }
     clearStoredMatchPreview();
     startTransition(() => {
@@ -98,22 +113,19 @@ export function OnboardingWizard({
     try {
       const preview = readStoredMatchPreview();
       const merged = mergePreviewIntoAnswers(answers, preview);
+      const savedProfile = kind === 'save' || Boolean(preview);
+      const hasName = Boolean(fullName.trim());
+      const hasState = Boolean((state || preview?.state || '').trim());
       finish(
-        kind === 'save'
+        savedProfile
           ? await saveOnboardingProfile({
               full_name: fullName,
               state: state || preview?.state || '',
               attributes: merged,
               facts: profileV2 ? draftsToPayload(facts) : undefined,
             })
-          : preview
-            ? await saveOnboardingProfile({
-                full_name: fullName,
-                state: state || preview.state || '',
-                attributes: merged,
-                facts: profileV2 ? draftsToPayload(facts) : undefined,
-              })
-            : await skipOnboarding(),
+          : await skipOnboarding(),
+        { profile: savedProfile, hasName, hasState },
       );
     } catch {
       setAction(null);
@@ -157,6 +169,7 @@ export function OnboardingWizard({
             All optional. Next we&rsquo;ll ask a few short questions so we can
             find settlements that may apply to you.
           </p>
+          {storeNote && <p className="mt-2 text-xs leading-relaxed text-ink-muted">{storeNote}</p>}
 
           <div className="mt-6 space-y-5">
             <div>

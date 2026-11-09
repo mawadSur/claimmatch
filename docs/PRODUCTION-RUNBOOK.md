@@ -43,7 +43,7 @@ CI applies 0001–0032 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `MATCH_PREVIEW_ENABLED`, `SIGNUP_CONTEXT_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED`, `HELD_CLOSURE_TRIAGE_ENABLED`, `HELD_AUTO_CLOSE_PAST_DEADLINE`, `DEADLINE_REMINDERS_ENABLED`, `ONBOARDING_DRIP_ENABLED`, `PROFILE_COMPLETENESS_ENABLED`, `SOFT_INVITE_LANDING_ENABLED`, `INGEST_HELD_IS_WARNING`, `PROFILE_V2_ENABLED` and `MATCH_STORE_ENABLED`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `MATCH_PREVIEW_ENABLED`, `SIGNUP_CONTEXT_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED`, `HELD_CLOSURE_TRIAGE_ENABLED`, `HELD_AUTO_CLOSE_PAST_DEADLINE`, `DEADLINE_REMINDERS_ENABLED`, `ONBOARDING_DRIP_ENABLED`, `PROFILE_COMPLETENESS_ENABLED`, `SOFT_INVITE_LANDING_ENABLED`, `INGEST_HELD_IS_WARNING`, `PROFILE_V2_ENABLED`, `MATCH_STORE_ENABLED`, `PANEL_TRUST_COPY_ENABLED`, `CATALOG_VALUE_RANK_ENABLED` and `SETTLEMENT_QUIZ_ENABLED`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing except the `jobs` row), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
@@ -158,6 +158,9 @@ These are bug-fixes to the intended nightly path, not new product behavior:
 | `INGEST_HELD_IS_WARNING` | off | When the only ingest problem is held closures, the jobs row is `done` with `payload.phase=held_warning`, the cron answers **200** with the held count, and `ingest_alerts.reason=warning`. Failed writes and empty sources still 500. Off: held-only nights still 500. Needs `0026` only for the `warning` alert reason. |
 | `HOME_WEDGE_ENTRIES_ENABLED` | off | Home cards for "Data breach & privacy" and "No proof required" when the live catalog has at least one matching open listing. `HOME_NARROWING_ENABLED` is the older name for the same cards. No match language, no invented counts. |
 | `HOME_ACCOUNT_FIRST_CTA_ENABLED` | off | Home hero primary button goes to `/signup` instead of `/lawsuits`. Off keeps “See open settlements”. |
+| `PANEL_TRUST_COPY_ENABLED` | off | Browse/official-form-need-no-account copy, what-we-store on signup/onboarding, hide unknown payout/proof, and the softened beta pricing line (“Free during beta. Any future pricing will be shown before you use it.”). **Counsel should review the pricing line before flipping.** |
+| `CATALOG_VALUE_RANK_ENABLED` | off | Catalog order: no-proof, then higher listed payout, then sooner deadline, using only stored fields. Off keeps known-deadline-first. |
+| `SETTLEMENT_QUIZ_ENABLED` | off | Signed-out per-settlement checklist from stored eligibility text. Never a “you qualify” verdict. |
 | `MATCH_PREVIEW_ENABLED` | off | Logged-out “See matching settlements” preview from home and `/lawsuits`. Off: no entry, `/preview` 404s, `/api/match-preview` 404s. |
 | `SIGNUP_CONTEXT_ENABLED` | off | Signed-out claim visits go through `/signup` with a safe `next=/claim/{slug}` so confirm-email → onboarding returns to that claim. Off keeps `/login`. |
 
@@ -181,9 +184,13 @@ Then confirm schema health (cron secret; no row data returned):
 
 ```bash
 curl -sS -D - \
-  'https://lawsuitai.org/api/health/schema' \
+  "https://lawsuitai.org/api/health/schema" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
+
+The quotes are for the shell. Do not open `/api/health/schema'` (trailing
+apostrophe) in a browser; that used to return HTML 404 and inflate PostHog
+pageviews. Unmatched `/api/*` paths now return JSON 404.
 
 Expected: HTTP 200 with `ok: true`. If 503, the `missing` list names the
 column or table that is not on production yet. Apply that file and re-check.

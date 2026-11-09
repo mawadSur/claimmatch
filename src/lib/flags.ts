@@ -271,4 +271,20 @@ export const flags = {
    * Public /invite landing for the soft-invite cohort. Off: that path 404s.
    */
   softInviteLanding: () => on('SOFT_INVITE_LANDING_ENABLED'),
+  /**
+   * Panel-objection copy: browse/official-form need no account, what we store,
+   * hide unknown payout/proof, and the neutral beta pricing line. Off: current
+   * live copy stays. Counsel should review the pricing line before flipping.
+   */
+  panelTrustCopy: () => on('PANEL_TRUST_COPY_ENABLED'),
+  /**
+   * Catalog order: no-proof, then higher listed payout, then sooner deadline.
+   * Off: known deadlines first (current behavior). Never invents payouts.
+   */
+  catalogValueRank: () => on('CATALOG_VALUE_RANK_ENABLED'),
+  /**
+   * Signed-out per-settlement checklist from stored eligibility text only.
+   * Off: hidden. Never a "you qualify" verdict.
+   */
+  settlementQuiz: () => on('SETTLEMENT_QUIZ_ENABLED'),
 };

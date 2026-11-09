@@ -1,0 +1,13 @@
+{
+  "id": "P045",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "This is the same shape as the settlement emails I already treat as spam. I look up a named breach on Top Class Actions, not a site called lawsuitai.org that admits its listings are unverified and might start charging later.",
+  "objection": "How is this not just harvesting the fact that I was in a breach? Free now, paid later, file it yourself, listings not checked — that is a scam pattern, and I have already been burned once.",
+  "would_change_my_mind": "If I could search my exact breach and it sent me straight to the official claims-administrator site I already recognize, with no account and no email, and it was recommended by a source I already trust — not an AI domain I found on my own.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 12,
+  "price_too_expensive": 20
+}

@@ -4,7 +4,9 @@ import { CheckCircle2, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
+import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
+import { WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 import { factsFromRows } from '@/lib/profile-facts';
 
 export const metadata: Metadata = {
@@ -80,16 +82,19 @@ export default async function OnboardingPage({
           </ol>
 
           {emailConfirmed && (
-            <div
-              role="status"
-              className="mt-6 flex items-start gap-2 rounded-2xl border border-success-100 bg-success-50 px-4 py-3 text-sm text-success-800"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <span>
-                <span className="font-semibold">Email confirmed.</span> Finish a couple of
-                optional details so we can find settlements that may apply to you.
-              </span>
-            </div>
+            <>
+              <CaptureOnce event="signup_completed" properties={{ evidence: 'email_confirmed' }} />
+              <div
+                role="status"
+                className="mt-6 flex items-start gap-2 rounded-2xl border border-success-100 bg-success-50 px-4 py-3 text-sm text-success-800"
+              >
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>
+                  <span className="font-semibold">Email confirmed.</span> Finish a couple of
+                  optional details so we can find settlements that may apply to you.
+                </span>
+              </div>
+            </>
           )}
 
           <div className="mt-6">
@@ -103,6 +108,7 @@ export default async function OnboardingPage({
               email={user.email ?? null}
               next={destination}
               profileV2={profileV2}
+              storeNote={flags.panelTrustCopy() ? WHAT_WE_STORE_MINIMAL : undefined}
             />
           </div>
         </div>

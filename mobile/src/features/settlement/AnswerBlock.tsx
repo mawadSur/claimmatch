@@ -37,9 +37,9 @@ export function AnswerBlock({ facts, open, official, onCheckIfYouQualify, testID
 
       <View style={styles.facts}>
         {facts.qualifies ? <Fact label={settlement.factWhoQualifies.text} value={facts.qualifies} /> : null}
-        <Fact label={settlement.factListedPayout.text} value={facts.payout} />
+        {facts.payout ? <Fact label={settlement.factListedPayout.text} value={facts.payout} /> : null}
         {facts.deadline ? <Fact label={settlement.factClaimDeadline.text} value={facts.deadline} /> : null}
-        <Fact label={settlement.factProofNeeded.text} value={facts.proof} />
+        {facts.proof ? <Fact label={settlement.factProofNeeded.text} value={facts.proof} /> : null}
         {facts.administrator ? <Fact label={settlement.factAdministrator.text} value={facts.administrator} /> : null}
       </View>
 

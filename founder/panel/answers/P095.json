@@ -1,0 +1,13 @@
+{
+  "id": "P095",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I already treat settlement emails as spam, so a random site that is not a law firm, with listings it admits are unverified, is not something I would sign up for. If I even bother, I would Google the one settlement I heard about and go straight to the official form.",
+  "objection": "How do you even know I qualify? If you do not file for me and I still have to check the official notice myself, this just feels like another way to grab my email.",
+  "would_change_my_mind": "If my bank or a store I already use showed me one specific settlement I qualify for and linked me to the official claim form, I might file that one. I still would not create an account to browse a list.",
+  "price_too_cheap": 0,
+  "price_cheap": 5,
+  "price_expensive": 15,
+  "price_too_expensive": 25
+}

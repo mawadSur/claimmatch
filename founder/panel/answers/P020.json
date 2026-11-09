@@ -1,0 +1,13 @@
+{
+  "id": "P020",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "need",
+  "reason": "I will chase a deal if the numbers work, and they don't: these checks are like ten dollars and I still have to go fill out the official form myself. A free listing of claims I already skip is not something I would use, let alone pay for later.",
+  "objection": "The payouts are like $10, not worth it. I am not spending my evening on a claim form for that, and this site does not even do the form for me.",
+  "would_change_my_mind": "If I could see a no-proof claim that actually named something I use, with a payout big enough to be worth twenty minutes — a couple hundred, not ten — and finish it without making an account first.",
+  "price_too_cheap": 0,
+  "price_cheap": 2,
+  "price_expensive": 5,
+  "price_too_expensive": 10
+}

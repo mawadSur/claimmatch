@@ -5,7 +5,7 @@ import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { homeStats } from '@/lib/home-stats';
-import { OFFICIAL_FILING_IS_FREE } from '@/lib/copy';
+import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
 import { HomeHero } from '@/components/home/HomeHero';
 import { HowItWorks, type HowStep } from '@/components/home/HowItWorks';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
@@ -152,6 +152,7 @@ export default async function HomePage() {
         primary={primary}
         extra={previewOn ? <MatchPreviewEntry variant="hero" /> : null}
         freeLabel={freeLabel}
+        browseNote={flags.panelTrustCopy() ? `${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}` : undefined}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
         phone={SCREENS.dashboard}
@@ -244,7 +245,7 @@ export default async function HomePage() {
         primary={primary}
         secondary={secondary}
         openCount={stats?.open ?? null}
-        costLine={disclose ? OFFICIAL_FILING_IS_FREE : `ClaimMatch is free during beta. ${OFFICIAL_FILING_IS_FREE}`}
+        costLine={disclose ? OFFICIAL_FILING_IS_FREE : `${publicBetaFeeCopy()} ${OFFICIAL_FILING_IS_FREE}`}
       />
     </>
   );

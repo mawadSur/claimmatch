@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 /**
@@ -16,7 +16,7 @@ export function FeeDisclosure({
 }) {
   const body = flags.feeDisclosure()
     ? feeEveryClaimCopy()
-    : `${BETA_FEE_COPY} You always file on the official site, and ClaimMatch never files for you.`;
+    : `${publicBetaFeeCopy()} You always file on the official site, and ClaimMatch never files for you.`;
 
   if (compact) {
     return (

@@ -4,12 +4,13 @@ import { checkRequiredSchema, type SchemaProbeClient } from '@/lib/schema-check'
 const svc = vi.hoisted(() => ({
   from: vi.fn(),
   rpc: vi.fn(),
+  configured: true,
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: () => svc,
   createClient: vi.fn(),
-  isSupabaseConfigured: () => true,
+  isSupabaseConfigured: () => svc.configured,
 }));
 
 import { GET as schemaGet } from '@/app/api/health/schema/route';
@@ -87,6 +88,7 @@ describe('/api/health/schema', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    svc.configured = true;
     vi.stubEnv('CRON_SECRET', SECRET);
   });
 
@@ -98,6 +100,13 @@ describe('/api/health/schema', () => {
     vi.stubEnv('NODE_ENV', 'production');
     const res = await schemaGet(req(false));
     expect(res.status).toBe(401);
+  });
+
+  it('returns 401 when Supabase is not configured, without probing placeholder hosts', async () => {
+    svc.configured = false;
+    const res = await schemaGet(req());
+    expect(res.status).toBe(401);
+    expect(svc.from).not.toHaveBeenCalled();
   });
 
   it('returns 200 when probes succeed', async () => {

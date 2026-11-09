@@ -1,0 +1,13 @@
+{
+  "id": "P028",
+  "buys": false,
+  "purchases_first_month": 0,
+  "reason_code": "trust",
+  "reason": "I like an easy claim as much as anyone, but I already treat settlement emails as spam, and a free-during-beta site that still sends me to file the official form myself is the same pitch with extra steps. I am not making an account so you can flip on a fee later.",
+  "objection": "If it's free during beta, what's the catch later — do you start charging, take a cut of the check, or sell whatever I typed in?",
+  "would_change_my_mind": "Let me browse listings with no account, see one no-proof claim for a bank or store I actually use, and put in writing that you stay free with no cut of any payout.",
+  "price_too_cheap": 0,
+  "price_cheap": 3,
+  "price_expensive": 8,
+  "price_too_expensive": 15
+}

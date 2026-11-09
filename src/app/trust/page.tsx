@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { BETA_FEE_COPY, feeEveryClaimCopy } from '@/lib/copy';
+import { BETA_FEE_COPY, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { legalContact } from '@/lib/legal-contact';
@@ -117,14 +117,26 @@ export default function TrustPage() {
             }
           : f,
       )
-    : FACTS;
+    : flags.panelTrustCopy()
+      ? FACTS.map((f) =>
+          f.title === 'It’s free during beta'
+            ? { ...f, body: `${publicBetaFeeCopy()} We will never ask you to pay to file a claim.` }
+            : f,
+        )
+      : FACTS;
   const faq = disclose
     ? FAQ.map((f) =>
         f.q === 'What does ClaimMatch cost?'
           ? { ...f, a: `${feeEveryClaimCopy()} We never handle settlement payments.` }
           : f,
       )
-    : FAQ;
+    : flags.panelTrustCopy()
+      ? FAQ.map((f) =>
+          f.q === 'What does ClaimMatch cost?'
+            ? { ...f, a: `${publicBetaFeeCopy()} We never handle settlement payments.` }
+            : f,
+        )
+      : FAQ;
 
   return (
     <>

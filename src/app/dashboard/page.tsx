@@ -11,6 +11,8 @@ import { YourMatches } from '@/components/claims/YourMatches';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
+import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { matchesViewedProperties } from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
 
@@ -58,9 +60,16 @@ export default async function DashboardPage({
       ? profileCompleteness(matchProfile, catalog.lawsuits, now)
       : null;
   const showCompleteness = completeness ? shouldShowCompletenessCard(completeness) : false;
+  // matches_viewed: counted from the matches loadDashboardData ranked.
+  const matchView = matchesViewedProperties({
+    matchCount: matches.length,
+    strongCount: matches.filter((row) => row.strength === 'strong').length,
+    possibleCount: matches.filter((row) => row.strength !== 'strong').length,
+  });
 
   return (
     <div className="bg-gray-50">
+      {matchView ? <CaptureOnce event="matches_viewed" properties={matchView} /> : null}
       <div className="container-page space-y-10 py-10 sm:py-14">
         <header>
           <span className="badge-brand gap-1.5">
