@@ -126,6 +126,15 @@ describe('settlement facts hide unknowns', () => {
     expect(facts.administrator).toBe('Acme Admin');
   });
 
+  it('omits payout and proof when unknown and the leftover catalog flag is on', () => {
+    vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', '1');
+    const facts = settlementAnswerFacts(
+      makeLawsuit({}, { typical_payout: null, administrator: 'Acme Admin', eligibility: { proof: 'unknown' } }),
+    );
+    expect(facts.payout).toBeNull();
+    expect(facts.proof).toBeNull();
+  });
+
   it('omits payout and proof when unknown and the flag is on', () => {
     vi.stubEnv('PANEL_TRUST_COPY_ENABLED', '1');
     const facts = settlementAnswerFacts(

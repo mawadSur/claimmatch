@@ -66,6 +66,9 @@ test.describe('panel-trust signed-out surfaces', () => {
 
     await page.goto('/lawsuits');
     await expect(page.locator('body')).toContainText(/no proof required/i);
+    await expect(page.getByText('Unknown', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Not stated', { exact: true })).toHaveCount(0);
+    await expect(page.locator('body')).toContainText(/don.t have these details yet/i);
     await shot(page, 'panel-trust-catalog.png');
   });
 

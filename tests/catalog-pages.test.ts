@@ -120,6 +120,16 @@ describe('LawsuitCard', () => {
     expect(html).not.toMatch(/>None</);
   });
 
+  it('omits Unknown proof when CATALOG_HIDE_UNKNOWNS_ENABLED is on', () => {
+    vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', '1');
+    const html = render({
+      lawsuit: lawsuit({ eligibility: {}, proof_required: false, typical_payout: null, deadline: null }),
+    });
+    expect(html).not.toContain('Unknown');
+    expect(html).not.toContain('Not stated');
+    expect(html).toContain('have these details yet');
+  });
+
   it('labels cards with no deadline instead of "Not listed"', () => {
     const html = render({ lawsuit: lawsuit({ deadline: null }) });
     expect(html).toContain('No deadline listed');

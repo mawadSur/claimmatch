@@ -25,7 +25,6 @@ import { proofDetail } from '@/lib/proof';
 import { settlementProofDetail } from '@/lib/settlement-guides';
 import {
   displayEligibilityText,
-  displayProofLabel,
   overlayVerifiedFacts,
   showVerifiedBadge,
 } from '@/lib/verified-fields';
@@ -149,7 +148,6 @@ export default async function LawsuitDetailPage({ params }: Params) {
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
   const eligibility = displayEligibilityText(lawsuit);
   const verified = showVerifiedBadge(lawsuit);
-  const proofShown = displayProofLabel(lawsuit);
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
@@ -310,10 +308,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </dd>
             </div>
             )}
-            {(!trustCopy || facts.proof) && (
+            {facts.proof && (
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
-              <dd className="mt-1 text-base font-bold text-ink">{proofShown}</dd>
+              <dd className="mt-1 text-base font-bold text-ink">{facts.proof}</dd>
               <dd className="mt-1 text-sm text-ink-muted">
                 {verified
                   ? proofDetail({

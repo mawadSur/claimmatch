@@ -20,6 +20,7 @@
     "lib/disclaimer.ts",
     "lib/lawsuit-display.ts",
     "lib/settlement-seo.ts",
+    "lib/catalog-unknowns.ts",
     "lib/settlement-guides.ts",
     "lib/catalog-page.ts",
     "lib/recently-closed.ts",

@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { CheckCircle2, ClipboardList, ExternalLink, Search } from 'lucide-react';
 import { Disclaimer } from '@/components/Disclaimer';
 import { InviteSignupCta } from '@/components/invite/InviteSignupCta';
+import { BetaInviteCapture } from '@/components/invite/BetaInviteCapture';
+import { flags } from '@/lib/flags';
 import { FeeDisclosure } from '@/components/FeeDisclosure';
 import { isInviteLandingEnabled } from '@/lib/soft-invite';
 import { publicBetaFeeCopy } from '@/lib/copy';
@@ -61,6 +63,11 @@ export default function InvitePage() {
               <InviteSignupCta />
             </Suspense>
           </div>
+          {flags.betaInviteCodes() ? (
+            <Suspense fallback={null}>
+              <BetaInviteCapture />
+            </Suspense>
+          ) : null}
         </div>
 
         <ol className="mx-auto mt-12 max-w-xl space-y-4">

@@ -74,6 +74,10 @@ unset FEE_DISCLOSURE_ENABLED ASSISTED_FILING_ENABLED PROFILE_V2_ENABLED MATCH_ST
 export PANEL_TRUST_COPY_ENABLED=1
 export CATALOG_VALUE_RANK_ENABLED=1
 export SETTLEMENT_QUIZ_ENABLED=1
+# Leftover catalog "Unknown" omission. Production leaves this unset.
+export CATALOG_HIDE_UNKNOWNS_ENABLED=1
+# Soft-beta invite/feedback stay off: the fixture has no beta_feedback table.
+unset BETA_INVITE_CODES_ENABLED BETA_FEEDBACK_ENABLED || true
 
 PIDS=()
 cleanup() {

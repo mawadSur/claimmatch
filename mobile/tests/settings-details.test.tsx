@@ -17,6 +17,11 @@ const mockAuth: { status: string; user: { id: string; email: string } | null; se
 };
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => mockAuth }));
 
+const mockFlags: Record<string, boolean> = {};
+jest.mock('@/providers/ConfigProvider', () => ({
+  useConfig: () => ({ isFlagOn: (name: string) => mockFlags[name] === true }),
+}));
+
 const mockProfileRow: { current: Record<string, unknown> | null; offline: boolean } = { current: null, offline: false };
 
 /** PostgREST's answer to the app's select: plain columns, and `alias:attributes->key` paths into the stored attributes. */
@@ -124,6 +129,7 @@ beforeEach(() => {
   mockProfileRow.current = { ...STORED };
   mockProfileRow.offline = false;
   mockFetch.mockResolvedValue(jsonResponse(200, { ok: true }));
+  for (const key of Object.keys(mockFlags)) delete mockFlags[key];
 });
 
 afterEach(() => client.clear());
@@ -151,6 +157,12 @@ describe('Your details and emails', () => {
       attributes: { owns_vehicle: true, vehicle_brands: ['Ford'], used_banking: false, uses_social_media: true },
     });
     expect(JSON.stringify(body)).not.toContain('took_medication');
+  });
+
+  it('hides the phone field when CATALOG_HIDE_UNKNOWNS_ENABLED is on', async () => {
+    mockFlags.CATALOG_HIDE_UNKNOWNS_ENABLED = true;
+    await renderDetails();
+    expect(screen.queryByLabelText(settings.phoneLabel.text)).toBeNull();
   });
 
   it('does not offer the paused new-settlement emails, and leaves the saved choice alone', async () => {
@@ -359,6 +371,11 @@ describe('details form rules', () => {
     expect(detailsBody(brands, false, at, { owns_vehicle: true, vehicle_brands: ['Kia'] })).toMatchObject({
       attributes: { owns_vehicle: true, vehicle_brands: ['Ford', 'Kia'] },
     });
+  });
+
+  it('omits phone from the save body when collection is off', () => {
+    expect(detailsBody(values, false, at, values.answers, false)).not.toHaveProperty('phone');
+    expect(detailsErrors({ ...values, phone: 'call me' }, false, false)).toEqual({});
   });
 
   it('checks each field with the settings rules', () => {

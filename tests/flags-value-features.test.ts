@@ -52,6 +52,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.panelTrustCopy()).toBe(false);
     expect(flags.catalogValueRank()).toBe(false);
     expect(flags.settlementQuiz()).toBe(false);
+    expect(flags.betaInviteCodes()).toBe(false);
+    expect(flags.betaFeedback()).toBe(false);
+    expect(flags.catalogHideUnknowns()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -98,6 +101,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('PANEL_TRUST_COPY_ENABLED', 'on');
     vi.stubEnv('CATALOG_VALUE_RANK_ENABLED', 'yes');
     vi.stubEnv('SETTLEMENT_QUIZ_ENABLED', 'true');
+    vi.stubEnv('BETA_INVITE_CODES_ENABLED', 'true');
+    vi.stubEnv('BETA_FEEDBACK_ENABLED', 'yes');
+    vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', 'on');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -143,6 +149,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.panelTrustCopy()).toBe(false);
     expect(flags.catalogValueRank()).toBe(false);
     expect(flags.settlementQuiz()).toBe(false);
+    expect(flags.betaInviteCodes()).toBe(false);
+    expect(flags.betaFeedback()).toBe(false);
+    expect(flags.catalogHideUnknowns()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -189,6 +198,9 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('PANEL_TRUST_COPY_ENABLED', '1');
     vi.stubEnv('CATALOG_VALUE_RANK_ENABLED', '1');
     vi.stubEnv('SETTLEMENT_QUIZ_ENABLED', '1');
+    vi.stubEnv('BETA_INVITE_CODES_ENABLED', '1');
+    vi.stubEnv('BETA_FEEDBACK_ENABLED', '1');
+    vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -234,5 +246,8 @@ describe('brief 3 feature flags', () => {
     expect(flags.panelTrustCopy()).toBe(true);
     expect(flags.catalogValueRank()).toBe(true);
     expect(flags.settlementQuiz()).toBe(true);
+    expect(flags.betaInviteCodes()).toBe(true);
+    expect(flags.betaFeedback()).toBe(true);
+    expect(flags.catalogHideUnknowns()).toBe(true);
   });
 });

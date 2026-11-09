@@ -18,6 +18,8 @@ describe('isolated journey is not production E2E', () => {
     expect(runner).toContain('PANEL_TRUST_COPY_ENABLED=1');
     expect(runner).toContain('CATALOG_VALUE_RANK_ENABLED=1');
     expect(runner).toContain('SETTLEMENT_QUIZ_ENABLED=1');
+    expect(runner).toContain('CATALOG_HIDE_UNKNOWNS_ENABLED=1');
+    expect(runner).toContain('unset BETA_INVITE_CODES_ENABLED BETA_FEEDBACK_ENABLED');
     expect(runner).toContain('Production leaves these unset');
   });
 

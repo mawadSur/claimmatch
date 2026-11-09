@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { inviteSignupHref, isInviteLandingEnabled } from '@/lib/soft-invite';
+import { inviteRefFromSearch, inviteSignupHref, isInviteLandingEnabled } from '@/lib/soft-invite';
 import { SHARE_LINK_DESTINATIONS, isShareLinkDestination, sanitizeDestination } from '@/lib/share-links';
 import { flags } from '@/lib/flags';
 
@@ -33,6 +33,13 @@ describe('invite signup CTA', () => {
       '/signup?utm_source=twitter&ref=soft-1&next=%2Fdashboard',
     );
     expect(inviteSignupHref('next=https://evil.example&utm_medium=email')).toBe('/signup?utm_medium=email');
+  });
+
+  it('maps /invite?code= to signup ref so first-touch survives the hop', () => {
+    expect(inviteSignupHref('code=tester-ada')).toBe('/signup?ref=tester-ada');
+    expect(inviteSignupHref('code=tester-ada&ref=other')).toBe('/signup?ref=other');
+    expect(inviteRefFromSearch(new URLSearchParams('code=tester-ada'), false)).toBeNull();
+    expect(inviteRefFromSearch(new URLSearchParams('code=tester-ada'), true)).toBe('tester-ada');
   });
 });
 
