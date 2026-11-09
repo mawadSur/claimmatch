@@ -1,10 +1,10 @@
-import { eligibilitySummary } from '@/lib/claim-input';
-import { flags } from '@/lib/flags';
-import { officialLinkFor } from '@/lib/lawsuits';
-import { proofLabel, proofStatus } from '@/lib/proof';
-import { settlementGuideFaqs, settlementProofDetail } from '@/lib/settlement-guides';
-import { LAWSUIT_CATEGORIES, type Lawsuit } from '@/lib/types';
-import { formatDeadline, SITE, slugify } from '@/lib/utils';
+import { eligibilitySummary } from './claim-input';
+import { flags } from './flags';
+import { officialLinkFor } from './lawsuit-display';
+import { proofLabel, proofStatus } from './proof';
+import { settlementGuideFaqs, settlementProofDetail } from './settlement-guides';
+import { LAWSUIT_CATEGORIES, type Lawsuit } from './types';
+import { formatDeadline, SITE, slugify } from './utils';
 
 /** Hourly ISR. Page files must export `revalidate = 3600` as a literal. */
 
@@ -76,7 +76,7 @@ export function categoryHubPath(category: string): string {
 
 export const CLOSING_SOON_PATH = '/settlements/closing-soon';
 export const NEW_SETTLEMENTS_PATH = '/settlements/new';
-export { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
+export { RECENTLY_CLOSED_PATH } from './recently-closed';
 
 const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
 

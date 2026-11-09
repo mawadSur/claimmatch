@@ -67,9 +67,19 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * Shared email/password authentication card used by /login and /signup.
  * Uses the browser Supabase client. Reads ?next to send users back where they
  * came from after logging in. Must be rendered inside <Suspense> because it
- * calls useSearchParams().
+ * calls useSearchParams(). `switchPrompt={false}` leaves out the "New to
+ * ClaimMatch? / Already have an account?" line, for a page that offers the
+ * other form itself.
  */
-export function AuthForm({ mode, storeNote }: { mode: Mode; storeNote?: string }) {
+export function AuthForm({
+  mode,
+  switchPrompt = true,
+  storeNote,
+}: {
+  mode: Mode;
+  switchPrompt?: boolean;
+  storeNote?: string;
+}) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
   // Only a path on this site (no "//host", "/\host" or control characters), so
@@ -432,15 +442,17 @@ export function AuthForm({ mode, storeNote }: { mode: Mode; storeNote?: string }
         </button>
       </form>
 
-      <p className="mt-5 text-center text-sm text-ink-muted">
-        {isSignup ? 'Already have an account?' : 'New to ClaimMatch?'}{' '}
-        <Link
-          href={switchHref}
-          className="text-link"
-        >
-          {isSignup ? 'Log in' : 'Create an account'}
-        </Link>
-      </p>
+      {switchPrompt && (
+        <p className="mt-5 text-center text-sm text-ink-muted">
+          {isSignup ? 'Already have an account?' : 'New to ClaimMatch?'}{' '}
+          <Link
+            href={switchHref}
+            className="text-link"
+          >
+            {isSignup ? 'Log in' : 'Create an account'}
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

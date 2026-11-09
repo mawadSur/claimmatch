@@ -1,7 +1,6 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Lawsuit } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // A fake Supabase client: records the query and returns canned rows.
@@ -49,7 +48,6 @@ vi.mock('@/lib/supabase/server', () => {
   };
 });
 
-import { getLawsuitBySlug, lookupLawsuitBySlug, lookupLawsuits } from '@/lib/lawsuits';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import LawsuitDetailPage, { generateMetadata } from '@/app/lawsuits/[slug]/page';
 import LawsuitsPage, { generateMetadata as generateLawsuitsMetadata } from '@/app/lawsuits/page';
@@ -57,44 +55,9 @@ import SettlementNotFound from '@/app/lawsuits/[slug]/not-found';
 import HomePage from '@/app/page';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
 import { FILING_FREE_WARNING } from '@/lib/copy';
+import { catalogLawsuit } from './helpers';
 
-function lawsuit(overrides: Partial<Lawsuit> = {}): Lawsuit {
-  return {
-    id: '00000000-0000-4000-8000-000000000001',
-    slug: 'amazon-return-policy-settlement',
-    title: 'Amazon Return Policy Settlement',
-    summary: 'Amazon Return Policy Settlement. Estimated payout: No fixed amount is stated.',
-    description: 'No fixed amount is stated.',
-    category: 'Consumer Products',
-    status: 'open',
-    typical_payout: 'No fixed amount is stated.',
-    payout_min: null,
-    payout_max: null,
-    proof_required: false,
-    deadline: '2099-12-01',
-    eligibility: { proof: 'optional' },
-    eligibility_text: 'Open to eligible US residents.',
-    source_id: null,
-    source_url: 'https://settlesignal.com/settlements/amazon-return-policy-settlement/',
-    claim_url: 'https://www.returnsettlement.com/submit-claim',
-    external_id: 'settlesignal:amazon',
-    hero_image_url: null,
-    is_featured: false,
-    review_status: 'published',
-    extraction_confidence: null,
-    administrator: null,
-    raw_source_text: null,
-    estimated_value_min: null,
-    estimated_value_max: null,
-    reviewed_by: null,
-    reviewed_at: null,
-    last_seen_at: null,
-    missed_feed_count: 0,
-    created_at: '2026-10-01T00:00:00Z',
-    updated_at: '2026-10-01T00:00:00Z',
-    ...overrides,
-  };
-}
+const lawsuit = catalogLawsuit;
 
 const BANNED = [
   /we file/i,
@@ -126,82 +89,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
-});
-
-describe('catalog queries', () => {
-  it('ask the database only for rows open for claims', async () => {
-    db.list = { data: [lawsuit()], error: null };
-    const now = new Date('2026-10-16T08:00:00Z'); // 04:00 America/New_York
-    const result = await lookupLawsuits(undefined, now);
-    expect(result).toEqual({ lawsuits: [lawsuit()], error: false });
-
-    const call = (name: string) => db.calls.filter(([m]) => m === name).map(([, a]) => a);
-    expect(call('eq')).toContainEqual(['review_status', 'published']);
-    expect(call('in')).toContainEqual(['status', ['open', 'closing_soon']]);
-    expect(call('or')).toContainEqual(['deadline.is.null,deadline.gte.2026-10-16']);
-    const not = call('not')[0];
-    expect(not[0]).toBe('slug');
-    expect(not[1]).toBe('in');
-    expect(String(not[2])).toContain('robocall-tcpa-settlement');
-    expect(String(not[2])).toContain('heartburn-medication-impurity-settlement');
-  });
-
-  it('drop rows that break the rule even if the database returns them', async () => {
-    db.list = {
-      data: [
-        lawsuit({ slug: 'ok' }),
-        lawsuit({ slug: 'robocall-tcpa-settlement' }),
-        lawsuit({ slug: 'closed', status: 'closed' }),
-        lawsuit({ slug: 'pending', review_status: 'pending_review' }),
-        lawsuit({ slug: 'past', deadline: '2020-01-01' }),
-      ],
-      error: null,
-    };
-    const { lawsuits } = await lookupLawsuits();
-    expect(lawsuits.map((l) => l.slug)).toEqual(['ok']);
-  });
-
-  it('report a failed query instead of falling back to sample data', async () => {
-    db.list = { data: null, error: { message: 'boom' } };
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(await lookupLawsuits()).toEqual({ lawsuits: [], error: true });
-  });
-
-  it('return nothing, and no samples, when Supabase is not configured', async () => {
-    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
-    expect(await lookupLawsuits()).toEqual({ lawsuits: [], error: false });
-    expect(await lookupLawsuitBySlug('nationwide-data-breach-settlement')).toEqual({ status: 'missing' });
-    expect(db.calls).toHaveLength(0);
-  });
-
-  it('treat fictional and unpublished settlements as missing', async () => {
-    expect(await lookupLawsuitBySlug('robocall-tcpa-settlement')).toEqual({ status: 'missing' });
-    expect(db.calls).toHaveLength(0);
-
-    db.single = { data: lawsuit({ review_status: 'pending_review' }), error: null };
-    expect(await lookupLawsuitBySlug('amazon-return-policy-settlement')).toEqual({ status: 'missing' });
-
-    db.single = { data: lawsuit({ status: 'closed' }), error: null };
-    expect((await lookupLawsuitBySlug('amazon-return-policy-settlement')).status).toBe('found');
-
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    db.single = { data: null, error: { message: 'boom' } };
-    expect(await lookupLawsuitBySlug('amazon-return-policy-settlement')).toEqual({ status: 'error' });
-  });
-
-  it('getLawsuitBySlug returns only open settlements unless asked for closed ones', async () => {
-    db.single = { data: lawsuit(), error: null };
-    expect((await getLawsuitBySlug('amazon-return-policy-settlement'))?.slug).toBe('amazon-return-policy-settlement');
-
-    db.single = { data: lawsuit({ status: 'closed' }), error: null };
-    expect(await getLawsuitBySlug('amazon-return-policy-settlement')).toBeNull();
-    expect((await getLawsuitBySlug('amazon-return-policy-settlement', { includeClosed: true }))?.status).toBe('closed');
-
-    db.single = { data: lawsuit({ deadline: '2020-01-01' }), error: null };
-    expect(await getLawsuitBySlug('amazon-return-policy-settlement')).toBeNull();
-
-    expect(await getLawsuitBySlug('robocall-tcpa-settlement', { includeClosed: true })).toBeNull();
-  });
 });
 
 describe('LawsuitCard', () => {

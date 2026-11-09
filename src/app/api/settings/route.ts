@@ -1,20 +1,35 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { isJsonRequest } from '@/lib/json-request';
+import { AUTH_UNAVAILABLE, getRequestUser } from '@/lib/supabase/request-user';
 import { applyAttributePatch } from '@/lib/profile-attributes';
+import { rateLimit } from '@/lib/ratelimit';
 import { parseSettingsInput } from '@/lib/settings-input';
 
 export const runtime = 'nodejs';
 
 /** POST /api/settings — update the signed-in user's details and email choice. */
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Please log in again to save your settings.' }, { status: 401 });
+  const auth = await getRequestUser(req);
+  if (!auth.user) {
+    return auth.unavailable
+      ? NextResponse.json(AUTH_UNAVAILABLE, { status: 503, headers: { 'Cache-Control': 'no-store' } })
+      : NextResponse.json({ error: 'Please log in again to save your settings.' }, { status: 401 });
+  }
+  const { supabase, user } = auth;
+
+  const limit = rateLimit(`settings:${user.id}`, { limit: 20, windowMs: 60_000 });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a moment and try again.' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } },
+    );
   }
 
+  // JSON only: a same-site form or text/plain post cannot reach this route
+  // without a CORS preflight (defense in depth on top of SameSite cookies).
+  if (!isJsonRequest(req)) {
+    return NextResponse.json({ error: 'Send the request as JSON.' }, { status: 415 });
+  }
   let body: unknown;
   try {
     body = await req.json();

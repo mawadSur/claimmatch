@@ -182,4 +182,26 @@ describe('parseSettingsInput', () => {
       },
     });
   });
+
+  it('marks onboarding done for "Skip for now" and for saved onboarding answers', () => {
+    expect(parseSettingsInput({ onboarded: true })).toEqual({ ok: true, patch: { onboarded: true } });
+    expect(
+      parseSettingsInput({
+        full_name: ' Jane Doe ',
+        state: 'ny',
+        attributes: { had_data_breach: true },
+        onboarded: true,
+      }),
+    ).toEqual({
+      ok: true,
+      patch: { full_name: 'Jane Doe', state: 'NY', attributes: { had_data_breach: true }, onboarded: true },
+    });
+  });
+
+  it('never un-marks onboarding and leaves it alone when not sent', () => {
+    for (const onboarded of [false, 'true', 1, null]) {
+      expect(parseSettingsInput({ onboarded })).toMatchObject({ ok: false });
+    }
+    expect(parseSettingsInput({ email_opt_in: true })).toEqual({ ok: true, patch: { email_opt_in: true } });
+  });
 });

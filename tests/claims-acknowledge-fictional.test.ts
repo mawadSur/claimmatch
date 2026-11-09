@@ -27,7 +27,26 @@ vi.mock('@/lib/claims-server', async (importOriginal) => {
   };
 });
 
+// The app's bearer path: Supabase Auth checks the token.
+const b = vi.hoisted(() => ({ user: null as { id: string } | null, authDown: false }));
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: {
+      getUser: async () => {
+        if (b.user) return { data: { user: b.user }, error: null };
+        return {
+          data: { user: null },
+          error: b.authDown
+            ? { name: 'AuthRetryableFetchError', message: 'fetch failed', status: 0 }
+            : { name: 'AuthApiError', message: 'invalid JWT', status: 403, code: 'bad_jwt' },
+        };
+      },
+    },
+  }),
+}));
+
 import { POST } from '@/app/api/claims/acknowledge-fictional/route';
+import { AUTH_UNAVAILABLE } from '@/lib/supabase/request-user';
 
 const settlement = (slug: string) => ({
   id: `id-${slug}`,
@@ -84,8 +103,44 @@ describe('POST /api/claims/acknowledge-fictional', () => {
     expect((await post()).status).toBe(401);
     h.user = { id: 'user-a' };
     expect((await post('text/plain')).status).toBe(415);
+    expect((await post('text/plain; x=application/json')).status).toBe(415);
     h.failed = true;
     expect((await post()).status).toBe(503);
+    // A charset parameter is still JSON: it gets past the 415 check.
+    expect((await post('application/json; charset=utf-8')).status).toBe(503);
+    expect(h.applied).toHaveLength(0);
+  });
+
+  it('accepts the app’s bearer token, and a rejected token gets 401 even with a cookie session', async () => {
+    const bearerPost = () =>
+      POST(
+        new Request('http://localhost/api/claims/acknowledge-fictional', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: 'Bearer app-header.app-payload.app-signature' },
+          body: '{}',
+        }),
+      );
+    h.user = null;
+    b.user = { id: 'user-b' };
+    const res = await bearerPost();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ acknowledged: 2 });
+    expect(h.applied[0]).toMatchObject({ claimId: 'c1', userId: 'user-b' });
+
+    h.applied = [];
+    h.user = { id: 'user-a' };
+    b.user = null;
+    expect((await bearerPost()).status).toBe(401);
+    expect(h.applied).toHaveLength(0);
+
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    b.authDown = true;
+    const unavailable = await bearerPost();
+    errorLog.mockRestore();
+    b.authDown = false;
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get('cache-control')).toBe('no-store');
+    expect(await unavailable.json()).toEqual(AUTH_UNAVAILABLE);
     expect(h.applied).toHaveLength(0);
   });
 });

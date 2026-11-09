@@ -1,5 +1,7 @@
-import { proofDetail } from '@/lib/proof';
-import type { Lawsuit, ProofRequired } from '@/lib/types';
+import { filterOpenForClaims, type OpenRuleFields } from './open-for-claims';
+import { proofDetail } from './proof';
+import type { Lawsuit, ProofRequired } from './types';
+import { fingerprint, todayInDeadlineZone } from './utils';
 
 export interface GuideFaq {
   q: string;
@@ -9,9 +11,15 @@ export interface GuideFaq {
 /**
  * Curated official-notice facts for a few high-interest catalog rows.
  *
- * Applied at read time in lawsuits.ts so ingest, admin review and the
+ * Applied at read time wherever a deadline or official link is shown,
+ * checked or scheduled: the catalog (lawsuits.ts and the app's
+ * mobile/src/data/catalog.ts), the claim flow's reads (claims-server.ts: the
+ * claim screen, claim writes, Your claims and the app's reminders), the
+ * ingest's deadline closes and the email jobs. So ingest, admin review and the
  * database stay unchanged. A guide never creates a listing, never stamps
- * verified_at, and never invents a payout, deadline or class rule.
+ * verified_at, and never invents a payout, deadline or class rule. The native
+ * app overlays the copy GET /api/mobile/config serves (setGuideOverrides), so
+ * an edit here reaches it without a store update.
  *
  * Every field below was checked against the official settlement website
  * or the court-authorized notice hosted there. If a fact was not on that
@@ -255,38 +263,219 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   KIA_WINDOWS,
 ];
 
-const GUIDES_BY_SLUG: ReadonlyMap<string, SettlementGuide> = new Map(
-  SETTLEMENT_GUIDES.flatMap((guide) => guide.slugs.map((slug) => [slug, guide] as const)),
-);
-
-export function getSettlementGuide(slug: string): SettlementGuide | undefined {
-  return GUIDES_BY_SLUG.get(slug);
+function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {
+  return new Map(guides.flatMap((guide) => guide.slugs.map((slug) => [slug, guide] as const)));
 }
 
-/** Overlay official-notice fields onto a catalog row. No-op when no guide exists. */
-export function applySettlementGuide<T extends Lawsuit>(lawsuit: T): T {
+const GUIDES_BY_SLUG = bySlug(SETTLEMENT_GUIDES);
+
+/** Every catalog slug a guide above overlays. */
+export const GUIDED_SLUGS: readonly string[] = [...GUIDES_BY_SLUG.keys()];
+
+let overrides: ReadonlyMap<string, SettlementGuide> | null = null;
+
+/**
+ * Native app only: the guides GET /api/mobile/config sent, in place of the
+ * ones above (null puts these back). Never call this on the server, where one
+ * request would change the guides of every other: the Next server ignores
+ * overrides, as flags.ts does, and tests/settlement-guides.test.ts fails on
+ * any use under src/.
+ */
+export function setGuideOverrides(guides: readonly SettlementGuide[] | null): void {
+  overrides = guides ? bySlug(guides) : null;
+}
+
+/** The guides in force. NEXT_RUNTIME is set only on the Next server. */
+function guidesBySlug(): ReadonlyMap<string, SettlementGuide> {
+  return overrides && !process.env.NEXT_RUNTIME ? overrides : GUIDES_BY_SLUG;
+}
+
+export function getSettlementGuide(slug: string): SettlementGuide | undefined {
+  return guidesBySlug().get(slug);
+}
+
+/**
+ * A short fingerprint of a guide list, the same on the server and in the app
+ * for the same list. GET /api/mobile/config sends it as guidesVersion and
+ * leaves the list out when the app already has that one.
+ */
+export function guidesVersion(guides: readonly SettlementGuide[]): string {
+  return fingerprint(JSON.stringify(guides));
+}
+
+/** The version of the guides above. */
+export const SETTLEMENT_GUIDES_VERSION = guidesVersion(SETTLEMENT_GUIDES);
+
+/** The deadline people act on: the official notice's when a guide has one, otherwise the feed's. */
+export function guidedDeadline(row: { slug: string; deadline: string | null }): string | null {
+  return getSettlementGuide(row.slug)?.deadline ?? row.deadline;
+}
+
+/**
+ * The link the claim flow opens ("Open the official claim form"). With a
+ * guide, the feed's link stays when it is an https link on the guide's
+ * official site, where it is usually the claim form itself; any other link
+ * gives way to the guide's official URL. Without a guide, the feed's link.
+ */
+export function guidedClaimUrl(row: { slug: string; claim_url: string | null }): string | null {
+  const guide = getSettlementGuide(row.slug);
+  return guide ? claimLinkOnSite(row.claim_url, guide) : row.claim_url;
+}
+
+function claimLinkOnSite(link: string | null, guide: SettlementGuide): string {
+  return link && isOnGuideSite(link, guide.officialUrl) ? link : guide.officialUrl;
+}
+
+/**
+ * On the guide's host or a subdomain of it ("www." aside), and inside the
+ * guide's path when it points into one part of a shared site
+ * (acusettlement.com/HyundaiKia). Paths compare without case.
+ */
+function isOnGuideSite(link: string, officialUrl: string): boolean {
+  const target = httpsUrl(link);
+  const site = httpsUrl(officialUrl);
+  if (!target || !site) return false;
+  const host = bareHost(target.hostname);
+  const siteHost = bareHost(site.hostname);
+  if (host !== siteHost && !host.endsWith(`.${siteHost}`)) return false;
+  const section = site.pathname.replace(/\/+$/, '').toLowerCase();
+  const path = target.pathname.toLowerCase();
+  return !section || path === section || path.startsWith(`${section}/`);
+}
+
+function httpsUrl(value: string): URL | null {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function bareHost(host: string): string {
+  return host.toLowerCase().replace(/^www\./, '');
+}
+
+/** The columns a guide overlays: the native app's catalog rows carry these, not every Lawsuit column. */
+export type GuidedLawsuit = Pick<
+  Lawsuit,
+  | 'slug'
+  | 'summary'
+  | 'description'
+  | 'eligibility_text'
+  | 'typical_payout'
+  | 'deadline'
+  | 'administrator'
+  | 'claim_url'
+  | 'proof_required'
+  | 'eligibility'
+>;
+
+/**
+ * The columns a deadline, an official link or a proof rule is read from.
+ * Catalog rows carry them, and so does the claim flow's SettlementRecord
+ * (claims-server.ts), which has no summary, payout or administrator.
+ */
+interface GuidedFacts {
+  slug: string;
+  deadline: string | null;
+  claim_url: string | null;
+  eligibility_text: string | null;
+  proof_required: boolean | null;
+  eligibility: object | null;
+}
+
+function withOfficialFacts<T extends GuidedFacts>(row: T, guide: SettlementGuide, claimUrl: string): T {
+  return {
+    ...row,
+    eligibility_text: guide.eligibilityText,
+    deadline: guide.deadline,
+    claim_url: claimUrl,
+    proof_required: guide.proof === 'yes',
+    eligibility: { ...row.eligibility, proof: guide.proof },
+  };
+}
+
+/**
+ * The claim flow's overlay (claims-server.ts and the jobs): the official
+ * deadline, who-qualifies text and proof rule, and the claim link of
+ * guidedClaimUrl. No-op when no guide exists.
+ */
+export function applySettlementGuideFacts<T extends GuidedFacts>(row: T): T {
+  const guide = getSettlementGuide(row.slug);
+  return guide ? withOfficialFacts(row, guide, claimLinkOnSite(row.claim_url, guide)) : row;
+}
+
+/**
+ * Overlay official-notice fields onto a catalog row. No-op when no guide
+ * exists. The link is the guide's official site: the catalog, the settlement
+ * page and the app's settlement screen label it "Official site" and send
+ * people there to read the notice, while the claim flow keeps the feed's link
+ * to the claim form (applySettlementGuideFacts).
+ */
+export function applySettlementGuide<T extends GuidedLawsuit>(lawsuit: T): T {
   const guide = getSettlementGuide(lawsuit.slug);
   if (!guide) return lawsuit;
 
   return {
-    ...lawsuit,
+    ...withOfficialFacts(lawsuit, guide, guide.officialUrl),
     summary: guide.summary ?? lawsuit.summary,
     description: guide.description ?? lawsuit.description,
-    eligibility_text: guide.eligibilityText,
     typical_payout: guide.typicalPayout,
-    deadline: guide.deadline,
     administrator: guide.administrator ?? lawsuit.administrator,
-    claim_url: guide.officialUrl,
-    proof_required: guide.proof === 'yes',
-    eligibility: {
-      ...lawsuit.eligibility,
-      proof: guide.proof,
-    },
   };
 }
 
-export function applySettlementGuides<T extends Lawsuit>(lawsuits: T[]): T[] {
+export function applySettlementGuides<T extends GuidedLawsuit>(lawsuits: T[]): T[] {
   return lawsuits.map(applySettlementGuide);
+}
+
+/**
+ * The catalog queries' deadline filter (a PostgREST `or`): no deadline, a
+ * deadline today or later in the deadline zone, or a guided slug. A guided
+ * row is read whatever its feed deadline says, because the official deadline
+ * replaces that one before the open-for-claims rule runs (openGuidedCatalog).
+ */
+export function catalogDeadlineFilter(now: Date): string {
+  const open = `deadline.is.null,deadline.gte.${todayInDeadlineZone(now)}`;
+  const slugs = [...guidesBySlug().keys()];
+  return slugs.length > 0 ? `${open},slug.in.(${slugs.join(',')})` : open;
+}
+
+/**
+ * The open catalog as the web (lookupLawsuits) and the app (fetchCatalog)
+ * list it. Guides go first, so the open-for-claims rule and the order read
+ * the official deadline, not the feed's.
+ */
+export function openGuidedCatalog<T extends GuidedLawsuit & OpenRuleFields & { is_featured?: boolean | null }>(
+  rows: T[],
+  now: Date,
+): T[] {
+  return sortByDeadline(filterOpenForClaims(applySettlementGuides(rows), now));
+}
+
+/**
+ * The catalog order: soonest deadline first, then rows with no deadline;
+ * featured first on the same day; otherwise the order given.
+ */
+export function sortByDeadline<T extends { deadline: string | null; is_featured?: boolean | null }>(
+  rows: readonly T[],
+): T[] {
+  const featured = (row: T) => (row.is_featured ? 1 : 0);
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort(
+      (a, b) =>
+        compareDeadlines(a.row.deadline, b.row.deadline) || featured(b.row) - featured(a.row) || a.index - b.index,
+    )
+    .map(({ row }) => row);
+}
+
+/** YYYY-MM-DD dates compare as text; a missing deadline sorts last. */
+function compareDeadlines(a: string | null, b: string | null): number {
+  if (a && b) return a < b ? -1 : a > b ? 1 : 0;
+  if (a) return -1;
+  return b ? 1 : 0;
 }
 
 /** Official-notice proof sentence when a guide has one; otherwise the feed line. */

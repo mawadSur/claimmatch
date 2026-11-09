@@ -20,20 +20,23 @@ export interface RateLimitResult {
   retryAfter: number;
 }
 
-// key -> ascending list of request timestamps (ms) still inside the window.
-const hits = new Map<string, number[]>();
+// key -> its window and the ascending request timestamps (ms) still inside it.
+// The window is stored per key because limiters with different windows share
+// this map: whichever call runs the sweep must not prune another key by its
+// own (shorter) window.
+const hits = new Map<string, { windowMs: number; times: number[] }>();
 
 // Opportunistic global sweep so keys that go quiet don't leak memory forever.
 let lastSweep = 0;
 const SWEEP_INTERVAL_MS = 5 * 60_000;
 
-function sweep(now: number, windowMs: number): void {
+function sweep(now: number): void {
   if (now - lastSweep < SWEEP_INTERVAL_MS) return;
   lastSweep = now;
-  for (const [k, times] of hits) {
-    const fresh = times.filter((t) => now - t < windowMs);
+  for (const [k, entry] of hits) {
+    const fresh = entry.times.filter((t) => now - t < entry.windowMs);
     if (fresh.length === 0) hits.delete(k);
-    else hits.set(k, fresh);
+    else entry.times = fresh;
   }
 }
 
@@ -47,10 +50,10 @@ export function rateLimit(key: string, opts?: RateLimitOptions): RateLimitResult
   const windowMs = opts?.windowMs ?? 60_000;
   const now = Date.now();
 
-  sweep(now, windowMs);
+  sweep(now);
 
   const windowStart = now - windowMs;
-  const prior = hits.get(key) ?? [];
+  const prior = hits.get(key)?.times ?? [];
   // Prune this key's stale timestamps before counting.
   const recent = prior.filter((t) => t > windowStart);
 
@@ -58,12 +61,12 @@ export function rateLimit(key: string, opts?: RateLimitOptions): RateLimitResult
     // The oldest in-window hit determines when the window slides forward.
     const oldest = recent[0];
     const retryAfter = Math.max(1, Math.ceil((oldest + windowMs - now) / 1000));
-    hits.set(key, recent);
+    hits.set(key, { windowMs, times: recent });
     return { ok: false, retryAfter };
   }
 
   recent.push(now);
-  hits.set(key, recent);
+  hits.set(key, { windowMs, times: recent });
   return { ok: true, retryAfter: 0 };
 }
 

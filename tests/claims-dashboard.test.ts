@@ -9,7 +9,9 @@ import {
   groupDashboardMatches,
   type DashboardSettlement,
 } from '@/components/claims/dashboard-model';
+import { toClaimFlowSettlement } from '@/lib/claim-screen';
 import type { ClaimView } from '@/lib/claims';
+import { officialSiteUrl } from '@/lib/lawsuit-display';
 import { makeLawsuit, makeProfile } from './helpers';
 
 const NOW = new Date('2026-10-16T18:00:00Z');
@@ -339,5 +341,78 @@ describe('buildDashboardMatches', () => {
       matchId: 'match-new',
       reasons: ['Bought Toyota in 2021, inside the class period'],
     });
+  });
+});
+
+// A settlesignal.com page is a third-party listing: no link labeled "official
+// site" or "official claim form" may point at one.
+describe('official links never point at a SettleSignal listing', () => {
+  const OFFICIAL = 'https://www.realsettlement-admin.com/file';
+  const LISTINGS = ['https://settlesignal.com/settlements/real-one/', 'https://www.settlesignal.com/settlements/real-one'];
+
+  it('keeps only a real official link', () => {
+    expect(officialSiteUrl(OFFICIAL)).toBe(OFFICIAL);
+    for (const url of [...LISTINGS, 'https://example.com/claim', 'javascript:alert(1)', 'not a url', '', null, undefined]) {
+      expect(officialSiteUrl(url)).toBeNull();
+    }
+  });
+
+  it('gives a corrective notice no official link', () => {
+    for (const claim_url of LISTINGS) {
+      const { notices } = row(claim({ status: 'submitted' }), settlement({ claim_url }));
+      expect(notices).toEqual([expect.objectContaining({ kind: 'legacy', officialUrl: null })]);
+    }
+  });
+
+  it('gives a Closing soon item no official link', () => {
+    const items = buildClosingSoon(
+      [
+        settlement({ slug: 'listing-only', deadline: '2026-10-25', claim_url: LISTINGS[0] }),
+        settlement({ slug: 'official', deadline: '2026-11-30' }),
+      ],
+      new Set(),
+      NOW,
+      isFictional,
+    );
+    expect(items.map((i) => [i.slug, i.officialUrl])).toEqual([
+      ['listing-only', null],
+      ['official', OFFICIAL],
+    ]);
+  });
+
+  it('gives a match no official link', () => {
+    const profile = makeProfile({ state: 'CA', attributes: { had_data_breach: true } });
+    const breach = { states: ['CA'], requires: ['had_data_breach'] };
+    const items = buildDashboardMatches(
+      profile,
+      [
+        makeLawsuit(breach, { id: uuid(), slug: 'listing-only', title: 'Listing only', deadline: '2026-12-01', claim_url: LISTINGS[1] }),
+        makeLawsuit(breach, { id: uuid(), slug: 'official', title: 'Official', deadline: '2026-12-01', claim_url: OFFICIAL }),
+      ],
+      NOW,
+      isFictional,
+    );
+    expect(Object.fromEntries(items.map((i) => [i.slug, i.officialUrl]))).toEqual({
+      'listing-only': null,
+      official: OFFICIAL,
+    });
+  });
+
+  it('gives the claim flow no "Open the official claim form" link, and still credits the listing as the source', () => {
+    const record = {
+      id: uuid(),
+      slug: 'real-one',
+      title: 'Real settlement',
+      deadline: '2026-11-30',
+      source_url: LISTINGS[0],
+      eligibility_text: null,
+    };
+    const opts = { assistedFilingAllowed: false, payoutReportEnabled: false };
+    expect(toClaimFlowSettlement({ ...record, claim_url: LISTINGS[0] }, opts)).toMatchObject({
+      officialUrl: null,
+      sourceUrl: LISTINGS[0],
+      sourceHost: 'settlesignal.com',
+    });
+    expect(toClaimFlowSettlement({ ...record, claim_url: OFFICIAL }, opts).officialUrl).toBe(OFFICIAL);
   });
 });

@@ -6,7 +6,7 @@ import { usePostHog } from 'posthog-js/react';
 import { flags } from '@/lib/flags';
 import { packetFieldOrder, type PacketFieldKey } from '@/lib/form-field-order';
 import { US_STATES } from '@/lib/utils';
-import type { Profile } from '@/lib/types';
+import type { PacketProfile } from '@/lib/claim-screen';
 
 type PacketFields = {
   full_name: string;
@@ -54,7 +54,7 @@ export function PrefillPacket({
   lawsuitSlug,
   formFieldOrder,
 }: {
-  profile: Profile | null;
+  profile: PacketProfile | null;
   lawsuitId?: string;
   lawsuitSlug?: string;
   formFieldOrder?: string[] | null;

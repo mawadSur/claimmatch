@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { addCalendarDays } from '@/lib/claim-deadlines';
+import { getSettlementGuide } from '@/lib/settlement-guides';
 import {
   applyCloseBreaker,
   DEFAULT_MAX_CLOSE_SHARE,
   heldClosureLogLines,
   isLocked,
+  isOpenForClaimsGuided,
   maxCloseShareFromEnv,
   nextStatus,
   planIngest,
@@ -168,6 +171,42 @@ describe('rows nobody reviewed yet', () => {
     expect(isLocked({ review_status: 'pending_review', reviewed_at: '2026-10-01T00:00:00Z' })).toBe(true);
     expect(isLocked({ review_status: 'rejected', reviewed_at: null })).toBe(true);
     expect(isLocked({ review_status: 'pending_review', reviewed_at: null })).toBe(false);
+  });
+});
+
+describe('guided settlements go by the official deadline', () => {
+  const KIA = 'kia-optima-sportage-window-regulator-settlement';
+  const official = getSettlementGuide(KIA)?.deadline as string;
+  const days = (n: number) => addCalendarDays(official, n) as string;
+  const before = new Date(`${days(-10)}T17:00:00Z`);
+  const after = new Date(`${days(1)}T17:00:00Z`);
+  const guided = (overrides: Partial<ExistingRow> = {}) => row({ slug: KIA, ...overrides });
+  const planAt = (at: Date, items: ScrapedLawsuit[], existing: ExistingRow[]) =>
+    planIngest({ items, existing, sourceId: SOURCE, now: at });
+
+  it('a closed row stays closed when the feed lists it as open after that deadline', () => {
+    const feed = [item({ status: 'open', deadline: days(60) })];
+    const closed = guided({ status: 'closed', deadline: days(60) });
+    expect(planAt(after, feed, [closed]).updates).toEqual([]);
+    const unreviewed = planAt(after, feed, [{ ...closed, review_status: 'pending_review' }]).updates[0];
+    expect(unreviewed.patch).not.toHaveProperty('status');
+    expect(unreviewed.reopens).toBe(false);
+    // It reopens while the official deadline is ahead; a row without a guide goes by its own.
+    expect(planAt(before, feed, [closed]).updates[0]).toMatchObject({ patch: { status: 'open' }, reopens: true });
+    const expired = row({ status: 'closed', deadline: '2026-10-01' });
+    expect(plan([item({ status: 'open', deadline: '2026-10-01' })], [expired]).updates).toEqual([]);
+  });
+
+  it('a close is counted on that deadline, not the feed’s', () => {
+    // The feed's deadline moves into the past while the official one is ahead: not a close.
+    const moved = planAt(before, [item({ deadline: days(-20) })], [guided({ deadline: days(60) })]).updates[0];
+    expect(moved).toMatchObject({ patch: { deadline: days(-20) }, closes: false });
+    // The feed closes a row open by its official deadline, though the stored one has passed: a close.
+    const stale = guided({ deadline: days(-20) });
+    const closed = planAt(before, [item({ status: 'closed', deadline: days(-20) })], [stale]).updates[0];
+    expect(closed).toMatchObject({ patch: { status: 'closed' }, closes: true, closeReason: 'feed_status' });
+    expect(isOpenForClaimsGuided(stale, before)).toBe(true);
+    expect(isOpenForClaimsGuided(guided({ deadline: days(60) }), after)).toBe(false);
   });
 });
 

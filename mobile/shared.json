@@ -1,0 +1,33 @@
+{
+  "root": "../src",
+  "npm": ["zod", "clsx", "tailwind-merge"],
+  "entries": [
+    "lib/types.ts",
+    "lib/fictional-slugs.ts",
+    "lib/flags.ts",
+    "lib/utils.ts",
+    "lib/open-for-claims.ts",
+    "lib/proof.ts",
+    "lib/claim-deadlines.ts",
+    "lib/claim-input.ts",
+    "lib/claims.ts",
+    "lib/verified-fields.ts",
+    "lib/closing-soon.ts",
+    "lib/eligibility.ts",
+    "lib/profile-attributes.ts",
+    "lib/settings-input.ts",
+    "lib/form-field-order.ts",
+    "lib/disclaimer.ts",
+    "lib/lawsuit-display.ts",
+    "lib/settlement-seo.ts",
+    "lib/settlement-guides.ts",
+    "lib/catalog-page.ts",
+    "lib/recently-closed.ts",
+    "lib/claim-screen.ts",
+    "lib/mobile-contract.ts",
+    "lib/matching.ts",
+    "lib/lawsuit-tags.ts",
+    "lib/profile-facts.ts",
+    "components/claims/dashboard-model.ts"
+  ]
+}

@@ -2,6 +2,8 @@
  * The dashboard's view model: ranked matches, the user's claims grouped by
  * next step, the corrective notices, and a "Closing soon" catalog module.
  * Pure, so the decisions are tested in tests/claims-dashboard.test.ts.
+ * Relative imports only: the native app imports this file, and '@/' points
+ * at the app's own src there.
  */
 import {
   claimActionAvailability,
@@ -11,7 +13,6 @@ import {
   legacyFilingState,
   legacyNextStep,
   reportByDay,
-  safeExternalUrl,
   settlementContext,
   type ClaimGroup,
   type LegacyFilingState,
@@ -19,17 +20,18 @@ import {
   type ClaimView,
   type IsFictional,
   type SettlementFacts,
-} from '@/lib/claims';
-import { pickClosingSoon } from '@/lib/closing-soon';
+} from '../../lib/claims';
+import { pickClosingSoon } from '../../lib/closing-soon';
+import { officialSiteUrl } from '../../lib/lawsuit-display';
 import {
   classifyMatch,
   matchProfile,
   matchStrengthLabel,
   type MatchStrength,
-} from '@/lib/matching';
-import { profileHasMatchSignals } from '@/lib/profile-attributes';
-import type { Lawsuit, Match, Profile } from '@/lib/types';
-import { formatDeadline } from '@/lib/utils';
+} from '../../lib/matching';
+import { profileHasMatchSignals } from '../../lib/profile-attributes';
+import type { Lawsuit, Match, Profile } from '../../lib/types';
+import { formatDeadline } from '../../lib/utils';
 
 const NEW_MATCH_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -204,7 +206,7 @@ export function buildDashboard(
         deadline,
         deadlinePassed: context.deadlinePassed,
         filing,
-        officialUrl: safeExternalUrl(settlement?.claim_url),
+        officialUrl: officialSiteUrl(settlement?.claim_url),
       });
     }
   }
@@ -284,7 +286,7 @@ export function buildDashboardMatches(
         reasons: result.reasons,
         strength,
         label: matchStrengthLabel(strength),
-        officialUrl: safeExternalUrl(lawsuit.claim_url),
+        officialUrl: officialSiteUrl(lawsuit.claim_url),
         score: result.score,
       },
     ];
@@ -325,7 +327,7 @@ export function buildDashboardMatchesFromStored(
         reasons: Array.isArray(row.reasons) ? row.reasons : [],
         strength,
         label: matchStrengthLabel(strength),
-        officialUrl: safeExternalUrl(lawsuit.claim_url),
+        officialUrl: officialSiteUrl(lawsuit.claim_url),
         score: Number(row.score) || 0,
         matchId: row.id,
         isNew: isNewStoredMatch(row.created_at, now),
@@ -371,6 +373,6 @@ export function buildClosingSoon(
       title: l.title,
       deadline: l.deadline as string,
       deadlineText: deadlineText(l.deadline, now),
-      officialUrl: safeExternalUrl(l.claim_url),
+      officialUrl: officialSiteUrl(l.claim_url),
     }));
 }

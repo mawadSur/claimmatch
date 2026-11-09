@@ -1,0 +1,88 @@
+# CI for the native app (mobile/) on pull requests and pushes to main that
+# touch it, the web modules it shares (src/lib and dashboard-model.ts, listed
+# in mobile/shared.json), or the web copy-guard rules that
+# mobile/tests/copy-guard.test.ts reads.
+#
+# Web wording and colors the app mirrors can change in other files: ci.yml
+# runs on every pull request and checks them with tests/mobile-copy-parity,
+# mobile-tokens, mobile-shared-purity and copy-guard (which scans mobile/src).
+#
+# Installs mobile/ only: tsconfig paths and the jest moduleNameMapper resolve
+# the shared files' packages from mobile/node_modules, as Metro does.
+#
+# Not a required check unless branch protection on main adds the "mobile" job.
+name: Mobile
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'src/lib/**'
+      - 'src/components/claims/dashboard-model.ts'
+      - 'tests/copy-guard.test.ts'
+      - 'tests/filing-free-warning.test.ts'
+      - '.github/workflows/mobile.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'src/lib/**'
+      - 'src/components/claims/dashboard-model.ts'
+      - 'tests/copy-guard.test.ts'
+      - 'tests/filing-free-warning.test.ts'
+      - '.github/workflows/mobile.yml'
+
+permissions:
+  contents: read
+
+# Same policy as ci.yml: a new push to a pull request cancels its older run;
+# on main a started run always finishes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: mobile
+
+jobs:
+  mobile:
+    name: mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Typed routes (.expo/types) and expo-env.d.ts are generated and
+      # gitignored. This writes them without starting the dev server, so the
+      # typecheck sees every route (docs.expo.dev/router/reference/typed-routes).
+      - name: Generate typed routes
+        run: npx expo customize tsconfig.json
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npx jest --ci
+
+      - name: Lint
+        run: npx eslint . --max-warnings=0
+
+      - name: Expo doctor
+        run: npx expo-doctor

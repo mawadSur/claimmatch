@@ -1,4 +1,5 @@
 import { legalContact } from './legal-contact';
+import { isOpenForClaims } from './open-for-claims';
 import { isVerifiedRecord } from './verified-fields';
 import type { Lawsuit } from './types';
 import { daysLeftToFile } from './utils';
@@ -67,11 +68,19 @@ export function closingSoonEmailGate(
   return commercialEmailPrereqs(env);
 }
 
-/** Verified listings with a real deadline in the next 14 days, soonest first. */
+/**
+ * Verified listings open for claims (isOpenForClaims) with a real deadline in
+ * the next 14 days, soonest first. Pass rows with the settlement guides
+ * applied, as the digest cron does, so a guided settlement goes by its
+ * official deadline.
+ */
 export function pickClosingSoonEmailRows<
   T extends Pick<
     Lawsuit,
+    | 'slug'
     | 'title'
+    | 'status'
+    | 'review_status'
     | 'deadline'
     | 'verified_at'
     | 'eligibility_verified'
@@ -84,7 +93,7 @@ export function pickClosingSoonEmailRows<
 >(rows: readonly T[], now: Date = new Date()): T[] {
   return rows
     .filter((row) => {
-      if (!isVerifiedRecord(row)) return false;
+      if (!isVerifiedRecord(row) || !isOpenForClaims(row, now)) return false;
       const days = daysLeftToFile(row.deadline, now);
       return days !== null && days >= 0 && days <= CLOSING_SOON_EMAIL_DAYS;
     })

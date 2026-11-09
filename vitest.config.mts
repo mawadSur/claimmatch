@@ -6,6 +6,10 @@ import { defineConfig } from 'vitest/config';
 // has no "type": "module". The "@" alias mirrors the paths entry in
 // tsconfig.json so tests import modules the same way app code does.
 export default defineConfig({
+  // One tsconfig for every file. The copy-parity tests import app files under
+  // mobile/, whose own tsconfig extends expo/tsconfig.base from
+  // mobile/node_modules, which CI's verify job does not install.
+  tsconfig: './tsconfig.json',
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

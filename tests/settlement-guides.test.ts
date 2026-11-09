@@ -1,11 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { makeLawsuit } from './helpers';
+import { addCalendarDays } from '@/lib/claim-deadlines';
 import {
+  GUIDED_SLUGS,
   SETTLEMENT_GUIDES,
+  SETTLEMENT_GUIDES_VERSION,
   applySettlementGuide,
+  applySettlementGuideFacts,
+  catalogDeadlineFilter,
   getSettlementGuide,
+  guidedClaimUrl,
+  guidedDeadline,
+  guidesVersion,
+  openGuidedCatalog,
+  setGuideOverrides,
   settlementGuideFaqs,
   settlementProofDetail,
+  sortByDeadline,
+  type SettlementGuide,
 } from '@/lib/settlement-guides';
 import {
   settlementFaqs,
@@ -133,5 +147,244 @@ describe('settlement guides', () => {
     expect(blob).not.toMatch(/verified_at/);
     expect(blob).not.toMatch(/testimonial|5 stars|users claimed/i);
     expect(blob).not.toMatch(/Sur Consulting/i);
+  });
+});
+
+describe('guides wherever a deadline or official link is read', () => {
+  const SIX_FLAGS = 'six-flags-fees-california-class-action-settlement';
+  const guide = getSettlementGuide(SIX_FLAGS);
+  if (!guide) throw new Error('expected a guide');
+  const day = (days: number) => addCalendarDays(guide.deadline, days) as string;
+  /** Noon in New York, `days` after the guide's deadline. */
+  const at = (days: number) => new Date(`${day(days)}T17:00:00Z`);
+
+  // The claim flow's settlement record (claims-server SETTLEMENT_COLUMNS): no summary, payout or administrator.
+  const record = (slug: string) => ({
+    id: '00000000-0000-4000-8000-0000000000d1',
+    slug,
+    title: 'Six Flags fees',
+    category: 'Consumer',
+    status: 'open',
+    review_status: 'published',
+    deadline: day(45),
+    claim_url: 'https://feed.example/six-flags',
+    source_url: null,
+    eligibility_text: 'Feed text.',
+    eligibility: { proof: 'unknown', states: ['CA'] },
+    proof_required: null,
+    form_field_order: null,
+  });
+
+  it('lists every guided slug once', () => {
+    expect([...GUIDED_SLUGS].sort()).toEqual(SETTLEMENT_GUIDES.flatMap((g) => g.slugs).sort());
+    expect(new Set(GUIDED_SLUGS).size).toBe(GUIDED_SLUGS.length);
+  });
+
+  it('puts the official deadline, link, who-qualifies text and proof rule on a claim-flow record', () => {
+    const overlaid = applySettlementGuideFacts(record(SIX_FLAGS));
+    expect(overlaid).toEqual({
+      ...record(SIX_FLAGS),
+      deadline: guide.deadline,
+      claim_url: guide.officialUrl,
+      eligibility_text: guide.eligibilityText,
+      proof_required: guide.proof === 'yes',
+      eligibility: { proof: guide.proof, states: ['CA'] },
+    });
+    expect(overlaid).not.toHaveProperty('summary');
+    expect(overlaid).not.toHaveProperty('typical_payout');
+
+    const plain = record('plain-settlement');
+    expect(applySettlementGuideFacts(plain)).toBe(plain);
+    expect(applySettlementGuideFacts({ ...record(SIX_FLAGS), eligibility: null }).eligibility).toEqual({ proof: guide.proof });
+  });
+
+  it('applySettlementGuide still overlays the same facts plus summary and payout', () => {
+    const lawsuit = makeLawsuit({}, { slug: SIX_FLAGS, deadline: day(45), claim_url: 'https://feed.example/x' });
+    expect(applySettlementGuide(lawsuit)).toMatchObject({
+      ...applySettlementGuideFacts(lawsuit),
+      summary: guide.summary,
+      typical_payout: guide.typicalPayout,
+    });
+  });
+
+  it('guidedDeadline is the official deadline when there is a guide', () => {
+    expect(guidedDeadline({ slug: SIX_FLAGS, deadline: day(45) })).toBe(guide.deadline);
+    expect(guidedDeadline({ slug: SIX_FLAGS, deadline: null })).toBe(guide.deadline);
+    expect(guidedDeadline({ slug: 'plain-settlement', deadline: '2027-01-01' })).toBe('2027-01-01');
+    expect(guidedDeadline({ slug: 'plain-settlement', deadline: null })).toBeNull();
+  });
+
+  it('the catalog query reads every guided row, whatever its feed deadline', () => {
+    // 01:00 UTC on Nov 9 is still Nov 8 in New York (the deadline zone).
+    expect(catalogDeadlineFilter(new Date('2026-11-09T01:00:00Z'))).toBe(
+      `deadline.is.null,deadline.gte.2026-11-08,slug.in.(${GUIDED_SLUGS.join(',')})`,
+    );
+  });
+
+  it('a feed deadline later than the official one lists and sorts by the official one', () => {
+    const rows = [
+      makeLawsuit({}, { id: 'a', slug: 'plain-settlement', deadline: day(3) }),
+      makeLawsuit({}, { id: 'b', slug: SIX_FLAGS, deadline: day(45), claim_url: 'https://feed.example/x' }),
+    ];
+    const open = openGuidedCatalog(rows, at(-10));
+    expect(open.map((l) => [l.slug, l.deadline, l.claim_url])).toEqual([
+      [SIX_FLAGS, guide.deadline, guide.officialUrl],
+      ['plain-settlement', day(3), rows[0].claim_url],
+    ]);
+  });
+
+  it('a passed official deadline is not open, whatever the feed says', () => {
+    const rows = [makeLawsuit({}, { id: 'b', slug: SIX_FLAGS, deadline: day(45) })];
+    expect(openGuidedCatalog(rows, at(0)).map((l) => l.slug)).toEqual([SIX_FLAGS]); // the last day
+    expect(openGuidedCatalog(rows, at(1))).toEqual([]);
+    // A feed deadline that passed first still lists until the official one.
+    expect(openGuidedCatalog([makeLawsuit({}, { slug: SIX_FLAGS, deadline: day(-20) })], at(-1))).toHaveLength(1);
+  });
+
+  it('sorts soonest deadline first, featured first on the same day, no deadline last, otherwise as given', () => {
+    const rows = [
+      { slug: 'none', deadline: null, is_featured: true },
+      { slug: 'later', deadline: '2027-02-01', is_featured: false },
+      { slug: 'same-a', deadline: '2027-01-01', is_featured: false },
+      { slug: 'same-featured', deadline: '2027-01-01', is_featured: true },
+      { slug: 'same-b', deadline: '2027-01-01', is_featured: false },
+      { slug: 'none-2', deadline: null, is_featured: false },
+    ];
+    expect(sortByDeadline(rows).map((r) => r.slug)).toEqual(['same-featured', 'same-a', 'same-b', 'later', 'none', 'none-2']);
+    expect(rows[0].slug).toBe('none'); // the input is not reordered
+  });
+});
+
+describe('the claim link: the feed’s form on the official site, otherwise the official site', () => {
+  const guide = getSettlementGuide('six-flags-fees-california-class-action-settlement') as SettlementGuide;
+  const airbag = getSettlementGuide('hyundai-and-kia-airbag-control-unit-settlement') as SettlementGuide;
+  const link = (slug: string, claim_url: string | null) => guidedClaimUrl({ slug, claim_url });
+  const SIX = guide.slugs[0];
+  const AIRBAG = airbag.slugs[0];
+
+  it('keeps an https link on the official host, a subdomain of it, or the same host with or without www.', () => {
+    expect(guide.officialUrl).toBe('https://www.knottsgreatamericasettlement.com/');
+    for (const kept of [
+      'https://www.knottsgreatamericasettlement.com/submit-claim',
+      'https://knottsgreatamericasettlement.com/submit-claim?ref=notice',
+      'https://claims.knottsgreatamericasettlement.com/form',
+      'https://WWW.KnottsGreatAmericaSettlement.com/Claim',
+    ]) {
+      expect(link(SIX, kept), kept).toBe(kept);
+    }
+  });
+
+  it('gives way to the official site for another host, a lookalike, plain http, or no usable link', () => {
+    for (const replaced of [
+      'https://settlesignal.com/settlements/six-flags/',
+      'https://knottsgreatamericasettlement.com.example.net/claim',
+      'https://evilknottsgreatamericasettlement.com/claim',
+      'https://www.knottsgreatamericasettlement.com@phish.example.net/claim',
+      'http://www.knottsgreatamericasettlement.com/submit-claim',
+      'javascript:alert(1)',
+      'not a url',
+      '',
+      null,
+    ]) {
+      expect(link(SIX, replaced), String(replaced)).toBe(guide.officialUrl);
+    }
+  });
+
+  it('stays inside the guide’s part of a site that hosts several settlements', () => {
+    expect(airbag.officialUrl).toBe('https://www.acusettlement.com/HyundaiKia');
+    // The live feed's form, in another case than the guide's path.
+    expect(link(AIRBAG, 'https://www.acusettlement.com/hyundaikia/claim')).toBe('https://www.acusettlement.com/hyundaikia/claim');
+    expect(link(AIRBAG, 'https://www.acusettlement.com/HyundaiKia')).toBe('https://www.acusettlement.com/HyundaiKia');
+    for (const elsewhere of ['https://www.acusettlement.com/', 'https://www.acusettlement.com/Toyota/claim', 'https://www.acusettlement.com/HyundaiKiaOld']) {
+      expect(link(AIRBAG, elsewhere), elsewhere).toBe(airbag.officialUrl);
+    }
+  });
+
+  it('leaves a settlement without a guide alone', () => {
+    expect(link('plain-settlement', 'https://feed.example/claim')).toBe('https://feed.example/claim');
+    expect(link('plain-settlement', null)).toBeNull();
+  });
+
+  it('is the claim flow’s link; the catalog and settlement page keep the official site', () => {
+    const form = 'https://www.knottsgreatamericasettlement.com/submit-claim';
+    const row = makeLawsuit({}, { slug: SIX, claim_url: form });
+    expect(applySettlementGuideFacts(row).claim_url).toBe(form);
+    expect(applySettlementGuide(row).claim_url).toBe(guide.officialUrl);
+    expect(openGuidedCatalog([row], new Date('2026-11-08T17:00:00Z'))[0].claim_url).toBe(guide.officialUrl);
+  });
+});
+
+describe('the app’s copy of the guides (setGuideOverrides)', () => {
+  const SIX = 'six-flags-fees-california-class-action-settlement';
+  const served = SETTLEMENT_GUIDES.map((guide) => ({ ...guide }));
+  const edited: SettlementGuide = {
+    ...(getSettlementGuide(SIX) as SettlementGuide),
+    deadline: '2027-02-15',
+    proofDetail: 'Edited proof rule.',
+    extraFaqs: [{ q: 'Edited?', a: 'Yes.' }],
+  };
+  const added: SettlementGuide = { ...edited, slugs: ['new-guided-settlement'], officialUrl: 'https://www.new-settlement.com/' };
+
+  afterEach(() => {
+    setGuideOverrides(null);
+    vi.unstubAllEnvs();
+  });
+
+  it('replaces the guides every helper reads, and null puts the compiled ones back', () => {
+    setGuideOverrides([...served.filter((g) => !g.slugs.includes(SIX)), edited, added]);
+    const row = makeLawsuit({}, { slug: SIX, deadline: '2026-12-01' });
+    expect(guidedDeadline(row)).toBe('2027-02-15');
+    expect(applySettlementGuide(row).deadline).toBe('2027-02-15');
+    expect(settlementProofDetail(row)).toBe('Edited proof rule.');
+    expect(settlementGuideFaqs(SIX)).toEqual([{ q: 'Edited?', a: 'Yes.' }]);
+    expect(getSettlementGuide('new-guided-settlement')?.officialUrl).toBe('https://www.new-settlement.com/');
+    expect(catalogDeadlineFilter(new Date('2026-11-08T17:00:00Z'))).toContain(',new-guided-settlement)');
+
+    setGuideOverrides(null);
+    expect(guidedDeadline(row)).toBe(getSettlementGuide(SIX)?.deadline);
+    expect(getSettlementGuide('new-guided-settlement')).toBeUndefined();
+  });
+
+  it('drops a guide the server no longer has, and an empty list reads every row by its own deadline', () => {
+    setGuideOverrides([]);
+    expect(getSettlementGuide(SIX)).toBeUndefined();
+    const row = makeLawsuit({}, { slug: SIX, deadline: '2026-12-01' });
+    expect(applySettlementGuide(row)).toBe(row);
+    expect(catalogDeadlineFilter(new Date('2026-11-08T17:00:00Z'))).toBe('deadline.is.null,deadline.gte.2026-11-08');
+  });
+
+  it('is ignored on the Next server, so a stray call cannot change the guides of every request', () => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    setGuideOverrides([]);
+    expect(getSettlementGuide(SIX)).toBe(SETTLEMENT_GUIDES.find((g) => g.slugs.includes(SIX)));
+  });
+
+  it('is called nowhere under src/ but its definition (the app calls it: mobile/src/data/guides.ts)', () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) return files(file);
+        return /\.[cm]?[jt]sx?$/.test(entry.name) ? [file] : [];
+      });
+    const src = path.join(process.cwd(), 'src');
+    const definition = path.join(src, 'lib', 'settlement-guides.ts');
+    const users = files(src).filter((file) => file !== definition && /\bsetGuideOverrides\b/.test(readFileSync(file, 'utf8')));
+    expect(users).toEqual([]);
+  });
+});
+
+describe('guidesVersion', () => {
+  it('fingerprints a guide list: the same list (also after a JSON round trip) gives the same version', () => {
+    expect(SETTLEMENT_GUIDES_VERSION).toMatch(/^[0-9a-z]{6,14}$/);
+    expect(guidesVersion(SETTLEMENT_GUIDES)).toBe(SETTLEMENT_GUIDES_VERSION);
+    expect(guidesVersion(JSON.parse(JSON.stringify(SETTLEMENT_GUIDES)))).toBe(SETTLEMENT_GUIDES_VERSION);
+  });
+
+  it('changes when any fact changes, and when a guide is added or dropped', () => {
+    const [first, ...rest] = SETTLEMENT_GUIDES;
+    expect(guidesVersion([{ ...first, deadline: '2027-04-01' }, ...rest])).not.toBe(SETTLEMENT_GUIDES_VERSION);
+    expect(guidesVersion([{ ...first, proofDetail: `${first.proofDetail} ` }, ...rest])).not.toBe(SETTLEMENT_GUIDES_VERSION);
+    expect(guidesVersion(rest)).not.toBe(SETTLEMENT_GUIDES_VERSION);
+    expect(guidesVersion([])).not.toBe(guidesVersion(rest));
   });
 });

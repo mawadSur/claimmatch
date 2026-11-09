@@ -3,23 +3,13 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import {
-  canReportWithoutClaim,
-  eligibilitySummary,
-  linkHost,
-  proofNeed,
-  safeExternalUrl,
-  toClaimView,
-} from '@/lib/claims';
-import { UUID_RE, claimContext, loadSettlementBySlug, logClaimsError } from '@/lib/claims-server';
+import { loadClaimScreen } from '@/lib/claim-screen-server';
 import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { signedOutClaimHref } from '@/lib/signup-context';
-import { assistedFilingAllowed } from '@/lib/filing/queue';
-import { ClaimFlow, type ClaimFlowSettlement } from '@/components/claims/ClaimFlow';
+import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
 import { Disclaimer } from '@/components/Disclaimer';
-import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
   title: 'How to file your claim',
@@ -43,25 +33,11 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   } = await supabase.auth.getUser();
   if (!user) redirect(signedOutClaimHref(`/claim/${slug}`));
 
-  const lookup = await loadSettlementBySlug(slug);
-  // A failed read is not "taken down": someone coming back from the official
-  // site to report filing gets a retry, never a 404.
-  if (!lookup.ok) return <LoadError slug={slug} what="this settlement" />;
-  const settlement = lookup.settlement;
-  if (!settlement || !UUID_RE.test(settlement.id)) notFound();
-
   const now = new Date();
-  const context = claimContext(settlement, now);
-  const [{ data: claimRow, error: claimError }, { data: profileRow }] = await Promise.all([
-    supabase.from('claims').select('*').eq('user_id', user.id).eq('lawsuit_id', settlement.id).maybeSingle(),
-    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-  ]);
-  if (claimError) logClaimsError('claim page lookup failed', claimError);
-  const claim = claimRow ? toClaimView(claimRow as Record<string, unknown>) : null;
-  const profile = (profileRow as Profile | null) ?? null;
-
-  if (claimError) return <LoadError slug={slug} what="your claim" />;
-  if (!claim && (!context.published || context.fictional)) notFound();
+  const screen = await loadClaimScreen(supabase, user.id, slug, now);
+  if (screen.kind === 'load_error') return <LoadError slug={slug} what={screen.what} />;
+  if (screen.kind === 'not_found') notFound();
+  const { settlement, context, claim } = screen;
 
   const header = (
     <>
@@ -79,11 +55,8 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     </>
   );
 
-  // Without a claim, a settlement that no longer takes claims still lets people
-  // tell us they filed (the deadline-passed or "closed on our list" card) until
-  // 30 days after its deadline. Only after that is there nothing left to do.
-  if (!claim && !context.openForClaims && !canReportWithoutClaim(context)) {
-    const official = safeExternalUrl(settlement.claim_url);
+  if (screen.kind === 'closed') {
+    const official = screen.officialUrl;
     return (
       <section className="container-narrow py-10 sm:py-12">
         {header}
@@ -130,35 +103,17 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  const flowSettlement: ClaimFlowSettlement = {
-    id: settlement.id,
-    slug: settlement.slug,
-    title: settlement.title,
-    deadline: settlement.deadline,
-    officialUrl: safeExternalUrl(settlement.claim_url),
-    sourceUrl: safeExternalUrl(settlement.source_url),
-    sourceHost: linkHost(settlement.source_url),
-    eligibility: eligibilitySummary(settlement.eligibility_text),
-    proof: proofNeed(settlement),
-    formFieldOrder: settlement.form_field_order ?? null,
-    assistedFilingAllowed: assistedFilingAllowed(
-      { assisted_filing_allowed: Boolean((settlement as { assisted_filing_allowed?: boolean }).assisted_filing_allowed) },
-      flags.assistedFiling(),
-    ),
-    payoutReportEnabled: flags.payoutReport(),
-  };
-
   return (
     <section className="container-narrow py-10 sm:py-12">
       {flags.signupContext() ? <SignupContextReturned claimPath={`/claim/${settlement.slug}`} /> : null}
       {header}
       <div className="mt-6">
         <ClaimFlow
-          settlement={flowSettlement}
+          settlement={screen.flowSettlement}
           context={context}
           initialClaim={claim}
           nowIso={now.toISOString()}
-          profile={profile}
+          profile={screen.profile}
         />
       </div>
       <div className="mt-10">

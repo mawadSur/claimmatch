@@ -243,6 +243,16 @@ describe('the claim page without a claim', () => {
     expect(html).not.toContain(REPORT);
   });
 
+  it('on day 31, links only a real official site, never a SettleSignal listing', async () => {
+    h.settlement = settlementRow({ deadline: '2026-09-15' });
+    expect(await render()).toContain(`href="${OFFICIAL}"`);
+    h.settlement = settlementRow({ deadline: '2026-09-15', claim_url: 'https://settlesignal.com/settlements/real-settlement/' });
+    const html = await render();
+    expect(html).toContain('This settlement is closed');
+    expect(html).not.toContain('settlesignal.com');
+    expect(html).toContain('use the link in the notice you got by mail or email');
+  });
+
   it('is still a 404 for an unpublished or fictional settlement', async () => {
     h.settlement = settlementRow({ review_status: 'rejected', deadline: '2026-10-15' });
     await expect(render()).rejects.toThrow('NEXT_NOT_FOUND');

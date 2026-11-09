@@ -3,30 +3,18 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AlertCircle, ArrowRight, CheckCircle2, LayoutDashboard, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { lookupLawsuits } from '@/lib/lawsuits';
-import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
+import { loadDashboardData } from '@/lib/dashboard-server';
 import { ClaimList } from '@/components/claims/ClaimList';
 import { ClosingSoon } from '@/components/claims/ClosingSoon';
 import { CorrectiveNoticeList } from '@/components/claims/CorrectiveNoticeList';
 import { YourMatches } from '@/components/claims/YourMatches';
-import {
-  buildClosingSoon,
-  buildDashboard,
-  buildDashboardMatches,
-  buildDashboardMatchesFromStored,
-  dashboardNeedsProfile,
-} from '@/components/claims/dashboard-model';
-import { factsFromRows } from '@/lib/profile-facts';
-import type { Lawsuit, Match } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
-import { listUserFilingJobs } from '@/lib/filing/queue';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { matchesViewedProperties } from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
-import type { Profile } from '@/lib/types';
 
 export const metadata: Metadata = {
   title: 'Your claims',
@@ -53,64 +41,26 @@ export default async function DashboardPage({
   const { welcome, denied, password } = await searchParams;
   const now = new Date();
 
-  const [{ data: profile }, claims, catalog, filingJobs, factRes, storedRes] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('full_name, onboarded, state, attributes')
-      .eq('id', user.id)
-      .maybeSingle(),
-    loadUserClaims(user.id),
-    // Only settlements open for claims (the shared rule); buildClosingSoon
-    // applies the same rule again and drops tracked ones. A failed query is
-    // shown as an error, never as "no deadlines coming up".
-    lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
-    flags.assistedFiling() ? listUserFilingJobs(user.id) : Promise.resolve([]),
-    flags.profileV2()
-      ? supabase
-          .from('profile_facts')
-          .select('type, value, start_date, end_date, source')
-          .eq('user_id', user.id)
-      : Promise.resolve({ data: [], error: null }),
-    flags.matchStore()
-      ? supabase
-          .from('matches')
-          .select('*, lawsuit:lawsuits(*)')
-          .eq('user_id', user.id)
-          .eq('dismissed', false)
-          .order('score', { ascending: false })
-      : Promise.resolve({ data: null, error: null }),
-  ]);
-
-  const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
-  const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
-  const closingSoon = buildClosingSoon(catalog.lawsuits, tracked, now, isFictionalSettlementSlug);
-  const matchProfile = {
-    state: (profile?.state as string | null) ?? null,
-    attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],
-    onboarded: Boolean(profile?.onboarded),
-    facts: factsFromRows(factRes.data),
-  };
-  const storedMatches =
-    flags.matchStore() && storedRes.data
-      ? buildDashboardMatchesFromStored(
-          storedRes.data as (Match & { lawsuit?: Lawsuit | null })[],
-          now,
-          isFictionalSettlementSlug,
-        )
-      : [];
-  const matches = catalog.error
-    ? []
-    : storedMatches.length > 0
-      ? storedMatches
-      : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
-  const needsProfile = dashboardNeedsProfile(matchProfile);
+  const {
+    profile,
+    claims,
+    catalog,
+    filingJobs,
+    rows,
+    notices,
+    closingSoon,
+    matchProfile,
+    matches,
+    needsProfile,
+    firstName,
+  } = await loadDashboardData(supabase, user.id, now);
+  // Web only (the app's dashboard endpoint does not send it yet).
   const completeness =
     flags.profileCompleteness() && !catalog.error
       ? profileCompleteness(matchProfile, catalog.lawsuits, now)
       : null;
   const showCompleteness = completeness ? shouldShowCompletenessCard(completeness) : false;
-
-  const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
+  // matches_viewed: counted from the matches loadDashboardData ranked.
   const matchView = matchesViewedProperties({
     matchCount: matches.length,
     strongCount: matches.filter((row) => row.strength === 'strong').length,

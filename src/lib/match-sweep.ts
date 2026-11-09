@@ -1,7 +1,6 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
-import { filterOpenForClaims } from '@/lib/lawsuits';
 import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
 import {
   isEmailableStoredMatch,
@@ -9,7 +8,7 @@ import {
   wantsInstantMatchEmails,
 } from '@/lib/match-email';
 import { factsFromRows } from '@/lib/profile-facts';
-import { todayInLatestUSZone } from '@/lib/utils';
+import { catalogDeadlineFilter, openGuidedCatalog } from '@/lib/settlement-guides';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchSweepResult {
@@ -48,15 +47,17 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     .select('*')
     .eq('review_status', 'published')
     .in('status', ['open', 'closing_soon'])
-    .or(`deadline.is.null,deadline.gte.${todayInLatestUSZone(now)}`)
+    .or(catalogDeadlineFilter(now))
     .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
   if (lawsuitErr) {
     // Fail loudly so the cron reports an error instead of a quiet "0 sent".
     throw new Error(`[match-sweep] loading settlements failed: ${lawsuitErr.message}`);
   }
-  // Query already drops past America/New_York deadlines; filter again and let
-  // matchProfile refuse any leftover expired row.
-  const lawsuits = filterOpenForClaims((lawsuitData ?? []) as Lawsuit[], now);
+  // As the catalog does: the query drops past America/New_York deadlines but
+  // reads every guided row; the official-notice guides replace the feed's
+  // deadline (and payout) before the open rule runs again, and matchProfile
+  // refuses any leftover expired row.
+  const lawsuits = openGuidedCatalog((lawsuitData ?? []) as Lawsuit[], now);
 
   if (lawsuits.length === 0) {
     return { users: 0, newMatches: 0, emailed: 0 };

@@ -17,6 +17,8 @@ import {
   wouldCloseFromUpdate,
   type StaleCandidate,
 } from '@/lib/scraper/stale';
+import { addCalendarDays } from '@/lib/claim-deadlines';
+import { getSettlementGuide } from '@/lib/settlement-guides';
 import type { ScrapedLawsuit } from '@/lib/types';
 
 const now = new Date('2026-10-16T10:00:00Z'); // past the Eastern cutoff for 2026-10-15
@@ -59,6 +61,21 @@ describe('deadline closes', () => {
     expect(planDeadlineCloses([candidate({ deadline: '2026-12-01' })], now)).toHaveLength(0);
     expect(planDeadlineCloses([candidate({ deadline: '2026-10-01', status: 'closed' })], now)).toHaveLength(0);
     expect(planDeadlineCloses([candidate({ deadline: '2026-10-01', status: 'draft' })], now)).toHaveLength(0);
+  });
+
+  it('closes a guided settlement by its official deadline, not the feed’s', () => {
+    const slug = 'john-deere-repair-services-antitrust-settlement';
+    const official = getSettlementGuide(slug)?.deadline as string;
+    const day = (days: number) => new Date(`${addCalendarDays(official, days)}T17:00:00Z`);
+    // The feed's deadline passed a month before the official one: still open.
+    const early = candidate({ slug, deadline: addCalendarDays(official, -30) });
+    expect(planDeadlineCloses([early], day(-10))).toEqual([]);
+    expect(planDeadlineCloses([early], day(0))).toEqual([]);
+    // The official deadline passed while the feed's is still ahead: closed.
+    const late = candidate({ slug, deadline: addCalendarDays(official, 60) });
+    expect(planDeadlineCloses([late], day(1))).toMatchObject([
+      { slug, reason: 'deadline', close: true, deadline: official, patch: { status: 'closed' }, changes: [`official deadline ${official} has passed`] },
+    ]);
   });
 });
 

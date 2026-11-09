@@ -55,6 +55,19 @@ describe('closing-soon email gate', () => {
     ];
     expect(pickClosingSoonEmailRows(rows, now).map((r) => r.title)).toEqual(['Soon']);
   });
+
+  it('leaves out rows not open for claims: closed, unpublished or fictional', () => {
+    const now = new Date('2026-10-27T12:00:00Z');
+    const soon = { ...verified, deadline: '2026-11-05' };
+    const rows = [
+      makeLawsuit({}, { ...soon, title: 'Open' }),
+      makeLawsuit({}, { ...soon, title: 'Closing soon', status: 'closing_soon' }),
+      makeLawsuit({}, { ...soon, title: 'Closed', status: 'closed' }),
+      makeLawsuit({}, { ...soon, title: 'Unpublished', review_status: 'pending_review' }),
+      makeLawsuit({}, { ...soon, title: 'Fictional', slug: 'robocall-tcpa-settlement' }),
+    ];
+    expect(pickClosingSoonEmailRows(rows, now).map((r) => r.title)).toEqual(['Closing soon', 'Open']);
+  });
 });
 
 describe('closing-soon email send', () => {

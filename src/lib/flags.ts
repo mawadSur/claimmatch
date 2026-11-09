@@ -2,8 +2,54 @@
 // only when its env var is exactly "1". Vercel applies env changes on the next
 // deploy, so no code change is needed to flip one.
 
+/**
+ * The flags the native app may see (GET /api/mobile/config). The app has no
+ * server env, so without these values every flag would read as off there.
+ */
+export const CLIENT_FLAG_NAMES = [
+  'VERIFIED_FIELDS_ENABLED',
+  'CLOSES_IN_CHIPS_ENABLED',
+  'CALENDAR_ICS_ENABLED',
+  'FORM_FIELD_ORDER_ENABLED',
+  'PROOF_FEEDBACK_ENABLED',
+  'ASSISTED_FILING_ENABLED',
+  'PAYOUT_REPORT_ENABLED',
+  'MATCH_METRICS_ENABLED',
+  'FEE_DISCLOSURE_ENABLED',
+] as const;
+export type ClientFlagName = (typeof CLIENT_FLAG_NAMES)[number];
+
+let overrides: Partial<Record<ClientFlagName, boolean>> | null = null;
+
+/**
+ * Native app only: the values from GET /api/mobile/config. Never call this on
+ * the server, where one request would change the flags of every other: the
+ * Next server ignores overrides, and tests/flags-client.test.ts fails on any
+ * use under src/. Names outside CLIENT_FLAG_NAMES are dropped, so a config
+ * response can never turn on a server-only flag in the app.
+ */
+export function setFlagOverrides(next: Partial<Record<ClientFlagName, boolean>> | null): void {
+  if (!next) {
+    overrides = null;
+    return;
+  }
+  const given = CLIENT_FLAG_NAMES.filter((name) => Object.prototype.hasOwnProperty.call(next, name));
+  overrides = Object.fromEntries(given.map((name) => [name, next[name] === true]));
+}
+
 function on(name: string): boolean {
+  // NEXT_RUNTIME is 'nodejs' or 'edge' only on the Next server; it is empty in
+  // the browser bundle and unset in the native app.
+  if (overrides && !process.env.NEXT_RUNTIME && Object.prototype.hasOwnProperty.call(overrides, name)) {
+    return overrides[name as ClientFlagName] === true;
+  }
   return process.env[name] === '1';
+}
+
+/** The server's values for the app: env only, never the app's overrides. */
+export function clientFlagValues(): Record<ClientFlagName, boolean> {
+  const values = CLIENT_FLAG_NAMES.map((name) => [name, process.env[name] === '1'] as const);
+  return Object.fromEntries(values) as Record<ClientFlagName, boolean>;
 }
 
 export const flags = {

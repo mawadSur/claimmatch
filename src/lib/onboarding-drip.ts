@@ -6,6 +6,7 @@
 import { commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { sendDidYouFileEmail, sendIncompleteOnboardingEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { isDeadlinePassed } from '@/lib/utils';
 
@@ -246,7 +247,8 @@ export async function sendOnboardingDrips(opts: { now?: Date } = {}): Promise<On
         status: claim.status,
         slug: lawsuit.slug,
         title: lawsuit.title,
-        deadline: lawsuit.deadline,
+        // A guided settlement's official deadline, as the claim screen shows it.
+        deadline: guidedDeadline(lawsuit),
         lastOpenIntentAt,
         alreadySent: sent.didYouFile.has(claim.id),
       },

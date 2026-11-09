@@ -1,8 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// The queue's reads: one due job, its settlement and its profile.
+const fake = vi.hoisted(() => ({ lawsuit: null as Record<string, unknown> | null }));
+vi.mock('@/lib/supabase/server', () => {
+  const job = { id: 'job-1', claim_id: 'c1', user_id: 'u1', lawsuit_id: 'l1', attempts: 0, max_attempts: 1, status: 'queued' };
+  const single: Record<string, () => unknown> = { filing_jobs: () => job, lawsuits: () => fake.lawsuit, profiles: () => ({}) };
+  function query(table: string) {
+    const q: Record<string, unknown> = {};
+    for (const name of ['select', 'eq', 'lte', 'order', 'limit', 'update', 'or']) q[name] = () => q;
+    q.maybeSingle = async () => ({ data: single[table]?.() ?? null, error: null });
+    q.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+      Promise.resolve({ data: table === 'filing_jobs' ? [job] : [], error: null }).then(resolve, reject);
+    return q;
+  }
+  return { createServiceClient: () => ({ from: query }) };
+});
+
 import { AUTHORIZATION_TEXT_V1, AUTHORIZATION_VERSION, authorizationText, clientIp } from '@/lib/filing/authorization';
 import { assistedFilingAllowed, filingStatusLabel, processFilingQueue } from '@/lib/filing/queue';
 import { renderFilingReceiptEmail } from '@/lib/filing/receipt';
 import { MockFilingWorker, PlaywrightFilingWorker, setFilingWorkerFactory } from '@/lib/filing/worker';
+import { getSettlementGuide } from '@/lib/settlement-guides';
 import { makeLawsuit } from './helpers';
 
 afterEach(() => {
@@ -83,6 +101,25 @@ describe('processFilingQueue', () => {
     const out = await processFilingQueue({ worker: mock });
     expect(out).toEqual({ processed: 0, results: [] });
     expect(mock.calls).toHaveLength(0);
+  });
+
+  it('opens the claim form the claim screen opens: on a guided settlement, the official site’s', async () => {
+    vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
+    const slug = 'seatgeek-ticket-fees-nevada-class-action-settlement';
+    const official = getSettlementGuide(slug)?.officialUrl;
+    const claimUrlFor = async (claim_url: string | null, rowSlug = slug) => {
+      fake.lawsuit = { id: 'l1', title: 'SeatGeek fees', claim_url, administrator_id: null, assisted_filing_allowed: true, slug: rowSlug };
+      const mock = new MockFilingWorker();
+      await processFilingQueue({ worker: mock });
+      return mock.calls.map((call) => call.claimUrl);
+    };
+    // The feed's link to another site gives way to the official one.
+    expect(await claimUrlFor('https://www.topclassactions.example.org/seatgeek')).toEqual([official]);
+    // Its link to the form on the official site stays.
+    expect(await claimUrlFor('https://seatgeekticketfeessettlement.com/submit-claim')).toEqual([
+      'https://seatgeekticketfeessettlement.com/submit-claim',
+    ]);
+    expect(await claimUrlFor('https://admin.example.org/file', 'plain-settlement')).toEqual(['https://admin.example.org/file']);
   });
 });
 
