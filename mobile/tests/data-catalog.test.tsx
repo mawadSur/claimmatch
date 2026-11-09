@@ -1,5 +1,6 @@
+import { addCalendarDays } from '@shared/lib/claim-deadlines';
 import { FICTIONAL_SLUGS } from '@shared/lib/fictional-slugs';
-import { getSettlementGuide } from '@shared/lib/settlement-guides';
+import { GUIDED_SLUGS, getSettlementGuide } from '@shared/lib/settlement-guides';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
@@ -47,7 +48,9 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // 10:00 in New York on Nov 2, 2026: today in the deadline zone is 2026-11-02.
-jest.mock('@/lib/clock', () => ({ now: () => new Date('2026-11-02T15:00:00Z') }));
+const DEFAULT_NOW = '2026-11-02T15:00:00Z';
+const mockClock = { now: new Date(DEFAULT_NOW) };
+jest.mock('@/lib/clock', () => ({ now: () => mockClock.now }));
 
 function row(overrides: Partial<CatalogLawsuit> & { slug: string }): Record<string, unknown> {
   return {
@@ -80,6 +83,17 @@ function row(overrides: Partial<CatalogLawsuit> & { slug: string }): Record<stri
 /** A catalog slug src/lib/settlement-guides.ts has an official-notice guide for. */
 const GUIDED_SLUG = 'six-flags-fees-california-class-action-settlement';
 
+function guideFor(slug: string) {
+  const guide = getSettlementGuide(slug);
+  if (!guide) throw new Error('expected a guide');
+  return guide;
+}
+
+/** `days` after the guide's official deadline, YYYY-MM-DD. */
+function officialPlus(days: number): string {
+  return addCalendarDays(guideFor(GUIDED_SLUG).deadline, days) as string;
+}
+
 function calls(method: string): unknown[][] {
   return mockState.calls.filter((call) => call.method === method).map((call) => call.args);
 }
@@ -87,6 +101,7 @@ function calls(method: string): unknown[][] {
 beforeEach(() => {
   mockState.calls = [];
   mockState.result = { data: [], error: null, status: 200 };
+  mockClock.now = new Date(DEFAULT_NOW);
 });
 
 describe('catalog query', () => {
@@ -97,7 +112,7 @@ describe('catalog query', () => {
     expect(CATALOG_COLUMNS).not.toMatch(/raw_source_text|reviewed_by|verified_by/);
   });
 
-  it('builds the web catalog query: published, open statuses, deadline today or later, no fictional slugs, ordered', async () => {
+  it('builds the web catalog query: published, open statuses, deadline today or later (or guided), no fictional slugs, ordered', async () => {
     const controller = new AbortController();
     await fetchCatalog(controller.signal);
 
@@ -105,7 +120,9 @@ describe('catalog query', () => {
     expect(calls('select')).toEqual([[CATALOG_COLUMNS]]);
     expect(calls('eq')).toEqual([['review_status', 'published']]);
     expect(calls('in')).toEqual([['status', ['open', 'closing_soon']]]);
-    expect(calls('or')).toEqual([['deadline.is.null,deadline.gte.2026-11-02']]);
+    // Every guided slug too, whatever its feed deadline: its official deadline decides after the read.
+    expect(calls('or')).toEqual([[`deadline.is.null,deadline.gte.2026-11-02,slug.in.(${GUIDED_SLUGS.join(',')})`]]);
+    expect(GUIDED_SLUGS).toContain(GUIDED_SLUG);
     expect(calls('not')).toEqual([['slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`]]);
     expect(calls('order')).toEqual([
       ['deadline', { ascending: true, nullsFirst: false }],
@@ -114,7 +131,7 @@ describe('catalog query', () => {
     expect(calls('abortSignal')).toEqual([[controller.signal]]);
   });
 
-  it('applies the open-for-claims rule again and keeps the server order', async () => {
+  it('applies the open-for-claims rule again and keeps the deadline order', async () => {
     mockState.result.data = [
       row({ slug: 'open-soon', deadline: '2026-11-02' }), // last day today: still open
       row({ slug: 'passed', deadline: '2026-11-01' }),
@@ -127,22 +144,47 @@ describe('catalog query', () => {
     expect(rows.map((lawsuit) => lawsuit.slug)).toEqual(['open-soon', 'no-deadline']);
   });
 
-  it('overlays the official-notice guides after the open rule, as the web does', async () => {
-    const guide = getSettlementGuide(GUIDED_SLUG);
-    if (!guide) throw new Error('expected a guide');
+  it('overlays the official-notice guides before the open rule and the order, as the web does', async () => {
+    const guide = guideFor(GUIDED_SLUG);
+    // The feed lists it before the plain row; its official deadline is after the plain row's.
+    expect(guide.deadline > '2026-12-01').toBe(true);
     mockState.result.data = [
       row({ slug: GUIDED_SLUG, deadline: '2026-11-30', claim_url: 'https://feed.example/six-flags' }),
       row({ slug: 'plain' }),
     ];
     const rows = await fetchCatalog();
-    expect(rows[0]).toMatchObject({
+    expect(rows.map((lawsuit) => lawsuit.slug)).toEqual(['plain', GUIDED_SLUG]);
+    expect(rows[1]).toMatchObject({
       slug: GUIDED_SLUG,
       deadline: guide.deadline,
       claim_url: guide.officialUrl,
       eligibility_text: guide.eligibilityText,
       typical_payout: guide.typicalPayout,
     });
-    expect(rows[1]).toMatchObject({ slug: 'plain', deadline: '2026-12-01', claim_url: 'https://www.acme-settlement.example/claim' });
+    expect(rows[0]).toMatchObject({ slug: 'plain', deadline: '2026-12-01', claim_url: 'https://www.acme-settlement.example/claim' });
+  });
+
+  it('shows and sorts by the official deadline when the feed’s is later', async () => {
+    mockState.result.data = [
+      row({ slug: 'plain', deadline: officialPlus(1) }),
+      row({ slug: GUIDED_SLUG, deadline: officialPlus(45), claim_url: 'https://feed.example/six-flags' }),
+    ];
+    const rows = await fetchCatalog();
+    expect(rows.map((lawsuit) => [lawsuit.slug, lawsuit.deadline])).toEqual([
+      [GUIDED_SLUG, guideFor(GUIDED_SLUG).deadline],
+      ['plain', officialPlus(1)],
+    ]);
+  });
+
+  it('does not list a guided settlement past its official deadline, whatever the feed says', async () => {
+    mockClock.now = new Date(`${officialPlus(1)}T15:00:00Z`);
+    mockState.result.data = [row({ slug: GUIDED_SLUG, deadline: officialPlus(45) }), row({ slug: 'plain', deadline: officialPlus(45) })];
+    expect((await fetchCatalog()).map((lawsuit) => lawsuit.slug)).toEqual(['plain']);
+
+    // One whose feed deadline passed first still lists until the official one.
+    mockClock.now = new Date(`${officialPlus(-1)}T15:00:00Z`);
+    mockState.result.data = [row({ slug: GUIDED_SLUG, deadline: officialPlus(-20) })];
+    expect((await fetchCatalog()).map((lawsuit) => lawsuit.deadline)).toEqual([guideFor(GUIDED_SLUG).deadline]);
   });
 
   it('drops a row it cannot show and reads bad optional fields as missing', async () => {
@@ -193,8 +235,7 @@ describe('settlement lookup', () => {
   });
 
   it('overlays the official-notice guide when there is one (lookupLawsuitBySlug)', async () => {
-    const guide = getSettlementGuide(GUIDED_SLUG);
-    if (!guide) throw new Error('expected a guide');
+    const guide = guideFor(GUIDED_SLUG);
     mockState.result.data = row({ slug: GUIDED_SLUG });
     await expect(fetchSettlementBySlug(GUIDED_SLUG)).resolves.toMatchObject({
       status: 'found',

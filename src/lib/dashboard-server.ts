@@ -18,6 +18,7 @@ import { listUserFilingJobs } from '@/lib/filing/queue';
 import { flags } from '@/lib/flags';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { factsFromRows } from '@/lib/profile-facts';
+import { applySettlementGuide } from '@/lib/settlement-guides';
 import type { Lawsuit, Match, Profile } from '@/lib/types';
 
 export async function loadDashboardData(supabase: SupabaseClient, userId: string, now: Date) {
@@ -59,11 +60,14 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
     facts: factsFromRows(factRes.data),
   };
   // MATCH_STORE_ENABLED: stored matches, when there are any, replace the
-  // live-computed ones.
+  // live-computed ones. Their settlements carry the official-notice guides,
+  // as the catalog's rows do (claims already do: loadUserClaims).
   const storedMatches =
     flags.matchStore() && storedRes.data
       ? buildDashboardMatchesFromStored(
-          storedRes.data as (Match & { lawsuit?: Lawsuit | null })[],
+          (storedRes.data as (Match & { lawsuit?: Lawsuit | null })[]).map((row) =>
+            row.lawsuit ? { ...row, lawsuit: applySettlementGuide(row.lawsuit) } : row,
+          ),
           now,
           isFictionalSettlementSlug,
         )

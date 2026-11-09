@@ -6,7 +6,11 @@ const m = vi.hoisted(() => {
   function chain(table: string, startOp: string) {
     const q: Record<string, unknown> = {};
     const self = () => q;
-    for (const name of ['select', 'eq', 'in', 'or', 'not', 'order', 'limit']) q[name] = self;
+    for (const name of ['select', 'eq', 'in', 'not', 'order', 'limit']) q[name] = self;
+    q.or = (filter: string) => {
+      calls.push({ table, op: 'or', payload: filter });
+      return q;
+    };
     q.upsert = (payload: unknown) => {
       calls.push({ table, op: 'upsert', payload });
       return {
@@ -30,6 +34,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 import { persistStoredMatches } from '@/lib/match-store';
+import { catalogDeadlineFilter, getSettlementGuide } from '@/lib/settlement-guides';
 import { makeLawsuit, makeProfile } from './helpers';
 
 beforeEach(() => {
@@ -76,6 +81,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.useRealTimers();
 });
 
 describe('persistStoredMatches', () => {
@@ -94,5 +100,47 @@ describe('persistStoredMatches', () => {
   it('fails loudly when the catalog cannot be read', async () => {
     m.tables.lawsuits = { data: null, error: { message: 'catalog down' } };
     await expect(persistStoredMatches()).rejects.toThrow(/catalog down/);
+  });
+});
+
+describe('persistStoredMatches on a guided settlement', () => {
+  const SLUG = 'hyundai-kia-vehicle-theft';
+  const official = getSettlementGuide(SLUG)?.deadline as string;
+  const guided = (deadline: string) => ({
+    data: [
+      makeLawsuit(
+        { requires: ['owns_vehicle'] },
+        {
+          id: '22222222-2222-4222-8222-222222222222',
+          slug: SLUG,
+          title: 'Hyundai and Kia Vehicle Theft Settlement',
+          deadline,
+          tags: { brands: ['Toyota'], class_period_start: '2019-01-01', class_period_end: '2022-12-31' },
+        },
+      ),
+    ],
+    error: null,
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+  });
+
+  it('reads the catalog’s way and matches it while the official deadline is ahead, though the feed’s has passed', async () => {
+    const now = new Date('2026-11-10T17:00:00Z');
+    vi.setSystemTime(now);
+    expect(official > '2026-11-10').toBe(true);
+    m.tables.lawsuits = guided('2026-10-01');
+    expect(await persistStoredMatches()).toMatchObject({ persisted: 1 });
+    expect(m.calls.find((c) => c.op === 'or')?.payload).toBe(catalogDeadlineFilter(now));
+    const upsert = m.calls.find((c) => c.op === 'upsert')?.payload as Array<{ lawsuit_id: string }>;
+    expect(upsert.map((row) => row.lawsuit_id)).toEqual(['22222222-2222-4222-8222-222222222222']);
+  });
+
+  it('does not match it once the official deadline has passed, though the feed’s is ahead', async () => {
+    vi.setSystemTime(new Date(`${official}T17:00:00Z`).getTime() + 24 * 3600_000);
+    m.tables.lawsuits = guided('2027-12-31');
+    expect(await persistStoredMatches()).toEqual({ users: 0, persisted: 0 });
+    expect(m.calls.some((c) => c.op === 'upsert')).toBe(false);
   });
 });

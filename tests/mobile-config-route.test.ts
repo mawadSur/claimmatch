@@ -14,10 +14,12 @@ import { GET } from '@/app/api/mobile/config/route';
 import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER, LEGAL_DISCLAIMER, SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { CLIENT_FLAG_NAMES } from '@/lib/flags';
 import { MOBILE_API_VERSION, type ClientConfig } from '@/lib/mobile-contract';
+import { GUIDED_SLUGS, SETTLEMENT_GUIDES, SETTLEMENT_GUIDES_VERSION, guidesVersion } from '@/lib/settlement-guides';
 
-async function config(): Promise<{ res: Response; body: ClientConfig }> {
-  const res = await GET();
-  return { res, body: (await res.json()) as ClientConfig };
+async function config(query = ''): Promise<{ res: Response; body: ClientConfig; bytes: number }> {
+  const res = await GET(new Request(`http://localhost/api/mobile/config${query}`));
+  const text = await res.text();
+  return { res, body: JSON.parse(text) as ClientConfig, bytes: Buffer.byteLength(text) };
 }
 
 afterEach(() => {
@@ -90,6 +92,59 @@ describe('GET /api/mobile/config', () => {
       vi.stubEnv('MOBILE_MIN_BUILD_IOS', bad);
       expect((await config()).body.minBuild.ios, bad).toBe(0);
     }
+  });
+});
+
+describe('the official-notice guides (the app’s catalog and settlement screens overlay them)', () => {
+  /** Every field of a SettlementGuide; the ones the overlay always needs come first. */
+  const REQUIRED = ['slugs', 'officialUrl', 'sourceChecked', 'eligibilityText', 'typicalPayout', 'deadline', 'proof', 'proofDetail'];
+  const OPTIONAL = ['administrator', 'summary', 'description', 'extraFaqs'];
+
+  it('serves each guide once, listing every slug it covers, with the version of the list', async () => {
+    const { body } = await config();
+    expect(body.guides).toEqual(SETTLEMENT_GUIDES);
+    expect(body.guidesVersion).toBe(SETTLEMENT_GUIDES_VERSION);
+    // What the app reads hashes to the version it is sent with.
+    expect(guidesVersion(body.guides ?? [])).toBe(body.guidesVersion);
+    // Aliases share one entry, so its long texts are sent once.
+    const slugs = (body.guides ?? []).flatMap((guide) => guide.slugs);
+    expect([...slugs].sort()).toEqual([...GUIDED_SLUGS].sort());
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it('carries the facts the overlay reads and no other field', async () => {
+    const { body } = await config();
+    for (const guide of body.guides ?? []) {
+      for (const key of REQUIRED) expect(guide, `${guide.slugs[0]} ${key}`).toHaveProperty(key);
+      expect(Object.keys(guide).filter((key) => !REQUIRED.includes(key) && !OPTIONAL.includes(key))).toEqual([]);
+      expect(guide.officialUrl).toMatch(/^https:\/\//);
+      expect(guide.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+
+  it('leaves the list out when the app already has that version, and sends it for any other', async () => {
+    const same = await config(`?guides=${SETTLEMENT_GUIDES_VERSION}`);
+    expect(same.body.guidesVersion).toBe(SETTLEMENT_GUIDES_VERSION);
+    expect(same.body).not.toHaveProperty('guides');
+    for (const other of ['', 'old1', `${SETTLEMENT_GUIDES_VERSION}0`, 'x'.repeat(300)]) {
+      expect((await config(`?guides=${encodeURIComponent(other)}`)).body.guides, other).toEqual(SETTLEMENT_GUIDES);
+    }
+  });
+
+  it('stays small: the list is under 32 KB, and a config without it under 4 KB', async () => {
+    const full = await config();
+    const lean = await config(`?guides=${SETTLEMENT_GUIDES_VERSION}`);
+    expect(Buffer.byteLength(JSON.stringify(SETTLEMENT_GUIDES))).toBeLessThan(32_000);
+    expect(lean.bytes).toBeLessThan(4_000);
+    expect(full.bytes - lean.bytes).toBe(Buffer.byteLength(`,"guides":${JSON.stringify(SETTLEMENT_GUIDES)}`));
+  });
+
+  it('only adds fields: everything an older app build reads is still there, under API version 1', async () => {
+    const { body } = await config();
+    expect(Object.keys(body).sort()).toEqual(
+      ['apiVersion', 'flags', 'guides', 'guidesVersion', 'legal', 'minBuild', 'serverTime', 'todayDeadlineZone'],
+    );
+    expect(body.apiVersion).toBe(1);
   });
 });
 

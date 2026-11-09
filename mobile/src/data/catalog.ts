@@ -1,8 +1,7 @@
 import { FICTIONAL_SLUGS, isFictionalSlug } from '@shared/lib/fictional-slugs';
-import { filterOpenForClaims, isPublicLawsuit, OPEN_STATUSES } from '@shared/lib/open-for-claims';
-import { applySettlementGuide, applySettlementGuides } from '@shared/lib/settlement-guides';
+import { isPublicLawsuit, OPEN_STATUSES } from '@shared/lib/open-for-claims';
+import { applySettlementGuide, catalogDeadlineFilter, openGuidedCatalog } from '@shared/lib/settlement-guides';
 import type { Lawsuit } from '@shared/lib/types';
-import { todayInDeadlineZone } from '@shared/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { now } from '@/lib/clock';
@@ -16,10 +15,17 @@ export type { CatalogLawsuit } from './schemas';
 
 /**
  * The public catalog, read straight from Supabase under RLS (plan 1.1): the
- * same query, the same open-for-claims re-filter and the same official-notice
- * guide overlay as the web (src/lib/lawsuits.ts lookupLawsuits and
+ * same query, the same official-notice guide overlay and the same
+ * open-for-claims re-filter as the web (src/lib/lawsuits.ts lookupLawsuits and
  * lookupLawsuitBySlug). Works signed out. Columns are listed so
  * raw_source_text, reviewed_by and verified_by are never downloaded.
+ *
+ * The guides are the ones in use (./guides): the server's from GET
+ * /api/mobile/config when it has them, otherwise the ones bundled with the
+ * app. The shared helpers below (catalogDeadlineFilter, openGuidedCatalog,
+ * applySettlementGuide) read them, so the query's guided slugs, the open rule,
+ * the order and the settlement screen all follow the server's copy, and
+ * ConfigProvider reads these queries again when that copy changes.
  */
 export const CATALOG_COLUMNS =
   'id, slug, title, summary, description, category, status, review_status, typical_payout, proof_required, deadline, eligibility, eligibility_text, source_url, claim_url, external_id, is_featured, administrator, verified_at, eligibility_verified, proof_verified';
@@ -31,8 +37,11 @@ export const SETTLEMENT_STALE_MS = 60 * 60_000;
 
 /**
  * Settlements open for claims: soonest known deadline first, then no
- * deadline, featured first within a day. The query applies the open rule and
- * filterOpenForClaims applies it again with the same clock, as on the web.
+ * deadline, featured first within a day. The query applies the open rule
+ * (and also reads every guided slug, whatever its feed deadline says); then,
+ * with the same clock and as on the web, the guides replace the feed's
+ * deadline before filterOpenForClaims applies the rule again and the rows are
+ * put in deadline order (openGuidedCatalog).
  */
 export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogLawsuit[]> {
   const at = now();
@@ -41,14 +50,14 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogLawsuit
     .select(CATALOG_COLUMNS)
     .eq('review_status', 'published')
     .in('status', [...OPEN_STATUSES])
-    .or(`deadline.is.null,deadline.gte.${todayInDeadlineZone(at)}`)
+    .or(catalogDeadlineFilter(at))
     .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
     .order('deadline', { ascending: true, nullsFirst: false })
     .order('is_featured', { ascending: false });
   if (signal) query = query.abortSignal(signal);
   const { data, error, status } = await query;
   if (error) throw supabaseReadError(error, status);
-  return applySettlementGuides(filterOpenForClaims(parseCatalogRows(data), at));
+  return openGuidedCatalog(parseCatalogRows(data), at);
 }
 
 export type SettlementLookup =
@@ -91,7 +100,8 @@ export function useCatalog() {
 /**
  * One settlement (key ['settlement', slug], 60 minutes fresh). Starts from
  * the catalog's copy of the row when the catalog is loaded, so the detail
- * screen opens without a spinner.
+ * screen opens without a spinner, but not while the catalog is being read
+ * again for new guides: that copy still carries the old ones.
  */
 export function useSettlement(slug: string) {
   const client = useQueryClient();
@@ -100,6 +110,7 @@ export function useSettlement(slug: string) {
     queryFn: ({ signal }) => fetchSettlementBySlug(slug, signal),
     staleTime: SETTLEMENT_STALE_MS,
     initialData: (): SettlementLookup | undefined => {
+      if (client.getQueryState(dataKeys.catalog)?.isInvalidated) return undefined;
       const row = client.getQueryData<CatalogLawsuit[]>(dataKeys.catalog)?.find((lawsuit) => lawsuit.slug === slug);
       return row ? { status: 'found', lawsuit: row } : undefined;
     },

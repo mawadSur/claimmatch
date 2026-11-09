@@ -3,8 +3,13 @@ import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { FICTIONAL_SLUGS, isFictionalSlug } from './fictional-slugs';
 import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
-import { applySettlementGuide, applySettlementGuides } from './settlement-guides';
-import { todayInLatestUSZone } from './utils';
+import {
+  applySettlementGuide,
+  applySettlementGuides,
+  catalogDeadlineFilter,
+  openGuidedCatalog,
+  sortByDeadline,
+} from './settlement-guides';
 import {
   categoriesOf,
   cleanSearchTerm,
@@ -72,8 +77,8 @@ function escapeLike(text: string): string {
 }
 
 /**
- * Settlements open for claims, featured first, then by nearest deadline (no
- * deadline last). Reports whether the database could be read.
+ * Settlements open for claims: soonest deadline first (no deadline last),
+ * featured first on the same day. Reports whether the database could be read.
  */
 export async function lookupLawsuits(
   opts?: CatalogQuery,
@@ -87,7 +92,9 @@ export async function lookupLawsuits(
       .select('*')
       .eq('review_status', 'published')
       .in('status', [...OPEN_STATUSES])
-      .or(`deadline.is.null,deadline.gte.${todayInLatestUSZone(now)}`)
+      // Also every guided slug, whatever its feed deadline says: the official
+      // deadline replaces it below, before the open rule decides.
+      .or(catalogDeadlineFilter(now))
       .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
       // Known deadlines first (soonest), then rows with no deadline.
       .order('deadline', { ascending: true, nullsFirst: false })
@@ -97,21 +104,20 @@ export async function lookupLawsuits(
     if (opts?.category) query = query.eq('category', opts.category);
     if (opts?.featured) query = query.eq('is_featured', true);
     if (q) query = query.ilike('title', `%${escapeLike(q)}%`);
-    if (opts?.limit) query = query.limit(opts.limit);
 
     const { data, error } = await query;
     if (error) {
       console.error('[lawsuits] catalog query failed:', error.message);
       return { lawsuits: [], error: true };
     }
-    // The query already applies the rule; filtering again keeps this list
-    // correct even if the query and the rule ever drift apart.
-    // Official-notice guides overlay a few high-interest rows at read time.
-    // They never insert listings or change ingest / verified_at.
-    return {
-      lawsuits: applySettlementGuides(filterOpenForClaims((data ?? []) as Lawsuit[], now)),
-      error: false,
-    };
+    // Official-notice guides overlay a few high-interest rows first, so the
+    // open rule and the order read the official deadline (guides never insert
+    // listings or change ingest / verified_at). The query already applies the
+    // rule; filtering again keeps this list correct even if the query and the
+    // rule ever drift apart. The limit applies to that order, so it is taken
+    // here rather than in the query.
+    const lawsuits = openGuidedCatalog((data ?? []) as Lawsuit[], now);
+    return { lawsuits: opts?.limit ? lawsuits.slice(0, opts.limit) : lawsuits, error: false };
   } catch (err) {
     console.error('[lawsuits] catalog query threw:', err instanceof Error ? err.message : err);
     return { lawsuits: [], error: true };
@@ -200,8 +206,9 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
       console.error('[lawsuits] published catalog query failed:', error.message);
       return { lawsuits: [], error: true };
     }
+    // Guides first, then the deadline order, as in lookupLawsuits.
     return {
-      lawsuits: applySettlementGuides(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit)),
+      lawsuits: sortByDeadline(applySettlementGuides(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit))),
       error: false,
     };
   } catch (err) {

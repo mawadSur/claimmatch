@@ -12,11 +12,16 @@ import type {
 import type { ClaimFlowSettlement, PacketProfile } from './claim-screen';
 import type { ClaimView, SettlementContext } from './claims';
 import type { ClientFlagName } from './flags';
+import type { SettlementGuide } from './settlement-guides';
 
 /** Raised only when a response changes in a way older app builds cannot read. */
 export const MOBILE_API_VERSION = 1;
 
-/** GET /api/mobile/config (no sign-in needed). */
+/**
+ * GET /api/mobile/config (no sign-in needed). The app may add
+ * ?guides=<the guidesVersion it has>; the guide list is then left out when it
+ * is the same. Fields are only ever added, so older builds keep reading it.
+ */
 export interface ClientConfig {
   apiVersion: typeof MOBILE_API_VERSION;
   /** The server clock (ISO 8601), for correcting a skewed device clock. */
@@ -28,6 +33,14 @@ export interface ClientConfig {
   legal: { disclaimer: string; short: string; contactEmail: string | null };
   /** Builds below these must update before use; 0 means no minimum. */
   minBuild: { ios: number; android: number };
+  /** Fingerprint of the server's official-notice guides (guidesVersion in src/lib/settlement-guides.ts). */
+  guidesVersion: string;
+  /**
+   * The guides the app's catalog and settlement screens overlay, as the
+   * server's claim screen, dashboard and reminders do: one entry per guide,
+   * with every slug it covers. Absent when the app already has this version.
+   */
+  guides?: SettlementGuide[];
 }
 
 /** A dashboard match without its internal score: scores are never shown. */

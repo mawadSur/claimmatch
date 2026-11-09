@@ -1,11 +1,13 @@
 import type { LawsuitStatus, ReviewStatus } from '@/lib/types';
 import { isDeadlinePassed } from '@/lib/utils';
 import { isPublicLawsuit, OPEN_STATUSES } from '@/lib/open-for-claims';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import type { IngestPlan, PlannedUpdate } from './plan';
 
 /**
  * Close rules that do not wait for the feed to mark a record closed:
- * 1. The deadline has already passed (America/New_York date — same as isOpenForClaims).
+ * 1. The deadline has already passed (America/New_York date — same as isOpenForClaims;
+ *    for a guided settlement, its official deadline).
  * 2. A feed-source row has been missing from N consecutive successful,
  *    non-empty feeds.
  *
@@ -86,24 +88,27 @@ export function isFeedSourceRow(
 
 /**
  * Open or closing-soon rows whose deadline has already passed. Draft and
- * already-closed rows are left alone. No deadline is not a close.
+ * already-closed rows are left alone. No deadline is not a close. A guided
+ * settlement goes by its official deadline (guidedDeadline), not the feed's:
+ * the catalog and the claim flow do, and a closed row leaves both.
  */
 export function planDeadlineCloses(rows: StaleCandidate[], now: Date): PlannedStaleAction[] {
   const out: PlannedStaleAction[] = [];
   for (const row of rows) {
     if (!isCloseableStatus(row.status)) continue;
-    if (!isDeadlinePassed(row.deadline, now)) continue;
+    const deadline = guidedDeadline(row);
+    if (!isDeadlinePassed(deadline, now)) continue;
     out.push({
       id: row.id,
       slug: row.slug,
       external_id: row.external_id,
-      deadline: row.deadline,
+      deadline,
       reason: 'deadline',
       close: true,
       missed_feed_count: row.missed_feed_count ?? 0,
       last_seen_at: row.last_seen_at,
       patch: { status: 'closed' },
-      changes: [`deadline ${row.deadline} has passed`],
+      changes: [`${deadline === row.deadline ? 'deadline' : 'official deadline'} ${deadline} has passed`],
     });
   }
   return out;

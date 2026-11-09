@@ -1,4 +1,26 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// A fake service client for the send run: each table answers with its rows.
+const db = vi.hoisted(() => ({ tables: {} as Record<string, unknown[]>, sent: [] as Record<string, unknown>[] }));
+vi.mock('@/lib/supabase/server', () => {
+  function query(table: string) {
+    const q: Record<string, unknown> = {};
+    for (const name of ['select', 'in', 'eq', 'lte']) q[name] = () => q;
+    q.insert = async () => ({ error: null });
+    q.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+      Promise.resolve({ data: db.tables[table] ?? [], error: null }).then(resolve, reject);
+    return q;
+  }
+  return { isSupabaseConfigured: () => true, createServiceClient: () => ({ from: query }) };
+});
+vi.mock('@/lib/email', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/email')>()),
+  sendDidYouFileEmail: async (_to: string, data: Record<string, unknown>) => {
+    db.sent.push(data);
+    return true;
+  },
+}));
+
 import {
   DID_YOU_FILE_AFTER_MS,
   INCOMPLETE_ONBOARDING_AFTER_MS,
@@ -8,6 +30,7 @@ import {
   sendOnboardingDrips,
 } from '@/lib/onboarding-drip';
 import { renderDidYouFileEmail, renderIncompleteOnboardingEmail } from '@/lib/email';
+import { getSettlementGuide } from '@/lib/settlement-guides';
 
 describe('onboarding drip time boundaries', () => {
   const now = new Date('2026-11-06T15:00:00.000Z');
@@ -155,5 +178,44 @@ describe('sendOnboardingDrips flag and sender gate', () => {
     const result = await sendOnboardingDrips();
     expect(result.emailed).toBe(0);
     expect(result.skipped).toBe('missing_postal_address');
+  });
+});
+
+describe('the did-you-file drip on a guided settlement', () => {
+  const SLUG = 'realpage-rental-software-antitrust-settlement';
+  const official = getSettlementGuide(SLUG)?.deadline as string;
+
+  beforeEach(() => {
+    vi.stubEnv('ONBOARDING_DRIP_ENABLED', '1');
+    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_API_KEY', 're_test');
+    vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St, Springfield');
+    db.sent = [];
+    db.tables = {
+      claims: [{ id: 'c1', user_id: 'u1', status: 'self_file', lawsuit_id: 'l1', created_at: '2026-10-01T00:00:00Z' }],
+      profiles: [{ id: 'u1', email: 'a@example.com', full_name: 'Ada', email_opt_in: true }],
+      drip_email_sends: [],
+      match_events: [],
+    };
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('still asks while the official deadline is ahead, though the feed’s has passed', async () => {
+    db.tables.lawsuits = [{ id: 'l1', slug: SLUG, title: 'RealPage', deadline: '2026-10-15' }];
+    expect(official > '2026-11-06').toBe(true);
+    const result = await sendOnboardingDrips({ now: new Date('2026-11-06T15:00:00.000Z') });
+    expect(result).toMatchObject({ didYouFile: 1, emailed: 1 });
+    expect(db.sent).toMatchObject([{ slug: SLUG }]);
+  });
+
+  it('does not ask once the official deadline has passed, though the feed’s is ahead', async () => {
+    db.tables.lawsuits = [{ id: 'l1', slug: SLUG, title: 'RealPage', deadline: '2027-06-30' }];
+    expect(official < '2027-02-01').toBe(true);
+    const result = await sendOnboardingDrips({ now: new Date('2027-02-01T15:00:00.000Z') });
+    expect(result).toMatchObject({ didYouFile: 0, emailed: 0 });
+    expect(db.sent).toEqual([]);
   });
 });

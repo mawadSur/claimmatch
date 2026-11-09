@@ -1,9 +1,8 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
-import { filterOpenForClaims } from '@/lib/lawsuits';
 import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
 import { factsFromRows } from '@/lib/profile-facts';
-import { todayInLatestUSZone } from '@/lib/utils';
+import { catalogDeadlineFilter, openGuidedCatalog } from '@/lib/settlement-guides';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchStoreResult {
@@ -37,12 +36,13 @@ export async function persistStoredMatches(): Promise<MatchStoreResult> {
     .select('*')
     .eq('review_status', 'published')
     .in('status', ['open', 'closing_soon'])
-    .or(`deadline.is.null,deadline.gte.${todayInLatestUSZone(now)}`)
+    // The catalog's read and rule: a guided settlement by its official deadline.
+    .or(catalogDeadlineFilter(now))
     .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
   if (lawsuitErr) {
     throw new Error(`[match-store] loading settlements failed: ${lawsuitErr.message}`);
   }
-  const lawsuits = filterOpenForClaims((lawsuitData ?? []) as Lawsuit[], now);
+  const lawsuits = openGuidedCatalog((lawsuitData ?? []) as Lawsuit[], now);
   if (lawsuits.length === 0) {
     return { users: 0, persisted: 0 };
   }

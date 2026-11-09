@@ -5,6 +5,7 @@
  * time-boxed) — never from a user-facing request.
  */
 import { isDeadlinePassed } from '@/lib/utils';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import type { PlannedUpdate } from '@/lib/scraper/plan';
 
 export const HELD_SITE_CHECK_TIMEOUT_MS = 6_000;
@@ -170,8 +171,9 @@ export function heldTriageGroupHint(group: HeldClosureSuggestion): string {
 }
 
 /**
- * Held closes whose *stored* catalog deadline is already past. The ingest
- * flag may apply these without a person; everything else stays held.
+ * Held closes whose *stored* catalog deadline is already past (for a guided
+ * settlement, its official deadline: guidedDeadline). The ingest flag may
+ * apply these without a person; everything else stays held.
  */
 export function partitionHeldPastDeadline<T extends PlannedUpdate>(
   held: T[],
@@ -181,8 +183,8 @@ export function partitionHeldPastDeadline<T extends PlannedUpdate>(
   const autoClose: T[] = [];
   const remainHeld: T[] = [];
   for (const row of held) {
-    const stored = extrasById.get(row.id)?.deadline ?? null;
-    if (stored && isDeadlinePassed(stored, now)) autoClose.push(row);
+    const deadline = guidedDeadline({ slug: row.slug, deadline: extrasById.get(row.id)?.deadline ?? null });
+    if (deadline && isDeadlinePassed(deadline, now)) autoClose.push(row);
     else remainHeld.push(row);
   }
   return { autoClose, remainHeld };

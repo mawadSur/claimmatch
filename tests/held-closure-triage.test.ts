@@ -9,6 +9,7 @@ import {
   suggestHeldClosureDecision,
 } from '@/lib/held-closure-triage';
 import type { PlannedUpdate } from '@/lib/scraper/plan';
+import { getSettlementGuide } from '@/lib/settlement-guides';
 
 describe('suggestHeldClosureDecision', () => {
   const now = new Date('2026-11-05T12:00:00-05:00');
@@ -81,6 +82,25 @@ describe('held auto-close partition', () => {
     );
     expect(autoClose.map((r) => r.slug)).toEqual(['past']);
     expect(remainHeld.map((r) => r.slug)).toEqual(['future', 'none']);
+  });
+
+  it('reads a guided settlement’s official deadline, not the stored feed one', () => {
+    const slug = 'kroger-prescription-drug-prices-class-action-settlement';
+    const official = getSettlementGuide(slug)?.deadline;
+    expect(official).toBe('2026-12-21');
+    const held = [
+      { id: 'early', slug, patch: {}, changes: [], closes: true },
+      { id: 'late', slug, patch: {}, changes: [], closes: true },
+    ] as unknown as PlannedUpdate[];
+    const extras = new Map([
+      ['early', { deadline: '2026-11-01' }], // the feed's passed first: stays held for a person
+      ['late', { deadline: '2027-03-01' }], // the feed's is still ahead: closes once the official one passes
+    ]);
+    const before = partitionHeldPastDeadline(held, extras, new Date('2026-12-21T17:00:00Z'));
+    expect(before.autoClose).toEqual([]);
+    expect(before.remainHeld.map((r) => r.id)).toEqual(['early', 'late']);
+    const after = partitionHeldPastDeadline(held, extras, new Date('2026-12-22T17:00:00Z'));
+    expect(after.autoClose.map((r) => r.id)).toEqual(['early', 'late']);
   });
 });
 

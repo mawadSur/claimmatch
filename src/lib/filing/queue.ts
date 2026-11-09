@@ -1,4 +1,5 @@
 import { flags } from '@/lib/flags';
+import { guidedClaimUrl } from '@/lib/settlement-guides';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { FilingJob, FilingJobStatus, FormFieldMapping, Lawsuit, Profile } from '@/lib/types';
 import { sendFilingReceiptEmail } from './receipt';
@@ -182,12 +183,19 @@ export async function processFilingQueue(
       continue;
     }
 
-    const mapping = await loadMapping(svc, lawsuit as Pick<Lawsuit, 'id' | 'administrator_id' | 'claim_url'>);
+    // The claim form the claim screen opens: a guided settlement's feed link
+    // only when it is on the official site (applySettlementGuideFacts' rule).
+    const claimUrl = guidedClaimUrl({
+      slug: lawsuit.slug as string,
+      claim_url: (lawsuit.claim_url as string | null) ?? null,
+    });
+    const target = { ...lawsuit, claim_url: claimUrl } as Pick<Lawsuit, 'id' | 'administrator_id' | 'claim_url'>;
+    const mapping = await loadMapping(svc, target);
     const outcome = await worker.fillAndSubmit({
       jobId: row.id,
       claimId: row.claim_id,
       lawsuitId: row.lawsuit_id,
-      claimUrl: mapping.claimUrl ?? (lawsuit.claim_url as string | null),
+      claimUrl: mapping.claimUrl ?? claimUrl,
       mapping,
       profile: (profile ?? {}) as Pick<
         Profile,

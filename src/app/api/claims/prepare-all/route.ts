@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
-import { isOpenForClaims } from '@/lib/open-for-claims';
 import { claimContext, serviceRoleConfigured, startTrackingClaim } from '@/lib/claims-server';
 import type { Lawsuit } from '@/lib/types';
 
@@ -53,7 +52,7 @@ export async function POST() {
     if (!/^[0-9a-f-]{36}$/i.test(lawsuit.id)) continue;
     if (isFictionalSlug(lawsuit.slug)) continue;
     if (lawsuit.review_status !== 'published') continue;
-    if (!isOpenForClaims(lawsuit)) continue;
+    // claimContext reads a guided settlement's official deadline, not the feed's.
     const context = claimContext(lawsuit);
     if (!context.published || context.fictional || !context.openForClaims) continue;
 

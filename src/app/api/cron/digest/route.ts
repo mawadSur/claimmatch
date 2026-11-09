@@ -5,6 +5,7 @@ import { sendClosingSoonEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
 import { closingSoonEmailGate, pickClosingSoonEmailRows } from '@/lib/closing-soon-email';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
+import { applySettlementGuide, applySettlementGuides } from '@/lib/settlement-guides';
 import {
   isEmailableStoredMatch,
   MATCH_EMAIL_SCORE_THRESHOLD,
@@ -117,9 +118,11 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
     const pending = rows.filter(
       (row) => isEmailableStoredMatch(row) && !!row.lawsuit && row.lawsuit.review_status === 'published',
     );
+    // Official-notice guides: the payout and deadline the settlement page shows.
     const items: MatchNotifyItem[] = pending
       .map((m) => m.lawsuit)
       .filter((l): l is Lawsuit => !!l)
+      .map(applySettlementGuide)
       .map((l) => ({
         title: l.title,
         slug: l.slug,
@@ -170,7 +173,8 @@ async function sendClosingSoon(): Promise<{
     .eq('review_status', 'published');
   if (lawsuitError) throw new Error(`lawsuits query failed (code ${lawsuitError.code ?? 'unknown'})`);
 
-  const items = pickClosingSoonEmailRows((lawsuitData ?? []) as Lawsuit[]).map((row) => ({
+  // A guided settlement is closing soon by its official deadline, not the feed's.
+  const items = pickClosingSoonEmailRows(applySettlementGuides((lawsuitData ?? []) as Lawsuit[])).map((row) => ({
     title: row.title,
     slug: row.slug,
     deadline: row.deadline as string,

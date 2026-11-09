@@ -5,6 +5,8 @@
  */
 export const dataKeys = {
   catalog: ['catalog'] as const,
+  /** Prefix of every settlement screen. */
+  settlements: ['settlement'] as const,
   settlement: (slug: string) => ['settlement', slug] as const,
   /** Prefix of every claim screen. */
   claims: ['claim'] as const,

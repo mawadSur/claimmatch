@@ -6,6 +6,7 @@
 import { flags } from '@/lib/flags';
 import { daysUntilDeadline } from '@/lib/claim-deadlines';
 import { sendDeadlineReminderEmail } from '@/lib/email';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 export const DEADLINE_REMINDER_KINDS = ['7d', '1d'] as const;
@@ -157,7 +158,8 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
         lawsuitId: lawsuit.id,
         slug: lawsuit.slug,
         title: lawsuit.title,
-        deadline: lawsuit.deadline,
+        // A guided settlement's official deadline, as the claim screen shows it.
+        deadline: guidedDeadline(lawsuit),
         alreadySent: sentByClaim.get(claim.id) ?? new Set(),
       },
       now,

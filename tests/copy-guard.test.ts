@@ -126,9 +126,11 @@ const RULES: Rule[] = [
 
 /**
  * Deliberate exceptions. Keep empty unless a banned phrase must appear in
- * user-facing text for a real reason, and say why.
+ * user-facing text for a real reason, and say why. With `text`, only a match
+ * inside that exact text is allowed (any run of whitespace matches any other,
+ * as in wrapped JSX); without it, every match of the rule in the file is.
  */
-const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> = [
+const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; text?: string }> = [
   {
     file: 'src/components/claims/CorrectiveNotice.tsx',
     rule: 'claim filed',
@@ -147,7 +149,8 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string }> =
   {
     file: 'src/app/privacy/page.tsx',
     rule: 'you qualify',
-    reason: 'Negated: stored match results are “not a legal determination that you qualify” (the “not” is five words back, past the four-word window).',
+    text: 'not a legal determination that you qualify',
+    reason: 'Negated: stored match results are “not a legal determination that you qualify” (the “not” is five words back, past the four-word window). That sentence only.',
   },
   {
     file: 'src/lib/copy.ts',
@@ -210,6 +213,19 @@ interface Violation {
   text: string;
 }
 
+/** True when `text` contains `phrase` around [index, index + length); any run of whitespace matches any other. */
+function insidePhrase(text: string, phrase: string, index: number, length: number): boolean {
+  const words = phrase.trim().split(/\s+/).map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const spans = [...text.matchAll(new RegExp(words.join('\\s+'), 'g'))];
+  return spans.some((m) => (m.index ?? 0) <= index && index + length <= (m.index ?? 0) + m[0].length);
+}
+
+function isAllowlisted(file: string, rule: string, visible: string, index: number, match: string): boolean {
+  return ALLOWLIST.some(
+    (a) => a.file === file && a.rule === rule && (!a.text || insidePhrase(visible, a.text, index, match.length)),
+  );
+}
+
 function scanSource(file: string, text: string): Violation[] {
   const visible = blankComments(file, text);
   const found: Violation[] = [];
@@ -217,7 +233,7 @@ function scanSource(file: string, text: string): Violation[] {
     for (const m of visible.matchAll(rule.pattern)) {
       const index = m.index ?? 0;
       if (rule.negatable && isNegated(visible, index, m[0])) continue;
-      if (ALLOWLIST.some((a) => a.file === file && a.rule === rule.id)) continue;
+      if (isAllowlisted(file, rule.id, visible, index, m[0])) continue;
       found.push({
         file,
         line: visible.slice(0, index).split('\n').length,
@@ -413,6 +429,20 @@ describe('copy guard rules', () => {
   it('reports the file and line of each match', () => {
     const found = scanSource('src/x.ts', 'const a = 1;\nconst b = "No win, no fee";\n');
     expect(found).toEqual([{ file: 'src/x.ts', line: 2, rule: 'no win', text: 'No win' }]);
+  });
+
+  it('allows only the privacy page’s negated sentence, never another "you qualify" there', () => {
+    const file = 'src/app/privacy/page.tsx';
+    const page = readFileSync(path.join(ROOT, file), 'utf8');
+    expect(page).toContain('not a legal determination that you qualify');
+    expect(scanSource(file, page)).toEqual([]);
+    expect(flagged('const a = <p>a ranking aid, not a legal\n    determination that you qualify.</p>;', file)).toEqual([]);
+    // Any other un-negated "you qualify" on the page fails, also next to the allowed one.
+    const added = `${page}\nexport const extra = 'Good news: you qualify.';\n`;
+    expect(scanSource(file, added).map((v) => [v.rule, v.line])).toEqual([['you qualify', added.split('\n').length - 1]]);
+    expect(flagged('const a = <p>This is not a legal determination. You qualify.</p>;', file)).toEqual(['you qualify']);
+    // The sentence is allowed on that page only.
+    expect(flagged('const a = "not a legal determination that you qualify";', 'src/app/terms/page.tsx')).toEqual(['you qualify']);
   });
 });
 

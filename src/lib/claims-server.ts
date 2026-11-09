@@ -5,10 +5,16 @@
  * write goes through the 0006 functions with the service-role client, after
  * the route has checked that the user owns the claim, so each change and its
  * claim_events row land together. Settlement reads fail closed (ok: false).
+ * Every settlement read here carries the official-notice guide's deadline,
+ * who-qualifies text and proof rule (src/lib/settlement-guides.ts), as the
+ * catalog does, so the claim screen, claim writes, Your claims and the app's
+ * reminders agree with the settlement page. Its claim link stays the feed's
+ * link to the claim form when that is on the official site (guidedClaimUrl).
  * Never import this from a client component.
  */
 import { createServiceClient } from '@/lib/supabase/server';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
+import { applySettlementGuideFacts, guidedDeadline } from '@/lib/settlement-guides';
 import {
   claimWriteFailure,
   isMissingSchemaError,
@@ -48,8 +54,14 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
  */
 export const isFictionalSettlementSlug: (slug: string) => boolean = (slug) => isFictionalSlug(slug);
 
+/**
+ * The claim flow's view of a settlement. A guided settlement's official
+ * deadline decides, also on a row a route read itself (the loaders below
+ * already carry it).
+ */
 export function claimContext(settlement: SettlementFacts | null, now: Date = new Date()): SettlementContext {
-  return settlementContext(settlement, now, isFictionalSettlementSlug);
+  const facts = settlement ? { ...settlement, deadline: guidedDeadline(settlement) } : null;
+  return settlementContext(facts, now, isFictionalSettlementSlug);
 }
 
 /** Every claim write needs the service-role key. */
@@ -88,6 +100,11 @@ export type SettlementLookup = { ok: true; settlement: SettlementRecord | null }
 
 const UNREADABLE: SettlementLookup = { ok: false };
 
+/** A settlement row as it is shown and checked: with its guide's official facts, when it has one. */
+function withGuide(row: unknown): SettlementRecord | null {
+  return row ? applySettlementGuideFacts(row as SettlementRecord) : null;
+}
+
 /** A settlement by slug, published or not. Callers decide what to show. */
 export async function loadSettlementBySlug(slug: string): Promise<SettlementLookup> {
   // Without the service role the read falls back to the anon key, and RLS
@@ -102,7 +119,7 @@ export async function loadSettlementBySlug(slug: string): Promise<SettlementLook
     logClaimsError('settlement lookup by slug failed', error);
     return UNREADABLE;
   }
-  return { ok: true, settlement: (data as SettlementRecord | null) ?? null };
+  return { ok: true, settlement: withGuide(data) };
 }
 
 export async function loadSettlementById(id: string): Promise<SettlementLookup> {
@@ -117,7 +134,7 @@ export async function loadSettlementById(id: string): Promise<SettlementLookup> 
     logClaimsError('settlement lookup by id failed', error);
     return UNREADABLE;
   }
-  return { ok: true, settlement: (data as SettlementRecord | null) ?? null };
+  return { ok: true, settlement: withGuide(data) };
 }
 
 export interface ClaimWithSettlement {
@@ -156,7 +173,7 @@ export async function loadUserClaims(
   }
   const items = ((data ?? []) as Record<string, unknown>[]).map((row) => ({
     claim: toClaimView(row),
-    settlement: (row.settlement as SettlementRecord | null) ?? null,
+    settlement: withGuide(row.settlement),
   }));
   if (items.some((i) => !i.settlement)) {
     console.error('[claims] a claim came back without its settlement; showing the error state');

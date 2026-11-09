@@ -1,20 +1,29 @@
 import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@shared/lib/disclaimer';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Application from 'expo-application';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { z } from 'zod';
 
+import {
+  applyConfigGuides,
+  configGuidesSchema,
+  guidesInUse,
+  guidesVersionSchema,
+  refetchGuidedQueries,
+  type GuidesInUse,
+} from '@/data/guides';
 import { getApi, unwrap } from '@/lib/api';
 import { recordServerTime } from '@/lib/clock';
 import { applyFlagOverrides, pickClientFlags, type ClientFlagName, type FlagValues } from '@/lib/flags';
 import { queryKeys } from '@/lib/query-client';
 
 /**
- * GET /api/mobile/config (plan S5): server flags, server time, legal text and
- * the minimum supported build. The endpoint needs no auth. While it has not
- * answered, or when it fails, every flag stays off, the bundled legal text
- * (src/lib/disclaimer.ts, the app's wording) is used and the app stays usable.
+ * GET /api/mobile/config (plan S5): server flags, server time, legal text,
+ * the minimum supported build and the official-notice guides. The endpoint
+ * needs no auth. While it has not answered, or when it fails, every flag
+ * stays off, the bundled legal text (src/lib/disclaimer.ts, the app's
+ * wording) and the bundled guides are used, and the app stays usable.
  */
 
 const optionalText = z.string().trim().min(1).optional().catch(undefined);
@@ -34,6 +43,8 @@ const configResponseSchema = z.object({
     .optional()
     .catch(undefined),
   minBuild: z.object({ ios: buildNumber, android: buildNumber }).optional().catch(undefined),
+  guidesVersion: guidesVersionSchema,
+  guides: configGuidesSchema,
 });
 
 export interface ClientConfig {
@@ -41,20 +52,32 @@ export interface ClientConfig {
   legal: { disclaimer: string | null; short: string | null; contactEmail: string | null };
   minBuild: { ios: number; android: number };
   todayDeadlineZone: string | null;
+  /** The official-notice guides in use after this answer (src/data/guides.ts). */
+  guides: GuidesInUse;
 }
 
-export async function fetchClientConfig(signal?: AbortSignal): Promise<ClientConfig> {
+/**
+ * Reads the config. The request names the guides the app has, so the server
+ * sends its list only when it differs; `onGuidesChanged` runs when the answer
+ * changes the guides the catalog and settlement screens apply.
+ */
+export async function fetchClientConfig(signal?: AbortSignal, onGuidesChanged?: () => void): Promise<ClientConfig> {
   const sentAt = Date.now();
+  const path = `/api/mobile/config?guides=${encodeURIComponent(guidesInUse().version)}`;
   const response = unwrap(
-    await getApi().request('/api/mobile/config', {
+    await getApi().request(path, {
       auth: false,
       parse: (json) => configResponseSchema.parse(json),
       signal,
     }),
   );
   recordServerTime(response.serverTime, sentAt, Date.now());
+  // Applied before React renders the new data, so screens read the new values.
+  const flags = pickClientFlags(response.flags);
+  applyFlagOverrides(flags);
+  const guidesChanged = applyConfigGuides(response);
   const config: ClientConfig = {
-    flags: pickClientFlags(response.flags),
+    flags,
     legal: {
       disclaimer: response.legal?.disclaimer ?? null,
       short: response.legal?.short ?? null,
@@ -62,9 +85,9 @@ export async function fetchClientConfig(signal?: AbortSignal): Promise<ClientCon
     },
     minBuild: { ios: response.minBuild?.ios ?? 0, android: response.minBuild?.android ?? 0 },
     todayDeadlineZone: response.todayDeadlineZone ?? null,
+    guides: guidesInUse(),
   };
-  // Applied before React renders the new data, so screens read the new values.
-  applyFlagOverrides(config.flags);
+  if (guidesChanged) onGuidesChanged?.();
   return config;
 }
 
@@ -90,6 +113,11 @@ export interface ConfigContextValue {
   updateRequired: boolean;
   /** Today's date in the deadline zone per the server (YYYY-MM-DD), when known. */
   todayDeadlineZone: string | null;
+  /**
+   * The official-notice guides the catalog and settlement screens apply: the
+   * server's when its config has them, otherwise the ones bundled with the app.
+   */
+  guides: GuidesInUse;
   /** True while the config is being fetched again (for example after refetch()). */
   refreshing: boolean;
   refetch(): void;
@@ -100,9 +128,11 @@ const NO_FLAGS: FlagValues = {};
 const ConfigContext = createContext<ConfigContextValue | null>(null);
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
+  const client = useQueryClient();
   const query = useQuery({
     queryKey: queryKeys.config,
-    queryFn: ({ signal }) => fetchClientConfig(signal),
+    // When the answer changes the guides, the catalog and settlement screens are read again with them.
+    queryFn: ({ signal }) => fetchClientConfig(signal, () => void refetchGuidedQueries(client)),
     staleTime: 15 * 60_000,
   });
   const { data, status, isFetching, refetch } = query;
@@ -121,6 +151,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       },
       updateRequired: isUpdateRequired(data?.minBuild, Platform.OS, Application.nativeBuildVersion),
       todayDeadlineZone: data?.todayDeadlineZone ?? null,
+      guides: data?.guides ?? guidesInUse(),
       refreshing: isFetching,
       refetch: () => {
         void refetch();
