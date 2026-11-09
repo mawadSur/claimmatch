@@ -10,7 +10,7 @@ import { fillCopy, shared } from '@/copy/shared';
 import { fontFamilies, space, typography } from '@/theme/tokens';
 
 import { ExternalTextLink } from './ExternalTextLink';
-import { hostLabels } from './host-label';
+import { useHostLabels } from './host-label';
 import { useIsVerified } from './SettlementBadges';
 
 /**
@@ -81,6 +81,7 @@ function SettlementNotice({
 
 /** The settlement page's OfficialLink: the official site, else the source page clearly labeled, else what to do. */
 function OfficialLink({ link }: { link: CatalogLink | null }) {
+  const hostLabels = useHostLabels();
   if (!link) {
     return (
       <AppText variant="caption" color="warningStrong" style={styles.strong}>

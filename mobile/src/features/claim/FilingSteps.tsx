@@ -8,7 +8,7 @@ import { AppText, Button, Card, Notice, TextLink } from '@/components/ui';
 import { ExternalLink } from '@/components/ui/icons';
 import { claim as copy, listingSourceSentence, stepHeadingLabel } from '@/copy/claim';
 import { common } from '@/copy/common';
-import { ExternalTextLink, hostLabels, UnverifiedBadge } from '@/features/shared';
+import { ExternalTextLink, UnverifiedBadge, useHostLabels } from '@/features/shared';
 import { toSafeWebUrl } from '@/lib/external-link';
 import { colors, radii, space } from '@/theme/tokens';
 
@@ -75,6 +75,7 @@ export function Caveat({ context }: { context: SettlementContext }) {
 
 /** Step 2 without an official link (ClaimFlow.tsx NoOfficialLink). */
 function NoOfficialLink({ settlement }: { settlement: ClaimFlowSettlement }) {
+  const hostLabels = useHostLabels();
   const middle = settlement.sourceUrl ? listingSourceSentence(settlement.sourceHost) : copy.useNoticeLink.text;
   return (
     <View style={styles.tight}>

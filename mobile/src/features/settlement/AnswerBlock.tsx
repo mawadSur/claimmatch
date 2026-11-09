@@ -6,7 +6,7 @@ import { AppText, Button, Card, ExternalLinkButton } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
 import { fillCopy } from '@/copy/shared';
 import { settlement } from '@/copy/settlement';
-import { ExternalTextLink, hostLabels } from '@/features/shared';
+import { ExternalTextLink, useHostLabels } from '@/features/shared';
 import { colors, radii, space } from '@/theme/tokens';
 
 import { Fact } from './Fact';
@@ -26,6 +26,7 @@ export interface AnswerBlockProps {
  * "Check if you qualify" and the official claim site.
  */
 export function AnswerBlock({ facts, open, official, onCheckIfYouQualify, testID }: AnswerBlockProps) {
+  const hostLabels = useHostLabels();
   return (
     <Card style={styles.card} testID={testID}>
       <View style={styles.intro}>
@@ -73,6 +74,7 @@ export function AnswerBlock({ facts, open, official, onCheckIfYouQualify, testID
  * and the link follows as its own 44 pt control.
  */
 function MissingDetails({ missing, official }: { missing: string[]; official: CatalogLink | null }) {
+  const hostLabels = useHostLabels();
   return (
     <View style={styles.missing} testID="settlement-missing-details">
       <AppText variant="caption" color="text">

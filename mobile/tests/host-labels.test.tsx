@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react-native';
+import { Dimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { settlement } from '@/copy/settlement';
 import { shared } from '@/copy/shared';
-import { breakableHost, hostLabels, UnverifiedNotice, type UnverifiedSettlement } from '@/features/shared';
+import { breakableHost, hostFitsWhole, hostLabels, UnverifiedNotice, type UnverifiedSettlement } from '@/features/shared';
 import { AnswerBlock } from '@/features/settlement/AnswerBlock';
 
 jest.mock('@/providers/ConfigProvider', () => ({ useConfig: () => ({ isFlagOn: () => false }) }));
@@ -21,6 +22,8 @@ const ZWSP = '​';
 const HOST = 'personalcareproductssettlement.com';
 const OFFICIAL = { href: 'https://www.personalcareproductssettlement.com/', kind: 'official', label: 'Official site', host: HOST } as const;
 const MEDIUM = 'acusettlement.com';
+/** 25 characters: whole at the default size, too long for a line at large text sizes. */
+const DEERE = 'deererepairsettlement.com';
 const METRICS = { frame: { x: 0, y: 0, width: 402, height: 874 }, insets: { top: 62, left: 0, right: 0, bottom: 34 } };
 
 const FACTS = {
@@ -63,9 +66,40 @@ describe('breakableHost and hostLabels', () => {
     expect(hostLabels(HOST)).toEqual({ label: breakableHost(HOST), accessibilityLabel: HOST });
     expect(hostLabels(MEDIUM, (host) => `Site (${host})`)).toEqual({ label: `Site (${MEDIUM})`, accessibilityLabel: `Site (${MEDIUM})` });
   });
+
+  it('sizes the choice to the window and the text size, up to the label’s largest multiplier', () => {
+    expect(hostFitsWhole(DEERE, 402, 1)).toBe(true);
+    expect(hostFitsWhole(DEERE, 402, 1.8)).toBe(false);
+    expect(breakableHost(DEERE, 402, 2)).toBe(`deererepairsettlement.${ZWSP}com`);
+    expect(hostLabels(DEERE, undefined, 402, 2)).toEqual({ label: `deererepairsettlement.${ZWSP}com`, accessibilityLabel: DEERE });
+    // Smaller text never keeps more whole than the default size; past the label's cap nothing changes.
+    expect(hostFitsWhole(HOST, 360, 0.8)).toBe(hostFitsWhole(HOST, 360, 1));
+    expect(hostFitsWhole(MEDIUM, 402, 3)).toBe(hostFitsWhole(MEDIUM, 402, 1.8));
+    expect(hostFitsWhole(MEDIUM, 402, 1)).toBe(true);
+  });
 });
 
 describe('labels that show a host', () => {
+  // A real phone: Jest's default window is 750 pt wide at 2x text, where these hosts would all fit whole.
+  let dimensions: jest.SpyInstance;
+  beforeEach(() => {
+    dimensions = jest.spyOn(Dimensions, 'get').mockReturnValue({ width: 402, height: 874, scale: 3, fontScale: 1 });
+  });
+  afterEach(() => dimensions.mockRestore());
+
+  it('wraps a medium host at a dot once a large text size leaves no room for it whole', async () => {
+    dimensions.mockReturnValue({ width: 402, height: 874, scale: 3, fontScale: 2 });
+    const official = { href: `https://www.${DEERE}/`, kind: 'official', label: 'Official site', host: DEERE } as const;
+    await render(
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <AnswerBlock facts={FACTS} open official={official} onCheckIfYouQualify={jest.fn()} />
+      </SafeAreaProvider>,
+    );
+    const site = screen.getByRole('link', { name: `${settlement.officialClaimSite.text} (${DEERE})` });
+    expect(site).toHaveTextContent(`${settlement.officialClaimSite.text} (deererepairsettlement.${ZWSP}com)`);
+    expect(hasZeroWidthSpace(site.props.accessibilityLabel)).toBe(false);
+  });
+
   it('wraps "Official claim site (…)" at a dot, and announces the host as it is', async () => {
     await render(
       <SafeAreaProvider initialMetrics={METRICS}>
