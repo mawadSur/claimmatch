@@ -2,7 +2,7 @@
   "configVersion": 0,
   "apple": {
     "copyright": "2026 ClaimMatch",
-    "categories": ["FINANCE", "UTILITIES"],
+    "categories": ["REFERENCE", "UTILITIES"],
     "info": {
       "en-US": {
         "title": "ClaimMatch",
@@ -53,10 +53,6 @@
       "ageRatingOverride": "NONE",
       "ageRatingOverrideV2": "NONE",
       "koreaAgeRatingOverride": "NONE"
-    },
-    "review": {
-      "demoRequired": true,
-      "notes": "ClaimMatch lists open class-action settlements and helps people keep track of the claims they file themselves on each settlement’s official website. ClaimMatch is not a law firm, gives no legal advice, never files claims for you and never handles settlement money. The app has no in-app purchases, subscriptions or ads.\n\nSign-in: a demo account is provided in the Sign-In Information of App Review Information in App Store Connect. Settlements can be browsed without an account. To review everything else, open the Settings tab, tap Log in and use the demo account.\n\nWhat to look at:\n1. Settlements tab: settlements open for claims, soonest deadline first. Tap a settlement to see who qualifies, the payout and the deadline as the listing states them, and the link to the official notice.\n2. Start your claim (on a settlement): the steps to file on the official site, the profile details ready to copy into the official form, and a place to save the confirmation number. The official site opens in an in-app Safari view; the app sends nothing to the settlement administrator.\n3. Your claims tab: the demo account’s claims, grouped by what to do next.\n4. Settings: profile details, optional deadline reminders (local notifications only; the app asks for notification permission only when reminders are turned on), links to the Privacy Policy and Terms, and account deletion (Settings > Delete my account and data).\n\nListings come from SettleSignal, a public settlement data source shared under the CC BY 4.0 license, and are labeled “Unverified” until checked.\n\nContact: hello@lawsuitai.org"
     }
   }
 }
