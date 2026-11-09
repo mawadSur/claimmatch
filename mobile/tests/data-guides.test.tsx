@@ -26,22 +26,35 @@ import { ConfigProvider, fetchClientConfig, useConfig } from '@/providers/Config
 // agree with the server's claim screen, dashboard and reminders.
 
 type Call = { method: string; args: unknown[] };
+type Result = { data: unknown; error: unknown; status: number };
 
-const mockState: { calls: Call[]; result: { data: unknown; error: unknown; status: number } } = {
+const mockState: {
+  calls: Call[];
+  result: Result;
+  /** Reads wait for these in turn: the first read for the first, and so on. */
+  holds: Promise<void>[];
+  /** When set, a read's answer from its own `or` filter, as the server filters. */
+  serve: ((filter: string) => Result) | null;
+} = {
   calls: [],
   result: { data: [], error: null, status: 200 },
+  holds: [],
+  serve: null,
 };
 
 function mockBuilder() {
   const builder: Record<string, unknown> = {};
+  const hold = mockState.holds.shift() ?? Promise.resolve();
+  let filter = '';
   for (const method of ['select', 'eq', 'in', 'or', 'not', 'order', 'abortSignal', 'maybeSingle']) {
     builder[method] = (...args: unknown[]) => {
       mockState.calls.push({ method, args });
+      if (method === 'or') filter = String(args[0]);
       return builder;
     };
   }
   builder.then = (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
-    Promise.resolve(mockState.result).then(resolve, reject);
+    hold.then(() => mockState.serve?.(filter) ?? mockState.result).then(resolve, reject);
   return builder;
 }
 
@@ -133,11 +146,15 @@ function row(slug: string, deadline: string | null): Record<string, unknown> {
 }
 
 const calls = (method: string) => mockState.calls.filter((call) => call.method === method).map((call) => call.args);
+/** The slugs a catalog filter reads whatever their feed deadline (its "slug.in.(…)" part). */
+const namedSlugs = (filter: unknown) => /slug\.in\.\(([^)]*)\)/.exec(String(filter))?.[1].split(',') ?? [];
 
 beforeEach(() => {
   applyConfigGuides({}); // the bundled guides
   mockState.calls = [];
   mockState.result = { data: [], error: null, status: 200 };
+  mockState.holds = [];
+  mockState.serve = null;
   mockApi.paths = [];
   mockApi.answer = () => configAnswer();
   mockApi.gate = Promise.resolve();
@@ -257,9 +274,26 @@ describe('the catalog and settlement screens with the server’s guides', () => 
     mockState.result.data = row(SIX, '2026-11-30');
     const found = await fetchSettlementBySlug(SIX);
     if (found.status !== 'found') throw new Error('expected a settlement');
-    expect(found.lawsuit).toMatchObject({ deadline: '2027-01-15', typical_payout: 'Edited payout.' });
-    expect(settlementProofDetail(found.lawsuit)).toBe('Edited proof rule.');
-    expect(settlementFaqs(toLawsuit(found.lawsuit))).toContainEqual({ q: 'Edited question?', a: 'Edited answer.' });
+    expect(found.lawsuit).toMatchObject({ deadline: '2027-01-15', typical_payout: 'Edited payout.', guidesVersion: SERVER_VERSION });
+    // The row carries the guide's text, so the screen never reads it from guides changed since.
+    expect(found.lawsuit.proofNote).toBe('Edited proof rule.');
+    expect(found.lawsuit.proofNote).toBe(settlementProofDetail(found.lawsuit));
+    expect(found.lawsuit.faqs).toContainEqual({ q: 'Edited question?', a: 'Edited answer.' });
+    expect(found.lawsuit.faqs).toEqual(settlementFaqs(toLawsuit(found.lawsuit)));
+  });
+
+  it('open a listed settlement from its catalog row, with the proof note and FAQ of the same guides', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+    mockState.result.data = [row(SIX, '2026-11-30')];
+    client.setQueryData(['catalog'], await fetchCatalog());
+    mockState.calls = [];
+    function wrapper({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    }
+    const { result } = await renderHook(() => useSettlement(SIX).data, { wrapper });
+    expect(result.current).toMatchObject({ status: 'found', lawsuit: { deadline: '2027-01-15', proofNote: 'Edited proof rule.' } });
+    expect(calls('from')).toEqual([]);
+    client.clear();
   });
 });
 
@@ -330,15 +364,61 @@ describe('ConfigProvider', () => {
     expect(calls('from')).toHaveLength(1);
     client.clear();
   });
+
+  it('reads the catalog again when the guides arrive during its first read, whose filter named the bundled slugs', async () => {
+    let releaseFirstRead: () => void = () => undefined;
+    mockState.holds = [
+      new Promise<void>((resolve) => {
+        releaseFirstRead = resolve;
+      }),
+    ];
+    let answer: () => void = () => undefined;
+    mockApi.gate = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    mockApi.answer = withServerGuides;
+    // As the server filters: a passed feed deadline is read only for a slug the filter names.
+    mockState.serve = (filter) => ({
+      data: [row(SIX, '2026-11-30'), row(NEW_SLUG, '2026-10-01')].filter(
+        (lawsuit) => String(lawsuit.deadline) >= '2026-11-02' || namedSlugs(filter).includes(String(lawsuit.slug)),
+      ),
+      error: null,
+      status: 200,
+    });
+    const { client, result } = await renderCatalog();
+    await waitFor(() => expect(calls('from')).toHaveLength(1));
+    expect(namedSlugs(calls('or')[0][0])).not.toContain(NEW_SLUG);
+
+    await act(async () => answer());
+    // The held read is cancelled (its request aborted), and the catalog read again names the server's slugs.
+    await waitFor(() => expect(result.current.rows?.map((lawsuit) => lawsuit.slug)).toEqual([NEW_SLUG, SIX]));
+    expect(calls('from')).toHaveLength(2);
+    expect(namedSlugs(calls('or')[1][0])).toContain(NEW_SLUG);
+    expect((calls('abortSignal')[0][0] as AbortSignal).aborted).toBe(true);
+
+    // The first read's late answer changes nothing.
+    await act(async () => {
+      releaseFirstRead();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(result.current.rows?.map((lawsuit) => [lawsuit.slug, lawsuit.deadline])).toEqual([
+      [NEW_SLUG, '2026-12-15'],
+      [SIX, '2027-01-15'],
+    ]);
+    expect(calls('from')).toHaveLength(2);
+    client.clear();
+  });
 });
 
-describe('a settlement opened while the catalog is read again for new guides', () => {
-  it('is read itself, not taken from the catalog copy that still carries the old guides', async () => {
+describe('a settlement opened after the guides changed, before the catalog is read again', () => {
+  it('is read itself, not taken from the catalog copy overlaid with the old guides', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
-    client.setQueryData(['catalog'], [{ ...row(SIX, BUNDLED_SIX.deadline), typical_payout: 'Old overlay.' }]);
-    await client.invalidateQueries({ queryKey: ['catalog'], refetchType: 'none' });
+    mockState.result.data = [row(SIX, '2026-11-30')];
+    client.setQueryData(['catalog'], await fetchCatalog());
+    expect(client.getQueryData<CatalogLawsuit[]>(['catalog'])?.[0]?.deadline).toBe(BUNDLED_SIX.deadline);
     mockApi.answer = withServerGuides;
     await fetchClientConfig();
+    mockState.calls = [];
     mockState.result.data = row(SIX, '2026-11-30');
     function wrapper({ children }: { children: ReactNode }) {
       return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
@@ -350,7 +430,12 @@ describe('a settlement opened while the catalog is read again for new guides', (
       },
       { wrapper },
     );
-    await waitFor(() => expect(result.current.data).toMatchObject({ status: 'found', lawsuit: { deadline: '2027-01-15' } }));
+    await waitFor(() =>
+      expect(result.current.data).toMatchObject({
+        status: 'found',
+        lawsuit: { deadline: '2027-01-15', proofNote: 'Edited proof rule.', guidesVersion: SERVER_VERSION },
+      }),
+    );
     expect(calls('from')).toEqual([['lawsuits']]);
     client.clear();
   });

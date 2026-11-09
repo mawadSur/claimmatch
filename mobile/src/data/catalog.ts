@@ -1,6 +1,12 @@
 import { FICTIONAL_SLUGS, isFictionalSlug } from '@shared/lib/fictional-slugs';
 import { isPublicLawsuit, OPEN_STATUSES } from '@shared/lib/open-for-claims';
-import { applySettlementGuide, catalogDeadlineFilter, openGuidedCatalog } from '@shared/lib/settlement-guides';
+import {
+  applySettlementGuide,
+  catalogDeadlineFilter,
+  openGuidedCatalog,
+  settlementProofDetail,
+} from '@shared/lib/settlement-guides';
+import { settlementFaqs, type FaqItem } from '@shared/lib/settlement-seo';
 import type { Lawsuit } from '@shared/lib/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -8,6 +14,7 @@ import { now } from '@/lib/clock';
 import { getSupabase } from '@/lib/supabase';
 
 import { invalidResponse, supabaseReadError } from './errors';
+import { guidesInUse } from './guides';
 import { dataKeys } from './keys';
 import { parseCatalogRow, parseCatalogRows, type CatalogLawsuit } from './schemas';
 
@@ -35,6 +42,31 @@ export const CATALOG_STALE_MS = 15 * 60_000;
 /** The web's /lawsuits/[slug] revalidates every 3600 s. */
 export const SETTLEMENT_STALE_MS = 60 * 60_000;
 
+/** A row with the guides in use applied, and their version. */
+export type GuidedRow = CatalogLawsuit & {
+  /** guidesInUse().version when the guides were applied. */
+  guidesVersion: string;
+};
+
+/**
+ * A row as the settlement screen shows it. Its proof note and questions come
+ * from the same guides as its deadline, payout and link: read from the
+ * guides at render time, a guide change would show the new guide's text
+ * beside the old guide's facts until the screen is read again, or for as
+ * long as that read fails.
+ */
+export type SettlementRow = GuidedRow & {
+  /** settlementProofDetail: the guide's proof sentence, or the listing's. */
+  proofNote: string;
+  /** settlementFaqs, with the guide's own questions. */
+  faqs: FaqItem[];
+};
+
+/** Call while the row's guides are the ones in use: right after they are applied, or when its version says so. */
+function toSettlementRow(row: GuidedRow): SettlementRow {
+  return { ...row, proofNote: settlementProofDetail(row), faqs: settlementFaqs(toLawsuit(row)) };
+}
+
 /**
  * Settlements open for claims: soonest known deadline first, then no
  * deadline, featured first within a day. The query applies the open rule
@@ -43,7 +75,7 @@ export const SETTLEMENT_STALE_MS = 60 * 60_000;
  * deadline before filterOpenForClaims applies the rule again and the rows are
  * put in deadline order (openGuidedCatalog).
  */
-export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogLawsuit[]> {
+export async function fetchCatalog(signal?: AbortSignal): Promise<GuidedRow[]> {
   const at = now();
   let query = getSupabase()
     .from('lawsuits')
@@ -57,11 +89,12 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<CatalogLawsuit
   if (signal) query = query.abortSignal(signal);
   const { data, error, status } = await query;
   if (error) throw supabaseReadError(error, status);
-  return openGuidedCatalog(parseCatalogRows(data), at);
+  const { version } = guidesInUse();
+  return openGuidedCatalog(parseCatalogRows(data), at).map((row) => ({ ...row, guidesVersion: version }));
 }
 
 export type SettlementLookup =
-  | { status: 'found'; lawsuit: CatalogLawsuit }
+  | { status: 'found'; lawsuit: SettlementRow }
   /** Unknown, unpublished or fictional. `fictional` picks the not-found copy (src/app/lawsuits/[slug]/not-found.tsx). */
   | { status: 'missing'; fictional: boolean };
 
@@ -83,9 +116,11 @@ export async function fetchSettlementBySlug(slug: string, signal?: AbortSignal):
   if (data == null) return { status: 'missing', fictional: false };
   const lawsuit = parseCatalogRow(data);
   if (!lawsuit) throw invalidResponse(status);
-  return isPublicLawsuit(lawsuit)
-    ? { status: 'found', lawsuit: applySettlementGuide(lawsuit) }
-    : { status: 'missing', fictional: false };
+  if (!isPublicLawsuit(lawsuit)) return { status: 'missing', fictional: false };
+  return {
+    status: 'found',
+    lawsuit: toSettlementRow({ ...applySettlementGuide(lawsuit), guidesVersion: guidesInUse().version }),
+  };
 }
 
 /** The open catalog (key ['catalog'], 15 minutes fresh). Errors are ApiRequestError. */
@@ -99,9 +134,11 @@ export function useCatalog() {
 
 /**
  * One settlement (key ['settlement', slug], 60 minutes fresh). Starts from
- * the catalog's copy of the row when the catalog is loaded, so the detail
- * screen opens without a spinner, but not while the catalog is being read
- * again for new guides: that copy still carries the old ones.
+ * the catalog's copy of the row, so the detail screen opens without a
+ * spinner, also when the catalog's last refresh failed (offline, a 5xx).
+ * Not when that copy was overlaid with other guides than the ones in use
+ * (they changed, and the catalog is being read again): the settlement is
+ * read itself.
  */
 export function useSettlement(slug: string) {
   const client = useQueryClient();
@@ -110,9 +147,10 @@ export function useSettlement(slug: string) {
     queryFn: ({ signal }) => fetchSettlementBySlug(slug, signal),
     staleTime: SETTLEMENT_STALE_MS,
     initialData: (): SettlementLookup | undefined => {
-      if (client.getQueryState(dataKeys.catalog)?.isInvalidated) return undefined;
-      const row = client.getQueryData<CatalogLawsuit[]>(dataKeys.catalog)?.find((lawsuit) => lawsuit.slug === slug);
-      return row ? { status: 'found', lawsuit: row } : undefined;
+      const row = client.getQueryData<GuidedRow[]>(dataKeys.catalog)?.find((lawsuit) => lawsuit.slug === slug);
+      return row && row.guidesVersion === guidesInUse().version
+        ? { status: 'found', lawsuit: toSettlementRow(row) }
+        : undefined;
     },
     initialDataUpdatedAt: () => client.getQueryState(dataKeys.catalog)?.dataUpdatedAt,
   });

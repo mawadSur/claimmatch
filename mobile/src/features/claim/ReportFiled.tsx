@@ -2,6 +2,7 @@ import {
   canReportWithoutClaim,
   claimActionAvailability,
   displayClaimStatus,
+  displayConfirmationNumber,
   isKnownClaimStatus,
   reportByDay,
   type ClaimView,
@@ -20,6 +21,9 @@ import { AddConfirmationForm } from './AddConfirmationForm';
 import { ClaimError } from './ClaimError';
 import { ReportForm } from './ReportForm';
 import { useClaimWrites, type OnClaimChange } from './use-claim-writes';
+
+/** U+200B ZERO WIDTH SPACE: a place where a line may break, showing nothing. */
+const ZERO_WIDTH_SPACE = '​';
 
 export interface ReportFiledProps {
   lawsuitId: string;
@@ -61,24 +65,46 @@ export function ReportFiled({ lawsuitId, claim, context, allowSave, onChange }: 
   return <ReportForm lawsuitId={lawsuitId} claim={claim} allowSave={allowSave && !claim} onChange={onChange} />;
 }
 
+/**
+ * "Submitted · #WMG-4X8K-22917" as shown: a zero-width space after each "-"
+ * of the number, so at the largest text sizes it wraps after a hyphen
+ * instead of inside the number (a hyphen before a digit is no break point).
+ */
+function shownSubmittedTitle(label: string, confirmationNumber: string | null): string {
+  const number = confirmationNumber ? displayConfirmationNumber(confirmationNumber) : '';
+  if (!number || !label.endsWith(number)) return label;
+  return `${label.slice(0, -number.length)}${number.split('-').join(`-${ZERO_WIDTH_SPACE}`)}`;
+}
+
+/**
+ * The reported or submitted state, read as one phrase: the title, then the
+ * body, joined as iOS and Android join a group's texts. Screen readers get
+ * `title`; the screen shows `shownTitle` when it has break points.
+ */
 function StateBox({
   icon,
   iconColor,
   surface,
   title,
+  shownTitle = title,
   body,
 }: {
   icon: LucideIcon;
   iconColor: ColorToken;
   surface: ColorToken;
   title: string;
+  shownTitle?: string;
   body: string;
 }) {
   return (
-    <View accessible style={[styles.box, styles.row, { backgroundColor: colors[surface] }]}>
+    <View
+      accessible
+      accessibilityLabel={`${title}, ${body}`}
+      style={[styles.box, styles.row, { backgroundColor: colors[surface] }]}
+    >
       <Icon icon={icon} size="md" color={iconColor} />
       <View style={styles.text}>
-        <AppText variant="bodyStrong">{title}</AppText>
+        <AppText variant="bodyStrong">{shownTitle}</AppText>
         <AppText variant="caption" color="textMuted">
           {body}
         </AppText>
@@ -207,6 +233,7 @@ function SubmittedCard({
         iconColor="successIcon"
         surface="successSurface"
         title={label}
+        shownTitle={shownSubmittedTitle(label, claim.confirmation_number)}
         body={submittedNote(claim.user_filed_on ? formatDeadline(claim.user_filed_on) : null)}
       />
       {canCorrect && editing ? (

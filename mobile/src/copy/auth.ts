@@ -216,7 +216,12 @@ export const auth = defineCopy({
   },
 
   // On-device checks ---------------------------------------------------------
-  /** AuthForm's signup checks (validateSignupFields): an empty email, then one that is not shaped like an address. */
+  /** AuthForm's signup checks (validateSignupFields), in its order: first an empty name. */
+  enterYourName: {
+    text: 'Enter your name.',
+    source: 'src/lib/signup-validation.ts',
+  },
+  /** Then an empty email, then one that is not shaped like an address. */
   enterYourEmail: {
     text: 'Enter your email address.',
     source: 'src/lib/signup-validation.ts',

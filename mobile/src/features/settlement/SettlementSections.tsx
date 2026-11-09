@@ -1,13 +1,12 @@
 import type { CatalogLink } from '@shared/lib/lawsuit-display';
 import { proofDetail } from '@shared/lib/proof';
-import { settlementProofDetail } from '@shared/lib/settlement-guides';
 import { formatDeadline } from '@shared/lib/utils';
 import { displayProofLabel } from '@shared/lib/verified-fields';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Divider } from '@/components/ui';
 import { settlement } from '@/copy/settlement';
-import type { CatalogLawsuit } from '@/data/catalog';
+import type { SettlementRow } from '@/data/catalog';
 import { ExternalTextLink } from '@/features/shared';
 import { colors, fontFamilies, radii, space } from '@/theme/tokens';
 
@@ -20,7 +19,7 @@ import { Fact } from './Fact';
  */
 
 export interface DeadlineProofFactsProps {
-  lawsuit: CatalogLawsuit;
+  lawsuit: SettlementRow;
   open: boolean;
   deadlinePassed: boolean;
   /** The verified badge shows (useIsVerified): the proof note follows the verified value. */
@@ -28,7 +27,11 @@ export interface DeadlineProofFactsProps {
   testID?: string;
 }
 
-/** The deadline (when listed) with its note, and the proof rule with its detail. */
+/**
+ * The deadline (when listed) with its note, and the proof rule with its
+ * detail: the row's proof note (settlementProofDetail, from the guides its
+ * deadline came from) unless verified.
+ */
 export function DeadlineProofFacts({ lawsuit, open, deadlinePassed, verified, testID }: DeadlineProofFactsProps) {
   const deadlineNote = open
     ? settlement.deadlineCutoff.text
@@ -37,7 +40,7 @@ export function DeadlineProofFacts({ lawsuit, open, deadlinePassed, verified, te
       : settlement.notTakingClaims.text;
   const proofNote = verified
     ? proofDetail({ proof_required: false, eligibility: { proof: lawsuit.proof_verified ?? undefined } })
-    : settlementProofDetail(lawsuit);
+    : lawsuit.proofNote;
 
   return (
     <Card style={styles.card} testID={testID}>

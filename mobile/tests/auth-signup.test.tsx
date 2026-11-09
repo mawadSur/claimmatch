@@ -1,5 +1,6 @@
-import { validateSignupFields } from '@shared/lib/signup-validation';
+import { firstSignupFieldError, validateSignupFields } from '@shared/lib/signup-validation';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
@@ -89,22 +90,71 @@ describe('SignupScreen', () => {
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
-  it('picks the same message as the website’s validateSignupFields for every email and password', () => {
+  it('picks the same message as the website’s validateSignupFields for every name, email and password, in its order', () => {
+    const names = ['', '   ', 'Ana Díaz', ' A '];
     const emails = ['', '   ', 'ana', 'ana@', '@example.com', 'ana@example', 'ana@example.', 'ana@example.com', ' ana@example.com ', 'ana@@example.com', 'a@b@example.com', 'ana maria@example.com'];
     const passwords = ['', ' ', 'short', '123456789', '1234567890', '          ', 'long enough pw'];
-    for (const email of emails) {
-      for (const password of passwords) {
-        const web = validateSignupFields({ fullName: 'Ana Díaz', email, password });
-        const app = signupFieldErrors({ email, password });
-        // The inputs ride along, so a failure names them.
-        expect({ email, password, emailError: app.email, passwordError: app.password }).toEqual({
-          email,
-          password,
-          emailError: web.email ?? null,
-          passwordError: web.password ?? null,
-        });
+    for (const fullName of names) {
+      for (const email of emails) {
+        for (const password of passwords) {
+          const web = validateSignupFields({ fullName, email, password });
+          const app = signupFieldErrors({ fullName, email, password });
+          // The inputs ride along, so a failure names them.
+          expect({ fullName, email, password, nameError: app.fullName, emailError: app.email, passwordError: app.password }).toEqual({
+            fullName,
+            email,
+            password,
+            nameError: web.full_name ?? null,
+            emailError: web.email ?? null,
+            passwordError: web.password ?? null,
+          });
+          // The first message is the website's first (firstSignupFieldError: name, email, password).
+          expect({ fullName, email, password, first: Object.values(app).find(Boolean) ?? null }).toEqual({
+            fullName,
+            email,
+            password,
+            first: firstSignupFieldError(web)?.message ?? null,
+          });
+        }
       }
     }
+  });
+
+  it('asks for a name with the website’s words, and sends nothing without one', async () => {
+    const user = userEvent.setup();
+    await renderScreen(<SignupScreen />);
+    await user.type(screen.getByLabelText(auth.emailLabel.text), 'ana@example.com');
+    await user.type(screen.getByLabelText(auth.passwordLabel.text), 'long enough pw');
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+
+    expect(auth.enterYourName.text).toBe('Enter your name.');
+    expect(screen.getByText(auth.enterYourName.text)).toBeOnTheScreen();
+    expect(screen.getByLabelText(auth.fullNameLabel.text)).toHaveProp('accessibilityHint', auth.enterYourName.text);
+    expect(mockSignUp).not.toHaveBeenCalled();
+
+    // Typing clears the message, as on the website; spaces alone are still no name.
+    await user.type(screen.getByLabelText(auth.fullNameLabel.text), '   ');
+    expect(screen.queryByText(auth.enterYourName.text)).toBeNull();
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+    expect(screen.getByText(auth.enterYourName.text)).toBeOnTheScreen();
+    expect(mockSignUp).not.toHaveBeenCalled();
+
+    await user.clear(screen.getByLabelText(auth.fullNameLabel.text));
+    await user.type(screen.getByLabelText(auth.fullNameLabel.text), 'Ana Díaz');
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+    await waitFor(() =>
+      expect(mockSignUp).toHaveBeenCalledWith({ email: 'ana@example.com', password: 'long enough pw', fullName: 'Ana Díaz' }),
+    );
+    expect(screen.queryByText(auth.enterYourName.text)).toBeNull();
+  });
+
+  it('says what is missing in the website’s order, the name first', async () => {
+    const user = userEvent.setup();
+    await renderScreen(<SignupScreen />);
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+    const announced = (AccessibilityInfo.announceForAccessibilityWithOptions as jest.Mock).mock.calls.map(([message]) => message);
+    expect(announced).toEqual([auth.enterYourName.text, auth.enterYourEmail.text, auth.enterAPassword.text]);
+    expect(mockSignUp).not.toHaveBeenCalled();
   });
 
   it('sets up the fields for the keyboard, AutoFill and a new password', async () => {

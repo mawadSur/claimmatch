@@ -11,12 +11,12 @@ import { dataKeys } from './keys';
 
 /**
  * The official-notice guides the catalog and settlement screens overlay
- * (src/lib/settlement-guides.ts, read by ./catalog and the settlement screen's
- * proof note and FAQ). GET /api/mobile/config serves the server's, which its
- * claim screen, dashboard and reminders already use, so a guide edit reaches
- * every screen without a store update. Until the config answers, and when it
- * has none (an older server, or a list that does not parse), the guides
- * bundled with the app are used.
+ * (src/lib/settlement-guides.ts, read by ./catalog, which also takes the
+ * settlement screen's proof note and FAQ from them). GET /api/mobile/config
+ * serves the server's, which its claim screen, dashboard and reminders
+ * already use, so a guide edit reaches every screen without a store update.
+ * Until the config answers, and when it has none (an older server, or a list
+ * that does not parse), the guides bundled with the app are used.
  */
 
 const text = z.string().trim().min(1);
@@ -91,8 +91,15 @@ export function applyConfigGuides(config: { guidesVersion?: string; guides?: Set
   return changed;
 }
 
-/** Reads the catalog and every settlement screen again, mounted or not, with the guides now in use. */
+/**
+ * Reads the catalog and every settlement screen again, mounted or not, with
+ * the guides now in use. A catalog read still on its way is cancelled first:
+ * its filter named the old guides' slugs, and invalidating does not restart
+ * a read before the catalog has rows (the first one, at a cold start), so a
+ * slug only the new guides name would stay missing until the next refresh.
+ */
 export async function refetchGuidedQueries(client: QueryClient): Promise<void> {
+  await client.cancelQueries({ queryKey: dataKeys.catalog });
   await Promise.all([
     client.invalidateQueries({ queryKey: dataKeys.catalog, refetchType: 'all' }),
     client.invalidateQueries({ queryKey: dataKeys.settlements, refetchType: 'all' }),

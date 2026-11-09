@@ -1,6 +1,6 @@
 import { displaySummary, officialLinkFor } from '@shared/lib/lawsuit-display';
 import { isOpenForClaims } from '@shared/lib/open-for-claims';
-import { settlementAnswerFacts, settlementFaqs } from '@shared/lib/settlement-seo';
+import { settlementAnswerFacts } from '@shared/lib/settlement-seo';
 import { isDeadlinePassed } from '@shared/lib/utils';
 import { displayEligibilityText, overlayVerifiedFacts } from '@shared/lib/verified-fields';
 import { StyleSheet, View } from 'react-native';
@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Button } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
 import { settlement } from '@/copy/settlement';
-import { toLawsuit, type CatalogLawsuit } from '@/data/catalog';
+import { toLawsuit, type SettlementRow } from '@/data/catalog';
 import { LegalDisclaimer, SettlementBadges, UnverifiedNotice, useIsVerified } from '@/features/shared';
 import { space } from '@/theme/tokens';
 
@@ -19,7 +19,8 @@ import { SettlementProvenance } from './SettlementProvenance';
 import { AboutSettlement, DeadlineProofFacts, HowFilingWorks, WhoMayQualify } from './SettlementSections';
 
 export interface SettlementDetailProps {
-  lawsuit: CatalogLawsuit;
+  /** The proof note and the FAQ come with it, from the guides its deadline, payout and link came from. */
+  lawsuit: SettlementRow;
   /** From useNow(): open or closed, and the deadline wording. */
   now: Date;
   signedIn: boolean;
@@ -47,8 +48,7 @@ export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrows
   const description = lawsuit.description?.trim();
   // Skip a description that only repeats the payout or the summary (and one that is blank).
   const about = description && description !== payout && description !== summary ? lawsuit.description : null;
-  const full = toLawsuit(lawsuit);
-  const facts = overlayVerifiedFacts(settlementAnswerFacts(full), lawsuit);
+  const facts = overlayVerifiedFacts(settlementAnswerFacts(toLawsuit(lawsuit)), lawsuit);
 
   return (
     <>
@@ -107,7 +107,7 @@ export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrows
 
       {open ? <HowFilingWorks testID="settlement-section-how" /> : null}
 
-      <SettlementFaq items={settlementFaqs(full)} testID="settlement-section-faq" />
+      <SettlementFaq items={lawsuit.faqs} testID="settlement-section-faq" />
 
       <SettlementProvenance lawsuit={lawsuit} official={official} testID="settlement-section-provenance" />
 

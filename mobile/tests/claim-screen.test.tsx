@@ -374,8 +374,8 @@ describe('claim flow', () => {
         `${copy.noOfficialSite.text} Our listing came from settlesignal.com, which is not the official site. Look there for the official link. ${copy.onlyFileNamed.text}`,
       ),
     ).toBeOnTheScreen();
-    // The link to the source may wrap at the host's dot; it is announced as it is.
-    expect(screen.getByRole('link', { name: 'settlesignal.com' })).toHaveTextContent('settlesignal.\u200Bcom');
+    // The link to the source: a host that fits on a line shows whole, with no break after its dot.
+    expect(screen.getByRole('link', { name: 'settlesignal.com' })).toHaveTextContent('settlesignal.com', { exact: true });
     expect(screen.queryByRole('link', { name: copy.openClaimForm.text })).not.toBeOnTheScreen();
   });
 

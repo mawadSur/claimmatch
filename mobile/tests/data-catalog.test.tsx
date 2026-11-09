@@ -1,8 +1,8 @@
 import { addCalendarDays } from '@shared/lib/claim-deadlines';
 import { FICTIONAL_SLUGS } from '@shared/lib/fictional-slugs';
-import { GUIDED_SLUGS, getSettlementGuide } from '@shared/lib/settlement-guides';
+import { GUIDED_SLUGS, SETTLEMENT_GUIDES_VERSION, getSettlementGuide } from '@shared/lib/settlement-guides';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import { common } from '@/copy/common';
@@ -162,6 +162,8 @@ describe('catalog query', () => {
       typical_payout: guide.typicalPayout,
     });
     expect(rows[0]).toMatchObject({ slug: 'plain', deadline: '2026-12-01', claim_url: 'https://www.acme-settlement.example/claim' });
+    // Each row names the guides it was overlaid with: the settlement screen opens from it only while they are in use.
+    expect(rows.map((lawsuit) => lawsuit.guidesVersion)).toEqual([SETTLEMENT_GUIDES_VERSION, SETTLEMENT_GUIDES_VERSION]);
   });
 
   it('shows and sorts by the official deadline when the feed’s is later', async () => {
@@ -305,8 +307,10 @@ describe('catalog hooks', () => {
 
   it('opens a settlement from the catalog copy without a request', async () => {
     const { client, wrapper } = setup();
-    const cached = [row({ slug: 'acme' })];
+    mockState.result.data = [row({ slug: 'acme' })];
+    const cached = await fetchCatalog();
     client.setQueryData(['catalog'], cached);
+    mockState.calls = [];
 
     const { result } = await renderHook(
       () => {
@@ -315,8 +319,40 @@ describe('catalog hooks', () => {
       },
       { wrapper },
     );
-    expect(result.current.data).toEqual({ status: 'found', lawsuit: cached[0] });
+    expect(result.current.data).toMatchObject({ status: 'found', lawsuit: cached[0] });
     expect(result.current.isStale).toBe(false);
+    expect(calls('from')).toEqual([]);
+    client.clear();
+  });
+
+  it('still opens a settlement from the catalog copy after the catalog failed to refresh (offline, a 5xx)', async () => {
+    mockState.result.data = [row({ slug: 'acme' })];
+    const { client, wrapper } = setup();
+    const catalog = await renderHook(
+      () => {
+        const query = useCatalog();
+        return { isSuccess: query.isSuccess, isRefetchError: query.isRefetchError, refetch: query.refetch };
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(catalog.result.current.isSuccess).toBe(true));
+    mockState.result = { data: null, error: { message: 'upstream unavailable', code: '' }, status: 503 };
+    await act(async () => {
+      await catalog.result.current.refetch();
+    });
+    await waitFor(() => expect(catalog.result.current.isRefetchError).toBe(true));
+    // React Query marks a query whose read failed as invalidated; the rows it had stay.
+    expect(client.getQueryState(['catalog'])).toMatchObject({ status: 'error', isInvalidated: true });
+    mockState.calls = [];
+
+    const { result } = await renderHook(
+      () => {
+        const query = useSettlement('acme');
+        return { data: query.data, status: query.status };
+      },
+      { wrapper },
+    );
+    expect(result.current).toMatchObject({ status: 'success', data: { status: 'found', lawsuit: { slug: 'acme' } } });
     expect(calls('from')).toEqual([]);
     client.clear();
   });

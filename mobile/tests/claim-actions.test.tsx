@@ -5,7 +5,7 @@ import { AccessibilityInfo, ScrollView } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { BUTTON_PADDING_X } from '@/components/ui';
-import { claim as copy, undoWarning, undoneMessage } from '@/copy/claim';
+import { claim as copy, submittedNote, undoWarning, undoneMessage } from '@/copy/claim';
 import { common } from '@/copy/common';
 import { ClaimScreen } from '@/features/claim';
 import { endOfDay, latestFilingDay, startOfDay } from '@/features/claim/dates';
@@ -348,7 +348,9 @@ describe('a reported claim', () => {
     await user.press(screen.getByRole('button', { name: copy.addNumber.text }));
     expect(await screen.findByLabelText(copy.savedNowSubmitted.text)).toBeOnTheScreen();
     expect(sent('PATCH', CLAIM_PATH)).toEqual([{ action: 'add_confirmation', confirmation_number: 'ABC-123' }]);
-    expect(screen.getAllByText('Submitted · #ABC-123')).toHaveLength(2);
+    // The status badge, and the submitted box, whose number may wrap after its hyphen.
+    expect(screen.getByText('Submitted · #ABC-123')).toBeOnTheScreen();
+    expect(screen.getByText('Submitted · #ABC-\u200B123')).toBeOnTheScreen();
   });
 
   it('undoes the report after asking, and says until when it can be reported again', async () => {
@@ -389,6 +391,20 @@ describe('a reported claim', () => {
 });
 
 describe('a submitted claim', () => {
+  it('lets the number wrap after each hyphen on screen, while screen readers and the correction field get it as typed', async () => {
+    const user = userEvent.setup();
+    await show(flow({ claim: claimView({ status: 'submitted', confirmation_number: 'WMG-4X8K-22917', user_filed_on: '2026-10-30' }) }));
+    // A zero-width space after each "-": at the largest text sizes the title breaks there, not inside the number.
+    expect(screen.getByText('Submitted · #WMG-\u200B4X8K-\u200B22917')).toBeOnTheScreen();
+    const box = screen.getByLabelText(`Submitted · #WMG-4X8K-22917, ${submittedNote('Oct 30, 2026')}`);
+    expect(box).toHaveTextContent('Submitted · #WMG-\u200B4X8K-\u200B22917', { exact: false });
+    // The status badge is not the title: it shows the number as typed.
+    expect(screen.getByText('Submitted · #WMG-4X8K-22917')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: copy.correctNumber.text }));
+    expect(screen.getByLabelText(copy.confirmationNumber.text)).toHaveDisplayValue('WMG-4X8K-22917');
+  });
+
   it('lines "Correct the number" up with the text above it, keeping its 48 pt target', async () => {
     await show(flow({ claim: claimView({ status: 'submitted', confirmation_number: 'ABC123' }) }));
     expect(screen.getByRole('button', { name: copy.correctNumber.text })).toHaveStyle({

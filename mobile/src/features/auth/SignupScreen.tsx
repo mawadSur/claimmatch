@@ -27,18 +27,30 @@ import { AuthHeader, SwitchPrompt } from './parts';
 /** validateSignupFields' email shape (src/lib/signup-validation.ts): one @, unlike isEmailShaped. */
 const SIGNUP_EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** One message per field, in the website's order (firstSignupFieldError: name, email, password). */
 export interface SignupFieldErrors {
+  fullName: string | null;
   email: string | null;
   password: string | null;
 }
 
 /**
- * The website's sign-up checks, message for message (validateSignupFields in
- * src/lib/signup-validation.ts): an empty email, then one not shaped like an
- * address; an empty password, then one shorter than 10 characters.
- * validateSignupFields also asks for a name, which this form does not check.
+ * The website's sign-up checks, message for message and in its order
+ * (validateSignupFields in src/lib/signup-validation.ts): an empty name; an
+ * empty email, then one not shaped like an address; an empty password, then
+ * one shorter than 10 characters. Any of them stops the sign-up, as on the
+ * website.
  */
-export function signupFieldErrors({ email, password }: { email: string; password: string }): SignupFieldErrors {
+export function signupFieldErrors({
+  fullName,
+  email,
+  password,
+}: {
+  fullName: string;
+  email: string;
+  password: string;
+}): SignupFieldErrors {
+  const nameError = fullName.trim() ? null : auth.enterYourName.text;
   const address = email.trim();
   let emailError: string | null = null;
   if (!address) emailError = auth.enterYourEmail.text;
@@ -46,7 +58,7 @@ export function signupFieldErrors({ email, password }: { email: string; password
   let passwordError: string | null = null;
   if (!password) passwordError = auth.enterAPassword.text;
   else if (password.length < MIN_PASSWORD_LENGTH) passwordError = passwordTooShortText(MIN_PASSWORD_LENGTH);
-  return { email: emailError, password: passwordError };
+  return { fullName: nameError, email: emailError, password: passwordError };
 }
 
 /**
@@ -66,6 +78,7 @@ export function SignupScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -82,10 +95,11 @@ export function SignupScreen() {
   async function submit() {
     if (loading) return;
     setFormError(null);
-    const problems = signupFieldErrors({ email, password });
+    const problems = signupFieldErrors({ fullName, email, password });
+    setNameError(problems.fullName);
     setEmailError(problems.email);
     setPasswordError(problems.password);
-    if (problems.email || problems.password) return;
+    if (problems.fullName || problems.email || problems.password) return;
 
     Keyboard.dismiss();
     // Only the button waits: fields that turn non-editable read to iOS as a
@@ -132,8 +146,12 @@ export function SignupScreen() {
           label={auth.fullNameLabel.text}
           icon={User}
           value={fullName}
-          onChangeText={setFullName}
+          onChangeText={(value) => {
+            setFullName(value);
+            setNameError(null);
+          }}
           placeholder={auth.fullNamePlaceholder.text}
+          error={nameError}
           autoCapitalize="words"
           autoCorrect={false}
           textContentType="name"

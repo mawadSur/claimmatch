@@ -8,6 +8,7 @@ import { common } from '@/copy/common';
 import { settlement } from '@/copy/settlement';
 import { shared } from '@/copy/shared';
 import type { CatalogLawsuit } from '@/data/catalog';
+import { guidesInUse } from '@/data/guides';
 import { CC_BY_4_URL, SETTLESIGNAL_URL } from '@/features/shared';
 import { SettlementScreen } from '@/features/settlement';
 import { openExternalUrl } from '@/lib/external-link';
@@ -116,7 +117,9 @@ async function renderSettlement(slug: string, options: { catalog?: CatalogLawsui
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
   });
-  if (options.catalog) client.setQueryData(['catalog'], options.catalog);
+  // As fetchCatalog leaves them: overlaid with the guides in use, and tagged with their version.
+  const { version } = guidesInUse();
+  if (options.catalog) client.setQueryData(['catalog'], options.catalog.map((lawsuit) => ({ ...lawsuit, guidesVersion: version })));
   await render(
     <QueryClientProvider client={client}>
       <SafeAreaProvider initialMetrics={METRICS}>
