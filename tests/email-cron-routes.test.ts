@@ -305,7 +305,7 @@ describe('/api/cron/digest', () => {
           score: 0.7,
           dismissed: false,
           notified_at: null,
-          lawsuit: { title: 'Real', slug: 'real', review_status: 'published', typical_payout: null, deadline: null },
+          lawsuit: { title: 'Real', slug: 'real', status: 'open', review_status: 'published', typical_payout: null, deadline: null },
         },
         {
           id: 'm2',

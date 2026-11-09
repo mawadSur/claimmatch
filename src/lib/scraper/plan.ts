@@ -6,6 +6,7 @@ import type {
 import { isOpenForClaims } from '@/lib/lawsuits';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
 import { tagsFromScraped } from '@/lib/lawsuit-tags';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import { isDeadlinePassed, slugify } from '@/lib/utils';
 
 /**
@@ -25,7 +26,11 @@ import { isDeadlinePassed, slugify } from '@/lib/utils';
  *   non-empty feed and closes the row after N consecutive misses; a failed
  *   or empty feed never does that. Only an explicit closed status or a new
  *   deadline that has passed can close a row in this file, and a closed row
- *   reopens when the source lists it as open again.
+ *   reopens when the source lists it as open again, unless its deadline has
+ *   passed.
+ * - A guided settlement (settlement-guides.ts) goes by its official deadline,
+ *   as the catalog does: for closing, for reopening and for the open rows the
+ *   circuit breaker counts (isOpenForClaimsGuided).
  * - A circuit breaker holds a run's closures when they exceed a set share of
  *   the open catalog, so a broken or reshaped feed cannot empty the site.
  */
@@ -80,9 +85,12 @@ export interface PlannedUpdate {
   patch: Record<string, unknown>;
   /** What changes, in words, for the log (no personal data). */
   changes: string[];
-  /** The row is published and open for claims now and would not be after this update. */
+  /**
+   * The row is published and open for claims now (a guided one by its official
+   * deadline) and would not be after this update.
+   */
   closes: boolean;
-  /** The row was closed and the source lists it as open again. */
+  /** The row was closed, the source lists it as open again, and its deadline has not passed. */
   reopens: boolean;
   deadlineChange: { from: string | null; to: string } | null;
   /** Why this update would close a public row. Unset when it does not close. */
@@ -126,15 +134,36 @@ function sameUrl(a: string | null | undefined, b: string | null | undefined): bo
 
 /**
  * The status a refresh should set, or null for no change. Draft rows are never
- * touched; 'unknown' or a missing source status changes nothing.
+ * touched; 'unknown' or a missing source status changes nothing. A closed row
+ * whose deadline has passed stays closed when the feed lists it as open.
  */
 export function nextStatus(
   current: LawsuitStatus,
   feed: ScrapedLawsuit['status'],
+  deadlinePassed = false,
 ): LawsuitStatus | null {
-  if (feed === 'open' && current === 'closed') return 'open';
+  if (feed === 'open' && current === 'closed') return deadlinePassed ? null : 'open';
   if (feed === 'closed' && (current === 'open' || current === 'closing_soon')) return 'closed';
   return null;
+}
+
+/**
+ * The open-for-claims rule on the deadline people act on: a guided
+ * settlement's official deadline (guidedDeadline), otherwise the row's own.
+ * The catalog applies the guides before the same rule (openGuidedCatalog), so
+ * the closes counted here and the circuit breaker's open rows match the site.
+ */
+export function isOpenForClaimsGuided(
+  row: { slug: string; status: string; review_status?: string | null; deadline: string | null },
+  now: Date,
+): boolean {
+  return isOpenForClaims({ ...row, deadline: guidedDeadline(row) }, now);
+}
+
+/** The guided deadline has passed, read with the deadline this refresh leaves on the row. */
+function guidedDeadlinePassed(row: ExistingRow, patch: Record<string, unknown>, now: Date): boolean {
+  const deadline = typeof patch.deadline === 'string' ? patch.deadline : row.deadline;
+  return isDeadlinePassed(guidedDeadline({ slug: row.slug, deadline }), now);
 }
 
 function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string, now: Date): NewRow {
@@ -175,7 +204,7 @@ function finishUpdate(
   now: Date,
 ): PlannedUpdate {
   const after = { ...row, ...patch } as ExistingRow;
-  const closes = isOpenForClaims(row, now) && !isOpenForClaims(after, now);
+  const closes = isOpenForClaimsGuided(row, now) && !isOpenForClaimsGuided(after, now);
   return {
     id: row.id,
     slug: row.slug,
@@ -200,7 +229,7 @@ function planLocked(row: ExistingRow, item: ScrapedLawsuit, now: Date) {
     changes.push(`deadline ${row.deadline ?? 'none'} -> ${deadline}`);
     deadlineChange = { from: row.deadline, to: deadline };
   }
-  const status = nextStatus(row.status, item.status);
+  const status = nextStatus(row.status, item.status, guidedDeadlinePassed(row, patch, now));
   if (status) {
     patch.status = status;
     changes.push(`status ${row.status} -> ${status}`);
@@ -245,7 +274,7 @@ function planUnlocked(row: ExistingRow, item: ScrapedLawsuit, now: Date): Planne
     changes.push(`deadline ${row.deadline ?? 'none'} -> ${deadline}`);
     deadlineChange = { from: row.deadline, to: deadline };
   }
-  const status = nextStatus(row.status, item.status);
+  const status = nextStatus(row.status, item.status, guidedDeadlinePassed(row, patch, now));
   if (status) {
     patch.status = status;
     changes.push(`status ${row.status} -> ${status}`);

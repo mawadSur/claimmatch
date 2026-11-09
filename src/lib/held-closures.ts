@@ -12,6 +12,7 @@ import {
   type HeldClosure,
 } from '@/lib/scraper/plan';
 import type { IngestSummary } from '@/lib/scraper/pipeline';
+import { guidedDeadline } from '@/lib/settlement-guides';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { LawsuitStatus } from '@/lib/types';
 
@@ -241,7 +242,10 @@ async function attachTriage(
   );
   return items.map((item) => {
     const site = checks.get(item.slug) ?? null;
-    const triage = suggestHeldClosureDecision({ deadline: item.deadline, site }, now);
+    // A guided settlement by its official deadline, as the ingest's auto-close
+    // reads it (partitionHeldPastDeadline); the queue still shows the stored one.
+    const deadline = guidedDeadline({ slug: item.slug, deadline: item.deadline });
+    const triage = suggestHeldClosureDecision({ deadline, site }, now);
     return {
       ...item,
       suggestion: triage.suggestion,

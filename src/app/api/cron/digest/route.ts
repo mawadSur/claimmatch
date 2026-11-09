@@ -5,6 +5,7 @@ import { sendClosingSoonEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
 import { closingSoonEmailGate, pickClosingSoonEmailRows } from '@/lib/closing-soon-email';
 import { notifyNewMatches, type MatchNotifyItem } from '@/lib/notifications';
+import { isOpenForClaims } from '@/lib/open-for-claims';
 import { applySettlementGuide, applySettlementGuides } from '@/lib/settlement-guides';
 import {
   isEmailableStoredMatch,
@@ -84,10 +85,12 @@ async function handle(req: Request) {
  * Weekly new-match digest: opted-in weekly subscribers only. Emails
  * unnotified stored matches at or above MATCH_EMAIL_SCORE_THRESHOLD via
  * Resend, then marks notified_at. Instant subscribers are handled by the
- * daily sweep. Unsubscribed accounts are never loaded.
+ * daily sweep. Unsubscribed accounts are never loaded. Only settlements open
+ * for claims once the guides apply are emailed.
  */
 async function sendDigest(): Promise<{ users: number; emailed: number }> {
   const supabase = createServiceClient();
+  const now = new Date();
 
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
@@ -115,20 +118,19 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
     const rows = (matchRows ?? []) as (Pick<Match, 'id' | 'score' | 'dismissed' | 'notified_at'> & {
       lawsuit?: Lawsuit | null;
     })[];
-    const pending = rows.filter(
-      (row) => isEmailableStoredMatch(row) && !!row.lawsuit && row.lawsuit.review_status === 'published',
-    );
-    // Official-notice guides: the payout and deadline the settlement page shows.
-    const items: MatchNotifyItem[] = pending
-      .map((m) => m.lawsuit)
-      .filter((l): l is Lawsuit => !!l)
-      .map(applySettlementGuide)
-      .map((l) => ({
-        title: l.title,
-        slug: l.slug,
-        typical_payout: l.typical_payout,
-        deadline: l.deadline,
-      }));
+    // Official-notice guides first (the payout and deadline the settlement page
+    // shows), then the open-for-claims rule on them, as the catalog does. As in
+    // the match sweep, a match that is not emailed stays unnotified.
+    const pending = rows.flatMap((row) => {
+      const lawsuit = isEmailableStoredMatch(row) && row.lawsuit ? applySettlementGuide(row.lawsuit) : null;
+      return lawsuit && isOpenForClaims(lawsuit, now) ? [{ id: row.id, lawsuit }] : [];
+    });
+    const items: MatchNotifyItem[] = pending.map(({ lawsuit: l }) => ({
+      title: l.title,
+      slug: l.slug,
+      typical_payout: l.typical_payout,
+      deadline: l.deadline,
+    }));
 
     if (items.length === 0) continue;
 
@@ -151,7 +153,8 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
 }
 
 /**
- * C15: verified listings closing in 14 days, to email_opt_in users only.
+ * C15: verified listings open for claims and closing in 14 days, to
+ * email_opt_in users only.
  * sendClosingSoonEmail refuses again if the flag, postal address, or sender
  * is missing.
  */
@@ -173,7 +176,8 @@ async function sendClosingSoon(): Promise<{
     .eq('review_status', 'published');
   if (lawsuitError) throw new Error(`lawsuits query failed (code ${lawsuitError.code ?? 'unknown'})`);
 
-  // A guided settlement is closing soon by its official deadline, not the feed's.
+  // Guides first: a guided settlement is open (pickClosingSoonEmailRows applies
+  // the open-for-claims rule) and closing soon by its official deadline.
   const items = pickClosingSoonEmailRows(applySettlementGuides((lawsuitData ?? []) as Lawsuit[])).map((row) => ({
     title: row.title,
     slug: row.slug,

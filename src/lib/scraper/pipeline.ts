@@ -1,6 +1,5 @@
 import { flags } from '@/lib/flags';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
-import { isOpenForClaims } from '@/lib/lawsuits';
 import type { ScrapedLawsuit } from '@/lib/types';
 import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
@@ -8,6 +7,7 @@ import {
   EXISTING_ROW_COLUMNS,
   heldChangeFingerprint,
   heldClosureLogLines,
+  isOpenForClaimsGuided,
   maxCloseShareFromEnv,
   planIngest,
   type ExistingRow,
@@ -266,9 +266,9 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
 
     const openCount = remainingCloseable
       ? remainingCloseable.filter(
-          (row) => isFeedSourceRow(row, source.id, adapter.slug) && isOpenForClaims(row, now),
+          (row) => isFeedSourceRow(row, source.id, adapter.slug) && isOpenForClaimsGuided(row, now),
         ).length
-      : existing.filter((row) => isOpenForClaims(row, now)).length;
+      : existing.filter((row) => isOpenForClaimsGuided(row, now)).length;
     await applyPlanned(supabase, planned, {
       summary,
       adapterSlug: adapter.slug,
