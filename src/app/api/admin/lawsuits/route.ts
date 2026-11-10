@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminUser } from '@/lib/admin';
 import { flags } from '@/lib/flags';
+import { notifyIndexNowBestEffort, shouldNotifyIndexNowForAdminAction } from '@/lib/indexnow';
 import { closeMissingFeedPatch, keepMissingFeedPatch } from '@/lib/missing-feed-queue';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isThirdPartyFeeStatus } from '@/lib/third-party-fee';
@@ -152,6 +153,15 @@ export async function PATCH(req: Request) {
     );
   }
 
+  if (shouldNotifyIndexNowForAdminAction(action)) {
+    const slug = data && typeof data === 'object' && typeof (data as { slug?: unknown }).slug === 'string'
+      ? (data as { slug: string }).slug
+      : null;
+    if (slug) {
+      void notifyIndexNowBestEffort([slug]);
+    }
+  }
+
   return NextResponse.json({ ok: true, lawsuit: data });
 }
 
@@ -174,7 +184,7 @@ async function handleBulkAction(
     .from('lawsuits')
     .update(updates)
     .in('id', ids)
-    .select('id');
+    .select('id, slug');
 
   if (error) {
     console.error('[admin/lawsuits] bulk update failed:', error);
@@ -182,6 +192,15 @@ async function handleBulkAction(
       { error: 'Could not update the settlements.' },
       { status: 400 },
     );
+  }
+
+  if (shouldNotifyIndexNowForAdminAction(action)) {
+    const slugs = ((updated ?? []) as { slug?: string | null }[])
+      .map((row) => row.slug)
+      .filter((value): value is string => Boolean(value));
+    if (slugs.length > 0) {
+      void notifyIndexNowBestEffort(slugs);
+    }
   }
 
   return NextResponse.json({

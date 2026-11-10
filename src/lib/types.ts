@@ -207,6 +207,8 @@ export interface Profile {
   first_utm_campaign?: string | null;
   first_utm_content?: string | null;
   first_ref?: string | null;
+  /** 0034: closed-set first-touch channel (chatgpt, perplexity, …). Written once. */
+  first_traffic_channel?: string | null;
   /** 0017: when the user agreed to privacy-safe match-quality logging. */
   match_metrics_consent_at?: string | null;
   /** 0020: tester account excluded from traction counts. */

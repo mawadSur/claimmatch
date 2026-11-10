@@ -23,7 +23,7 @@ export interface SchemaProbeClient {
 
 export const REQUIRED_COLUMNS: Record<string, string[]> = {
   lawsuits: ['last_seen_at', 'missed_feed_count', 'tags'],
-  profiles: ['first_ref', 'email_opt_in', 'email_frequency'],
+  profiles: ['first_ref', 'first_traffic_channel', 'email_opt_in', 'email_frequency'],
   share_links: ['id'],
   share_link_clicks: ['id'],
   profile_facts: ['id', 'user_id', 'type', 'value'],

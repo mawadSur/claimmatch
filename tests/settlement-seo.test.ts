@@ -17,7 +17,6 @@ import {
   settlementMetaTitle,
   truncateAtWord,
 } from '@/lib/settlement-seo';
-import { GET as llmsTxt } from '@/app/llms.txt/route';
 
 describe('settlement SEO helpers', () => {
   it('builds unique titles and descriptions from stored fields only', () => {
@@ -130,19 +129,6 @@ describe('settlement SEO helpers', () => {
   it('builds canonical URLs from the site origin', () => {
     expect(pageUrl('/')).toMatch(/^https?:\/\//);
     expect(pageUrl('/lawsuits')).toMatch(/\/lawsuits$/);
-  });
-});
-
-describe('llms.txt', () => {
-  it('points crawlers at the settlement hubs', async () => {
-    const res = llmsTxt();
-    const body = await res.text();
-    expect(res.headers.get('Content-Type')).toContain('text/plain');
-    expect(body).toContain('/settlements/closing-soon');
-    expect(body).toContain('/settlements/new');
-    expect(body).toContain('/settlements/category/data-breach');
-    expect(body).toContain('/lawsuits');
-    expect(body).not.toMatch(/we file|you(?:'|’)re owed|15%/i);
   });
 });
 

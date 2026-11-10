@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { jsonApiNotFound } from '@/lib/api-not-found';
 import { isMalformedApiPath } from '@/lib/analytics/traffic';
 import { isCronApiPath } from '@/lib/cron-auth';
+import { indexNowKeyFileRequest } from '@/lib/indexnow';
 import { updateSession } from '@/lib/supabase/middleware';
 
 /**
@@ -25,6 +26,12 @@ export async function middleware(request: NextRequest) {
     const dest = request.nextUrl.clone();
     dest.pathname = '/auth/callback';
     return NextResponse.redirect(dest);
+  }
+  // IndexNow's standard key file is /{key}.txt; serve the same body as /indexnow-key.txt.
+  if (indexNowKeyFileRequest(pathname)) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = '/indexnow-key.txt';
+    return NextResponse.rewrite(dest);
   }
   return await updateSession(request);
 }

@@ -44,6 +44,7 @@ describe('checkRequiredSchema', () => {
     expect(result.present).toContain('drip_email_sends');
     expect(result.present).toContain('beta_feedback');
     expect(result.present).toContain('persist_first_attribution');
+    expect(result.present).toContain('profiles.first_traffic_channel');
   });
 
   it('lists missing tables and columns', async () => {

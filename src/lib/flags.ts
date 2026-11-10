@@ -224,10 +224,20 @@ export const flags = {
    */
   relatedSettlements: () => on('RELATED_SETTLEMENTS_ENABLED'),
   /**
-   * After the nightly ingest, submit changed public URLs to IndexNow.
-   * Off: no request. Never runs in tests, even if set.
+   * After the nightly ingest, and on admin publish/close, submit changed
+   * public URLs to IndexNow. Off: no request. Never runs in tests, even if set.
    */
   indexNow: () => on('INDEXNOW_ENABLED'),
+  /**
+   * Public /llms.txt (llmstxt.org). Off: that path 404s. Cached/ISR when on.
+   */
+  llmsTxt: () => on('LLMS_TXT_ENABLED'),
+  /**
+   * Classify first-touch referrer / utm_source into a closed traffic channel,
+   * attach it to PostHog events, persist it on the profile, and show an admin
+   * card. Off: no new property, no extra RPC, no admin card.
+   */
+  aiReferrerAttribution: () => on('AI_REFERRER_ATTRIBUTION_ENABLED'),
   /**
    * Richer profile: profile_facts collection, onboarding v2 step, /settings/profile,
    * and /admin/users. Off: those surfaces 404 or stay hidden.

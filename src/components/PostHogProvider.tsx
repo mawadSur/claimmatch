@@ -4,7 +4,9 @@ import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
 import { useEffect, Suspense, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { TRAFFIC_CHANNEL_PROPERTY } from '@/lib/analytics/referrer-channel';
 import {
+  attributionMetadata,
   attributionPersonProperties,
   doNotTrackEnabled,
   documentReferrerAttribution,
@@ -35,7 +37,12 @@ function PostHogPageView() {
       if (search) {
         url += '?' + search;
       }
-      ph.capture('$pageview', { $current_url: url, [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
+      const channel = attributionMetadata(readBrowserCookies())[TRAFFIC_CHANNEL_PROPERTY];
+      ph.capture('$pageview', {
+        $current_url: url,
+        [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser(),
+        ...(channel ? { [TRAFFIC_CHANNEL_PROPERTY]: channel } : {}),
+      });
     }
   }, [pathname, searchParams, ph]);
 

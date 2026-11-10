@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkScriptTarget, PRODUCTION_PROJECT_REF } from '@/lib/scraper/env-guard';
-import robots from '@/app/robots';
+import robots, { SEARCH_ANSWER_CRAWLERS, TRAINING_CRAWLERS_FOLLOWING_STAR } from '@/app/robots';
 import { matchProfile, scoreLawsuit } from '@/lib/matching';
 import { normalizeProof, proofDetail, proofLabel, proofStatus } from '@/lib/proof';
 import type { Lawsuit, Profile } from '@/lib/types';
@@ -58,6 +58,28 @@ describe('robots.txt', () => {
     expect(group.disallow).toEqual(
       expect.arrayContaining(['/admin', '/dashboard', '/settings', '/api', '/claim', '/onboarding', '/unsubscribe', '/preview', '/invite']),
     );
+    expect(group.allow).toBe('/');
+  });
+
+  it('lets search and answer crawlers follow the public allow, including settlement pages', () => {
+    const group = robots().rules as { userAgent: string; allow: string; disallow: string[] };
+    expect(group.userAgent).toBe('*');
+    expect(SEARCH_ANSWER_CRAWLERS).toEqual(
+      expect.arrayContaining(['Googlebot', 'Bingbot', 'OAI-SearchBot', 'PerplexityBot', 'ChatGPT-User']),
+    );
+    for (const bot of SEARCH_ANSWER_CRAWLERS) {
+      expect(group.disallow.some((path) => path.startsWith('/lawsuits'))).toBe(false);
+      expect(bot).toMatch(/bot|user/i);
+    }
+    expect(group.disallow).toEqual(expect.arrayContaining(['/admin', '/api', '/dashboard', '/settings']));
+  });
+
+  it('does not add a named group for training crawlers (GPTBot etc.)', () => {
+    const rules = robots().rules;
+    expect(Array.isArray(rules)).toBe(false);
+    expect(TRAINING_CRAWLERS_FOLLOWING_STAR).toContain('GPTBot');
+    const src = robots.toString();
+    expect(src).not.toMatch(/GPTBot/);
   });
 });
 
