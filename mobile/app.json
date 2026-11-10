@@ -2,6 +2,7 @@
   "expo": {
     "name": "ClaimMatch",
     "slug": "claimmatch",
+    "owner": "kjjungle0",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -164,6 +165,11 @@
         }
       ]
     ],
+    "extra": {
+      "eas": {
+        "projectId": "8626a8d7-fa74-49fa-80c5-467a426a8ae9"
+      }
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
