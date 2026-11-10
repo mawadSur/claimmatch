@@ -41,4 +41,13 @@ describe('middleware vs /api/cron/*', () => {
     await middleware(request('/lawsuits'));
     expect(m.updateSession).toHaveBeenCalledOnce();
   });
+
+  it('rewrites the standard IndexNow key file to /indexnow-key.txt', async () => {
+    vi.stubEnv('INDEXNOW_KEY', 'abcd1234efgh');
+    const res = await middleware(request('/abcd1234efgh.txt'));
+    expect(m.updateSession).not.toHaveBeenCalled();
+    expect(res.headers.get('x-middleware-rewrite') || res.headers.get('location') || '').toMatch(
+      /indexnow-key\.txt/,
+    );
+  });
 });

@@ -1,4 +1,5 @@
 import { flags } from '@/lib/flags';
+import { notifyIndexNowBestEffort } from '@/lib/indexnow';
 import { officialLinkFor } from '@/lib/lawsuits';
 import { loadHeldSiteChecks } from '@/lib/held-closure-site-checks';
 import {
@@ -327,5 +328,6 @@ export async function applyHeldClosure(input: {
     source: 'admin',
   });
   if (!recorded.ok) return { ok: false, error: recorded.error, status: 400 };
+  void notifyIndexNowBestEffort([input.slug]);
   return { ok: true, lawsuitId: lawsuit.id as string };
 }

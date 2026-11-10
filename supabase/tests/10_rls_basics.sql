@@ -704,6 +704,8 @@ begin
     $q$update public.profiles set referred_by = 'b0000000-0000-4000-8000-00000000000b'
        where id = 'a0000000-0000-4000-8000-00000000000a'$q$,
     $q$update public.profiles set email = 'someone-else@example.test'
+       where id = 'a0000000-0000-4000-8000-00000000000a'$q$,
+    $q$update public.profiles set first_traffic_channel = 'chatgpt'
        where id = 'a0000000-0000-4000-8000-00000000000a'$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
@@ -721,7 +723,8 @@ begin
       and not is_admin
       and referred_by is null
       and email = 'rls-user-a@example.test'
-      and referral_code is distinct from 'chosen-by-a') then
+      and referral_code is distinct from 'chosen-by-a'
+      and first_traffic_channel is null) then
     raise exception 'user A''s server-owned profile columns changed';
   end if;
 end $$;

@@ -4,6 +4,13 @@
  * values win so a later click never overwrites the first one.
  */
 
+import {
+  classifyTrafficChannel,
+  INITIAL_TRAFFIC_CHANNEL_PROPERTY,
+  TRAFFIC_CHANNEL_PROPERTY,
+} from '@/lib/analytics/referrer-channel';
+import { flags } from '@/lib/flags';
+
 export const REF_COOKIE = 'cm_ref';
 export const ATTR_COOKIE = 'cm_attr';
 export const ATTRIBUTION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -231,6 +238,16 @@ export function writeBrowserCookies(attr: Attribution): void {
   }
 }
 
+function trafficChannelProperties(attr: Attribution): Record<string, string> {
+  if (!flags.aiReferrerAttribution()) return {};
+  const channel = classifyTrafficChannel({
+    utmSource: attr.utm_source,
+    utmMedium: attr.utm_medium,
+    referrer: attr.referrer,
+  });
+  return channel ? { [TRAFFIC_CHANNEL_PROPERTY]: channel } : {};
+}
+
 /** PostHog set-once person properties. No email, name or other PII. */
 export function attributionPersonProperties(attr: Attribution): Record<string, string> {
   const props: Record<string, string> = {};
@@ -258,6 +275,11 @@ export function attributionPersonProperties(attr: Attribution): Record<string, s
     props.referrer = attr.referrer;
     props.$initial_referrer = attr.referrer;
   }
+  const channel = trafficChannelProperties(attr);
+  if (channel[TRAFFIC_CHANNEL_PROPERTY]) {
+    props[TRAFFIC_CHANNEL_PROPERTY] = channel[TRAFFIC_CHANNEL_PROPERTY];
+    props[INITIAL_TRAFFIC_CHANNEL_PROPERTY] = channel[TRAFFIC_CHANNEL_PROPERTY];
+  }
   return props;
 }
 
@@ -267,6 +289,7 @@ export function attributionMetadata(attr: Attribution): Record<string, string> {
     if (attr[key]) data[key] = attr[key] as string;
   }
   if (attr.ref) data.ref = attr.ref;
+  Object.assign(data, trafficChannelProperties(attr));
   return data;
 }
 

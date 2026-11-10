@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck, Send, ListChecks, PauseCircle, Users } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Library, Wallet, Link2, BadgeCheck, Send, ListChecks, PauseCircle, Users, ToggleLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AdminNavCounts } from './AdminNav';
 
@@ -12,6 +12,7 @@ const BASE_LINKS = [
   { href: '/admin/catalog', label: 'Catalog', Icon: Library, exact: false, countKey: null },
   { href: '/admin/verify', label: 'Verify', Icon: BadgeCheck, exact: false, countKey: null },
   { href: '/admin/share-links', label: 'Share links', Icon: Link2, exact: false, countKey: null },
+  { href: '/admin/flags', label: 'Flags', Icon: ToggleLeft, exact: false, countKey: null },
 ];
 
 const RECOVERIES_LINK = {
