@@ -20,6 +20,7 @@ import { userFacingError } from '@/data/errors';
 import { useSaveSettings, type AppProfile } from '@/data/profile';
 import { StatePickerField } from '@/features/shared';
 import { now } from '@/lib/clock';
+import { useConfig } from '@/providers/ConfigProvider';
 import { space } from '@/theme/tokens';
 
 import {
@@ -64,6 +65,8 @@ function initialValues(profile: AppProfile | null): DetailsValues {
  * once those emails go out.
  */
 export function DetailsForm({ profile }: { profile: AppProfile | null }) {
+  const { isFlagOn } = useConfig();
+  const collectPhone = !isFlagOn('CATALOG_HIDE_UNKNOWNS_ENABLED');
   const save = useSaveSettings();
   const [values, setValues] = useState<DetailsValues>(() => initialValues(profile));
   // The matching answers on file: a save sends the answers only when they differ.
@@ -92,7 +95,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
   function submit() {
     if (save.isPending) return;
     Keyboard.dismiss();
-    const found = detailsErrors(values, consentStored);
+    const found = detailsErrors(values, consentStored, collectPhone);
     setErrors(found);
     const problem = firstDetailsError(found);
     if (problem) {
@@ -100,7 +103,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
       return;
     }
     setResult(null);
-    const body = detailsBody(values, consentStored, now(), savedAnswers.current);
+    const body = detailsBody(values, consentStored, now(), savedAnswers.current, collectPhone);
     save.mutate(body, {
       onSuccess: () => {
         if (body.attributes) savedAnswers.current = body.attributes;
@@ -133,7 +136,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
           maxLength={120}
           returnKeyType="next"
           submitBehavior="submit"
-          onSubmitEditing={() => phoneRef.current?.focus()}
+          onSubmitEditing={() => (collectPhone ? phoneRef.current?.focus() : line1Ref.current?.focus())}
           testID="details-name"
         />
         <StatePickerField
@@ -143,6 +146,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
           placeholder={settings.statePlaceholder.text}
           testID="details-state"
         />
+        {collectPhone ? (
         <TextField
           ref={phoneRef}
           label={settings.phoneLabel.text}
@@ -160,6 +164,7 @@ export function DetailsForm({ profile }: { profile: AppProfile | null }) {
           onSubmitEditing={() => line1Ref.current?.focus()}
           testID="details-phone"
         />
+        ) : null}
         <TextField
           ref={line1Ref}
           label={settings.addressLine1Label.text}

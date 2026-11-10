@@ -16,6 +16,7 @@ export const CLIENT_FLAG_NAMES = [
   'PAYOUT_REPORT_ENABLED',
   'MATCH_METRICS_ENABLED',
   'FEE_DISCLOSURE_ENABLED',
+  'CATALOG_HIDE_UNKNOWNS_ENABLED',
 ] as const;
 export type ClientFlagName = (typeof CLIENT_FLAG_NAMES)[number];
 
@@ -287,4 +288,23 @@ export const flags = {
    * Off: hidden. Never a "you qualify" verdict.
    */
   settlementQuiz: () => on('SETTLEMENT_QUIZ_ENABLED'),
+  /**
+   * Per-tester / per-community invite codes on the SoftLaunch admin card.
+   * Off: no create UI, visit logging, or beta_code_visit. Reuses share_links
+   * + first_ref. `/invite?code=` still maps to signup `ref` so a leftover
+   * link keeps first-touch if the invite landing is on.
+   */
+  betaInviteCodes: () => on('BETA_INVITE_CODES_ENABLED'),
+  /**
+   * Signed-in dashboard prompt for short beta feedback and an interview
+   * opt-in. Off: hidden, and /api/beta-feedback 404s. Never sends email.
+   */
+  betaFeedback: () => on('BETA_FEEDBACK_ENABLED'),
+  /**
+   * Catalog cards and listings omit unknown proof / payout / deadline rows
+   * instead of printing "Unknown" or "Not stated", and Settings stops
+   * collecting a phone number. Off: current live cards and the phone field
+   * stay. Does not delete stored phone values.
+   */
+  catalogHideUnknowns: () => on('CATALOG_HIDE_UNKNOWNS_ENABLED'),
 };

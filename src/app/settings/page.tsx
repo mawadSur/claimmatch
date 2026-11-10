@@ -96,7 +96,7 @@ export default async function SettingsPage() {
             </Link>
           </section>
         )}
-        <NotificationPrefs profile={profile} />
+        <NotificationPrefs profile={profile} collectPhone={!flags.catalogHideUnknowns()} />
 
         <section
           aria-labelledby="your-data"

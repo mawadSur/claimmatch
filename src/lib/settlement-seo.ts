@@ -1,3 +1,4 @@
+import { hideUnknownSettlementFacts } from './catalog-unknowns';
 import { eligibilitySummary } from './claim-input';
 import { flags } from './flags';
 import { officialLinkFor } from './lawsuit-display';
@@ -118,7 +119,8 @@ export function settlementMetaDescription(lawsuit: Lawsuit): string {
   const payout = lawsuit.typical_payout?.trim()
     ? `Listed payout: ${lawsuit.typical_payout.trim()}.`
     : '';
-  const proof = `Proof: ${proofLabel(lawsuit)}.`;
+  const hideProof = hideUnknownSettlementFacts() && proofStatus(lawsuit) === 'unknown';
+  const proof = hideProof ? '' : `Proof: ${proofLabel(lawsuit)}.`;
   const raw = [
     `See who may qualify for the ${title}.`,
     deadline,
@@ -148,19 +150,25 @@ export function missingAnswerDetails(
 }
 
 /** Facts shown in the plain-language answer block. Only catalog fields. */
-export function settlementAnswerFacts(lawsuit: Lawsuit, hideUnknown = flags.panelTrustCopy()): AnswerFacts {
+export function settlementAnswerFacts(
+  lawsuit: Lawsuit,
+  hideUnknown = hideUnknownSettlementFacts(),
+): AnswerFacts {
   const qualifies = eligibilitySummary(lawsuit.eligibility_text);
   const administrator = lawsuit.administrator?.trim() || null;
   const listedPayout = lawsuit.typical_payout?.trim() || null;
   const proof = proofLabel(lawsuit);
   const proofUnknown = proofStatus(lawsuit) === 'unknown';
+  const missing = missingAnswerDetails(lawsuit);
+  if (hideUnknown && proofUnknown) missing.push('proof');
+  if (hideUnknown && !listedPayout) missing.push('listed payout');
   return {
     qualifies,
     payout: hideUnknown ? listedPayout : listedOrFallback(lawsuit.typical_payout, 'Not stated'),
     deadline: lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
     proof: hideUnknown && proofUnknown ? null : proof,
     administrator,
-    missing: missingAnswerDetails(lawsuit),
+    missing,
   };
 }
 

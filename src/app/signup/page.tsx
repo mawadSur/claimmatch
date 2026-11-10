@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { BetaInviteCapture } from '@/components/invite/BetaInviteCapture';
 import { flags } from '@/lib/flags';
 import { NEUTRAL_BETA_FEE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 
@@ -44,6 +45,11 @@ export default function SignupPage() {
   return (
     <section className="bg-brand-50">
       <CaptureOnce event="signup_started" />
+      {flags.betaInviteCodes() ? (
+        <Suspense fallback={null}>
+          <BetaInviteCapture />
+        </Suspense>
+      ) : null}
       <div className="container-narrow py-14 sm:py-20">
         <div className="mx-auto max-w-md">
           <div className="text-center">

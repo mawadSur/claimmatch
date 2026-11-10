@@ -71,6 +71,7 @@ export default async function PreviewPage({
               signupContextEnabled={flags.signupContext()}
               feeNote={<FeeDisclosure compact />}
               scope={scope}
+              hideUnknown={flags.catalogHideUnknowns()}
             />
           </div>
         </div>

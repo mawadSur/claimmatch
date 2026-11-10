@@ -34,8 +34,9 @@ in this order. Every file is additive: nothing is deleted.
 27. `0030_claim_deadline_reminders.sql` — `claim_reminder_sends` (idempotent 7-day / 1-day reminder log). Additive. Applied on production.
 28. `0031_drip_email_sends.sql` — `drip_email_sends` (idempotent incomplete-onboarding / did-you-file send log). Additive. **Not applied on production. Owner applies this in the SQL editor after Mohammed’s yes; do not run it from this PR.**
 29. `0032_mobile_client_hardening.sql` — revokes INSERT on `profiles` and `subscribers` from `anon` and `authenticated` and drops the "own profile upsert" and "anyone subscribe" policies (SEC-9). Changes no rows. Safe before or after the deploy: no web or app code inserts those rows as `anon` or `authenticated` (the signup trigger is SECURITY DEFINER). Rollback is in the file header. **Not applied on production.**
+30. `0033_beta_feedback.sql` — `public.beta_feedback` (one row per user, own-row RLS, `is_admin()` can read all). Additive. UI stays off until `BETA_FEEDBACK_ENABLED=1`. **Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
 
-CI applies 0001–0032 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
+CI applies 0001–0033 in that filename order on an empty database. Run 0010, 0011 and 0012 BEFORE merging or deploying code that needs them. 0012 and 0013 are already applied on production. Do not apply 0015–0019 or 0026 to production until this branch is reviewed. The `/api/health/schema` route (cron secret) confirms those columns and functions exist after deploy.
 
 ## Production order
 
@@ -43,7 +44,7 @@ CI applies 0001–0032 in that filename order on an empty database. Run 0010, 00
    - **`NEXT_PUBLIC_CONTACT_EMAIL`** (required): an inbox someone reads. A production build stops without it, so the live site stays unchanged until it is set. To change the public contact email later, update this env var in Vercel (and, if needed, `NEXT_PUBLIC_POSTAL_ADDRESS` / `NEXT_PUBLIC_LEGAL_ENTITY`) and redeploy. Do not hard-code a new address in the repo.
    - **`SUPABASE_SERVICE_ROLE_KEY`** (required): claim writes are server-side.
    - **`NEXT_PUBLIC_LEGAL_ENTITY`** and **`NEXT_PUBLIC_POSTAL_ADDRESS`** (recommended): shown on Terms and Privacy.
-   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `MATCH_PREVIEW_ENABLED`, `SIGNUP_CONTEXT_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED`, `HELD_CLOSURE_TRIAGE_ENABLED`, `HELD_AUTO_CLOSE_PAST_DEADLINE`, `DEADLINE_REMINDERS_ENABLED`, `ONBOARDING_DRIP_ENABLED`, `PROFILE_COMPLETENESS_ENABLED`, `SOFT_INVITE_LANDING_ENABLED`, `INGEST_HELD_IS_WARNING`, `PROFILE_V2_ENABLED`, `MATCH_STORE_ENABLED`, `PANEL_TRUST_COPY_ENABLED`, `CATALOG_VALUE_RANK_ENABLED` and `SETTLEMENT_QUIZ_ENABLED`.
+   - **Leave unset (off):** `MATCH_EMAILS_ENABLED`, `DIGEST_ENABLED`, `ADMIN_RECOVERIES_ENABLED`, `ENABLE_SAMPLE_SOURCE`, `VERIFIED_FIELDS_ENABLED`, `CALENDAR_ICS_ENABLED`, `CLOSES_IN_CHIPS_ENABLED`, `SETTLEMENT_OG_ENABLED`, `NOTICE_LOOKUP_ENABLED`, `FORM_FIELD_ORDER_ENABLED`, `PROOF_FEEDBACK_ENABLED`, `CLOSED_ARCHIVE_ENABLED`, `CLOSING_SOON_EMAIL_ENABLED`, `HOME_NARROWING_ENABLED`, `HOME_WEDGE_ENTRIES_ENABLED`, `HOME_ACCOUNT_FIRST_CTA_ENABLED`, `MATCH_PREVIEW_ENABLED`, `SIGNUP_CONTEXT_ENABLED`, `ELIGIBILITY_QUESTIONS_ENABLED`, `FORM_AUTOFILL_ENABLED`, `PARTNER_WIDGET_ENABLED`, `MATCH_UNSTRUCTURED_ENABLED`, `MATCH_STATE_ONLY_CAP_ENABLED`, `ASSISTED_FILING_ENABLED`, `DIRECT_FILING_ENABLED`, `MATCH_METRICS_ENABLED`, `ELIGIBILITY_DRAFTS_ENABLED`, `INGEST_ALERT_EMAILS_ENABLED`, `LINK_CHECK_ENABLED`, `PAYOUT_REPORT_ENABLED`, `FEE_DISCLOSURE_ENABLED`, `INGEST_MISSING_CLOSE_QUEUE_ENABLED`, `LAWSUITS_PAGINATION_ENABLED`, `ADMIN_HELD_CLOSURES_ENABLED`, `HELD_CLOSURE_TRIAGE_ENABLED`, `HELD_AUTO_CLOSE_PAST_DEADLINE`, `DEADLINE_REMINDERS_ENABLED`, `ONBOARDING_DRIP_ENABLED`, `PROFILE_COMPLETENESS_ENABLED`, `SOFT_INVITE_LANDING_ENABLED`, `INGEST_HELD_IS_WARNING`, `PROFILE_V2_ENABLED`, `MATCH_STORE_ENABLED`, `PANEL_TRUST_COPY_ENABLED`, `CATALOG_VALUE_RANK_ENABLED`, `SETTLEMENT_QUIZ_ENABLED`, `BETA_INVITE_CODES_ENABLED`, `BETA_FEEDBACK_ENABLED` and `CATALOG_HIDE_UNKNOWNS_ENABLED`.
    - **Optional:** `INGEST_MAX_CLOSE_SHARE` (default 0.2), `INGEST_MISSING_FEED_CLOSE_AFTER` (default 3), `INGEST_DRY_RUN` (plan closures; write nothing except the `jobs` row), `ALERT_WEBHOOK_URL` (POST `{job, error, at}` on ingest/digest failure; unset is a no-op).
 
 2. **Before deploying**, run these in the Supabase SQL editor:
@@ -205,6 +206,35 @@ column or table that is not on production yet. Apply that file and re-check.
 | `ONBOARDING_DRIP_ENABLED` | off | Daily cron emails opted-in users who have not finished onboarding after 24h, and a per-claim “did you file?” note 3 days after official-form intent. Idempotent via `drip_email_sends`. Needs `0031`, a postal address, a verified `RESEND_FROM`, and `email_opt_in`. Apply `0031` only after Mohammed’s yes. |
 | `PROFILE_COMPLETENESS_ENABLED` | off | Dashboard card: unanswered matcher questions vs additional open catalog settlements those answers could unlock. Hidden when complete or when the profile has no matcher signals. |
 | `SOFT_INVITE_LANDING_ENABLED` | off | Public `/invite` landing (noindex). Off: that path 404s. Share-link destinations may point at `/invite`. |
+
+## After this PR merges (soft beta)
+
+Do **not** apply this from the PR or from CI. In the Supabase SQL editor, on
+production, after the deploy is live:
+
+1. `0033_beta_feedback.sql` — adds `public.beta_feedback` (one row per user,
+   RLS own insert/read/update, `is_admin()` can read all). Additive and safe
+   to re-run. Sends **no email**.
+
+Then confirm schema health (cron secret; no row data returned):
+
+```bash
+curl -sS -D - \
+  "https://lawsuitai.org/api/health/schema" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Expected: HTTP 200 with `ok: true` and `beta_feedback` in `present`. If 503,
+the `missing` list names the object that is not on production yet.
+
+**Leave these unset** until you have run the SQL (for feedback) and want the
+behavior. Production behavior is unchanged while they stay unset.
+
+| Flag | Default | Effect when set to exactly `1` |
+| --- | --- | --- |
+| `BETA_INVITE_CODES_ENABLED` | off | SoftLaunch per-tester invite codes. Creates `share_links` rows with `utm_source=beta` / `utm_medium=invite` / `utm_campaign=soft-beta`. Short `/r/CODE` is the click log; `/invite?code=` also records a visit. Attribution uses existing `first_ref`. Admin table: visits, signups, profiles completed, matches viewed, official forms opened, self-reported filings. **No PII in PostHog** (`beta_code_visit` is `{ has_code }`). No new migration. Turn on `SOFT_INVITE_LANDING_ENABLED` too if testers should land on `/invite`. |
+| `BETA_FEEDBACK_ENABLED` | off | Signed-in dashboard prompt (after matches or a reported filing): two optional questions plus “I’m open to a 15-minute call”. Stored in `beta_feedback`. Listed on `/admin` with the opt-in flag. **Never emails.** PostHog: `beta_feedback_shown` / `beta_feedback_submitted` with booleans/enums only. Needs `0033`. |
+| `CATALOG_HIDE_UNKNOWNS_ENABLED` | off | Catalog cards omit unknown proof / payout / deadline instead of printing “Unknown” / “Not stated”, and keep the honest “we don’t have these details yet, check the official notice” line. Settings stops collecting a phone number (column and stored values stay). No migration. |
 
 Ingest failure samples (first 20 catalog read/write failures on the jobs row,
 shown on `/admin`) ship on with no flag: they do not change listings or email.

@@ -34,6 +34,7 @@ export const REQUIRED_COLUMNS: Record<string, string[]> = {
   held_closure_site_checks: ['slug', 'signal', 'checked_at'],
   claim_reminder_sends: ['claim_id', 'kind', 'sent_at'],
   drip_email_sends: ['user_id', 'kind', 'sent_at'],
+  beta_feedback: ['id', 'user_id', 'interview_opt_in', 'dismissed'],
 };
 
 export const REQUIRED_FUNCTIONS = ['persist_first_attribution'] as const;

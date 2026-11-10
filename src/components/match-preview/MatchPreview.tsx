@@ -34,10 +34,12 @@ export function MatchPreview({
   signupContextEnabled,
   feeNote,
   scope,
+  hideUnknown = false,
 }: {
   signupContextEnabled: boolean;
   feeNote: ReactNode;
   scope?: MatchPreviewScope | null;
+  hideUnknown?: boolean;
 }) {
   const posthog = usePostHog();
   const started = useRef(false);
@@ -198,18 +200,22 @@ export function MatchPreview({
                   </Link>
                 </h3>
                 <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  {(!hideUnknown || match.typical_payout) && (
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Payout, as listed</dt>
                     <dd className="mt-0.5 font-semibold text-ink">
                       {match.typical_payout ?? 'Not stated'}
                     </dd>
                   </div>
+                  )}
+                  {(!hideUnknown || match.deadline) && (
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Deadline</dt>
                     <dd className="mt-0.5 font-semibold text-ink">
                       {match.deadline ? formatDeadline(match.deadline) : 'No deadline listed'}
                     </dd>
                   </div>
+                  )}
                 </dl>
                 {match.reasons.length > 0 && (
                   <ul className="mt-3 space-y-1 text-sm text-ink-muted">

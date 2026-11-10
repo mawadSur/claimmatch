@@ -27,6 +27,9 @@ describe('genuine journey events require evidence', () => {
     expect(ANALYTICS_EVENTS.eligibility_quiz_completed).toBe('eligibility_quiz_completed');
     expect(ANALYTICS_EVENTS.claim_reported_filed).toBe('claim_reported_filed');
     expect(ANALYTICS_EVENTS.match_feedback).toBe('match_feedback');
+    expect(ANALYTICS_EVENTS.beta_code_visit).toBe('beta_code_visit');
+    expect(ANALYTICS_EVENTS.beta_feedback_shown).toBe('beta_feedback_shown');
+    expect(ANALYTICS_EVENTS.beta_feedback_submitted).toBe('beta_feedback_submitted');
     expect(ANALYTICS_EVENTS.signup_completed).not.toBe(ANALYTICS_EVENTS.login_completed);
     expect(ANALYTICS_EVENTS.official_form_opened).not.toBe(ANALYTICS_EVENTS.claim_reported_filed);
   });
