@@ -128,7 +128,7 @@ describe('labels that show a host', () => {
     expect(screen.getByRole('link', { name: MEDIUM })).toHaveTextContent(MEDIUM, { exact: true });
   });
 
-  it('wraps the unverified notice’s official link at a dot too, and keeps a short source host whole', async () => {
+  it('keeps a short source host whole on the unverified notice, and does not repeat an official-site button', async () => {
     const lawsuit: UnverifiedSettlement = {
       claim_url: OFFICIAL.href,
       source_url: null,
@@ -141,9 +141,7 @@ describe('labels that show a host', () => {
       proof_required: false,
     };
     const { rerender } = await render(<UnverifiedNotice variant="settlement" lawsuit={lawsuit} open />);
-    const official = screen.getByRole('link', { name: `${shared.goToOfficialSite.text} (${HOST})` });
-    expect(official).toHaveTextContent(`${shared.goToOfficialSite.text} (personalcareproductssettlement.${ZWSP}com)`);
-    expect(hasZeroWidthSpace(official.props.accessibilityLabel)).toBe(false);
+    expect(screen.queryByRole('link', { name: `${shared.goToOfficialSite.text} (${HOST})` })).toBeNull();
 
     await rerender(
       <UnverifiedNotice

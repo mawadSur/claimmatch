@@ -158,6 +158,9 @@ describe('settlement page', () => {
     const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
     expect(html).toContain('Open for claims');
     expect(html).toContain('Unverified: check the official site');
+    expect(html).toContain('We haven’t checked this listing against the official settlement notice yet.');
+    expect(html).toContain('Official claim site (returnsettlement.com)');
+    expect(html).not.toContain('Go to the official site (returnsettlement.com)');
     expect(html).toContain('href="https://www.returnsettlement.com/submit-claim"');
     expect(html).toContain('href="/claim/amazon-return-policy-settlement"');
     expect(html).toContain('Start your claim');
@@ -186,6 +189,33 @@ describe('settlement page', () => {
     });
     expect(meta.openGraph).toMatchObject({ type: 'article' });
     expect(meta.robots).toMatchObject({ index: true, follow: true });
+  });
+
+  it('does not show the unverified banner on a guided official-notice listing', async () => {
+    db.single = {
+      data: lawsuit({
+        slug: 'toyota-airbag-control-unit-zf-trw-settlement',
+        title: 'Toyota Airbag Control Unit ZF-TRW Settlement',
+      }),
+      error: null,
+    };
+    const html = renderToStaticMarkup(
+      await LawsuitDetailPage(page('toyota-airbag-control-unit-zf-trw-settlement')),
+    );
+    expect(html).not.toContain('Unverified: check the official site');
+    expect(html).not.toContain('We haven’t checked this listing against the official settlement notice');
+    expect(html).toContain('Checked against the official notice on Nov 10, 2026');
+    expect(html).toContain('Official claim site (airbagcontrolunitsettlement.com)');
+    expect(html).not.toContain('Go to the official site (airbagcontrolunitsettlement.com)');
+  });
+
+  it('still names the source page from the unverified banner when there is no official site', async () => {
+    db.single = { data: lawsuit({ claim_url: null }), error: null };
+    const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
+    expect(html).toContain('Unverified: check the official site');
+    expect(html).toContain('We don’t have the official site’s link yet.');
+    expect(html).toContain('SettleSignal listing');
+    expect(html).not.toContain('Official claim site');
   });
 
   it('shows a plain "Claims closed" state for a closed settlement', async () => {

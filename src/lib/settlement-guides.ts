@@ -1,7 +1,7 @@
 import { filterOpenForClaims, type OpenRuleFields } from './open-for-claims';
 import { proofDetail } from './proof';
 import type { Lawsuit, ProofRequired } from './types';
-import { fingerprint, todayInDeadlineZone } from './utils';
+import { fingerprint, formatDeadline, todayInDeadlineZone } from './utils';
 
 export interface GuideFaq {
   q: string;
@@ -606,4 +606,23 @@ export function settlementProofDetail(lawsuit: Pick<Lawsuit, 'slug' | 'proof_req
 
 export function settlementGuideFaqs(slug: string): GuideFaq[] {
   return getSettlementGuide(slug)?.extraFaqs ?? [];
+}
+
+/** True when this slug has an official-notice guide. Does not stamp verified_at. */
+export function hasOfficialNoticeGuide(slug: string): boolean {
+  return Boolean(getSettlementGuide(slug));
+}
+
+/**
+ * Public line when a guide was read against the official notice.
+ * Null when there is no guide or the stored date cannot be shown. Never invents a date.
+ */
+export const CHECKED_AGAINST_NOTICE = 'Checked against the official notice on {date}';
+
+export function noticeCheckedOnLabel(slug: string): string | null {
+  const checked = getSettlementGuide(slug)?.sourceChecked?.trim();
+  if (!checked) return null;
+  const formatted = formatDeadline(checked);
+  if (formatted === 'Varies') return null;
+  return CHECKED_AGAINST_NOTICE.replace('{date}', formatted);
 }
