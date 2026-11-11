@@ -1,3 +1,8 @@
+import {
+  signupErrorCodeFromMessage,
+  signupErrorMessage,
+  type SignupErrorCode,
+} from '@shared/lib/signup-validation';
 import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 
 import { auth } from '@/copy/auth';
@@ -52,6 +57,34 @@ export function authErrorText(error: unknown): string {
 /** A call that threw: the timeout message, or the generic one (src/components/AuthForm.tsx). */
 export function thrownAuthErrorText(error: unknown): string {
   return error instanceof AuthTimeoutError ? auth.timeout.text : common.genericError.text;
+}
+
+function providerMessage(error: unknown): string | null {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+  return null;
+}
+
+/**
+ * Sign-up errors as AuthForm shows them: a mapped sentence, never the raw
+ * provider text. A request that never reached Supabase still uses the app's
+ * network line.
+ */
+export function signupAuthError(error: unknown): { code: SignupErrorCode; message: string } {
+  if (error instanceof AuthTimeoutError) {
+    return { code: 'timeout', message: signupErrorMessage('timeout') };
+  }
+  if (isAuthRetryableFetchError(error)) {
+    return { code: 'unknown', message: common.networkError.text };
+  }
+  const raw = providerMessage(error);
+  if (raw) {
+    const code = signupErrorCodeFromMessage(raw);
+    return { code, message: signupErrorMessage(code) };
+  }
+  return { code: 'unknown', message: signupErrorMessage('unknown') };
 }
 
 /** The shape the web's forgot-password form checks before sending (src/components/auth/ForgotPasswordForm.tsx). */

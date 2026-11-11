@@ -1,10 +1,17 @@
-import { firstSignupFieldError, validateSignupFields } from '@shared/lib/signup-validation';
+import {
+  SIGNUP_RESEND_SENT,
+  firstSignupFieldError,
+  signupErrorMessage,
+  signupPasswordHint,
+  validateSignupFields,
+} from '@shared/lib/signup-validation';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { auth, passwordTooShortText } from '@/copy/auth';
 import { common } from '@/copy/common';
+import { signupAuthError } from '@/features/auth/auth-helpers';
 import { CheckEmailScreen, checkEmailHref } from '@/features/auth/CheckEmailScreen';
 import { signupFieldErrors, SignupScreen } from '@/features/auth/SignupScreen';
 import { openExternalUrl } from '@/lib/external-link';
@@ -17,8 +24,16 @@ jest.mock('expo-router', () => ({
 }));
 
 const mockSignUp = jest.fn();
+const mockResend = jest.fn();
 jest.mock('@/providers/AuthProvider', () => ({
   useAuth: () => ({ signUp: mockSignUp }),
+}));
+jest.mock('@/lib/supabase', () => ({
+  getSupabase: () => ({
+    auth: {
+      resend: (...args: unknown[]) => mockResend(...args),
+    },
+  }),
 }));
 
 const mockFlags: { on: string[]; status: string } = { on: [], status: 'ready' };
@@ -55,6 +70,7 @@ beforeEach(() => {
   mockFlags.on = [];
   mockFlags.status = 'ready';
   mockSignUp.mockResolvedValue({ data: { user: { id: 'user-2' }, session: null }, error: null });
+  mockResend.mockResolvedValue({ data: {}, error: null });
 });
 
 describe('SignupScreen', () => {
@@ -203,14 +219,41 @@ describe('SignupScreen', () => {
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
-  it('shows the Supabase error as sent', async () => {
+  it('shows a mapped message for the email rate limit, never the provider text', async () => {
     const user = userEvent.setup();
     mockSignUp.mockResolvedValueOnce({ data: { user: null, session: null }, error: { message: 'Email rate limit exceeded' } });
     await renderScreen(<SignupScreen />);
     await fillForm(user);
     await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
-    expect(await screen.findByText('Email rate limit exceeded')).toBeOnTheScreen();
+    expect(await screen.findByText(signupErrorMessage('rate_limited'))).toBeOnTheScreen();
+    expect(screen.queryByText('Email rate limit exceeded')).toBeNull();
     expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('points an existing account to log in and reset password', async () => {
+    const user = userEvent.setup();
+    mockSignUp.mockResolvedValueOnce({
+      data: { user: null, session: null },
+      error: { message: 'User already registered', status: 422 },
+    });
+    await renderScreen(<SignupScreen />, { next: '/claim/acme' });
+    await fillForm(user);
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+    expect(await screen.findByText(signupErrorMessage('email_exists'))).toBeOnTheScreen();
+    await user.press(screen.getByTestId('signup-error-login'));
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/login', params: { next: '/claim/acme' } });
+    expect(screen.getByText(auth.resetYourPasswordLink.text)).toBeOnTheScreen();
+    await user.press(screen.getByTestId('signup-error-reset'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/forgot-password');
+  });
+
+  it('counts how many more password characters are needed while typing', async () => {
+    const user = userEvent.setup();
+    await renderScreen(<SignupScreen />);
+    expect(screen.getByText(signupPasswordHint(0))).toBeOnTheScreen();
+    await user.type(screen.getByLabelText(auth.passwordLabel.text), 'short');
+    expect(screen.getByText(signupPasswordHint(5))).toBeOnTheScreen();
+    expect(signupPasswordHint(5)).toBe('5 more characters needed');
   });
 
   it('agrees to the Terms and Privacy Policy, which open the website in the in-app browser', async () => {
@@ -324,5 +367,46 @@ describe('CheckEmailScreen', () => {
     expect(screen.getByText(auth.openItToVerify.text)).toBeOnTheScreen();
     expect(screen.queryByText(/payout|555-0100/)).toBeNull();
     expect(screen.queryByText(new RegExp(auth.sentConfirmationTo.text))).toBeNull();
+    expect(screen.queryByTestId('check-email-resend')).toBeNull();
+  });
+
+  it('resends the confirmation email and then waits before another send', async () => {
+    const user = userEvent.setup();
+    checkEmailHref('ana@example.com', null);
+    await renderScreen(<CheckEmailScreen />);
+
+    await user.press(screen.getByRole('button', { name: auth.resendConfirmation.text }));
+    await waitFor(() =>
+      expect(mockResend).toHaveBeenCalledWith({
+        type: 'signup',
+        email: 'ana@example.com',
+        options: { emailRedirectTo: 'https://lawsuitai.org/auth/callback' },
+      }),
+    );
+    expect(await screen.findByText(SIGNUP_RESEND_SENT)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: auth.resendConfirmation.text })).toBeDisabled();
+    expect(screen.getByText(/You can resend in \d+ seconds\./)).toBeOnTheScreen();
+  });
+
+  it('maps a rate limit from resend through the same signup error copy', async () => {
+    const user = userEvent.setup();
+    mockResend.mockResolvedValueOnce({ error: { message: 'email rate limit exceeded' } });
+    checkEmailHref('ana@example.com', null);
+    await renderScreen(<CheckEmailScreen />);
+    await user.press(screen.getByRole('button', { name: auth.resendConfirmation.text }));
+    expect(await screen.findByText(signupErrorMessage('rate_limited'))).toBeOnTheScreen();
+    expect(screen.queryByText('email rate limit exceeded')).toBeNull();
+  });
+});
+
+describe('signupAuthError', () => {
+  it('maps provider text to the shared sentences and never returns the raw message', () => {
+    expect(signupAuthError({ message: 'Email rate limit exceeded' })).toEqual({
+      code: 'rate_limited',
+      message: signupErrorMessage('rate_limited'),
+    });
+    expect(signupAuthError({ message: 'User already registered' }).code).toBe('email_exists');
+    expect(signupAuthError({ message: 'weird provider text' }).message).toBe(signupErrorMessage('unknown'));
+    expect(signupAuthError({ message: 'weird provider text' }).message).not.toBe('weird provider text');
   });
 });

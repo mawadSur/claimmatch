@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -19,10 +19,17 @@ import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } 
 import { rememberSignupContext } from '@/lib/signup-context';
 import {
   MIN_PASSWORD_LENGTH,
+  SIGNUP_RESEND_COOLDOWN_MS,
+  SIGNUP_RESEND_SENT,
   firstSignupFieldError,
   signupErrorCodeFromMessage,
+  signupErrorMessage,
   signupFieldErrorCode,
+  signupPasswordHint,
+  signupResendWaitSeconds,
+  signupResendWaitText,
   validateSignupFields,
+  type SignupErrorCode,
   type SignupField,
   type SignupFieldErrors,
 } from '@/lib/signup-validation';
@@ -99,7 +106,13 @@ export function AuthForm({
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'check-email'>('idle');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<SignupErrorCode | null>(null);
   const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending'>('idle');
+  const [resendFeedback, setResendFeedback] = useState('');
+  const [resendError, setResendError] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [resendNow, setResendNow] = useState(() => Date.now());
 
   const isSignup = mode === 'signup';
   const switchParams = attributionQuery(attr);
@@ -107,8 +120,72 @@ export function AuthForm({
   const switchQuery = switchParams.toString();
   const switchHref = `${isSignup ? '/login' : '/signup'}${switchQuery ? `?${switchQuery}` : ''}`;
 
+  const resendWait = signupResendWaitSeconds(cooldownUntil, resendNow);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    function tick() {
+      const now = Date.now();
+      setResendNow(now);
+      if (signupResendWaitSeconds(cooldownUntil, now) <= 0) {
+        setCooldownUntil(0);
+      }
+    }
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+
   function captureSignupError(code: string) {
     posthog?.capture('signup_error', { code });
+  }
+
+  function showSignupError(code: SignupErrorCode) {
+    captureSignupError(code);
+    setErrorCode(code);
+    setError(signupErrorMessage(code));
+  }
+
+  function backToSignupForm() {
+    setStatus('idle');
+    setError('');
+    setErrorCode(null);
+    setFieldErrors({});
+    setResendFeedback('');
+    setResendError(false);
+    setResendStatus('idle');
+    setCooldownUntil(0);
+  }
+
+  async function resendConfirmation() {
+    if (resendStatus === 'sending' || resendWait > 0) return;
+    setResendStatus('sending');
+    setResendFeedback('');
+    setResendError(false);
+    try {
+      const { error: resendErr } = await withTimeout(
+        createClient().auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: emailRedirectTo() },
+        }),
+        AUTH_TIMEOUT_MS,
+        AUTH_TIMEOUT_MESSAGE,
+      );
+      if (resendErr) {
+        setResendError(true);
+        setResendFeedback(signupErrorMessage(signupErrorCodeFromMessage(resendErr.message)));
+      } else {
+        setResendFeedback(SIGNUP_RESEND_SENT);
+      }
+    } catch (err) {
+      const timeout = err instanceof Error && err.message === AUTH_TIMEOUT_MESSAGE;
+      setResendError(true);
+      setResendFeedback(signupErrorMessage(timeout ? 'timeout' : 'unknown'));
+    }
+    setResendStatus('idle');
+    setCooldownUntil(Date.now() + SIGNUP_RESEND_COOLDOWN_MS);
+    setResendNow(Date.now());
   }
 
   function identifyOnly(userId: string) {
@@ -135,6 +212,7 @@ export function AuthForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setErrorCode(null);
     setFieldErrors({});
 
     if (isSignup) {
@@ -181,9 +259,7 @@ export function AuthForm({
         );
 
         if (signUpError) {
-          const code = signupErrorCodeFromMessage(signUpError.message);
-          captureSignupError(code);
-          setError(signUpError.message);
+          showSignupError(signupErrorCodeFromMessage(signUpError.message));
           setStatus('idle');
           return;
         }
@@ -225,9 +301,10 @@ export function AuthForm({
     } catch (err) {
       const timeout = err instanceof Error && err.message === AUTH_TIMEOUT_MESSAGE;
       if (isSignup) {
-        captureSignupError(timeout ? 'timeout' : 'unknown');
+        showSignupError(timeout ? 'timeout' : 'unknown');
+      } else {
+        setError(timeout ? AUTH_TIMEOUT_MESSAGE : 'Something went wrong. Please try again.');
       }
-      setError(timeout ? AUTH_TIMEOUT_MESSAGE : 'Something went wrong. Please try again.');
       setStatus('idle');
     }
   }
@@ -250,15 +327,39 @@ export function AuthForm({
             {toClaim ? 'the settlement you picked' : 'where you were'}.
           </p>
         )}
+        <div className="mt-5 space-y-2">
+          <button
+            type="button"
+            disabled={resendStatus === 'sending' || resendWait > 0}
+            onClick={() => void resendConfirmation()}
+            className="btn-secondary w-full"
+          >
+            {resendStatus === 'sending' ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Sending…
+              </>
+            ) : (
+              'Resend confirmation email'
+            )}
+          </button>
+          {resendWait > 0 && (
+            <p className="text-xs text-ink-muted">{signupResendWaitText(resendWait)}</p>
+          )}
+          {resendFeedback && (
+            <p
+              role={resendError ? 'alert' : 'status'}
+              className={`text-sm ${resendError ? 'text-danger-700' : 'text-success-700'}`}
+            >
+              {resendFeedback}
+            </p>
+          )}
+        </div>
         <p className="mt-4 text-xs text-ink-soft">
           Didn’t get it? Check your spam folder, or{' '}
           <button
             type="button"
-            onClick={() => {
-              setStatus('idle');
-              setError('');
-              setFieldErrors({});
-            }}
+            onClick={backToSignupForm}
             className="text-link"
           >
             try a different email
@@ -291,8 +392,8 @@ export function AuthForm({
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
               That confirmation link has expired or was already used. If you already
-              confirmed your email, log in below. If not, create your account again with
-              the same email to get a new link.
+              confirmed your email, log in below. If not, resend the confirmation email
+              instead of creating the account again.
             </span>
           </div>
         )}
@@ -303,7 +404,21 @@ export function AuthForm({
               className="flex items-start gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
+              {isSignup && errorCode === 'email_exists' ? (
+                <span>
+                  {error}{' '}
+                  <Link href={switchHref} className="text-link">
+                    Log in
+                  </Link>
+                  {' or '}
+                  <Link href="/forgot-password" className="text-link">
+                    reset your password
+                  </Link>
+                  .
+                </span>
+              ) : (
+                <span>{error}</span>
+              )}
             </div>
           )}
         </div>
@@ -402,7 +517,7 @@ export function AuthForm({
           </div>
           {isSignup && (
             <p id="password-hint" className="mt-1.5 text-xs text-ink-muted">
-              Use at least {MIN_PASSWORD_LENGTH} characters.
+              {signupPasswordHint(password.length)}
             </p>
           )}
           {fieldErrors.password && (

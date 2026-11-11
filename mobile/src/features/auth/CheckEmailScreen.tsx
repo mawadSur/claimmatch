@@ -1,19 +1,32 @@
+import {
+  SIGNUP_RESEND_COOLDOWN_MS,
+  SIGNUP_RESEND_SENT,
+  signupErrorCodeFromMessage,
+  signupErrorMessage,
+  signupResendWaitSeconds,
+  signupResendWaitText,
+} from '@shared/lib/signup-validation';
+import { SITE } from '@shared/lib/utils';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AppText, Button, Screen, TextLink } from '@/components/ui';
+import { AppText, Button, Notice, Screen, TextLink } from '@/components/ui';
 import { LogIn, MailCheck } from '@/components/ui/icons';
 import { auth } from '@/copy/auth';
 import { common } from '@/copy/common';
 import { loginHref, safeNextPath, signupHref } from '@/features/shared';
+import { getSupabase } from '@/lib/supabase';
 import { space } from '@/theme/tokens';
 
-import { isEmailShaped } from './auth-helpers';
+import { isEmailShaped, signupAuthError, withTimeout } from './auth-helpers';
 import { AuthHeader } from './parts';
 
 /** The longest address an email system accepts (RFC 5321 path limit). */
 const MAX_EMAIL_LENGTH = 254;
+
+/** Same confirmation link as sign-up (AuthProvider.EMAIL_CONFIRM_REDIRECT). */
+const EMAIL_CONFIRM_REDIRECT = `${SITE.url.replace(/\/+$/, '')}/auth/callback`;
 
 /**
  * The address the last sign-up on this device sent its link to. It is
@@ -42,8 +55,55 @@ export function CheckEmailScreen() {
   const next = safeNextPath(params.next);
   // Read once: the screen keeps the address it opened with.
   const [email] = useState(signupEmail);
+  const [resending, setResending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedbackError, setFeedbackError] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+
+  const wait = signupResendWaitSeconds(cooldownUntil, now);
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => {
+      const nextNow = Date.now();
+      setNow(nextNow);
+      if (signupResendWaitSeconds(cooldownUntil, nextNow) <= 0) setCooldownUntil(0);
+    }, 250);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
 
   const sent = email ? `${auth.sentConfirmationTo.text} ${email}. ${auth.openItToVerify.text}` : auth.openItToVerify.text;
+
+  async function resendConfirmation() {
+    if (!email || resending || wait > 0) return;
+    setResending(true);
+    setFeedback(null);
+    setFeedbackError(false);
+    try {
+      const { error } = await withTimeout(
+        getSupabase().auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: EMAIL_CONFIRM_REDIRECT },
+        }),
+      );
+      if (error) {
+        setFeedbackError(true);
+        setFeedback(signupErrorMessage(signupErrorCodeFromMessage(error.message ?? '')));
+      } else {
+        setFeedback(SIGNUP_RESEND_SENT);
+      }
+    } catch (caught) {
+      const mapped = signupAuthError(caught);
+      setFeedbackError(true);
+      setFeedback(mapped.message);
+    }
+    setResending(false);
+    const start = Date.now();
+    setCooldownUntil(start + SIGNUP_RESEND_COOLDOWN_MS);
+    setNow(start);
+  }
 
   return (
     <Screen>
@@ -56,6 +116,31 @@ export function CheckEmailScreen() {
         fullWidth
         testID="check-email-log-in"
       />
+      {email ? (
+        <View style={styles.resend}>
+          <Button
+            label={resending ? auth.sending.text : auth.resendConfirmation.text}
+            variant="secondary"
+            loading={resending}
+            disabled={resending || wait > 0}
+            onPress={() => void resendConfirmation()}
+            fullWidth
+            testID="check-email-resend"
+          />
+          {wait > 0 ? (
+            <AppText variant="caption" color="textMuted">
+              {signupResendWaitText(wait)}
+            </AppText>
+          ) : null}
+          {feedback ? (
+            <Notice
+              tone={feedbackError ? 'error' : 'success'}
+              body={feedback}
+              testID="check-email-resend-feedback"
+            />
+          ) : null}
+        </View>
+      ) : null}
       <View style={styles.retry}>
         <AppText variant="caption" color="textSoft">
           {auth.didntGetIt.text}
@@ -71,6 +156,9 @@ export function CheckEmailScreen() {
 }
 
 const styles = StyleSheet.create({
+  resend: {
+    gap: space[2],
+  },
   retry: {
     gap: 0,
     paddingTop: space[2],

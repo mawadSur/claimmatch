@@ -1,8 +1,9 @@
+import { signupPasswordHint } from '@shared/lib/signup-validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, View, type TextInputInstance } from 'react-native';
 
-import { AppText, Button, Card, Icon, Notice, Screen, TextField } from '@/components/ui';
+import { AppText, Button, Card, Icon, Notice, Screen, TextField, TextLink } from '@/components/ui';
 import { ArrowRight, CircleCheck, Lock, Mail, User } from '@/components/ui/icons';
 import { auth, newPasswordPlaceholder, passwordTooShortText } from '@/copy/auth';
 import { common } from '@/copy/common';
@@ -14,10 +15,9 @@ import { useConfig } from '@/providers/ConfigProvider';
 import { space } from '@/theme/tokens';
 
 import {
-  authErrorText,
   markSessionFlags,
   MIN_PASSWORD_LENGTH,
-  thrownAuthErrorText,
+  signupAuthError,
   withTimeout,
 } from './auth-helpers';
 import { checkEmailHref } from './CheckEmailScreen';
@@ -82,6 +82,7 @@ export function SignupScreen() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formErrorCode, setFormErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const emailRef = useRef<TextInputInstance>(null);
   const passwordRef = useRef<TextInputInstance>(null);
@@ -95,6 +96,7 @@ export function SignupScreen() {
   async function submit() {
     if (loading) return;
     setFormError(null);
+    setFormErrorCode(null);
     const problems = signupFieldErrors({ fullName, email, password });
     setNameError(problems.fullName);
     setEmailError(problems.email);
@@ -109,7 +111,9 @@ export function SignupScreen() {
     try {
       const { data, error } = await withTimeout(signUp({ email, password, fullName }));
       if (error) {
-        setFormError(authErrorText(error));
+        const mapped = signupAuthError(error);
+        setFormError(mapped.message);
+        setFormErrorCode(mapped.code);
         setLoading(false);
         return;
       }
@@ -122,7 +126,9 @@ export function SignupScreen() {
       setLoading(false);
       router.push(checkEmailHref(email, next));
     } catch (caught) {
-      setFormError(thrownAuthErrorText(caught));
+      const mapped = signupAuthError(caught);
+      setFormError(mapped.message);
+      setFormErrorCode(mapped.code);
       setLoading(false);
     }
   }
@@ -202,12 +208,33 @@ export function SignupScreen() {
           textContentType="newPassword"
           autoComplete="new-password"
           passwordRules={`minlength: ${MIN_PASSWORD_LENGTH};`}
+          hint={signupPasswordHint(password.length)}
           returnKeyType="go"
           submitBehavior="blurAndSubmit"
           onSubmitEditing={() => void submit()}
           testID="signup-password"
         />
-        {formError ? <Notice tone="error" body={formError} testID="signup-error" /> : null}
+        {formError ? (
+          <Notice tone="error" body={formError} testID="signup-error">
+            {formErrorCode === 'email_exists' ? (
+              <View style={styles.errorLinks}>
+                <TextLink
+                  label={common.logIn.text}
+                  onPress={() => router.replace(loginHref(next))}
+                  testID="signup-error-login"
+                />
+                <AppText variant="caption" color="danger">
+                  {auth.or.text}
+                </AppText>
+                <TextLink
+                  label={auth.resetYourPasswordLink.text}
+                  onPress={() => router.push('/forgot-password')}
+                  testID="signup-error-reset"
+                />
+              </View>
+            ) : null}
+          </Notice>
+        ) : null}
         <Button
           label={loading ? auth.creatingAccount.text : auth.createMyAccount.text}
           icon={ArrowRight}
@@ -252,6 +279,13 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: space[4],
+  },
+  errorLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: space[2],
+    rowGap: space[1],
   },
   agreement: {
     gap: space[1],
