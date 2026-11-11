@@ -71,8 +71,14 @@ jobs:
           npx tsx scripts/audit-gate.ts "$RUNNER_TEMP/npm-audit.json"
 
       # Isolated fixture + real UI. Not production E2E. No production secrets.
+      # --with-deps needs apt. If the mirror is down, Chromium still installs;
+      # GitHub-hosted runners already have the GUI libraries the browser needs.
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          if ! npx playwright install --with-deps chromium; then
+            echo "::warning::apt packages failed; installing Chromium without extra OS fonts"
+            npx playwright install chromium
+          fi
 
       - name: Isolated authenticated journey
         env:
