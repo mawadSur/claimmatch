@@ -1,5 +1,6 @@
 import { displaySummary, officialLinkFor } from '@shared/lib/lawsuit-display';
 import { isOpenForClaims } from '@shared/lib/open-for-claims';
+import { hasOfficialNoticeGuide, noticeCheckedOnLabel } from '@shared/lib/settlement-guides';
 import { settlementAnswerFacts } from '@shared/lib/settlement-seo';
 import { isDeadlinePassed } from '@shared/lib/utils';
 import { displayEligibilityText, overlayVerifiedFacts } from '@shared/lib/verified-fields';
@@ -40,6 +41,8 @@ export interface SettlementDetailProps {
 export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrowse }: SettlementDetailProps) {
   // Read through the config, so the page renders again when the server flags arrive.
   const verified = useIsVerified(lawsuit);
+  const guided = hasOfficialNoticeGuide(lawsuit.slug);
+  const checkedLabel = noticeCheckedOnLabel(lawsuit.slug);
   const open = isOpenForClaims(lawsuit, now);
   const deadlinePassed = isDeadlinePassed(lawsuit.deadline, now);
   const official = officialLinkFor(lawsuit);
@@ -85,7 +88,13 @@ export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrows
         </View>
       ) : null}
 
-      {verified ? null : (
+      {verified || guided ? (
+        checkedLabel ? (
+          <AppText variant="caption" color="textMuted" testID="settlement-section-checked">
+            {checkedLabel}
+          </AppText>
+        ) : null
+      ) : (
         <UnverifiedNotice variant="settlement" lawsuit={lawsuit} open={open} testID="settlement-section-unverified" />
       )}
 

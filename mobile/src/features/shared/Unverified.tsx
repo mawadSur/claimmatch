@@ -17,7 +17,9 @@ import { useIsVerified } from './SettlementBadges';
  * "Unverified: check the official site" (D50) in its three web forms: the
  * page notice (catalog and settlement page), the card line with the official
  * link, and the pill (claim flow Step 1, Closing soon). The line and the
- * settlement notice hide themselves when the row shows as verified.
+ * settlement notice hide themselves when the row shows as verified. The
+ * settlement notice does not repeat an official claim-site button: that
+ * already sits in the short-answer actions.
  */
 
 /** The settlement fields the line and the settlement notice read (a catalog row fits). */
@@ -79,7 +81,7 @@ function SettlementNotice({
   );
 }
 
-/** The settlement page's OfficialLink: the official site, else the source page clearly labeled, else what to do. */
+/** Source-page or missing-link notes. An official URL is already the short-answer button. */
 function OfficialLink({ link }: { link: CatalogLink | null }) {
   const hostLabels = useHostLabels();
   if (!link) {
@@ -90,15 +92,8 @@ function OfficialLink({ link }: { link: CatalogLink | null }) {
     );
   }
   if (link.kind === 'official') {
-    return (
-      <ExternalTextLink
-        url={link.href}
-        {...hostLabels(link.host, (host) => `${shared.goToOfficialSite.text} (${host})`)}
-        tone="warning"
-        framed
-        style={styles.linkSpacing}
-      />
-    );
+    // The short-answer "Official claim site" button already covers this URL.
+    return null;
   }
   return (
     <View style={styles.source}>
@@ -164,9 +159,6 @@ export function UnverifiedBadge({ style, testID }: { style?: StyleProp<ViewStyle
 const styles = StyleSheet.create({
   strong: {
     fontFamily: fontFamilies.sansSemibold,
-  },
-  linkSpacing: {
-    marginTop: space[2],
   },
   source: {
     gap: space[2],

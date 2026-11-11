@@ -149,13 +149,10 @@ describe('Unverified', () => {
     expect(screen.getByText(common.unverifiedNoticeBody.text)).toBeOnTheScreen();
   });
 
-  it('links the settlement notice to the official site by host', async () => {
-    const user = userEvent.setup();
+  it('keeps the warning and does not repeat the official-site button', async () => {
     await render(<UnverifiedNotice variant="settlement" lawsuit={lawsuit()} open />);
     expect(screen.getByText(shared.unverifiedOpenBody.text)).toBeOnTheScreen();
-    const link = screen.getByRole('link', { name: 'Go to the official site (acmesettlement.com)' });
-    await user.press(link);
-    expect(openExternalUrl).toHaveBeenCalledWith('https://www.acmesettlement.com/claim');
+    expect(screen.queryByRole('link', { name: 'Go to the official site (acmesettlement.com)' })).toBeNull();
   });
 
   it('labels a source page as not the official site, and says so when there is no link', async () => {

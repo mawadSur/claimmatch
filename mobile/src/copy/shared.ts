@@ -45,6 +45,12 @@ export const shared = defineCopy({
     mobileOnly: true,
   },
 
+  // Settlement page, after an official-notice guide hides the unverified banner
+  checkedAgainstNotice: {
+    text: 'Checked against the official notice on {date}',
+    source: 'src/lib/settlement-guides.ts',
+  },
+
   // UnverifiedNotice, settlement variant -------------------------------------
   unverifiedOpenBody: {
     text: 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.',

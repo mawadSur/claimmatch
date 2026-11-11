@@ -11,7 +11,9 @@ import {
   applySettlementGuideFacts,
   catalogDeadlineFilter,
   getSettlementGuide,
+  hasOfficialNoticeGuide,
   guidedClaimUrl,
+  noticeCheckedOnLabel,
   guidedDeadline,
   guidesVersion,
   openGuidedCatalog,
@@ -73,6 +75,18 @@ describe('settlement guides', () => {
       expect((guide?.deadline ?? '') >= '2026-11-16').toBe(true);
     }
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
+  });
+
+  it('names the official-notice check date and does not invent one', () => {
+    expect(hasOfficialNoticeGuide('toyota-airbag-control-unit-zf-trw-settlement')).toBe(true);
+    expect(noticeCheckedOnLabel('toyota-airbag-control-unit-zf-trw-settlement')).toBe(
+      'Checked against the official notice on Nov 10, 2026',
+    );
+    expect(noticeCheckedOnLabel('hyundai-kia-vehicle-theft')).toBe(
+      'Checked against the official notice on Nov 3, 2026',
+    );
+    expect(hasOfficialNoticeGuide('quiet-settlement')).toBe(false);
+    expect(noticeCheckedOnLabel('quiet-settlement')).toBeNull();
   });
 
   it('does not invent facts on a listing without a guide', () => {
@@ -374,6 +388,14 @@ describe('the app’s copy of the guides (setGuideOverrides)', () => {
   afterEach(() => {
     setGuideOverrides(null);
     vi.unstubAllEnvs();
+  });
+
+  it('omits the checked line when a guide has no readable date', () => {
+    setGuideOverrides([{ ...edited, sourceChecked: '' }]);
+    expect(hasOfficialNoticeGuide(SIX)).toBe(true);
+    expect(noticeCheckedOnLabel(SIX)).toBeNull();
+    setGuideOverrides([{ ...edited, sourceChecked: 'not-a-date' }]);
+    expect(noticeCheckedOnLabel(SIX)).toBeNull();
   });
 
   it('replaces the guides every helper reads, and null puts the compiled ones back', () => {
