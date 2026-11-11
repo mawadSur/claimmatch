@@ -16,6 +16,7 @@ const m = vi.hoisted(() => {
     runAllSources: vi.fn(),
     runMatchSweep: vi.fn(),
     persistStoredMatches: vi.fn(),
+    sendPayoutTrackerEmails: vi.fn(),
     notifyNewMatches: vi.fn(),
     claimDue: vi.fn(),
     completeJob: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock('@/lib/scraper/pipeline', () => ({ ingestAndExtract: m.ingestAndExtract 
 vi.mock('@/lib/scraper', () => ({ runAllSources: m.runAllSources }));
 vi.mock('@/lib/match-sweep', () => ({ runMatchSweep: m.runMatchSweep }));
 vi.mock('@/lib/match-store', () => ({ persistStoredMatches: m.persistStoredMatches }));
+vi.mock('@/lib/payout-tracker', () => ({ sendPayoutTrackerEmails: m.sendPayoutTrackerEmails }));
 vi.mock('@/lib/notifications', () => ({ notifyNewMatches: m.notifyNewMatches }));
 vi.mock('@/lib/jobs', () => ({
   claimDue: m.claimDue,
@@ -84,6 +86,7 @@ beforeEach(() => {
   m.runAllSources.mockResolvedValue({ inserted: 1, updated: 0, bySource: {} });
   m.runMatchSweep.mockResolvedValue({ users: 1, newMatches: 1, emailed: 1 });
   m.persistStoredMatches.mockResolvedValue({ users: 1, persisted: 1 });
+  m.sendPayoutTrackerEmails.mockResolvedValue({ candidates: 0, emailed: 0, skipped: null });
   m.claimDue.mockResolvedValue([]);
   m.startIngestRun.mockResolvedValue('job-daily');
   m.finishIngestRun.mockResolvedValue(undefined);
@@ -116,7 +119,14 @@ describe('/api/cron/daily', () => {
       job: 'daily',
       ok: true,
       ranSteps: ['ingest'],
-      skippedSteps: ['matchStore', 'matchSweep', 'heldTriage', 'deadlineReminders', 'onboardingDrip'],
+      skippedSteps: [
+        'matchStore',
+        'matchSweep',
+        'heldTriage',
+        'deadlineReminders',
+        'onboardingDrip',
+        'payoutTracker',
+      ],
       failedSteps: [],
       steps: {
         ingest: { status: 'ran', result: INGEST },
@@ -125,6 +135,7 @@ describe('/api/cron/daily', () => {
         heldTriage: { status: 'skipped', reason: 'paused (held-closure triage)' },
         deadlineReminders: { status: 'skipped', reason: 'paused (deadline reminders)' },
         onboardingDrip: { status: 'skipped', reason: 'paused (onboarding drip)' },
+        payoutTracker: { status: 'skipped', reason: 'paused (payout tracker emails)' },
       },
     });
   });
@@ -152,6 +163,15 @@ describe('/api/cron/daily', () => {
     expect(m.runMatchSweep).not.toHaveBeenCalled();
     expect(body.ranSteps).toEqual(['ingest', 'matchStore']);
     expect(body.steps.matchSweep.reason).toBe('paused (D50)');
+  });
+
+  it('runs payout tracker emails only when PAYOUT_TRACKER_EMAILS_ENABLED=1', async () => {
+    expect(m.sendPayoutTrackerEmails).not.toHaveBeenCalled();
+    vi.stubEnv('PAYOUT_TRACKER_EMAILS_ENABLED', '1');
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.sendPayoutTrackerEmails).toHaveBeenCalledOnce();
+    expect(body.ranSteps).toEqual(['ingest', 'payoutTracker']);
   });
 
   it('answers 500 and names the step when ingest fails', async () => {

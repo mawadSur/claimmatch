@@ -86,6 +86,7 @@ export async function loadClaimScreen(
       flags.assistedFiling(),
     ),
     payoutReportEnabled: flags.payoutReport(),
+    claimTimelineEnabled: flags.claimTimeline(),
   });
   return { kind: 'flow', settlement, context, claim, profile, flowSettlement };
 }

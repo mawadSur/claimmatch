@@ -4,6 +4,7 @@ import {
   buildReport,
   deadlineRemindersGate,
   onboardingDripGate,
+  payoutTrackerGate,
   digestGate,
   errorMessage,
   heldTriageGate,
@@ -87,6 +88,15 @@ describe('D50 gates', () => {
       },
     });
     expect(onboardingDripGate(true)).toEqual({ run: true });
+    expect(payoutTrackerGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (payout tracker emails)',
+        resume: expect.stringContaining('PAYOUT_TRACKER_EMAILS_ENABLED=1'),
+      },
+    });
+    expect(payoutTrackerGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

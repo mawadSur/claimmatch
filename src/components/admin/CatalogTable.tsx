@@ -74,13 +74,15 @@ export function CatalogTable({ rows: initial }: { rows: Lawsuit[] }) {
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-card">
-      <table className="w-full min-w-[820px] text-left text-sm">
+      <table className="w-full min-w-[1100px] text-left text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-ink-soft">
             <th className="px-4 py-3 font-semibold">Settlement</th>
             <th className="px-4 py-3 font-semibold">Category</th>
             <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3 font-semibold">Deadline</th>
+            <th className="px-4 py-3 font-semibold">Hearing</th>
+            <th className="px-4 py-3 font-semibold">Payment timing</th>
             <th className="px-4 py-3 font-semibold">Featured</th>
             <th className="px-4 py-3 font-semibold">Assist</th>
             <th className="px-4 py-3 font-semibold">3rd-party fee</th>
@@ -115,6 +117,40 @@ export function CatalogTable({ rows: initial }: { rows: Lawsuit[] }) {
                 </td>
                 <td className="px-4 py-3 text-ink-muted">
                   {formatDeadline(l.deadline)}
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    key={`${l.id}-hearing-${l.final_approval_hearing_at ?? ''}`}
+                    type="date"
+                    aria-label={`Final approval hearing for ${l.title}`}
+                    disabled={row.busy !== null}
+                    defaultValue={(l.final_approval_hearing_at ?? '').slice(0, 10)}
+                    onBlur={(e) => {
+                      const next = e.target.value || null;
+                      const prev = (l.final_approval_hearing_at ?? '').slice(0, 10) || null;
+                      if (next === prev) return;
+                      patchLawsuit(row, 'feature', { final_approval_hearing_at: next });
+                    }}
+                    className="w-[10.5rem] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <input
+                    key={`${l.id}-timing-${l.payment_timing_text ?? ''}`}
+                    type="text"
+                    aria-label={`Payment timing for ${l.title}`}
+                    disabled={row.busy !== null}
+                    maxLength={280}
+                    defaultValue={l.payment_timing_text ?? ''}
+                    placeholder="Not announced"
+                    onBlur={(e) => {
+                      const next = e.target.value.trim();
+                      const prev = (l.payment_timing_text ?? '').trim();
+                      if (next === prev) return;
+                      patchLawsuit(row, 'feature', { payment_timing_text: next });
+                    }}
+                    className="w-40 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  />
                 </td>
                 <td className="px-4 py-3">
                   {l.is_featured ? (

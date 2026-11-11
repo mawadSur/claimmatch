@@ -89,7 +89,7 @@ language sql immutable as $$
                'eligibility_rule_drafts', 'ingest_alerts',
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
-               'claim_reminder_sends']
+               'claim_reminder_sends', 'payout_tracker_sends']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -391,6 +391,11 @@ begin
                'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
     $q$update public.claim_reminder_sends set kind = '1d'$q$,
     $q$delete from public.claim_reminder_sends$q$,
+    $q$insert into public.payout_tracker_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
+    $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
+    $q$delete from public.payout_tracker_sends$q$,
     -- Soft-beta feedback: signed-in users insert their own row; anon cannot.
     $q$insert into public.beta_feedback (user_id, almost_stopped)
        values ('a0000000-0000-4000-8000-00000000000a', 'inserted by anon')$q$,
@@ -579,7 +584,12 @@ begin
        values ('a0000000-0000-4000-8000-00000000000a',
                'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
     $q$update public.claim_reminder_sends set kind = '1d'$q$,
-    $q$delete from public.claim_reminder_sends$q$
+    $q$delete from public.claim_reminder_sends$q$,
+    $q$insert into public.payout_tracker_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
+    $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
+    $q$delete from public.payout_tracker_sends$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then

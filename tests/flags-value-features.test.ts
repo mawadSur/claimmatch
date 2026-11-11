@@ -57,6 +57,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.betaInviteCodes()).toBe(false);
     expect(flags.betaFeedback()).toBe(false);
     expect(flags.catalogHideUnknowns()).toBe(false);
+    expect(flags.claimTimeline()).toBe(false);
+    expect(flags.payoutTrackerEmails()).toBe(false);
+    expect(flags.matchReason()).toBe(false);
+    expect(flags.trustScorecard()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -108,6 +112,10 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('BETA_INVITE_CODES_ENABLED', 'true');
     vi.stubEnv('BETA_FEEDBACK_ENABLED', 'yes');
     vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', 'on');
+    vi.stubEnv('CLAIM_TIMELINE_ENABLED', 'true');
+    vi.stubEnv('PAYOUT_TRACKER_EMAILS_ENABLED', 'yes');
+    vi.stubEnv('MATCH_REASON_ENABLED', 'on');
+    vi.stubEnv('TRUST_SCORECARD_ENABLED', 'true');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -158,6 +166,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.betaInviteCodes()).toBe(false);
     expect(flags.betaFeedback()).toBe(false);
     expect(flags.catalogHideUnknowns()).toBe(false);
+    expect(flags.claimTimeline()).toBe(false);
+    expect(flags.payoutTrackerEmails()).toBe(false);
+    expect(flags.matchReason()).toBe(false);
+    expect(flags.trustScorecard()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -209,6 +221,10 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('BETA_INVITE_CODES_ENABLED', '1');
     vi.stubEnv('BETA_FEEDBACK_ENABLED', '1');
     vi.stubEnv('CATALOG_HIDE_UNKNOWNS_ENABLED', '1');
+    vi.stubEnv('CLAIM_TIMELINE_ENABLED', '1');
+    vi.stubEnv('PAYOUT_TRACKER_EMAILS_ENABLED', '1');
+    vi.stubEnv('MATCH_REASON_ENABLED', '1');
+    vi.stubEnv('TRUST_SCORECARD_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -259,5 +275,9 @@ describe('brief 3 feature flags', () => {
     expect(flags.betaInviteCodes()).toBe(true);
     expect(flags.betaFeedback()).toBe(true);
     expect(flags.catalogHideUnknowns()).toBe(true);
+    expect(flags.claimTimeline()).toBe(true);
+    expect(flags.payoutTrackerEmails()).toBe(true);
+    expect(flags.matchReason()).toBe(true);
+    expect(flags.trustScorecard()).toBe(true);
   });
 });

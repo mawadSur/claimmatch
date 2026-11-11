@@ -317,4 +317,25 @@ export const flags = {
    * stay. Does not delete stored phone values.
    */
   catalogHideUnknowns: () => on('CATALOG_HIDE_UNKNOWNS_ENABLED'),
+  /**
+   * After-you-file timeline on submitted claims (dashboard + claim page).
+   * Hearing date and payment timing only from the settlement record.
+   */
+  claimTimeline: () => on('CLAIM_TIMELINE_ENABLED'),
+  /**
+   * Email opted-in users who reported filing when a listed hearing date
+   * passes or admin enters payment timing. Off: the daily cron skips the
+   * step. Idempotent; never sends without email_opt_in.
+   */
+  payoutTrackerEmails: () => on('PAYOUT_TRACKER_EMAILS_ENABLED'),
+  /**
+   * One "Why this matches you" line on match cards, from matcher reasons.
+   * Off: the existing reason bullets stay as they are.
+   */
+  matchReason: () => on('MATCH_REASON_ENABLED'),
+  /**
+   * Public /scorecard of measured counts. Off: that path 404s and is left
+   * out of the sitemap.
+   */
+  trustScorecard: () => on('TRUST_SCORECARD_ENABLED'),
 };

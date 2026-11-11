@@ -52,6 +52,9 @@ export function Footer() {
             <ul className="mt-3 space-y-1 text-sm text-ink-muted">
               <li><Link href="/about" className={LINK}>About</Link></li>
               <li><Link href="/trust" className={LINK}>Is this legit?</Link></li>
+              {flags.trustScorecard() && (
+                <li><Link href="/scorecard" className={LINK}>Scorecard</Link></li>
+              )}
               <li><Link href="/privacy" className={LINK}>Privacy</Link></li>
               <li><Link href="/terms" className={LINK}>Terms</Link></li>
               {contact.email && (

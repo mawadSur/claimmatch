@@ -139,6 +139,37 @@ describe('PATCH /api/admin/lawsuits verify', () => {
     });
   });
 
+  it('round-trips a listed hearing date and payment timing, and rejects invented dates', async () => {
+    h.admin = { id: 'admin-1', email: 'ops@example.com' };
+    h.updated = {
+      id,
+      final_approval_hearing_at: '2027-03-15',
+      payment_timing_text: 'Checks mailed after final approval',
+    };
+    const res = await patch({
+      id,
+      action: 'update',
+      patch: {
+        final_approval_hearing_at: '2027-03-15',
+        payment_timing_text: 'Checks mailed after final approval',
+      },
+    });
+    expect(res.status).toBe(200);
+    expect(h.lastUpdate).toEqual({
+      final_approval_hearing_at: '2027-03-15',
+      payment_timing_text: 'Checks mailed after final approval',
+    });
+
+    h.lastUpdate = null;
+    const bad = await patch({
+      id,
+      action: 'verify',
+      patch: { final_approval_hearing_at: '2027-02-30' },
+    });
+    expect(bad.status).toBe(400);
+    expect(h.lastUpdate).toBeNull();
+  });
+
   it('clears the stamp on unverify without touching verified fields', async () => {
     h.admin = { id: 'admin-1', email: 'ops@example.com' };
     h.updated = { id, verified_at: null, verified_by: null };

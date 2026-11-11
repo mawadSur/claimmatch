@@ -154,6 +154,8 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         proof_verified: row.verified.proofVerified || null,
         administrator: row.verified.administrator,
         form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
+        final_approval_hearing_at: row.verified.finalApprovalHearingAt || null,
+        payment_timing_text: row.verified.paymentTimingText,
       };
     } else if (action === 'verify') {
       payloadPatch = {
@@ -161,6 +163,8 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         proof_verified: row.verified.proofVerified || null,
         administrator: row.verified.administrator,
         form_field_order: parseFormFieldOrderInput(row.verified.formFieldOrder),
+        final_approval_hearing_at: row.verified.finalApprovalHearingAt || null,
+        payment_timing_text: row.verified.paymentTimingText,
       };
     }
 

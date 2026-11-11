@@ -239,6 +239,26 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.catalogHideUnknowns(),
   },
   {
+    env: 'CLAIM_TIMELINE_ENABLED',
+    description: 'After-you-file timeline on claims the user marked submitted.',
+    read: () => flags.claimTimeline(),
+  },
+  {
+    env: 'PAYOUT_TRACKER_EMAILS_ENABLED',
+    description: 'Email opted-in filers when a listed hearing date passes or payment timing is entered.',
+    read: () => flags.payoutTrackerEmails(),
+  },
+  {
+    env: 'MATCH_REASON_ENABLED',
+    description: 'One “Why this matches you” line on match cards, from matcher reasons.',
+    read: () => flags.matchReason(),
+  },
+  {
+    env: 'TRUST_SCORECARD_ENABLED',
+    description: 'Public /scorecard of measured counts. Off returns 404.',
+    read: () => flags.trustScorecard(),
+  },
+  {
     env: 'LLMS_TXT_ENABLED',
     description: 'Public /llms.txt summary for AI tools. Off returns 404.',
     read: () => flags.llmsTxt(),

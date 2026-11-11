@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, FileSearch } from 'lucide-react';
 import { CLAIM_GROUP_LABELS, type ClaimGroup } from '@/lib/claims';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
+import { ClaimTimelineCard } from './ClaimTimeline';
 import { GROUP_ORDER, type DashboardRow } from './dashboard-model';
 
 const GROUP_HINT: Record<ClaimGroup, string> = {
@@ -13,7 +14,13 @@ const GROUP_HINT: Record<ClaimGroup, string> = {
 };
 
 /** "Your claims", grouped by next step. Server-safe. */
-export function ClaimList({ rows }: { rows: DashboardRow[] }) {
+export function ClaimList({
+  rows,
+  timelineEnabled = false,
+}: {
+  rows: DashboardRow[];
+  timelineEnabled?: boolean;
+}) {
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-card sm:p-10">
@@ -60,6 +67,9 @@ export function ClaimList({ rows }: { rows: DashboardRow[] }) {
                       <span className="text-sm text-ink-muted">{row.deadlineText}</span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-ink-muted">{row.nextStep}</p>
+                    {timelineEnabled && row.timeline ? (
+                      <ClaimTimelineCard timeline={row.timeline} />
+                    ) : null}
                   </div>
                   {row.action && (
                     <Link

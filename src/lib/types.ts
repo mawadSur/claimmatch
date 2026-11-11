@@ -143,6 +143,10 @@ export interface Lawsuit {
   third_party_fee_allowed?: boolean;
   /** 0027: conservative structured tags extracted during ingest. */
   tags?: LawsuitTags | null;
+  /** 0035: listed final-approval hearing date. Null = not announced. Never guessed. */
+  final_approval_hearing_at?: string | null;
+  /** 0035: listed payment-timing sentence. Null = not announced. Never guessed. */
+  payment_timing_text?: string | null;
 }
 
 export type ProfileFactType =
