@@ -202,6 +202,8 @@ describe('LoginScreen', () => {
   it('says the confirmation link expired', async () => {
     await renderLogin({ link: 'expired' });
     expect(screen.getByText(auth.confirmLinkExpired.text)).toBeOnTheScreen();
+    expect(auth.confirmLinkExpired.text).toMatch(/resend the confirmation email/i);
+    expect(auth.confirmLinkExpired.text).not.toMatch(/create your account again/i);
     expect(screen.queryByText(`${auth.emailConfirmed.text}.`)).toBeNull();
   });
 });

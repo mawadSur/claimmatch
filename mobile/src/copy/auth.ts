@@ -88,7 +88,16 @@ export const auth = defineCopy({
     source: 'src/components/AuthForm.tsx',
   },
   confirmLinkExpired: {
-    text: 'That confirmation link has expired or was already used. If you already confirmed your email, log in below. If not, create your account again with the same email to get a new link.',
+    text: 'That confirmation link has expired or was already used. If you already confirmed your email, log in below. If not, resend the confirmation email instead of creating the account again.',
+    source: 'src/components/AuthForm.tsx',
+  },
+  /** Between the email-exists message and the password-reset link. */
+  or: {
+    text: 'or',
+    source: 'src/components/AuthForm.tsx',
+  },
+  resetYourPasswordLink: {
+    text: 'reset your password',
     source: 'src/components/AuthForm.tsx',
   },
 
@@ -115,6 +124,14 @@ export const auth = defineCopy({
   },
   tryDifferentEmail: {
     text: 'try a different email',
+    source: 'src/components/AuthForm.tsx',
+  },
+  resendConfirmation: {
+    text: 'Resend confirmation email',
+    source: 'src/components/AuthForm.tsx',
+  },
+  sending: {
+    text: 'Sending…',
     source: 'src/components/AuthForm.tsx',
   },
   backToApp: {
