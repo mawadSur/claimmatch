@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Playwright Chromium
         if: steps.gate.outputs.skip != 'true'
-        run: npx playwright install --with-deps chromium
+        run: bash scripts/ci-install-playwright.sh
 
       - name: Run read-only smoke
         if: steps.gate.outputs.skip != 'true'

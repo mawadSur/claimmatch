@@ -20,6 +20,9 @@ describe('isolated journey is not production E2E', () => {
     expect(runner).toContain('SETTLEMENT_QUIZ_ENABLED=1');
     expect(runner).toContain('CATALOG_HIDE_UNKNOWNS_ENABLED=1');
     expect(runner).toContain('unset BETA_INVITE_CODES_ENABLED BETA_FEEDBACK_ENABLED');
+    expect(runner).toContain(
+      'unset CLAIM_TIMELINE_ENABLED PAYOUT_TRACKER_EMAILS_ENABLED MATCH_REASON_ENABLED TRUST_SCORECARD_ENABLED',
+    );
     expect(runner).toContain('Production leaves these unset');
   });
 
@@ -34,10 +37,17 @@ describe('isolated journey is not production E2E', () => {
   it('CI verify runs the isolated journey and smoke stays read-only', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain('bash scripts/run-isolated-journey.sh');
+    expect(ci).toContain('bash scripts/ci-install-playwright.sh');
+    expect(ci).not.toContain('--with-deps');
     expect(ci).not.toContain('lawsuitai.org');
     const smoke = read('.github/workflows/smoke.yml');
     expect(smoke).toContain('e2e/smoke.spec.ts');
     expect(smoke).toContain('e2e/journey-public.spec.ts');
+    expect(smoke).toContain('bash scripts/ci-install-playwright.sh');
+    expect(smoke).not.toContain('--with-deps');
     expect(smoke).not.toMatch(/e2e\/isolated/);
+    const install = read('scripts/ci-install-playwright.sh');
+    expect(install).toContain('npx playwright install chromium');
+    expect(install).toContain('npx playwright install-deps chromium');
   });
 });

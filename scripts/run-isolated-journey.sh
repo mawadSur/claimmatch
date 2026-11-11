@@ -78,6 +78,8 @@ export SETTLEMENT_QUIZ_ENABLED=1
 export CATALOG_HIDE_UNKNOWNS_ENABLED=1
 # Soft-beta invite/feedback stay off: the fixture has no beta_feedback table.
 unset BETA_INVITE_CODES_ENABLED BETA_FEEDBACK_ENABLED || true
+# After-you-file flags stay off: production leaves these unset.
+unset CLAIM_TIMELINE_ENABLED PAYOUT_TRACKER_EMAILS_ENABLED MATCH_REASON_ENABLED TRUST_SCORECARD_ENABLED || true
 
 PIDS=()
 cleanup() {
