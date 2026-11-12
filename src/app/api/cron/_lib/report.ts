@@ -109,6 +109,20 @@ export function onboardingDripGate(enabled: boolean): Gate {
       };
 }
 
+/** Hearing-passed and payment-timing emails for reported filings. */
+export function payoutTrackerGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (payout tracker emails)',
+          resume: 'Set PAYOUT_TRACKER_EMAILS_ENABLED=1 to email opted-in users after a listed hearing date or payment-timing update.',
+        },
+      };
+}
+
 /**
  * Missing server config the jobs need, or null. Without the service role key
  * the server client falls back to the anon key, row-level security blocks the

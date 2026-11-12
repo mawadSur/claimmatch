@@ -12,7 +12,12 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
-import { matchesViewedProperties } from '@/lib/analytics/events';
+import {
+  ANALYTICS_EVENTS,
+  claimTimelineViewedProperties,
+  matchesViewedProperties,
+  matchReasonViewedProperties,
+} from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { BetaFeedbackPrompt } from '@/components/dashboard/BetaFeedbackPrompt';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
@@ -91,6 +96,18 @@ export default async function DashboardPage({
   return (
     <div className="bg-gray-50">
       {matchView ? <CaptureOnce event="matches_viewed" properties={matchView} /> : null}
+      {flags.claimTimeline() && rows.some((row) => row.timeline) ? (
+        <CaptureOnce
+          event={ANALYTICS_EVENTS.claim_timeline_viewed}
+          properties={claimTimelineViewedProperties({ source: 'dashboard' })}
+        />
+      ) : null}
+      {flags.matchReason() && matches.length > 0 ? (
+        <CaptureOnce
+          event={ANALYTICS_EVENTS.match_reason_viewed}
+          properties={matchReasonViewedProperties({ matchCount: matches.length })}
+        />
+      ) : null}
       <div className="container-page space-y-10 py-10 sm:py-14">
         <header>
           <span className="badge-brand gap-1.5">
@@ -156,6 +173,7 @@ export default async function DashboardPage({
           metricsEnabled={flags.matchMetrics()}
           fileForYou={flags.assistedFiling()}
           canDismiss={flags.matchStore()}
+          matchReasonEnabled={flags.matchReason()}
         />
 
         {flags.assistedFiling() && (
@@ -183,7 +201,7 @@ export default async function DashboardPage({
                 </div>
               </div>
             ) : (
-              <ClaimList rows={rows} />
+              <ClaimList rows={rows} timelineEnabled={flags.claimTimeline()} />
             )}
           </div>
         </section>

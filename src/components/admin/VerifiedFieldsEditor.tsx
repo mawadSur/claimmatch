@@ -17,6 +17,8 @@ export type VerifiedDraft = {
   proofVerified: '' | ProofRequired;
   administrator: string;
   formFieldOrder: string;
+  finalApprovalHearingAt: string;
+  paymentTimingText: string;
 };
 
 export function parseFormFieldOrderInput(raw: string): string[] | null {
@@ -27,12 +29,20 @@ export function parseFormFieldOrderInput(raw: string): string[] | null {
   return keys.length > 0 ? keys : null;
 }
 
+function dateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
+  return match ? match[1] : '';
+}
+
 export function draftFromLawsuit(l: Lawsuit): VerifiedDraft {
   return {
     eligibilityVerified: l.eligibility_verified ?? '',
     proofVerified: l.proof_verified ?? '',
     administrator: l.administrator ?? '',
     formFieldOrder: (l.form_field_order ?? []).join(', '),
+    finalApprovalHearingAt: dateInputValue(l.final_approval_hearing_at),
+    paymentTimingText: l.payment_timing_text ?? '',
   };
 }
 
@@ -142,6 +152,41 @@ export function VerifiedFieldsEditor({
           <p className="mt-1 text-xs text-ink-muted">
             Optional. Comma-separated packet fields in the official form&apos;s
             order. Leave blank for the default order.
+          </p>
+        </div>
+        <div>
+          <label className="field-label" htmlFor={`hearing-${id}`}>
+            Final approval hearing
+          </label>
+          <input
+            id={`hearing-${id}`}
+            type="date"
+            className="field-input"
+            value={draft.finalApprovalHearingAt}
+            onChange={(e) =>
+              onChange({ ...draft, finalApprovalHearingAt: e.target.value })
+            }
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            From the official notice only. Leave blank if it is not announced.
+          </p>
+        </div>
+        <div>
+          <label className="field-label" htmlFor={`payment-timing-${id}`}>
+            Payment timing
+          </label>
+          <input
+            id={`payment-timing-${id}`}
+            className="field-input"
+            maxLength={280}
+            placeholder="e.g. Checks mailed 60–90 days after final approval"
+            value={draft.paymentTimingText}
+            onChange={(e) =>
+              onChange({ ...draft, paymentTimingText: e.target.value })
+            }
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            Listed wording only. Leave blank if it is not announced. Do not guess.
           </p>
         </div>
       </div>

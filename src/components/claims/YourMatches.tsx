@@ -6,8 +6,10 @@ import {
   type DashboardMatch,
 } from './dashboard-model';
 import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
+import { matchReasonLine } from '@/lib/match-reason';
 import { MatchFeedback } from './MatchFeedback';
 import { DismissMatchButton } from './DismissMatchButton';
+import { MatchReasonLine } from './MatchReasonLine';
 
 /**
  * Ranked matches for the signed-in user. Strong first; Possible is collapsed
@@ -20,6 +22,7 @@ export function YourMatches({
   metricsEnabled = false,
   fileForYou = false,
   canDismiss = false,
+  matchReasonEnabled = false,
 }: {
   items: DashboardMatch[];
   failed?: boolean;
@@ -28,6 +31,7 @@ export function YourMatches({
   /** ASSISTED_FILING_ENABLED: primary CTA authorizes ClaimMatch to file. */
   fileForYou?: boolean;
   canDismiss?: boolean;
+  matchReasonEnabled?: boolean;
 }) {
   const grouped = groupDashboardMatches(items);
   const hasAny = items.length > 0;
@@ -82,6 +86,7 @@ export function YourMatches({
                 metricsEnabled={metricsEnabled}
                 fileForYou={fileForYou}
                 canDismiss={canDismiss}
+                matchReasonEnabled={matchReasonEnabled}
               />
             )}
           </div>
@@ -103,6 +108,7 @@ export function YourMatches({
                   metricsEnabled={metricsEnabled}
                   fileForYou={fileForYou}
                   canDismiss={canDismiss}
+                  matchReasonEnabled={matchReasonEnabled}
                 />
               </div>
             </details>
@@ -149,11 +155,13 @@ function MatchList({
   metricsEnabled,
   fileForYou,
   canDismiss,
+  matchReasonEnabled,
 }: {
   items: DashboardMatch[];
   metricsEnabled: boolean;
   fileForYou: boolean;
   canDismiss: boolean;
+  matchReasonEnabled: boolean;
 }) {
   return (
     <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
@@ -186,13 +194,18 @@ function MatchList({
               <CalendarClock className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
               {item.deadlineText}
             </p>
-            {item.reasons.length > 0 && (
-              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-ink-muted">
-                {item.reasons.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-            )}
+            {matchReasonEnabled
+              ? (() => {
+                  const line = matchReasonLine(item.reasons);
+                  return line ? <MatchReasonLine reason={line} /> : null;
+                })()
+              : item.reasons.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-ink-muted">
+                    {item.reasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                )}
             {canDismiss && item.matchId && (
               <DismissMatchButton matchId={item.matchId} title={item.title} />
             )}

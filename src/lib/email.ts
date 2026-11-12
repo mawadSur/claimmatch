@@ -502,6 +502,109 @@ export async function sendDidYouFileEmail(to: string, opts: DidYouFileEmailOpts)
   }
 }
 
+export type PayoutTrackerEmailKind = 'hearing_passed' | 'payment_timing';
+
+export interface PayoutTrackerEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  kind: PayoutTrackerEmailKind;
+  hearingAt?: string | null;
+  paymentTimingText?: string | null;
+  to?: string;
+}
+
+export function renderPayoutTrackerEmail(opts: PayoutTrackerEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const hearing =
+    opts.kind === 'hearing_passed' && opts.hearingAt
+      ? `Listed hearing date: ${esc(formatDeadline(opts.hearingAt))}`
+      : null;
+  const timing =
+    opts.kind === 'payment_timing' && opts.paymentTimingText
+      ? `Listed payment timing: ${esc(opts.paymentTimingText.trim())}`
+      : null;
+  const heading =
+    opts.kind === 'hearing_passed'
+      ? 'A listed hearing date has passed'
+      : 'Payment timing update';
+  const intro =
+    opts.kind === 'hearing_passed'
+      ? `${greeting} the settlement you reported filing has a listed final approval hearing date that has passed. Check the official site for the latest. ${esc(SITE.name)} does not guess payment dates and never files for you.`
+      : `${greeting} there is a listed update on when payments may go out for a settlement you reported filing. This text comes from the settlement record. ${esc(SITE.name)} does not guess dates and never files for you.`;
+
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(heading)}</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(heading)}</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${intro}</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(opts.title)}</div>
+                ${hearing ? `<div style="font-size:13px;color:#6b6480;margin-top:8px;">${hearing}</div>` : ''}
+                ${timing ? `<div style="font-size:13px;color:#6b6480;margin-top:8px;">${timing}</div>` : ''}
+                <div style="margin-top:16px;">
+                  <a href="${claimPageUrl(opts.slug)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">Open your claim →</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">See your tracked claims on your <a href="${SITE.url.replace(/\/$/, '')}/dashboard" style="color:${BRAND};text-decoration:underline;">dashboard</a>.</p>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${SITE.name} and reported filing this settlement.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Hearing-passed or payment-timing email. Returns true only when Resend
+ * accepted the send. Refuses without postal address and a verified sender.
+ */
+export async function sendPayoutTrackerEmail(
+  to: string,
+  opts: PayoutTrackerEmailOpts,
+): Promise<boolean> {
+  if (!to || !opts?.slug) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] payout-tracker email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping payout-tracker email.');
+    return false;
+  }
+  const subject =
+    opts.kind === 'hearing_passed'
+      ? `A listed hearing date has passed on ${SITE.name}`
+      : `Payment timing update on ${SITE.name}`;
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to,
+      subject,
+      html: renderPayoutTrackerEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send payout-tracker email:', err);
+    return false;
+  }
+}
+
 /** Send the welcome email. No-ops (logs) when Resend isn't configured. */
 export async function sendWelcomeEmail(to: string, name?: string): Promise<void> {
   if (!to) return;

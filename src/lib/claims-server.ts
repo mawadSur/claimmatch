@@ -27,9 +27,9 @@ import {
   type TransitionPlan,
 } from '@/lib/claims';
 
-/** Settlement columns the claim flow reads (all exist since 0002). */
+/** Settlement columns the claim flow reads (0002+, plus 0035 timeline fields). */
 export const SETTLEMENT_COLUMNS =
-  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order';
+  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order, final_approval_hearing_at, payment_timing_text';
 
 export interface SettlementRecord extends SettlementFacts {
   id: string;
@@ -42,6 +42,10 @@ export interface SettlementRecord extends SettlementFacts {
   proof_required: boolean | null;
   /** 0013: official-form field order (C10). Absent until selected. */
   form_field_order?: string[] | null;
+  /** 0035: listed hearing date. Null = not announced. */
+  final_approval_hearing_at?: string | null;
+  /** 0035: listed payment-timing sentence. Null = not announced. */
+  payment_timing_text?: string | null;
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

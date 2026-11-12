@@ -28,6 +28,9 @@ export const ANALYTICS_EVENTS = {
   beta_code_visit: 'beta_code_visit',
   beta_feedback_shown: 'beta_feedback_shown',
   beta_feedback_submitted: 'beta_feedback_submitted',
+  claim_timeline_viewed: 'claim_timeline_viewed',
+  match_reason_viewed: 'match_reason_viewed',
+  scorecard_viewed: 'scorecard_viewed',
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
@@ -124,4 +127,16 @@ export function betaFeedbackSubmittedProperties(input: {
   };
   if (input.trigger) props.trigger = input.trigger;
   return props;
+}
+
+/** Timeline viewed. Source only — never confirmation numbers or dates. */
+export function claimTimelineViewedProperties(input: {
+  source: 'dashboard' | 'claim';
+}): { source: 'dashboard' | 'claim' } {
+  return { source: input.source };
+}
+
+/** Match-reason line shown. Count only — never the reason text. */
+export function matchReasonViewedProperties(input: { matchCount: number }): { match_count: number } {
+  return { match_count: Math.max(0, Math.floor(input.matchCount)) };
 }

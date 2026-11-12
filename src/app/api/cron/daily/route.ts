@@ -18,6 +18,7 @@ import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
 import { sendOnboardingDrips } from '@/lib/onboarding-drip';
+import { sendPayoutTrackerEmails } from '@/lib/payout-tracker';
 import {
   buildReport,
   checkIngestStep,
@@ -28,6 +29,7 @@ import {
   matchSweepGate,
   missingConfigStep,
   onboardingDripGate,
+  payoutTrackerGate,
   reportHttpStatus,
   runStep,
   serviceConfigProblem,
@@ -154,6 +156,15 @@ async function handle(req: Request) {
       steps.onboardingDrip = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/onboardingDrip', () => sendOnboardingDrips());
+    }
+
+    const trackerGate = payoutTrackerGate(flags.payoutTrackerEmails());
+    if (!trackerGate.run) {
+      steps.payoutTracker = trackerGate.step;
+    } else {
+      steps.payoutTracker = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/payoutTracker', () => sendPayoutTrackerEmails());
     }
 
     const report = buildReport('daily', steps);

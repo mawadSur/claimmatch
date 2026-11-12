@@ -67,6 +67,9 @@ describe('PostHog App Router wiring', () => {
     expect(read('src/app/onboarding/page.tsx')).toContain('event="signup_completed"');
     expect(read('src/app/onboarding/page.tsx')).toContain("evidence: 'email_confirmed'");
     expect(read('src/app/dashboard/page.tsx')).toContain('matches_viewed');
+    expect(read('src/app/dashboard/page.tsx')).toContain('claim_timeline_viewed');
+    expect(read('src/app/dashboard/page.tsx')).toContain('match_reason_viewed');
+    expect(read('src/app/scorecard/page.tsx')).toContain('scorecard_viewed');
     expect(read('src/components/claims/ReportFiled.tsx')).toContain('filingConfirmedProperties');
     expect(read('src/lib/analytics/events.ts')).toContain("evidence: 'user_reported_and_saved'");
     expect(read('src/lib/match-events-shared.ts')).toContain("return 'match_feedback'");

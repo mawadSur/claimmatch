@@ -32,6 +32,12 @@ export interface ClaimFlowSettlement {
   assistedFilingAllowed?: boolean;
   /** C4: show "I got paid" amount form when the claim is already submitted. */
   payoutReportEnabled?: boolean;
+  /** After-you-file timeline (CLAIM_TIMELINE_ENABLED=1). */
+  claimTimelineEnabled?: boolean;
+  /** Listed hearing date from the settlement record. Never guessed. */
+  finalApprovalHearingAt?: string | null;
+  /** Listed payment-timing sentence from the settlement record. Never guessed. */
+  paymentTimingText?: string | null;
 }
 
 /** The settlement columns the claim flow reads (a claims-server SettlementRecord). */
@@ -46,6 +52,8 @@ interface ClaimFlowSettlementRow {
   proof_required?: boolean | null;
   eligibility?: unknown;
   form_field_order?: string[] | null;
+  final_approval_hearing_at?: string | null;
+  payment_timing_text?: string | null;
 }
 
 /**
@@ -55,7 +63,11 @@ interface ClaimFlowSettlementRow {
  */
 export function toClaimFlowSettlement(
   row: ClaimFlowSettlementRow,
-  opts: { assistedFilingAllowed: boolean; payoutReportEnabled: boolean },
+  opts: {
+    assistedFilingAllowed: boolean;
+    payoutReportEnabled: boolean;
+    claimTimelineEnabled?: boolean;
+  },
 ): ClaimFlowSettlement {
   return {
     id: row.id,
@@ -70,6 +82,9 @@ export function toClaimFlowSettlement(
     formFieldOrder: row.form_field_order ?? null,
     assistedFilingAllowed: opts.assistedFilingAllowed,
     payoutReportEnabled: opts.payoutReportEnabled,
+    claimTimelineEnabled: opts.claimTimelineEnabled === true,
+    finalApprovalHearingAt: row.final_approval_hearing_at ?? null,
+    paymentTimingText: row.payment_timing_text ?? null,
   };
 }
 

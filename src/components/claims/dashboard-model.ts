@@ -30,6 +30,7 @@ import {
   type MatchStrength,
 } from '../../lib/matching';
 import { profileHasMatchSignals } from '../../lib/profile-attributes';
+import { buildClaimTimeline, type ClaimTimelineView } from '../../lib/claim-timeline';
 import type { Lawsuit, Match, Profile } from '../../lib/types';
 import { formatDeadline } from '../../lib/utils';
 
@@ -41,6 +42,8 @@ export interface DashboardSettlement extends SettlementFacts {
   id: string;
   title: string;
   claim_url: string | null;
+  final_approval_hearing_at?: string | null;
+  payment_timing_text?: string | null;
 }
 
 export interface DashboardRow {
@@ -52,6 +55,8 @@ export interface DashboardRow {
   deadlineText: string;
   nextStep: string;
   action: { label: string; href: string } | null;
+  /** Present when the user marked the claim submitted. UI gates on CLAIM_TIMELINE_ENABLED. */
+  timeline?: ClaimTimelineView | null;
 }
 
 export interface NoticeItem {
@@ -123,6 +128,7 @@ export function buildDashboard(
         deadlineText: 'Details unavailable',
         nextStep: "We couldn't load this settlement's details. Refresh the page in a minute.",
         action: null,
+        timeline: null,
       });
       continue;
     }
@@ -196,6 +202,14 @@ export function buildDashboard(
       deadlineText: display.kind === 'fictional' ? 'No action needed' : deadlineText(deadline, now),
       nextStep,
       action,
+      timeline: buildClaimTimeline({
+        status: claim.status,
+        confirmation_number: claim.confirmation_number,
+        user_filed_on: claim.user_filed_on,
+        reported_filed_at: claim.reported_filed_at,
+        final_approval_hearing_at: settlement.final_approval_hearing_at ?? null,
+        payment_timing_text: settlement.payment_timing_text ?? null,
+      }),
     });
 
     if (display.showNotice) {
