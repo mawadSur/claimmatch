@@ -53,6 +53,13 @@ describe('AuthForm signed-in path', () => {
     expect(src).not.toContain('create your account again');
   });
 
+  it('offers an unchecked match-alert opt-in on signup', () => {
+    expect(src).toContain('id="alerts-opt-in"');
+    expect(src).toContain('Email me when a new settlement may match');
+    expect(src).toContain('email_opt_in: alertsOptIn');
+    expect(src).toContain('useState(false)');
+  });
+
   it('does not treat login as signup, and requires a session for signup_completed', () => {
     expect(src).toContain("capture('login_completed', { evidence: 'password_sign_in' }, { send_instantly: true })");
     expect(src).toContain("capture('signup_completed', { evidence: 'session_after_signup' }, { send_instantly: true })");

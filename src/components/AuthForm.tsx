@@ -113,6 +113,7 @@ export function AuthForm({
   const [resendError, setResendError] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [resendNow, setResendNow] = useState(() => Date.now());
+  const [alertsOptIn, setAlertsOptIn] = useState(false);
 
   const isSignup = mode === 'signup';
   const switchParams = attributionQuery(attr);
@@ -248,7 +249,11 @@ export function AuthForm({
             email,
             password,
             options: {
-              data: { full_name: fullName, ...attributionMetadata(attr) },
+              data: {
+                full_name: fullName,
+                email_opt_in: alertsOptIn,
+                ...attributionMetadata(attr),
+              },
               // Site URL (lawsuitai.org in prod), not this tab's origin, so the
               // confirmation link always hits /auth/callback on the live site.
               emailRedirectTo: emailRedirectTo(),
@@ -533,6 +538,23 @@ export function AuthForm({
             </p>
           )}
         </div>
+
+        {isSignup && (
+          <label className="flex items-start gap-2.5 text-sm text-ink-muted">
+            <input
+              id="alerts-opt-in"
+              name="email_opt_in"
+              type="checkbox"
+              checked={alertsOptIn}
+              onChange={(e) => setAlertsOptIn(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300"
+            />
+            <span>
+              Email me when a new settlement may match (optional). Off unless you check this.
+              You can unsubscribe anytime. We never email health answers.
+            </span>
+          </label>
+        )}
 
         {isSignup && storeNote && (
           <p className="text-xs leading-relaxed text-ink-muted">{storeNote}</p>

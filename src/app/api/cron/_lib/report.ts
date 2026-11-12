@@ -123,6 +123,20 @@ export function payoutTrackerGate(enabled: boolean): Gate {
       };
 }
 
+/** Opt-in new-match alerts with one-click start. Independent of D50 match emails. */
+export function matchAlertGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (match alerts)',
+          resume: 'Set MATCH_ALERT_EMAILS_ENABLED=1 to email opted-in people about verified open matches.',
+        },
+      };
+}
+
 /**
  * Missing server config the jobs need, or null. Without the service role key
  * the server client falls back to the anon key, row-level security blocks the

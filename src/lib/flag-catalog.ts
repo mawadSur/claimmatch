@@ -259,6 +259,11 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.trustScorecard(),
   },
   {
+    env: 'MATCH_ALERT_EMAILS_ENABLED',
+    description: 'Opt-in new-match alert emails with one-click start. Needs postal address and verified sender.',
+    read: () => flags.matchAlertEmails(),
+  },
+  {
     env: 'LLMS_TXT_ENABLED',
     description: 'Public /llms.txt summary for AI tools. Off returns 404.',
     read: () => flags.llmsTxt(),

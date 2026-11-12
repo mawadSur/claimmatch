@@ -21,7 +21,7 @@ describe('isolated journey is not production E2E', () => {
     expect(runner).toContain('CATALOG_HIDE_UNKNOWNS_ENABLED=1');
     expect(runner).toContain('unset BETA_INVITE_CODES_ENABLED BETA_FEEDBACK_ENABLED');
     expect(runner).toContain(
-      'unset CLAIM_TIMELINE_ENABLED PAYOUT_TRACKER_EMAILS_ENABLED MATCH_REASON_ENABLED TRUST_SCORECARD_ENABLED',
+      'unset CLAIM_TIMELINE_ENABLED PAYOUT_TRACKER_EMAILS_ENABLED MATCH_REASON_ENABLED TRUST_SCORECARD_ENABLED MATCH_ALERT_EMAILS_ENABLED',
     );
     expect(runner).toContain('Production leaves these unset');
   });

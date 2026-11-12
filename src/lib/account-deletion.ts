@@ -25,6 +25,7 @@ export const USER_OWNED_TABLES = [
   'claim_reminder_sends',
   'drip_email_sends',
   'payout_tracker_sends',
+  'match_alert_sends',
   'beta_feedback',
 ] as const;
 
@@ -44,9 +45,9 @@ export const CASCADE_ONLY_TABLES = ['profiles', 'claim_events'] as const;
  * filing_jobs.authorization_id is ON DELETE RESTRICT (0015_assisted_filing.sql).
  * referrals is keyed by referrer_id, every other table by user_id.
  * profile_facts, consent (0027, 0028), claim_reminder_sends (0030),
- * drip_email_sends (0031), payout_tracker_sends (0035) and beta_feedback
- * (0033) also cascade from auth.users, but are deleted here too, as every
- * user-owned table except CASCADE_ONLY_TABLES is.
+ * drip_email_sends (0031), payout_tracker_sends (0035), match_alert_sends
+ * (0036) and beta_feedback (0033) also cascade from auth.users, but are
+ * deleted here too, as every user-owned table except CASCADE_ONLY_TABLES is.
  */
 export const EXPLICIT_DELETE_ORDER = [
   'filing_jobs',
@@ -63,6 +64,7 @@ export const EXPLICIT_DELETE_ORDER = [
   'claim_reminder_sends',
   'drip_email_sends',
   'payout_tracker_sends',
+  'match_alert_sends',
   'beta_feedback',
   'matches',
   'claims',

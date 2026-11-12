@@ -74,7 +74,8 @@ end $$;
 --                     admin/service-role only), referrals and subscribers. Tests 3 and 5 try to write them as anon and
 --                     as a signed-in user and prove that nothing changed.
 --   tables_tested_elsewhere  covered by another file in supabase/tests
---                     (proof_feedback: 54_proof_feedback.sql).
+--                     (proof_feedback: 54_proof_feedback.sql;
+--                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql).
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$
   select array['profiles', 'claims', 'matches', 'beta_feedback']
@@ -96,7 +97,8 @@ create function pg_temp.tables_tested_elsewhere() returns text[]
 language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
                'match_events', 'match_feature_snapshots', 'match_labels',
-               'profile_facts', 'consent', 'drip_email_sends']
+               'profile_facts', 'consent', 'drip_email_sends',
+               'match_alert_sends', 'match_alert_tokens']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as

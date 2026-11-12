@@ -41,6 +41,8 @@ export const REQUIRED_COLUMNS: Record<string, string[]> = {
   claim_reminder_sends: ['claim_id', 'kind', 'sent_at'],
   drip_email_sends: ['user_id', 'kind', 'sent_at'],
   payout_tracker_sends: ['claim_id', 'kind', 'fingerprint', 'sent_at'],
+  match_alert_sends: ['email', 'lawsuit_id', 'sent_at'],
+  match_alert_tokens: ['token_hash', 'email', 'lawsuit_id', 'expires_at'],
   beta_feedback: ['id', 'user_id', 'interview_opt_in', 'dismissed'],
 };
 

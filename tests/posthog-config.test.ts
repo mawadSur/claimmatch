@@ -54,6 +54,7 @@ describe('PostHog App Router wiring', () => {
     expect(home).toContain('landing_viewed');
     expect(settlement).toContain('settlement_viewed');
     expect(report).toContain('claim_reported_filed');
+    expect(report).toContain('claim_filed');
     expect(admin).toContain("capture('share_link_created'");
     expect(read('src/app/signup/page.tsx')).toContain('signup_started');
     expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_started');
