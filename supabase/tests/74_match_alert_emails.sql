@@ -124,7 +124,13 @@ set local role anon;
 do $$
 begin
   if has_table_privilege('anon', 'public.match_alert_sends', 'select')
-     or has_table_privilege('anon', 'public.match_alert_tokens', 'insert') then
+     or has_table_privilege('anon', 'public.match_alert_sends', 'insert')
+     or has_table_privilege('anon', 'public.match_alert_sends', 'update')
+     or has_table_privilege('anon', 'public.match_alert_sends', 'delete')
+     or has_table_privilege('anon', 'public.match_alert_tokens', 'select')
+     or has_table_privilege('anon', 'public.match_alert_tokens', 'insert')
+     or has_table_privilege('anon', 'public.match_alert_tokens', 'update')
+     or has_table_privilege('anon', 'public.match_alert_tokens', 'delete') then
     raise exception '0036: anon must not access match-alert tables';
   end if;
 end $$;
@@ -135,7 +141,13 @@ set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000036';
 do $$
 begin
   if has_table_privilege('authenticated', 'public.match_alert_sends', 'select')
-     or has_table_privilege('authenticated', 'public.match_alert_tokens', 'select') then
+     or has_table_privilege('authenticated', 'public.match_alert_sends', 'insert')
+     or has_table_privilege('authenticated', 'public.match_alert_sends', 'update')
+     or has_table_privilege('authenticated', 'public.match_alert_sends', 'delete')
+     or has_table_privilege('authenticated', 'public.match_alert_tokens', 'select')
+     or has_table_privilege('authenticated', 'public.match_alert_tokens', 'insert')
+     or has_table_privilege('authenticated', 'public.match_alert_tokens', 'update')
+     or has_table_privilege('authenticated', 'public.match_alert_tokens', 'delete') then
     raise exception '0036: authenticated must not access match-alert tables';
   end if;
 end $$;
