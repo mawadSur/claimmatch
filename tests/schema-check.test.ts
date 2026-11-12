@@ -43,6 +43,8 @@ describe('checkRequiredSchema', () => {
     expect(result.present).toContain('claim_reminder_sends');
     expect(result.present).toContain('drip_email_sends');
     expect(result.present).toContain('payout_tracker_sends');
+    expect(result.present).toContain('match_alert_sends');
+    expect(result.present).toContain('match_alert_tokens');
     expect(result.present).toContain('lawsuits.final_approval_hearing_at');
     expect(result.present).toContain('beta_feedback');
     expect(result.present).toContain('persist_first_attribution');

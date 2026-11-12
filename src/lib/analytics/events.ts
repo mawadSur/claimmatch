@@ -24,7 +24,13 @@ export const ANALYTICS_EVENTS = {
   prefill_completed: 'prefill_completed',
   claim_tracking_started: 'claim_tracking_started',
   claim_reported_filed: 'claim_reported_filed',
+  /** Confirmed filing. Same evidence as claim_reported_filed; funnel alias. */
+  claim_filed: 'claim_filed',
   match_feedback: 'match_feedback',
+  match_alert_sent: 'match_alert_sent',
+  match_alert_clicked: 'match_alert_clicked',
+  match_alert_signup_completed: 'match_alert_signup_completed',
+  match_alert_unsubscribed: 'match_alert_unsubscribed',
   beta_code_visit: 'beta_code_visit',
   beta_feedback_shown: 'beta_feedback_shown',
   beta_feedback_submitted: 'beta_feedback_submitted',

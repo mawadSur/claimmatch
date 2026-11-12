@@ -61,6 +61,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.payoutTrackerEmails()).toBe(false);
     expect(flags.matchReason()).toBe(false);
     expect(flags.trustScorecard()).toBe(false);
+    expect(flags.matchAlertEmails()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -116,6 +117,7 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('PAYOUT_TRACKER_EMAILS_ENABLED', 'yes');
     vi.stubEnv('MATCH_REASON_ENABLED', 'on');
     vi.stubEnv('TRUST_SCORECARD_ENABLED', 'true');
+    vi.stubEnv('MATCH_ALERT_EMAILS_ENABLED', 'true');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -170,6 +172,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.payoutTrackerEmails()).toBe(false);
     expect(flags.matchReason()).toBe(false);
     expect(flags.trustScorecard()).toBe(false);
+    expect(flags.matchAlertEmails()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -225,6 +228,7 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('PAYOUT_TRACKER_EMAILS_ENABLED', '1');
     vi.stubEnv('MATCH_REASON_ENABLED', '1');
     vi.stubEnv('TRUST_SCORECARD_ENABLED', '1');
+    vi.stubEnv('MATCH_ALERT_EMAILS_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -279,5 +283,6 @@ describe('brief 3 feature flags', () => {
     expect(flags.payoutTrackerEmails()).toBe(true);
     expect(flags.matchReason()).toBe(true);
     expect(flags.trustScorecard()).toBe(true);
+    expect(flags.matchAlertEmails()).toBe(true);
   });
 });

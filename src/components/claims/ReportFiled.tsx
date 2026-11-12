@@ -147,7 +147,10 @@ function ReportForm({
       claimStatus: result.claim.status,
       withConfirmationNumber: Boolean(numberCheck.value),
     });
-    if (filing) posthog?.capture('claim_reported_filed', filing);
+    if (filing) {
+      posthog?.capture('claim_reported_filed', filing);
+      posthog?.capture('claim_filed', filing);
+    }
     onChange(
       result.claim,
       numberCheck.value

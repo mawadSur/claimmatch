@@ -338,4 +338,10 @@ export const flags = {
    * out of the sitemap.
    */
   trustScorecard: () => on('TRUST_SCORECARD_ENABLED'),
+  /**
+   * Opt-in "new match" alert emails (verified open listings, weekly cap,
+   * one-click start). Off: the daily cron skips the step. Never sends from
+   * tests or CI. Independent of MATCH_EMAILS_ENABLED.
+   */
+  matchAlertEmails: () => on('MATCH_ALERT_EMAILS_ENABLED'),
 };

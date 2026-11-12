@@ -19,12 +19,14 @@ import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
 import { sendOnboardingDrips } from '@/lib/onboarding-drip';
 import { sendPayoutTrackerEmails } from '@/lib/payout-tracker';
+import { sendMatchAlerts } from '@/lib/match-alert-job';
 import {
   buildReport,
   checkIngestStep,
   deadlineRemindersGate,
   errorMessage,
   heldTriageGate,
+  matchAlertGate,
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
@@ -165,6 +167,15 @@ async function handle(req: Request) {
       steps.payoutTracker = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/payoutTracker', () => sendPayoutTrackerEmails());
+    }
+
+    const alertGate = matchAlertGate(flags.matchAlertEmails());
+    if (!alertGate.run) {
+      steps.matchAlerts = alertGate.step;
+    } else {
+      steps.matchAlerts = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/matchAlerts', () => sendMatchAlerts({ dryRun }));
     }
 
     const report = buildReport('daily', steps);

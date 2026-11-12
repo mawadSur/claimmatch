@@ -102,6 +102,11 @@ form click is not a filing.
 | `prefill_completed` | Copy-all or save of the packet | `lawsuit_id`, `slug`, `method` | Filed |
 | `claim_tracking_started` | Claim row created to track | — | Filed |
 | `claim_reported_filed` | User confirmed filing **and** the claim row saved as `reported_filed` or `submitted` | `evidence=user_reported_and_saved`, `claim_status`, `with_confirmation_number`, `is_filing=true` | Official-form click; dashboard “I submitted this” |
+| `claim_filed` | Same moment as `claim_reported_filed` (funnel alias) | Same evidence as `claim_reported_filed` | Official-form click |
+| `match_alert_sent` | Server: a match-alert email was accepted by Resend | `claim_count`, `source=profile\|subscriber` | Dry-run; flag off |
+| `match_alert_clicked` | Server: one-click start token consumed | `created_user` | Scanner GET |
+| `match_alert_signup_completed` | Server: token created a new account (no password) | `evidence=match_alert_token` | Existing-user sign-in |
+| `match_alert_unsubscribed` | Server: `/api/unsubscribe` turned off alerts | `source=unsubscribe` | Settings toggle |
 | `match_feedback` | Dashboard feedback button | `feedback_label`, `is_filing=false` | Confirmed filing |
 
 `profile_completed` and `claim_reported_filed` were not in the taxonomy

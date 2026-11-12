@@ -70,6 +70,16 @@ export async function POST(req: Request) {
     }
   }
 
+  const email = typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
+  if (email) {
+    try {
+      const { error } = await svc.from('match_alert_tokens').delete().eq('email', email);
+      if (error) console.error('[account-delete] row delete failed', { table: 'match_alert_tokens', code: error.code });
+    } catch (err) {
+      console.error('[account-delete] row delete failed', { table: 'match_alert_tokens', err });
+    }
+  }
+
   const { error: authError } = await svc.auth.admin.deleteUser(user.id);
   if (authError) {
     console.error('[account-delete] auth delete failed', { message: authError.message });
