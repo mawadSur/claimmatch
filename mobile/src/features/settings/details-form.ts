@@ -43,11 +43,15 @@ export function hasAddress(values: Pick<DetailsValues, 'addressLine1' | 'city'>)
  * the message shows under the field it belongs to, and asks for the consent
  * box before a new address is saved, as PrefillPacket does.
  */
-export function detailsErrors(values: DetailsValues, consentStored: boolean): DetailsErrors {
+export function detailsErrors(
+  values: DetailsValues,
+  consentStored: boolean,
+  collectPhone = true,
+): DetailsErrors {
   const errors: DetailsErrors = {};
   const text: [Exclude<DetailsField, 'consent'>, string][] = [
     ['full_name', values.fullName],
-    ['phone', values.phone],
+    ...(collectPhone ? [['phone', values.phone] as [Exclude<DetailsField, 'consent'>, string]] : []),
     ['address_line1', values.addressLine1],
     ['address_line2', values.addressLine2],
     ['city', values.city],
@@ -87,13 +91,14 @@ export function detailsBody(
   consentStored: boolean,
   consentAt: Date,
   savedAnswers: AttributeAnswers,
+  collectPhone = true,
 ): SettingsInput {
   const body: SettingsInput = {
     full_name: values.fullName,
     state: values.state,
-    phone: values.phone,
     match_metrics_consent: values.metricsConsent,
   };
+  if (collectPhone) body.phone = values.phone;
   if (!sameAnswers(values.answers, savedAnswers)) body.attributes = values.answers;
   if (consentStored || (hasAddress(values) && values.addressConsent)) {
     body.address_line1 = values.addressLine1;

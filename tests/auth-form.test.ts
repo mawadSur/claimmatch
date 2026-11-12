@@ -24,12 +24,40 @@ describe('AuthForm signed-in path', () => {
 
   it('shows the password rule before submit and validates without spinning', () => {
     expect(src).toContain('password-hint');
-    expect(src).toContain('Use at least {MIN_PASSWORD_LENGTH} characters.');
+    expect(src).toContain('signupPasswordHint');
     expect(src).toContain('validateSignupFields');
     expect(src).toContain('signup_submitted');
     expect(src).toContain('signup_error');
     expect(src).toContain("posthog?.capture('signup_error', { code })");
     expect(src).not.toContain("capture('signup_error', { message");
+  });
+
+  it('shows mapped signup errors, never the raw provider text', () => {
+    expect(src).toContain('signupErrorMessage(');
+    expect(src).not.toContain('setError(signUpError.message)');
+    expect(src).toContain("errorCode === 'email_exists'");
+    expect(src).toContain('href="/forgot-password"');
+    expect(src).toContain('href={switchHref}');
+  });
+
+  it('lets people resend the confirmation email from check-your-email', () => {
+    expect(src).toContain("resend({");
+    expect(src).toContain("type: 'signup'");
+    expect(src).toContain('Resend confirmation email');
+    expect(src).toContain('SIGNUP_RESEND_COOLDOWN_MS');
+    expect(src).toContain('signupErrorMessage(signupErrorCodeFromMessage(resendErr.message))');
+  });
+
+  it('does not tell people to create the account again when the confirmation link expired', () => {
+    expect(src).toContain('resend the confirmation email');
+    expect(src).not.toContain('create your account again');
+  });
+
+  it('offers an unchecked match-alert opt-in on signup', () => {
+    expect(src).toContain('id="alerts-opt-in"');
+    expect(src).toContain('Email me when a new settlement may match');
+    expect(src).toContain('email_opt_in: alertsOptIn');
+    expect(src).toContain('useState(false)');
   });
 
   it('does not treat login as signup, and requires a session for signup_completed', () => {

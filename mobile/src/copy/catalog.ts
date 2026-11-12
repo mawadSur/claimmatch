@@ -141,7 +141,7 @@ export const catalog = defineCopy({
   },
   notStated: {
     text: 'Not stated',
-    source: 'src/components/LawsuitCard.tsx',
+    source: 'src/lib/catalog-unknowns.ts',
   },
   /** Spoken as "Start your claim for {title}" (shared.linkForTitle). */
   startYourClaim: {

@@ -54,6 +54,7 @@ describe('PostHog App Router wiring', () => {
     expect(home).toContain('landing_viewed');
     expect(settlement).toContain('settlement_viewed');
     expect(report).toContain('claim_reported_filed');
+    expect(report).toContain('claim_filed');
     expect(admin).toContain("capture('share_link_created'");
     expect(read('src/app/signup/page.tsx')).toContain('signup_started');
     expect(read('src/components/match-preview/MatchPreview.tsx')).toContain('match_preview_started');
@@ -67,6 +68,9 @@ describe('PostHog App Router wiring', () => {
     expect(read('src/app/onboarding/page.tsx')).toContain('event="signup_completed"');
     expect(read('src/app/onboarding/page.tsx')).toContain("evidence: 'email_confirmed'");
     expect(read('src/app/dashboard/page.tsx')).toContain('matches_viewed');
+    expect(read('src/app/dashboard/page.tsx')).toContain('claim_timeline_viewed');
+    expect(read('src/app/dashboard/page.tsx')).toContain('match_reason_viewed');
+    expect(read('src/app/scorecard/page.tsx')).toContain('scorecard_viewed');
     expect(read('src/components/claims/ReportFiled.tsx')).toContain('filingConfirmedProperties');
     expect(read('src/lib/analytics/events.ts')).toContain("evidence: 'user_reported_and_saved'");
     expect(read('src/lib/match-events-shared.ts')).toContain("return 'match_feedback'");

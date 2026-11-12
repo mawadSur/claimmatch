@@ -28,7 +28,9 @@ const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
 /**
  * The facts that decide what a row shows are required; a proof rule the app
- * does not know reads as unknown. The app never shows sourceChecked.
+ * does not know reads as unknown. sourceChecked is shown only as
+ * "Checked against the official notice on {date}" (noticeCheckedOnLabel);
+ * an unreadable date is omitted.
  */
 const guideSchema = z.object({
   slugs: z.array(slug).min(1),

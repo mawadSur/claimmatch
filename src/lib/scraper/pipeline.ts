@@ -1,4 +1,5 @@
 import { flags } from '@/lib/flags';
+import { notifyIndexNowBestEffort } from '@/lib/indexnow';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import type { ScrapedLawsuit } from '@/lib/types';
 import { getSourceAdapters, type SourceAdapter } from './sources';
@@ -103,6 +104,8 @@ export type IngestSummary = {
   dryRun: boolean;
   /** Public listing slugs this run updated or closed (for IndexNow). */
   changedSlugs: string[];
+  /** IndexNow ping for those slugs. Best-effort; never fails the ingest. */
+  indexNow: { submitted: number; skipped?: string; status?: number };
   /** Sources that returned nothing (outage, error or empty feed). */
   emptySources: string[];
   /** Writes or reads that failed. */
@@ -155,6 +158,7 @@ function emptySummary(): IngestSummary {
     proposeCloseSlugs: [],
     dryRun: false,
     changedSlugs: [],
+    indexNow: { submitted: 0, skipped: 'empty' },
     emptySources: [],
     failed: 0,
     failureSamples: [],
@@ -302,6 +306,13 @@ export async function ingestAndExtract(options: IngestOptions = {}): Promise<Ing
         closeAfter,
       }),
     );
+  }
+
+  if (!dryRun && summary.changedSlugs.length > 0) {
+    const ping = await notifyIndexNowBestEffort(summary.changedSlugs);
+    summary.indexNow = ping;
+  } else {
+    summary.indexNow = { submitted: 0, skipped: dryRun ? 'dry-run' : 'empty' };
   }
 
   return summary;

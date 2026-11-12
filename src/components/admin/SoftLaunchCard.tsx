@@ -1,11 +1,19 @@
+import type { BetaInviteStats } from '@/lib/beta-invite';
 import type { SoftLaunchCounts } from '@/lib/soft-launch';
 import { GATE_0_THRESHOLDS, gate0Progress } from '@/lib/soft-launch';
+import { BetaInviteCodes } from '@/components/admin/BetaInviteCodes';
 
 function formatCount(n: number): string {
   return n.toLocaleString();
 }
 
-export function SoftLaunchCard({ counts }: { counts: SoftLaunchCounts }) {
+export function SoftLaunchCard({
+  counts,
+  betaInvites,
+}: {
+  counts: SoftLaunchCounts;
+  betaInvites?: BetaInviteStats[] | null;
+}) {
   const rows: Array<[string, number]> = [
     ['Signups', counts.signups],
     ['Onboarded', counts.onboarded],
@@ -71,6 +79,7 @@ export function SoftLaunchCard({ counts }: { counts: SoftLaunchCounts }) {
           {gate.allMet ? 'Gate 0 counts are met.' : 'Gate 0 is not met.'}
         </p>
       </div>
+      {betaInvites ? <BetaInviteCodes initialInvites={betaInvites} /> : null}
     </section>
   );
 }

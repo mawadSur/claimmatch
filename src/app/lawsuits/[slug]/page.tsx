@@ -22,10 +22,13 @@ import {
 import { settlementPreviewPath } from '@/lib/match-preview';
 import { relatedSettlements } from '@/lib/related-settlements';
 import { proofDetail } from '@/lib/proof';
-import { settlementProofDetail } from '@/lib/settlement-guides';
+import {
+  hasOfficialNoticeGuide,
+  noticeCheckedOnLabel,
+  settlementProofDetail,
+} from '@/lib/settlement-guides';
 import {
   displayEligibilityText,
-  displayProofLabel,
   overlayVerifiedFacts,
   showVerifiedBadge,
 } from '@/lib/verified-fields';
@@ -149,7 +152,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
   const eligibility = displayEligibilityText(lawsuit);
   const verified = showVerifiedBadge(lawsuit);
-  const proofShown = displayProofLabel(lawsuit);
+  const guided = hasOfficialNoticeGuide(lawsuit.slug);
+  const checkedLabel = noticeCheckedOnLabel(lawsuit.slug);
+  const showUnverifiedBanner = !verified && !guided;
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
@@ -270,8 +275,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
         </div>
       </section>
 
-      {/* D50: unverified label — hidden when this row is verified (C7) ------ */}
-      {!verified && (
+      {/* Unverified warning — hidden for admin-verified rows (C7) and official-notice guides. */}
+      {showUnverifiedBanner ? (
       <section className="container-page pb-4" aria-labelledby="unverified-heading">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -285,12 +290,16 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   ? 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.'
                   : 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.'}
               </p>
-              <OfficialLink link={official} lawsuitId={lawsuit.id} slug={lawsuit.slug} />
+              <OfficialLink link={official} />
             </div>
           </div>
         </div>
       </section>
-      )}
+      ) : checkedLabel ? (
+      <section className="container-page pb-4">
+        <p className="text-sm text-ink-muted">{checkedLabel}</p>
+      </section>
+      ) : null}
 
       {/* Body --------------------------------------------------------------- */}
       <section className={`container-page grid gap-8 py-10 lg:grid-cols-3${qualifyHref ? ' pb-28 lg:pb-10' : ''}`}>
@@ -310,10 +319,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
               </dd>
             </div>
             )}
-            {(!trustCopy || facts.proof) && (
+            {facts.proof && (
             <div>
               <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Proof</dt>
-              <dd className="mt-1 text-base font-bold text-ink">{proofShown}</dd>
+              <dd className="mt-1 text-base font-bold text-ink">{facts.proof}</dd>
               <dd className="mt-1 text-sm text-ink-muted">
                 {verified
                   ? proofDetail({
@@ -575,15 +584,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
   );
 }
 
-function OfficialLink({
-  link,
-  lawsuitId,
-  slug,
-}: {
-  link: CatalogLink | null;
-  lawsuitId: string;
-  slug: string;
-}) {
+function OfficialLink({ link }: { link: CatalogLink | null }) {
   if (!link) {
     return (
       <p className="mt-3 text-sm font-semibold text-amber-900">
@@ -593,18 +594,8 @@ function OfficialLink({
     );
   }
   if (link.kind === 'official') {
-    return (
-      <OfficialFormLink
-        href={link.href}
-        lawsuitId={lawsuitId}
-        slug={slug}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
-      >
-        Go to the official site ({link.host})
-        <ExternalLink className="h-4 w-4" aria-hidden="true" />
-        <span className="sr-only"> (opens in a new tab)</span>
-      </OfficialFormLink>
-    );
+    // The short-answer "Official claim site" button already covers this URL.
+    return null;
   }
   return (
     <div className="mt-3 text-sm text-amber-900">

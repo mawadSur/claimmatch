@@ -5,6 +5,7 @@ import {
   isPlausibleEmail,
   maskEmail,
   parseUnsubscribeToken,
+  listUnsubscribeHeaders,
   unsubscribePageUrl,
 } from '@/lib/unsubscribe';
 import { unsubscribeUrl } from '@/lib/email';
@@ -247,5 +248,13 @@ describe('unsubscribePageUrl', () => {
 
   it('is what email.ts puts in footers', () => {
     expect(unsubscribeUrl('jane@example.com')).toBe(unsubscribePageUrl('jane@example.com'));
+  });
+});
+
+describe('listUnsubscribeHeaders', () => {
+  it('points one-click POST at /api/unsubscribe', () => {
+    const headers = listUnsubscribeHeaders('jane@example.com', 'https://claimmatch.test/');
+    expect(headers['List-Unsubscribe']).toContain('/api/unsubscribe?e=');
+    expect(headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
   });
 });

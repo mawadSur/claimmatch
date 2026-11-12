@@ -143,6 +143,10 @@ export interface Lawsuit {
   third_party_fee_allowed?: boolean;
   /** 0027: conservative structured tags extracted during ingest. */
   tags?: LawsuitTags | null;
+  /** 0035: listed final-approval hearing date. Null = not announced. Never guessed. */
+  final_approval_hearing_at?: string | null;
+  /** 0035: listed payment-timing sentence. Null = not announced. Never guessed. */
+  payment_timing_text?: string | null;
 }
 
 export type ProfileFactType =
@@ -207,6 +211,8 @@ export interface Profile {
   first_utm_campaign?: string | null;
   first_utm_content?: string | null;
   first_ref?: string | null;
+  /** 0034: closed-set first-touch channel (chatgpt, perplexity, …). Written once. */
+  first_traffic_channel?: string | null;
   /** 0017: when the user agreed to privacy-safe match-quality logging. */
   match_metrics_consent_at?: string | null;
   /** 0020: tester account excluded from traction counts. */

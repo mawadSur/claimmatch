@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   indexNowKey,
+  indexNowKeyFileRequest,
   indexNowPayload,
   indexNowShouldRun,
+  indexNowStandardKeyPath,
   indexNowUrlsForSlugs,
+  notifyIndexNowBestEffort,
+  shouldNotifyIndexNowForAdminAction,
   submitIndexNowUrls,
 } from '@/lib/indexnow';
 
@@ -60,7 +64,62 @@ describe('IndexNow', () => {
     );
     expect(payload.host).toBe('lawsuitai.org');
     expect(payload.key).toBe('abcd1234efgh');
-    expect(payload.keyLocation).toBe('https://lawsuitai.org/indexnow-key.txt');
+    expect(payload.keyLocation).toBe('https://lawsuitai.org/abcd1234efgh.txt');
     expect(payload.urlList).toEqual(['https://lawsuitai.org/lawsuits/widget-settlement']);
+  });
+
+  it('POSTs a batched payload when a test supplies a mocked fetch', async () => {
+    vi.stubEnv('INDEXNOW_ENABLED', '1');
+    vi.stubEnv('INDEXNOW_KEY', 'abcd1234efgh');
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    const result = await submitIndexNowUrls(['amazon-return-policy-settlement'], {
+      fetchImpl,
+      allowInTest: true,
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    const init = fetchImpl.mock.calls[0]?.[1] as { body?: string };
+    const body = JSON.parse(init.body ?? '{}') as {
+      host: string;
+      key: string;
+      keyLocation: string;
+      urlList: string[];
+    };
+    expect(body.host).toBe('lawsuitai.org');
+    expect(body.key).toBe('abcd1234efgh');
+    expect(body.keyLocation).toBe('https://lawsuitai.org/abcd1234efgh.txt');
+    expect(body.urlList.some((u) => u.endsWith('/lawsuits/amazon-return-policy-settlement'))).toBe(true);
+    expect(result).toEqual({ submitted: expect.any(Number), status: 200 });
+    expect((result as { submitted: number }).submitted).toBeGreaterThan(0);
+  });
+
+  it('swallows network errors so ingest cannot fail', async () => {
+    vi.stubEnv('INDEXNOW_ENABLED', '1');
+    vi.stubEnv('INDEXNOW_KEY', 'abcd1234efgh');
+    const result = await notifyIndexNowBestEffort(['amazon-return-policy-settlement'], {
+      fetchImpl: async () => {
+        throw new Error('network down');
+      },
+      allowInTest: true,
+    });
+    expect(result).toEqual({ submitted: 0, skipped: 'error' });
+  });
+
+  it('serves the standard /{key}.txt path and notifies on publish/close', () => {
+    expect(indexNowStandardKeyPath('abcd1234efgh')).toBe('/abcd1234efgh.txt');
+    expect(indexNowKeyFileRequest('/abcd1234efgh.txt', 'abcd1234efgh')).toBe(true);
+    expect(indexNowKeyFileRequest('/other.txt', 'abcd1234efgh')).toBe(false);
+    expect(shouldNotifyIndexNowForAdminAction('publish')).toBe(true);
+    expect(shouldNotifyIndexNowForAdminAction('close_missing')).toBe(true);
+    expect(shouldNotifyIndexNowForAdminAction('verify')).toBe(false);
+  });
+});
+
+describe('GET /indexnow-key.txt', () => {
+  it('404s when the flag is off', async () => {
+    vi.stubEnv('INDEXNOW_ENABLED', '');
+    vi.stubEnv('INDEXNOW_KEY', 'abcd1234efgh');
+    const { GET } = await import('@/app/indexnow-key.txt/route');
+    const res = GET();
+    expect(res.status).toBe(404);
   });
 });

@@ -24,6 +24,7 @@
 --                           lawsuit ...003 and without a recovery, so a probe
 --                           that inserts a recovery for it cannot hit the
 --                           one-recovery-per-claim key
+--   A's / B's beta_feedback d0000000-0000-4000-8000-00000000000a and ...00b
 --   source of every lawsuit 20000000-0000-4000-8000-000000000001
 -- All matches and the claims ...00a and ...00b are on lawsuit ...001; ...002
 -- has none. Every lawsuit has an official claim_url and the source a
@@ -73,9 +74,12 @@ end $$;
 --                     admin/service-role only), referrals and subscribers. Tests 3 and 5 try to write them as anon and
 --                     as a signed-in user and prove that nothing changed.
 --   tables_tested_elsewhere  covered by another file in supabase/tests
---                     (proof_feedback: 54_proof_feedback.sql).
+--                     (proof_feedback: 54_proof_feedback.sql;
+--                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql).
 create function pg_temp.user_tables() returns text[]
-language sql immutable as $$ select array['profiles', 'claims', 'matches'] $$;
+language sql immutable as $$
+  select array['profiles', 'claims', 'matches', 'beta_feedback']
+$$;
 
 create function pg_temp.protected_tables() returns text[]
 language sql immutable as $$
@@ -86,14 +90,15 @@ language sql immutable as $$
                'eligibility_rule_drafts', 'ingest_alerts',
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
-               'claim_reminder_sends']
+               'claim_reminder_sends', 'payout_tracker_sends']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
 language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
                'match_events', 'match_feature_snapshots', 'match_labels',
-               'profile_facts', 'consent', 'drip_email_sends']
+               'profile_facts', 'consent', 'drip_email_sends',
+               'match_alert_sends', 'match_alert_tokens']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as
@@ -200,6 +205,12 @@ begin
   insert into public.claim_events (claim_id, user_id, to_status, actor) values
     ('c0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a', 'self_file', 'user'),
     ('c0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b', 'self_file', 'user');
+  -- Soft-beta feedback (0033): one row per signed-in user.
+  insert into public.beta_feedback (id, user_id, almost_stopped) values
+    ('d0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a',
+      'RLS test: feedback of user A'),
+    ('d0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b',
+      'RLS test: feedback of user B');
 
   -- Fixtures must exist, or "sees 0 rows" would only mean "the table is empty".
   if (select count(*) from public.profiles
@@ -209,7 +220,8 @@ begin
   end if;
   foreach t in array array['claims', 'matches', 'subscribers', 'notifications',
                            'referrals', 'recoveries', 'jobs', 'sources',
-                           'claim_events', 'share_links', 'share_link_clicks'] loop
+                           'claim_events', 'share_links', 'share_link_clicks',
+                           'beta_feedback'] loop
     if pg_temp.visible_rows(format('select 1 from public.%I', t)) = 0 then
       raise exception 'fixtures: public.% has no rows', t;
     end if;
@@ -298,7 +310,8 @@ declare
 begin
   foreach t in array array['claims', 'profiles', 'subscribers', 'matches',
                            'notifications', 'referrals', 'recoveries', 'jobs',
-                           'claim_events', 'share_links', 'share_link_clicks'] loop
+                           'claim_events', 'share_links', 'share_link_clicks',
+                           'beta_feedback'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'anon can read % row(s) of public.%', n, t;
@@ -379,7 +392,17 @@ begin
        values ('a0000000-0000-4000-8000-00000000000a',
                'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
     $q$update public.claim_reminder_sends set kind = '1d'$q$,
-    $q$delete from public.claim_reminder_sends$q$
+    $q$delete from public.claim_reminder_sends$q$,
+    $q$insert into public.payout_tracker_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
+    $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
+    $q$delete from public.payout_tracker_sends$q$,
+    -- Soft-beta feedback: signed-in users insert their own row; anon cannot.
+    $q$insert into public.beta_feedback (user_id, almost_stopped)
+       values ('a0000000-0000-4000-8000-00000000000a', 'inserted by anon')$q$,
+    $q$update public.beta_feedback set almost_stopped = 'changed by anon'$q$,
+    $q$delete from public.beta_feedback$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -423,6 +446,10 @@ begin
   if n is not null and n <> 1 then
     raise exception 'user A should read their own match, got % row(s)', n;
   end if;
+  n := pg_temp.visible_rows(format('select 1 from public.beta_feedback where user_id = %L', me));
+  if n is distinct from 1 then
+    raise exception 'user A should read their own beta_feedback, got % row(s)', n;
+  end if;
 
   for r in
     select * from (values
@@ -432,7 +459,8 @@ begin
       ('notifications', 'user_id'),
       ('referrals', 'referrer_id'),
       ('recoveries', 'user_id'),
-      ('claim_events', 'user_id')
+      ('claim_events', 'user_id'),
+      ('beta_feedback', 'user_id')
     ) v(tbl, owner_col)
   loop
     n := pg_temp.visible_rows(format(
@@ -492,6 +520,15 @@ begin
     $q$update public.profiles set full_name = 'changed by A'
        where id = 'b0000000-0000-4000-8000-00000000000b'$q$,
     $q$delete from public.profiles where id = 'b0000000-0000-4000-8000-00000000000b'$q$,
+    $q$update public.beta_feedback set almost_stopped = 'changed by A',
+                                     whats_missing = 'by A'
+       where id = 'd0000000-0000-4000-8000-00000000000b'$q$,
+    $q$delete from public.beta_feedback
+       where id = 'd0000000-0000-4000-8000-00000000000b'$q$,
+    $q$insert into public.beta_feedback (user_id, almost_stopped)
+       values ('b0000000-0000-4000-8000-00000000000b', 'created by A')$q$,
+    $q$update public.beta_feedback set user_id = 'b0000000-0000-4000-8000-00000000000b'
+       where id = 'd0000000-0000-4000-8000-00000000000a'$q$,
     $q$insert into public.referrals (referrer_id, code)
        values ('b0000000-0000-4000-8000-00000000000b', 'x')$q$,
     -- The catalog and the server-only tables: not even user A's own rows.
@@ -549,7 +586,12 @@ begin
        values ('a0000000-0000-4000-8000-00000000000a',
                'c0000000-0000-4000-8000-00000000000a', '7d')$q$,
     $q$update public.claim_reminder_sends set kind = '1d'$q$,
-    $q$delete from public.claim_reminder_sends$q$
+    $q$delete from public.claim_reminder_sends$q$,
+    $q$insert into public.payout_tracker_sends (user_id, claim_id, kind)
+       values ('a0000000-0000-4000-8000-00000000000a',
+               'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
+    $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
+    $q$delete from public.payout_tracker_sends$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -573,7 +615,10 @@ begin
                                  lawsuit_id = '10000000-0000-4000-8000-000000000002'$q$,
     $q$delete from public.claims$q$,
     $q$delete from public.matches$q$,
-    $q$delete from public.profiles$q$
+    $q$delete from public.profiles$q$,
+    $q$update public.beta_feedback set almost_stopped = 'changed by A'$q$,
+    $q$update public.beta_feedback set user_id = 'b0000000-0000-4000-8000-00000000000b'$q$,
+    $q$delete from public.beta_feedback$q$
   ] loop
     perform pg_temp.rows_changed(stmt);
   end loop;
@@ -621,6 +666,26 @@ begin
       and full_name is distinct from 'changed by A') then
     raise exception 'user B''s profile was changed or deleted';
   end if;
+  if not exists (
+    select 1 from public.beta_feedback
+    where id = 'd0000000-0000-4000-8000-00000000000b'
+      and user_id = 'b0000000-0000-4000-8000-00000000000b'
+      and almost_stopped = 'RLS test: feedback of user B'
+      and whats_missing is null) then
+    raise exception 'user B''s beta_feedback was changed or deleted';
+  end if;
+  if exists (
+    select 1 from public.beta_feedback
+    where id = 'd0000000-0000-4000-8000-00000000000a'
+      and user_id <> 'a0000000-0000-4000-8000-00000000000a') then
+    raise exception 'user A handed their beta_feedback to another user';
+  end if;
+  if exists (
+    select 1 from public.beta_feedback
+    where user_id = 'b0000000-0000-4000-8000-00000000000b'
+      and almost_stopped = 'created by A') then
+    raise exception 'user A created beta_feedback in user B''s name';
+  end if;
 end $$;
 call pg_temp.assert_protected_tables_unchanged('user A');
 rollback;
@@ -651,6 +716,8 @@ begin
     $q$update public.profiles set referred_by = 'b0000000-0000-4000-8000-00000000000b'
        where id = 'a0000000-0000-4000-8000-00000000000a'$q$,
     $q$update public.profiles set email = 'someone-else@example.test'
+       where id = 'a0000000-0000-4000-8000-00000000000a'$q$,
+    $q$update public.profiles set first_traffic_channel = 'chatgpt'
        where id = 'a0000000-0000-4000-8000-00000000000a'$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
@@ -668,7 +735,8 @@ begin
       and not is_admin
       and referred_by is null
       and email = 'rls-user-a@example.test'
-      and referral_code is distinct from 'chosen-by-a') then
+      and referral_code is distinct from 'chosen-by-a'
+      and first_traffic_channel is null) then
     raise exception 'user A''s server-owned profile columns changed';
   end if;
 end $$;

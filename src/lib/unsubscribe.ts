@@ -137,6 +137,23 @@ export function unsubscribePageUrl(email: string, siteUrl: string = SITE.url): s
   return `${base}${UNSUBSCRIBE_PAGE_PATH}?${TOKEN_PARAM}=${encodeURIComponent(encodeUnsubscribeToken(email))}`;
 }
 
+/** Absolute one-click POST target for RFC 8058 List-Unsubscribe. */
+export function unsubscribeApiUrl(email: string, siteUrl: string = SITE.url): string {
+  const base = siteUrl.replace(/\/+$/, '');
+  return `${base}${UNSUBSCRIBE_API_PATH}?${TOKEN_PARAM}=${encodeURIComponent(encodeUnsubscribeToken(email))}`;
+}
+
+/** Headers for commercial Resend sends. Gmail one-click POSTs the API URL. */
+export function listUnsubscribeHeaders(
+  email: string,
+  siteUrl: string = SITE.url,
+): Record<string, string> {
+  return {
+    'List-Unsubscribe': `<${unsubscribeApiUrl(email, siteUrl)}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  };
+}
+
 /**
  * Show enough of an address for its owner to recognize it, and no more:
  * "jo•••@example.com". The mask has a fixed length, so it never reveals how

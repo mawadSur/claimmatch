@@ -1,7 +1,12 @@
+import {
+  catalogCardDeadlineLabel,
+  catalogCardMissing,
+  catalogCardPayout,
+  catalogCardProof,
+} from '@shared/lib/catalog-unknowns';
 import { displaySummary } from '@shared/lib/lawsuit-display';
 import { isOpenForClaims } from '@shared/lib/open-for-claims';
 import { formatDeadline } from '@shared/lib/utils';
-import { displayProofLabel } from '@shared/lib/verified-fields';
 import { memo } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -9,9 +14,11 @@ import { AppText, Button, Card } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
 import { STACK_VALUE_FONT_SCALE } from '@/components/ui/ListItem';
 import { catalog } from '@/copy/catalog';
+import { settlement } from '@/copy/settlement';
 import { fillCopy, shared } from '@/copy/shared';
 import type { CatalogLawsuit } from '@/data/catalog';
 import { SettlementBadges, UnverifiedLine, useIsVerified } from '@/features/shared';
+import { useConfig } from '@/providers/ConfigProvider';
 import { colors, fontFamilies, radii, space, touchTarget, typography } from '@/theme/tokens';
 
 /** A one-line title is shorter than a touch target; the slop makes it 44 pt tall. */
@@ -37,12 +44,19 @@ export interface CatalogCardProps {
  */
 export const CatalogCard = memo(function CatalogCard({ lawsuit, now, onStartClaim, onShowDetails }: CatalogCardProps) {
   // Read through the config, so the card renders again when the server flags arrive.
+  const { isFlagOn } = useConfig();
+  const hideUnknown = isFlagOn('CATALOG_HIDE_UNKNOWNS_ENABLED');
   const verified = useIsVerified(lawsuit);
   const open = isOpenForClaims(lawsuit, now);
   const summary = displaySummary(lawsuit);
-  const deadline = lawsuit.deadline ? formatDeadline(lawsuit.deadline) : catalog.noDeadlineListed.text;
-  const proof = displayProofLabel(lawsuit);
-  const payout = lawsuit.typical_payout?.trim() || catalog.notStated.text;
+  const deadline = catalogCardDeadlineLabel(
+    lawsuit.deadline,
+    lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
+    hideUnknown,
+  );
+  const proof = catalogCardProof(lawsuit, hideUnknown);
+  const payout = catalogCardPayout(lawsuit.typical_payout, hideUnknown);
+  const missing = catalogCardMissing(lawsuit, hideUnknown);
   const showDetails = () => onShowDetails(lawsuit.slug);
   // Side by side, "Details" gets about a third of the row; a large label would wrap inside the word.
   const stackActions = useWindowDimensions().fontScale >= STACK_VALUE_FONT_SCALE;
@@ -71,19 +85,26 @@ export const CatalogCard = memo(function CatalogCard({ lawsuit, now, onStartClai
         </AppText>
       ) : null}
 
-      {lawsuit.deadline ? null : (
+      {!lawsuit.deadline && deadline ? (
         <View style={styles.noDeadline}>
           <AppText variant="badge" color="textMuted">
             {catalog.noDeadlineListed.text}
           </AppText>
         </View>
-      )}
+      ) : null}
 
-      <View style={styles.stats}>
-        <Stat label={catalog.deadline.text} value={deadline} />
-        <Stat label={catalog.proof.text} value={proof} />
-        <Stat label={catalog.payoutAsListed.text} value={payout} wide />
-      </View>
+      {deadline || proof || payout ? (
+        <View style={styles.stats}>
+          {deadline ? <Stat label={catalog.deadline.text} value={deadline} /> : null}
+          {proof ? <Stat label={catalog.proof.text} value={proof} /> : null}
+          {payout ? <Stat label={catalog.payoutAsListed.text} value={payout} wide /> : null}
+        </View>
+      ) : null}
+      {missing.length > 0 ? (
+        <AppText variant="caption" color="textMuted">
+          {`${fillCopy(settlement.missingDetails.text, { list: missing.join(', ') })}.`}
+        </AppText>
+      ) : null}
 
       {verified ? null : <UnverifiedLine lawsuit={lawsuit} />}
 

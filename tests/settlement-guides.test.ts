@@ -11,7 +11,9 @@ import {
   applySettlementGuideFacts,
   catalogDeadlineFilter,
   getSettlementGuide,
+  hasOfficialNoticeGuide,
   guidedClaimUrl,
+  noticeCheckedOnLabel,
   guidedDeadline,
   guidesVersion,
   openGuidedCatalog,
@@ -40,8 +42,17 @@ const REQUIRED_SLUGS = [
   'kia-optima-sportage-window-regulator-settlement',
 ] as const;
 
+const NEW_BATCH_SLUGS = [
+  'toyota-airbag-control-unit-zf-trw-settlement',
+  'warner-music-group-1-25m-data-breach-settlement',
+  'tenet-healthcare-pixel-tracking-settlement',
+  'allstate-arizona-depreciation-settlement',
+  'capital-one-arena-concessions-class-action-settlement',
+  'harvard-morgue-class-action-settlement',
+] as const;
+
 describe('settlement guides', () => {
-  it('covers ten open catalog slugs with an official https source', () => {
+  it('covers the original ten plus the new batch with an official https source', () => {
     const slugs = SETTLEMENT_GUIDES.flatMap((guide) => guide.slugs);
     for (const slug of REQUIRED_SLUGS) {
       expect(slugs, slug).toContain(slug);
@@ -52,7 +63,30 @@ describe('settlement guides', () => {
       expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(guide?.sourceChecked).toBe('2026-11-03');
     }
+    for (const slug of NEW_BATCH_SLUGS) {
+      expect(slugs, slug).toContain(slug);
+      const guide = getSettlementGuide(slug);
+      expect(guide?.officialUrl).toMatch(/^https:\/\//);
+      expect(guide?.eligibilityText.length).toBeGreaterThan(40);
+      expect(guide?.typicalPayout.length).toBeGreaterThan(20);
+      expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(guide?.sourceChecked).toBe('2026-11-10');
+      expect(guide?.deadline).toBeDefined();
+      expect((guide?.deadline ?? '') >= '2026-11-16').toBe(true);
+    }
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
+  });
+
+  it('names the official-notice check date and does not invent one', () => {
+    expect(hasOfficialNoticeGuide('toyota-airbag-control-unit-zf-trw-settlement')).toBe(true);
+    expect(noticeCheckedOnLabel('toyota-airbag-control-unit-zf-trw-settlement')).toBe(
+      'Checked against the official notice on Nov 10, 2026',
+    );
+    expect(noticeCheckedOnLabel('hyundai-kia-vehicle-theft')).toBe(
+      'Checked against the official notice on Nov 3, 2026',
+    );
+    expect(hasOfficialNoticeGuide('quiet-settlement')).toBe(false);
+    expect(noticeCheckedOnLabel('quiet-settlement')).toBeNull();
   });
 
   it('does not invent facts on a listing without a guide', () => {
@@ -94,6 +128,32 @@ describe('settlement guides', () => {
     expect(overlaid.claim_url).toBe('https://www.realpagerentalsettlement.com/');
     expect(overlaid.eligibility.proof).toBe('optional');
     expect(overlaid.verified_at).toBeUndefined();
+  });
+
+  it('overlays the Toyota airbag official site, residual cap and VIN class', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'toyota-airbag-control-unit-zf-trw-settlement',
+        title: 'Toyota Airbag Control Unit ZF-TRW Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        administrator: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$78\.5 million/);
+    expect(overlaid.typical_payout).toMatch(/\$250/);
+    expect(overlaid.deadline).toBe('2028-12-11');
+    expect(overlaid.claim_url).toBe('https://www.airbagcontrolunitsettlement.com/');
+    expect(overlaid.administrator).toMatch(/Kroll/);
+    expect(overlaid.eligibility_text).toMatch(/Corolla/);
+    expect(overlaid.eligibility.proof).toBe('optional');
+    const text = settlementFaqs(overlaid).map((f) => `${f.q} ${f.a}`).join('\n');
+    expect(text).toMatch(/airbagcontrolunitsettlement\.com/);
+    expect(text).not.toMatch(/you(?:['’]re|\s+are)\s+eligible/i);
   });
 
   it('maps both Hyundai/Kia theft slugs to the same official site', () => {
@@ -328,6 +388,14 @@ describe('the app’s copy of the guides (setGuideOverrides)', () => {
   afterEach(() => {
     setGuideOverrides(null);
     vi.unstubAllEnvs();
+  });
+
+  it('omits the checked line when a guide has no readable date', () => {
+    setGuideOverrides([{ ...edited, sourceChecked: '' }]);
+    expect(hasOfficialNoticeGuide(SIX)).toBe(true);
+    expect(noticeCheckedOnLabel(SIX)).toBeNull();
+    setGuideOverrides([{ ...edited, sourceChecked: 'not-a-date' }]);
+    expect(noticeCheckedOnLabel(SIX)).toBeNull();
   });
 
   it('replaces the guides every helper reads, and null puts the compiled ones back', () => {

@@ -71,8 +71,9 @@ jobs:
           npx tsx scripts/audit-gate.ts "$RUNNER_TEMP/npm-audit.json"
 
       # Isolated fixture + real UI. Not production E2E. No production secrets.
+      # Browser binary with retries; OS font packages are best-effort (apt DNS flakes).
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        run: bash scripts/ci-install-playwright.sh
 
       - name: Isolated authenticated journey
         env:

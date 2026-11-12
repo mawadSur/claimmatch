@@ -32,7 +32,8 @@ const PUBLIC_ROUTES = [
 ];
 
 function publicRoutes(): string[] {
-  return flags.noticeLookup() ? [...PUBLIC_ROUTES, '/check'] : PUBLIC_ROUTES;
+  const routes = flags.noticeLookup() ? [...PUBLIC_ROUTES, '/check'] : [...PUBLIC_ROUTES];
+  return flags.trustScorecard() ? [...routes, '/scorecard'] : routes;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

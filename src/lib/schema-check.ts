@@ -22,8 +22,14 @@ export interface SchemaProbeClient {
 }
 
 export const REQUIRED_COLUMNS: Record<string, string[]> = {
-  lawsuits: ['last_seen_at', 'missed_feed_count', 'tags'],
-  profiles: ['first_ref', 'email_opt_in', 'email_frequency'],
+  lawsuits: [
+    'last_seen_at',
+    'missed_feed_count',
+    'tags',
+    'final_approval_hearing_at',
+    'payment_timing_text',
+  ],
+  profiles: ['first_ref', 'first_traffic_channel', 'email_opt_in', 'email_frequency'],
   share_links: ['id'],
   share_link_clicks: ['id'],
   profile_facts: ['id', 'user_id', 'type', 'value'],
@@ -34,6 +40,10 @@ export const REQUIRED_COLUMNS: Record<string, string[]> = {
   held_closure_site_checks: ['slug', 'signal', 'checked_at'],
   claim_reminder_sends: ['claim_id', 'kind', 'sent_at'],
   drip_email_sends: ['user_id', 'kind', 'sent_at'],
+  payout_tracker_sends: ['claim_id', 'kind', 'fingerprint', 'sent_at'],
+  match_alert_sends: ['email', 'lawsuit_id', 'sent_at'],
+  match_alert_tokens: ['token_hash', 'email', 'lawsuit_id', 'expires_at'],
+  beta_feedback: ['id', 'user_id', 'interview_opt_in', 'dismissed'],
 };
 
 export const REQUIRED_FUNCTIONS = ['persist_first_attribution'] as const;

@@ -24,7 +24,19 @@ export const ANALYTICS_EVENTS = {
   prefill_completed: 'prefill_completed',
   claim_tracking_started: 'claim_tracking_started',
   claim_reported_filed: 'claim_reported_filed',
+  /** Confirmed filing. Same evidence as claim_reported_filed; funnel alias. */
+  claim_filed: 'claim_filed',
   match_feedback: 'match_feedback',
+  match_alert_sent: 'match_alert_sent',
+  match_alert_clicked: 'match_alert_clicked',
+  match_alert_signup_completed: 'match_alert_signup_completed',
+  match_alert_unsubscribed: 'match_alert_unsubscribed',
+  beta_code_visit: 'beta_code_visit',
+  beta_feedback_shown: 'beta_feedback_shown',
+  beta_feedback_submitted: 'beta_feedback_submitted',
+  claim_timeline_viewed: 'claim_timeline_viewed',
+  match_reason_viewed: 'match_reason_viewed',
+  scorecard_viewed: 'scorecard_viewed',
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
@@ -74,4 +86,63 @@ export function filingConfirmedProperties(input: {
     with_confirmation_number: input.withConfirmationNumber,
     is_filing: true,
   };
+}
+
+export const BETA_FEEDBACK_TRIGGERS = ['matches', 'filing'] as const;
+export type BetaFeedbackTrigger = (typeof BETA_FEEDBACK_TRIGGERS)[number];
+
+/** Invite-landing visit. Booleans only — never the code string or other PII. */
+export function betaCodeVisitProperties(input: { hasCode: boolean }): { has_code: boolean } {
+  return { has_code: input.hasCode };
+}
+
+export function betaFeedbackShownProperties(input: {
+  trigger: BetaFeedbackTrigger;
+}): { trigger: BetaFeedbackTrigger } {
+  return { trigger: input.trigger };
+}
+
+/**
+ * Feedback submit or dismiss. Booleans and the closed-set trigger only —
+ * never free-text answers, email, or other PII.
+ */
+export function betaFeedbackSubmittedProperties(input: {
+  trigger?: BetaFeedbackTrigger | null;
+  interviewOptIn: boolean;
+  hasAlmostStopped: boolean;
+  hasWhatsMissing: boolean;
+  dismissed: boolean;
+}): {
+  interview_opt_in: boolean;
+  has_almost_stopped: boolean;
+  has_whats_missing: boolean;
+  dismissed: boolean;
+  trigger?: BetaFeedbackTrigger;
+} {
+  const props: {
+    interview_opt_in: boolean;
+    has_almost_stopped: boolean;
+    has_whats_missing: boolean;
+    dismissed: boolean;
+    trigger?: BetaFeedbackTrigger;
+  } = {
+    interview_opt_in: input.interviewOptIn,
+    has_almost_stopped: input.hasAlmostStopped,
+    has_whats_missing: input.hasWhatsMissing,
+    dismissed: input.dismissed,
+  };
+  if (input.trigger) props.trigger = input.trigger;
+  return props;
+}
+
+/** Timeline viewed. Source only — never confirmation numbers or dates. */
+export function claimTimelineViewedProperties(input: {
+  source: 'dashboard' | 'claim';
+}): { source: 'dashboard' | 'claim' } {
+  return { source: input.source };
+}
+
+/** Match-reason line shown. Count only — never the reason text. */
+export function matchReasonViewedProperties(input: { matchCount: number }): { match_count: number } {
+  return { match_count: Math.max(0, Math.floor(input.matchCount)) };
 }

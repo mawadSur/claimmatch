@@ -23,6 +23,10 @@ vi.mock('@/lib/scraper/pipeline', () => ({
 }));
 vi.mock('@/lib/match-sweep', () => ({ runMatchSweep: m.runMatchSweep }));
 vi.mock('@/lib/match-store', () => ({ persistStoredMatches: vi.fn().mockResolvedValue({ users: 0, persisted: 0 }) }));
+vi.mock('@/lib/match-alert-job', () => ({ sendMatchAlerts: vi.fn().mockResolvedValue({ considered: 0, planned: 0, emailed: 0, skipped: 'flag_off', dryRun: false, plans: [] }) }));
+vi.mock('@/lib/payout-tracker', () => ({ sendPayoutTrackerEmails: vi.fn().mockResolvedValue({ candidates: 0, emailed: 0, skipped: null }) }));
+vi.mock('@/lib/deadline-reminders', () => ({ sendDeadlineReminders: vi.fn().mockResolvedValue({ candidates: 0, emailed: 0 }) }));
+vi.mock('@/lib/onboarding-drip', () => ({ sendOnboardingDrips: vi.fn().mockResolvedValue({ candidates: 0, emailed: 0 }) }));
 vi.mock('@/lib/jobs', () => ({
   startIngestRun: (...args: unknown[]) => {
     m.order.push('start');

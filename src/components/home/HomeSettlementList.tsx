@@ -5,6 +5,7 @@ import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { isOpenForClaims } from '@/lib/lawsuits';
 import { flags } from '@/lib/flags';
+import { catalogCardDeadlineLabel, catalogCardPayout } from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 
 /** "Jan" / "22" for the calendar badge. Deadlines are calendar dates, so read them as UTC. */
@@ -25,6 +26,11 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
         const open = isOpenForClaims(lawsuit);
         const urgency = open ? deadlineUrgencyLabel(lawsuit.deadline) : null;
         const badge = badgeParts(lawsuit.deadline);
+        const payoutShown = catalogCardPayout(lawsuit.typical_payout);
+        const deadlineShown = catalogCardDeadlineLabel(
+          lawsuit.deadline,
+          lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
+        );
         return (
           <li
             key={lawsuit.id}
@@ -65,18 +71,20 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                   {lawsuit.title}
                 </Link>
                 <dl className="mt-2.5 grid gap-1.5 text-sm sm:grid-cols-[minmax(0,1fr)_11.5rem] sm:gap-x-8">
-                  <div className="flex min-w-0 gap-1.5">
-                    <dt className="shrink-0 text-ink-muted">Payout</dt>
-                    <dd className="line-clamp-2 font-semibold text-gold-700">
-                      {lawsuit.typical_payout?.trim() || 'Not stated'}
-                    </dd>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <dt className="text-ink-muted">Deadline</dt>
-                    <dd className="font-semibold text-ink">
-                      {lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'No deadline listed'}
-                    </dd>
-                  </div>
+                  {payoutShown ? (
+                    <div className="flex min-w-0 gap-1.5">
+                      <dt className="shrink-0 text-ink-muted">Payout</dt>
+                      <dd className="line-clamp-2 font-semibold text-gold-700">
+                        {payoutShown}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {deadlineShown ? (
+                    <div className="flex gap-1.5">
+                      <dt className="text-ink-muted">Deadline</dt>
+                      <dd className="font-semibold text-ink">{deadlineShown}</dd>
+                    </div>
+                  ) : null}
                 </dl>
               </div>
             </div>

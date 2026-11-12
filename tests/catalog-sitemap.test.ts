@@ -38,6 +38,7 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
     expect(urls.some((u) => u.includes('/settlements/recently-closed'))).toBe(false);
     expect(urls.some((u) => u.endsWith('/check'))).toBe(false);
+    expect(urls.some((u) => u.endsWith('/scorecard'))).toBe(false);
   });
 
   it('includes /check only when the notice-lookup flag is on', async () => {
@@ -46,6 +47,13 @@ describe('sitemap', () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls.some((u) => u.endsWith('/check'))).toBe(true);
     expect(urls.some((u) => u.includes('/settlements/recently-closed'))).toBe(false);
+  });
+
+  it('includes /scorecard only when the trust-scorecard flag is on', async () => {
+    listed.lawsuits = [lawsuit()];
+    expect((await sitemap()).some((e) => e.url.endsWith('/scorecard'))).toBe(false);
+    vi.stubEnv('TRUST_SCORECARD_ENABLED', '1');
+    expect((await sitemap()).some((e) => e.url.endsWith('/scorecard'))).toBe(true);
   });
 
   it('omits thin settlements that the detail page noindexes', async () => {

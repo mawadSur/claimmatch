@@ -110,15 +110,21 @@ describe('POST /api/unsubscribe', () => {
     const res = await POST(form({ e: TOKEN }));
     expect(res.status).toBe(303);
     expect(location(res)).toBe('/unsubscribe?done=1');
-    expect(db.state.calls).toEqual([
-      {
-        table: 'profiles',
-        values: { email_opt_in: false },
-        column: 'email',
-        emails: ['Jane.Doe@Example.com', 'jane.doe@example.com'],
-        select: 'id',
-      },
-    ]);
+    expect(db.state.calls[0]).toEqual({
+      table: 'profiles',
+      values: { email_opt_in: false },
+      column: 'email',
+      emails: ['Jane.Doe@Example.com', 'jane.doe@example.com'],
+      select: 'id',
+    });
+    expect(db.state.calls[1]).toMatchObject({
+      table: 'subscribers',
+      column: 'email',
+      emails: ['Jane.Doe@Example.com', 'jane.doe@example.com'],
+      select: 'id',
+    });
+    expect(db.state.calls[1].values).toMatchObject({ confirmed: false });
+    expect((db.state.calls[1].values as { unsubscribed_at: string }).unsubscribed_at).toBeTruthy();
   });
 
   it('answers the same when no account uses the address', async () => {
@@ -135,7 +141,7 @@ describe('POST /api/unsubscribe', () => {
       }),
     );
     expect(location(res)).toBe('/unsubscribe?done=1');
-    expect(db.state.calls).toHaveLength(1);
+    expect(db.state.calls).toHaveLength(2);
   });
 
   it('prefers the form field over the query string', async () => {
@@ -189,6 +195,6 @@ describe('POST /api/unsubscribe', () => {
     }
     const res = await POST(form({ e: TOKEN }, ip));
     expect(location(res)).toBe(`/unsubscribe?e=${TOKEN}&error=busy`);
-    expect(db.state.calls).toHaveLength(10);
+    expect(db.state.calls).toHaveLength(20);
   });
 });

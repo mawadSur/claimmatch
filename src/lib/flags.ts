@@ -16,6 +16,7 @@ export const CLIENT_FLAG_NAMES = [
   'PAYOUT_REPORT_ENABLED',
   'MATCH_METRICS_ENABLED',
   'FEE_DISCLOSURE_ENABLED',
+  'CATALOG_HIDE_UNKNOWNS_ENABLED',
 ] as const;
 export type ClientFlagName = (typeof CLIENT_FLAG_NAMES)[number];
 
@@ -223,10 +224,20 @@ export const flags = {
    */
   relatedSettlements: () => on('RELATED_SETTLEMENTS_ENABLED'),
   /**
-   * After the nightly ingest, submit changed public URLs to IndexNow.
-   * Off: no request. Never runs in tests, even if set.
+   * After the nightly ingest, and on admin publish/close, submit changed
+   * public URLs to IndexNow. Off: no request. Never runs in tests, even if set.
    */
   indexNow: () => on('INDEXNOW_ENABLED'),
+  /**
+   * Public /llms.txt (llmstxt.org). Off: that path 404s. Cached/ISR when on.
+   */
+  llmsTxt: () => on('LLMS_TXT_ENABLED'),
+  /**
+   * Classify first-touch referrer / utm_source into a closed traffic channel,
+   * attach it to PostHog events, persist it on the profile, and show an admin
+   * card. Off: no new property, no extra RPC, no admin card.
+   */
+  aiReferrerAttribution: () => on('AI_REFERRER_ATTRIBUTION_ENABLED'),
   /**
    * Richer profile: profile_facts collection, onboarding v2 step, /settings/profile,
    * and /admin/users. Off: those surfaces 404 or stay hidden.
@@ -287,4 +298,50 @@ export const flags = {
    * Off: hidden. Never a "you qualify" verdict.
    */
   settlementQuiz: () => on('SETTLEMENT_QUIZ_ENABLED'),
+  /**
+   * Per-tester / per-community invite codes on the SoftLaunch admin card.
+   * Off: no create UI, visit logging, or beta_code_visit. Reuses share_links
+   * + first_ref. `/invite?code=` still maps to signup `ref` so a leftover
+   * link keeps first-touch if the invite landing is on.
+   */
+  betaInviteCodes: () => on('BETA_INVITE_CODES_ENABLED'),
+  /**
+   * Signed-in dashboard prompt for short beta feedback and an interview
+   * opt-in. Off: hidden, and /api/beta-feedback 404s. Never sends email.
+   */
+  betaFeedback: () => on('BETA_FEEDBACK_ENABLED'),
+  /**
+   * Catalog cards and listings omit unknown proof / payout / deadline rows
+   * instead of printing "Unknown" or "Not stated", and Settings stops
+   * collecting a phone number. Off: current live cards and the phone field
+   * stay. Does not delete stored phone values.
+   */
+  catalogHideUnknowns: () => on('CATALOG_HIDE_UNKNOWNS_ENABLED'),
+  /**
+   * After-you-file timeline on submitted claims (dashboard + claim page).
+   * Hearing date and payment timing only from the settlement record.
+   */
+  claimTimeline: () => on('CLAIM_TIMELINE_ENABLED'),
+  /**
+   * Email opted-in users who reported filing when a listed hearing date
+   * passes or admin enters payment timing. Off: the daily cron skips the
+   * step. Idempotent; never sends without email_opt_in.
+   */
+  payoutTrackerEmails: () => on('PAYOUT_TRACKER_EMAILS_ENABLED'),
+  /**
+   * One "Why this matches you" line on match cards, from matcher reasons.
+   * Off: the existing reason bullets stay as they are.
+   */
+  matchReason: () => on('MATCH_REASON_ENABLED'),
+  /**
+   * Public /scorecard of measured counts. Off: that path 404s and is left
+   * out of the sitemap.
+   */
+  trustScorecard: () => on('TRUST_SCORECARD_ENABLED'),
+  /**
+   * Opt-in "new match" alert emails (verified open listings, weekly cap,
+   * one-click start). Off: the daily cron skips the step. Never sends from
+   * tests or CI. Independent of MATCH_EMAILS_ENABLED.
+   */
+  matchAlertEmails: () => on('MATCH_ALERT_EMAILS_ENABLED'),
 };

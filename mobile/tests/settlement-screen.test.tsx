@@ -220,7 +220,6 @@ describe('settlement detail, open', () => {
 
     for (const name of [
       'Official claim site (acmesettlement.com)',
-      'Go to the official site (acmesettlement.com)',
       settlement.readRulesOnOfficialSite.text,
       shared.goToOfficialSite.text,
     ]) {
@@ -228,6 +227,13 @@ describe('settlement detail, open', () => {
       await user.press(screen.getByRole('link', { name }));
       expect(openExternalUrl).toHaveBeenCalledWith('https://www.acmesettlement.com/claim');
     }
+  });
+
+  it('shows the unverified section without a second official-site button', async () => {
+    await renderFound(ACME);
+    expect(screen.getByText(shared.unverifiedOpenBody.text)).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Official claim site (acmesettlement.com)' })).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: 'Go to the official site (acmesettlement.com)' })).toBeNull();
   });
 
   it('shows the unverified section, the facts, About, who may qualify and how filing works', async () => {
@@ -338,6 +344,22 @@ describe('settlement detail, listing details', () => {
     expect(openExternalUrl).toHaveBeenLastCalledWith(CC_BY_4_URL);
     await user.press(provenance.getByRole('link', { name: settlement.seeSettleSignalListing.text }));
     expect(openExternalUrl).toHaveBeenLastCalledWith(listing);
+  });
+
+  it('hides the unverified banner on a guided official-notice listing', async () => {
+    await renderFound(
+      row({
+        slug: 'toyota-airbag-control-unit-zf-trw-settlement',
+        title: 'Toyota Airbag Control Unit ZF-TRW Settlement',
+        claim_url: 'https://www.airbagcontrolunitsettlement.com/',
+      }),
+    );
+    expect(screen.queryByText(shared.unverifiedOpenBody.text)).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('settlement-section-unverified')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('settlement-section-checked')).toBeOnTheScreen();
+    expect(screen.getByText('Checked against the official notice on Nov 10, 2026')).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Official claim site (airbagcontrolunitsettlement.com)' })).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: 'Go to the official site (airbagcontrolunitsettlement.com)' })).toBeNull();
   });
 
   it('hides the unverified section and uses the verified facts for a verified listing', async () => {

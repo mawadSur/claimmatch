@@ -6,7 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { catalog } from '@/copy/catalog';
 import { common } from '@/copy/common';
-import { shared } from '@/copy/shared';
+import { settlement } from '@/copy/settlement';
+import { fillCopy, shared } from '@/copy/shared';
 import type { CatalogLawsuit } from '@/data/catalog';
 import { CatalogCard, CatalogScreen, SEARCH_DEBOUNCE_MS } from '@/features/catalog';
 import { openExternalUrl } from '@/lib/external-link';
@@ -229,6 +230,21 @@ describe('catalog', () => {
     expect(gamma.getByLabelText('Proof: Unknown')).toBeOnTheScreen();
     expect(gamma.getByLabelText('Payout, as listed: Not stated')).toBeOnTheScreen();
     expect(gamma.getByText(shared.noLinkYet.text)).toBeOnTheScreen();
+  });
+
+  it('omits unknown proof, payout and deadline when CATALOG_HIDE_UNKNOWNS_ENABLED is on', async () => {
+    mockConfig.flags = { CATALOG_HIDE_UNKNOWNS_ENABLED: true };
+    await renderCatalog();
+    const gamma = within(screen.getByTestId('catalog-card-gamma-vehicle-defect'));
+    expect(gamma.queryByLabelText('Proof: Unknown')).toBeNull();
+    expect(gamma.queryByLabelText('Payout, as listed: Not stated')).toBeNull();
+    expect(gamma.queryByLabelText('Deadline: No deadline listed')).toBeNull();
+    expect(gamma.queryByText(catalog.noDeadlineListed.text)).toBeNull();
+    expect(
+      gamma.getByText(
+        `${fillCopy(settlement.missingDetails.text, { list: 'deadline, proof, listed payout' })}.`,
+      ),
+    ).toBeOnTheScreen();
   });
 
   it('starts a claim and opens the details, named for the settlement', async () => {

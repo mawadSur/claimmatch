@@ -4,9 +4,16 @@ import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
-import { displayProofLabel, showVerifiedBadge } from '@/lib/verified-fields';
+import { showVerifiedBadge } from '@/lib/verified-fields';
+import {
+  catalogCardDeadlineLabel,
+  catalogCardMissing,
+  catalogCardPayout,
+  catalogCardProof,
+} from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
+import { MissingDetailsBlock } from '@/components/settlement/AnswerBlock';
 
 /**
  * The settlement card (server component; brand top border from the original
@@ -40,7 +47,13 @@ export function LawsuitCard({
   const summary = displaySummary(lawsuit);
   const shownBadge = badge && isAllowedBadge(badge.label) ? badge : undefined;
   const verified = showVerifiedBadge(lawsuit);
-  const proofShown = displayProofLabel(lawsuit);
+  const proofShown = catalogCardProof(lawsuit);
+  const payoutShown = catalogCardPayout(lawsuit.typical_payout);
+  const deadlineShown = catalogCardDeadlineLabel(
+    lawsuit.deadline,
+    lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
+  );
+  const missing = catalogCardMissing(lawsuit);
 
   const tone = shownBadge?.tone ?? 'brand';
   const badgeClass =
@@ -85,27 +98,25 @@ export function LawsuitCard({
         </ul>
       )}
 
-      {!lawsuit.deadline && (
+      {!lawsuit.deadline && deadlineShown && (
         <p className="mt-3 inline-flex rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-ink-muted">
           No deadline listed
         </p>
       )}
 
       <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-brand-50 p-3">
-        <Stat
-          label="Deadline"
-          value={lawsuit.deadline ? formatDeadline(lawsuit.deadline) : 'No deadline listed'}
-        />
-        <Stat label="Proof" value={proofShown} />
-        <div className="col-span-2">
-          <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">
-            Payout, as listed
-          </dt>
-          <dd className="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">
-            {lawsuit.typical_payout?.trim() || 'Not stated'}
-          </dd>
-        </div>
+        {deadlineShown ? <Stat label="Deadline" value={deadlineShown} /> : null}
+        {proofShown ? <Stat label="Proof" value={proofShown} /> : null}
+        {payoutShown ? (
+          <div className="col-span-2">
+            <dt className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+              Payout, as listed
+            </dt>
+            <dd className="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">{payoutShown}</dd>
+          </div>
+        ) : null}
       </dl>
+      {missing.length > 0 ? <MissingDetailsBlock missing={missing} official={official} /> : null}
 
       {!verified && (
       <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-800">

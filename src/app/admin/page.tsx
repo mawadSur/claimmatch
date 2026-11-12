@@ -27,7 +27,9 @@ import { requireAdmin } from '@/lib/admin';
 import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
 import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
+import { ReferrerChannelCard } from '@/components/admin/ReferrerChannelCard';
 import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
+import { BetaFeedbackList } from '@/components/admin/BetaFeedbackList';
 import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
 import { flags } from '@/lib/flags';
 import { listBrokenOfficialLinks } from '@/lib/link-check';
@@ -38,7 +40,10 @@ import {
   missingFeedCloseThreshold,
 } from '@/lib/missing-feed-queue';
 import { listHeldClosureQueue } from '@/lib/held-closures';
+import { loadReferrerChannelStats } from '@/lib/referrer-channel-stats';
 import { EMPTY_SOFT_LAUNCH_COUNTS, loadSoftLaunchCounts } from '@/lib/soft-launch';
+import { loadBetaInviteStats } from '@/lib/beta-invite';
+import type { BetaFeedbackRow } from '@/lib/beta-feedback';
 
 export const metadata: Metadata = { title: 'Admin' };
 
@@ -117,6 +122,12 @@ export default async function AdminOverviewPage() {
   const lastIngest = await loadLastIngestRun(svc);
   const lastDigestFailure = await loadLastDigestFailure(svc);
   const softLaunch = await loadSoftLaunchCounts().catch(() => ({ ...EMPTY_SOFT_LAUNCH_COUNTS }));
+  const betaInvites = flags.betaInviteCodes()
+    ? await loadBetaInviteStats().catch(() => [])
+    : null;
+  const betaFeedback = flags.betaFeedback()
+    ? await loadBetaFeedbackRows(svc).catch(() => [])
+    : [];
   const brokenLinks = flags.linkCheck()
     ? await listBrokenOfficialLinks(50).catch(() => [])
     : [];
@@ -126,6 +137,9 @@ export default async function AdminOverviewPage() {
   const missingFeedAfter = missingFeedCloseThreshold();
   const heldClosureQueue = flags.adminHeldClosures()
     ? await listHeldClosureQueue().catch(() => [])
+    : [];
+  const referrerChannels = flags.aiReferrerAttribution()
+    ? await loadReferrerChannelStats().catch(() => [])
     : [];
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
@@ -155,7 +169,9 @@ export default async function AdminOverviewPage() {
 
       <CronFailureBanners ingest={lastIngest} digest={lastDigestFailure} />
 
-      <SoftLaunchCard counts={softLaunch} />
+      <SoftLaunchCard counts={softLaunch} betaInvites={betaInvites} />
+      {flags.aiReferrerAttribution() ? <ReferrerChannelCard rows={referrerChannels} /> : null}
+      {flags.betaFeedback() ? <BetaFeedbackList rows={betaFeedback} /> : null}
       {flags.linkCheck() ? <BrokenLinksList rows={brokenLinks} /> : null}
       {flags.missingCloseQueue() ? (
         <section aria-labelledby="missing-feed-title">
@@ -546,6 +562,33 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
       )}
     </section>
   );
+}
+
+async function loadBetaFeedbackRows(
+  svc: ReturnType<typeof createServiceClient>,
+): Promise<BetaFeedbackRow[]> {
+  try {
+    const { data, error } = await svc
+      .from('beta_feedback')
+      .select('id, user_id, almost_stopped, whats_missing, interview_opt_in, dismissed, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error || !data) return [];
+    const rows = data as Array<
+      Omit<BetaFeedbackRow, 'email'> & { user_id: string }
+    >;
+    const ids = rows.map((r) => r.user_id);
+    const emails = new Map<string, string | null>();
+    if (ids.length > 0) {
+      const { data: profiles } = await svc.from('profiles').select('id, email').in('id', ids);
+      for (const p of (profiles ?? []) as Array<{ id: string; email: string | null }>) {
+        emails.set(p.id, p.email);
+      }
+    }
+    return rows.map((row) => ({ ...row, email: emails.get(row.user_id) ?? null }));
+  } catch {
+    return [];
+  }
 }
 
 function Section({

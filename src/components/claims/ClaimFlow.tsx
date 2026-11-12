@@ -18,6 +18,9 @@ import {
   type ProofNeed,
   type SettlementContext,
 } from '@/lib/claims';
+import { buildClaimTimeline } from '@/lib/claim-timeline';
+import { ANALYTICS_EVENTS, claimTimelineViewedProperties } from '@/lib/analytics/events';
+import { ClaimTimelineCard } from './ClaimTimeline';
 import { formatDeadline } from '@/lib/utils';
 import type { ClaimFlowSettlement, PacketProfile } from '@/lib/claim-screen';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
@@ -79,6 +82,23 @@ export function ClaimFlow({
 
   const display = claim ? displayClaimStatus(claim, context) : null;
   const reported = claim?.status === 'reported_filed' || display?.kind === 'submitted';
+  const timeline =
+    settlement.claimTimelineEnabled && claim
+      ? buildClaimTimeline({
+          status: claim.status,
+          confirmation_number: claim.confirmation_number,
+          user_filed_on: claim.user_filed_on,
+          reported_filed_at: claim.reported_filed_at,
+          final_approval_hearing_at: settlement.finalApprovalHearingAt ?? null,
+          payment_timing_text: settlement.paymentTimingText ?? null,
+        })
+      : null;
+  const timelineViewed = useRef(false);
+  useEffect(() => {
+    if (timelineViewed.current || !posthog || !timeline) return;
+    timelineViewed.current = true;
+    posthog.capture(ANALYTICS_EVENTS.claim_timeline_viewed, claimTimelineViewedProperties({ source: 'claim' }));
+  }, [posthog, timeline]);
 
   // When a report succeeds the form is replaced, so move focus to the result.
   const yourClaimHeading = useRef<HTMLHeadingElement>(null);
@@ -140,6 +160,7 @@ export function ClaimFlow({
         </h2>
         <div className="mt-4">
           <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+          {timeline ? <ClaimTimelineCard timeline={timeline} /> : null}
           {settlement.payoutReportEnabled ? (
             <ReportPayout
               claimId={claim.id}

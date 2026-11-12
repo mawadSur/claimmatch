@@ -1,7 +1,7 @@
 import { filterOpenForClaims, type OpenRuleFields } from './open-for-claims';
 import { proofDetail } from './proof';
 import type { Lawsuit, ProofRequired } from './types';
-import { fingerprint, todayInDeadlineZone } from './utils';
+import { fingerprint, formatDeadline, todayInDeadlineZone } from './utils';
 
 export interface GuideFaq {
   q: string;
@@ -250,6 +250,119 @@ const KIA_WINDOWS: SettlementGuide = {
     'Le Beau et al. v. Kia America, Inc. covers U.S. and D.C. residents who own, lease or previously owned certain 2016–2017 Kia Optima or 2017 Kia Sportage class vehicles. Kia will reimburse documented out-of-pocket power-window regulator repairs, up to four per VIN, on a mileage scale from 100% (capped at $400) down to 40% (capped at $160). Current owners or lessees may take a $40 Kia dealer service card instead. A claim form and supporting documents are required by November 23, 2026. Kroll Settlement Administration LLC runs the official site. The court still has to approve the settlement.',
 };
 
+const TOYOTA_AIRBAG: SettlementGuide = {
+  slugs: ['toyota-airbag-control-unit-zf-trw-settlement'],
+  officialUrl: 'https://www.airbagcontrolunitsettlement.com/',
+  sourceChecked: '2026-11-10',
+  administrator: 'Kroll Settlement Administration, LLC',
+  eligibilityText:
+    'People who own, lease, or previously owned or leased a subject Toyota sold or leased in the United States, D.C., Puerto Rico or other U.S. territories as of July 31, 2023. Subject vehicles: 2011–2019 Corolla, 2011–2013 Corolla Matrix, 2012–2018 Avalon, 2013–2018 Avalon HV, 2012–2019 Tacoma, 2012–2017 Tundra and 2012–2017 Sequoia. Confirm the VIN on the official site.',
+  typicalPayout:
+    '$78.5 million in cash and credits. Recalled-vehicle owners may claim reimbursement of certain reasonable recall-related rental, towing, childcare, ACU-repair and lost-wage costs. Anyone in the class who files a registration or claim form may receive a residual payment of up to $250 after those reimbursements. Recalled vehicles that complete the recall also get a 12-year extended new-parts warranty.',
+  deadline: '2028-12-11',
+  proof: 'optional',
+  proofDetail:
+    'Reimbursement needs a claim form plus a receipt, invoice or signed affidavit. A residual payment is claimed by submitting a registration/claim form; recall expenses are not required for that residual claim. Deadline December 11, 2028.',
+  summary:
+    'A $78.5 million Toyota settlement over ZF-TRW airbag control units. Residual payments and documented recall expenses are claimed on the official site.',
+  description:
+    'The Toyota part of In re: ZF-TRW Airbag Control Units Products Liability Litigation. Class members as of July 31, 2023 owned or leased listed Toyotas sold or leased in the United States. Check the VIN on the official site. Recalled Corolla, Matrix, Avalon and Avalon HV owners may claim certain recall-related costs. All class members, including unrecalled Tacoma, Tundra and Sequoia owners, may register for a residual of up to $250. Claims are due December 11, 2028. Kroll Settlement Administration, LLC runs the official site.',
+};
+
+const WARNER_MUSIC: SettlementGuide = {
+  slugs: ['warner-music-group-1-25m-data-breach-settlement'],
+  officialUrl: 'https://www.wmgdatasettlement.com/',
+  sourceChecked: '2026-11-10',
+  administrator: 'EisnerAmper',
+  eligibilityText:
+    'People living in the United States who made a payment-card purchase on an e-commerce website operated by or for a Warner Music Group subsidiary between April 25, 2020 and August 5, 2020. The California subclass is class members who lived in California during that period and made such a purchase.',
+  typicalPayout:
+    'A $1,250,000 fund. After fees and costs, valid claims share the remainder: one share per class member, two shares for California subclass members. The official site estimates about $50, or $100 for California subclass members. A timely claim form is the only way to receive a payment.',
+  deadline: '2027-01-22',
+  proof: 'optional',
+  proofDetail:
+    'A signed claim form must be submitted online by January 22, 2027, or mailed and postmarked by that date. The official site says a mailed form should include any supporting documentation.',
+  summary:
+    'A $1.25 million settlement over a 2020 payment-card incident on Warner Music Group subsidiary stores. Estimated cash is about $50, or $100 for California residents who file.',
+  description:
+    'In re Warner Music Group Data Breach covers U.S. residents who made a payment-card purchase on a Warner Music Group subsidiary store site between April 25, 2020 and August 5, 2020. Warner Music denies the claims. The $1,250,000 fund is shared one share per class member and two shares for California subclass members. The official site estimates about $50 or $100. Claims are due January 22, 2027. EisnerAmper administers the official site. Final approval is still pending.',
+};
+
+const TENET_PIXEL: SettlementGuide = {
+  slugs: ['tenet-healthcare-pixel-tracking-settlement'],
+  officialUrl: 'https://www.tenetpixelsettlement.com/',
+  sourceChecked: '2026-11-10',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'Identifiable people who, from January 1, 2017 through September 18, 2023, used a website or patient portal owned or operated by Tenet Healthcare or an affiliated covered entity to create a patient-portal account, submit a webform, or check in to an urgent care or emergency room. Platforms include Tenet websites, patient portals and the Healthelife app.',
+  typicalPayout:
+    'A one-time $16.00 cash payment and two years of CyEx Privacy Shield Pro (dark-web and password scanning, VPN, password manager and related tools). One or both may be claimed. Enrollment codes for the privacy service were sent by postcard.',
+  deadline: '2027-03-15',
+  proof: 'no',
+  proofDetail:
+    'A claim form is required by March 15, 2027. The official FAQ says no proof or explanation is needed to claim the $16 cash payment.',
+  summary:
+    'A Tenet Healthcare pixel-tracking settlement. People who used listed Tenet sites or portals in the class period may claim $16 and two years of privacy monitoring.',
+  description:
+    'Jane Doe v. AMISUB (SFH), Inc. covers identifiable people who, from January 1, 2017 through September 18, 2023, used a Tenet website or patient portal to create a portal account, submit a webform, or check in to urgent care or an ER. Tenet denies wrongdoing. Class members may claim $16 and two years of CyEx Privacy Shield Pro. Claims are due March 15, 2027. Simpluris administers the official site. The court still has to approve the settlement.',
+};
+
+const ALLSTATE_AZ: SettlementGuide = {
+  slugs: ['allstate-arizona-depreciation-settlement'],
+  officialUrl: 'https://www.hernandezdepreciationsettlement.com/',
+  sourceChecked: '2026-11-10',
+  administrator: 'Angeion Group',
+  eligibilityText:
+    'Policyholders under an Allstate, Esurance, Encompass or North Light property policy who made a structural-loss claim for Arizona property from April 25, 2017 through October 1, 2026, where Allstate paid on an Xactimate estimate and withheld nonmaterial depreciation from the actual-cash-value payment. Labor-permissive policy forms, claims that exhausted policy limits, and denied or abandoned claims without an ACV payment are among those excluded.',
+  typicalPayout:
+    'If nonmaterial depreciation was withheld and not later paid in full: 50% of that unpaid net amount, plus 10% simple interest a year from the first ACV payment through the settlement effective date. If all outstanding depreciation was later recovered: $10 to $360, based on how much was withheld. A timely claim form is required.',
+  deadline: '2027-01-29',
+  proof: 'yes',
+  proofDetail:
+    'A signed claim form is required online before midnight Mountain Standard Time on January 29, 2027, or mailed and postmarked by that date. A representative must also submit written proof of legal authority.',
+  summary:
+    'An Allstate Arizona settlement over nonmaterial depreciation on structural property claims. Most claimants may seek 50% of unpaid depreciation plus 10% yearly interest.',
+  description:
+    'Hernandez v. Allstate Vehicle and Property Insurance Company covers Arizona structural-loss claims paid by Allstate, Esurance, Encompass or North Light from April 25, 2017 through October 1, 2026 where nonmaterial depreciation was withheld from an Xactimate-based ACV payment. Allstate denies the claims. Most people who file may receive 50% of unpaid nonmaterial depreciation plus 10% simple interest; others who later recovered depreciation may receive $10 to $360. Claims are due January 29, 2027. Angeion Group administers the official site. The court still has to approve the settlement.',
+};
+
+const CAPITAL_ONE_ARENA: SettlementGuide = {
+  slugs: ['capital-one-arena-concessions-class-action-settlement'],
+  officialUrl: 'https://www.venuefeesettlement.com/',
+  sourceChecked: '2026-11-10',
+  eligibilityText:
+    'People in the United States who bought food, beverages or other items from Aramark at Capital One Arena and paid a 3% venue fee between October 1, 2024 and December 31, 2025.',
+  typicalPayout:
+    'A pro rata share of a $4,500,000 fund after court-approved costs, attorneys’ fees and any service award. The official site does not state a fixed per-person amount. A timely claim form is the only way to receive a payment.',
+  deadline: '2026-12-04',
+  proof: 'no',
+  proofDetail:
+    'A claim form must be submitted online or by mail by December 4, 2026. The official FAQ does not ask for receipts.',
+  summary:
+    'A $4.5 million settlement over a 3% Aramark venue fee on Capital One Arena concessions. Payment is a share of the fund, and a claim form is required.',
+  description:
+    'Alexander Garner v. Aramark Management Services LP covers people who bought food, beverages or other items from Aramark at Capital One Arena and paid a 3% venue fee between October 1, 2024 and December 31, 2025. Aramark denies wrongdoing. The fund is $4,500,000. Valid claims share what remains after fees and costs. Claims are due December 4, 2026. The official site does not ask for receipts. The court still has to approve the settlement.',
+};
+
+const HARVARD_MORGUE: SettlementGuide = {
+  slugs: ['harvard-morgue-class-action-settlement'],
+  officialUrl: 'https://www.harvardmorguesettlement.com/',
+  sourceChecked: '2026-11-10',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'A spouse or registered domestic partner, child, parent or sibling of someone who donated their body to the Harvard Anatomical Gift Program; the designee named on the donor’s instrument of anatomical gift; someone Harvard wrote to about this matter around June 14, 2023 and/or December 7, 2023; a grandchild of a primary-class donor; or a named plaintiff. The donor’s body must have left the Harvard Morgue for cremation or burial between January 1, 2018 and March 31, 2023 (primary class) or January 1, 2003 and December 31, 2017 (pre-2018 class).',
+  typicalPayout:
+    '$52.5 million for the primary class and $500,000 for the pre-2018 class. Each net fund is split equally by the number of donors with timely valid claims, then allocated among the people who filed for that donor. The official site does not state a fixed per-person amount.',
+  deadline: '2026-12-09',
+  proof: 'yes',
+  proofDetail:
+    'A signed claim form must be submitted online or mailed by December 9, 2026. Check the official form for what to attach about the relationship to the donor.',
+  summary:
+    'A $53 million settlement for families of people who donated their bodies to Harvard’s Anatomical Gift Program. Cash is claimed on the official site.',
+  description:
+    'MacTaggart et al. v. President & Fellows of Harvard College is a proposed $53 million settlement ($52.5 million for donors whose remains left the morgue from January 1, 2018 through March 31, 2023, and $500,000 for 2003–2017). Relatives, designees and certain notice recipients may file. Harvard denies the allegations. Each net fund is split by donor, then among people who filed for that donor. Claims are due December 9, 2026. Simpluris administers the official site. The court still has to approve the settlement.',
+};
+
 export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   HYUNDAI_KIA_THEFT,
   HYUNDAI_KIA_AIRBAG,
@@ -261,6 +374,12 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   DR_SQUATCH,
   NAVY_FEDERAL,
   KIA_WINDOWS,
+  TOYOTA_AIRBAG,
+  WARNER_MUSIC,
+  TENET_PIXEL,
+  ALLSTATE_AZ,
+  CAPITAL_ONE_ARENA,
+  HARVARD_MORGUE,
 ];
 
 function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {
@@ -487,4 +606,23 @@ export function settlementProofDetail(lawsuit: Pick<Lawsuit, 'slug' | 'proof_req
 
 export function settlementGuideFaqs(slug: string): GuideFaq[] {
   return getSettlementGuide(slug)?.extraFaqs ?? [];
+}
+
+/** True when this slug has an official-notice guide. Does not stamp verified_at. */
+export function hasOfficialNoticeGuide(slug: string): boolean {
+  return Boolean(getSettlementGuide(slug));
+}
+
+/**
+ * Public line when a guide was read against the official notice.
+ * Null when there is no guide or the stored date cannot be shown. Never invents a date.
+ */
+export const CHECKED_AGAINST_NOTICE = 'Checked against the official notice on {date}';
+
+export function noticeCheckedOnLabel(slug: string): string | null {
+  const checked = getSettlementGuide(slug)?.sourceChecked?.trim();
+  if (!checked) return null;
+  const formatted = formatDeadline(checked);
+  if (formatted === 'Varies') return null;
+  return CHECKED_AGAINST_NOTICE.replace('{date}', formatted);
 }

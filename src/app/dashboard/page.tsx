@@ -12,9 +12,16 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { flags } from '@/lib/flags';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
-import { matchesViewedProperties } from '@/lib/analytics/events';
+import {
+  ANALYTICS_EVENTS,
+  claimTimelineViewedProperties,
+  matchesViewedProperties,
+  matchReasonViewedProperties,
+} from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
+import { BetaFeedbackPrompt } from '@/components/dashboard/BetaFeedbackPrompt';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
+import type { BetaFeedbackTrigger } from '@/lib/analytics/events';
 
 export const metadata: Metadata = {
   title: 'Your claims',
@@ -66,10 +73,41 @@ export default async function DashboardPage({
     strongCount: matches.filter((row) => row.strength === 'strong').length,
     possibleCount: matches.filter((row) => row.strength !== 'strong').length,
   });
+  const hasReportedFiling = claims.items.some(
+    (item) => item.claim.status === 'reported_filed' || item.claim.status === 'submitted',
+  );
+  let betaFeedbackTrigger: BetaFeedbackTrigger | null = null;
+  if (flags.betaFeedback()) {
+    try {
+      const { data: existing, error } = await supabase
+        .from('beta_feedback')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!error && !existing) {
+        if (hasReportedFiling) betaFeedbackTrigger = 'filing';
+        else if (matchView) betaFeedbackTrigger = 'matches';
+      }
+    } catch {
+      // Table missing until 0033; keep the dashboard up.
+    }
+  }
 
   return (
     <div className="bg-gray-50">
       {matchView ? <CaptureOnce event="matches_viewed" properties={matchView} /> : null}
+      {flags.claimTimeline() && rows.some((row) => row.timeline) ? (
+        <CaptureOnce
+          event={ANALYTICS_EVENTS.claim_timeline_viewed}
+          properties={claimTimelineViewedProperties({ source: 'dashboard' })}
+        />
+      ) : null}
+      {flags.matchReason() && matches.length > 0 ? (
+        <CaptureOnce
+          event={ANALYTICS_EVENTS.match_reason_viewed}
+          properties={matchReasonViewedProperties({ matchCount: matches.length })}
+        />
+      ) : null}
       <div className="container-page space-y-10 py-10 sm:py-14">
         <header>
           <span className="badge-brand gap-1.5">
@@ -105,6 +143,7 @@ export default async function DashboardPage({
         <CorrectiveNoticeList items={notices} />
 
         {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
+        {betaFeedbackTrigger ? <BetaFeedbackPrompt trigger={betaFeedbackTrigger} /> : null}
 
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
@@ -134,6 +173,7 @@ export default async function DashboardPage({
           metricsEnabled={flags.matchMetrics()}
           fileForYou={flags.assistedFiling()}
           canDismiss={flags.matchStore()}
+          matchReasonEnabled={flags.matchReason()}
         />
 
         {flags.assistedFiling() && (
@@ -161,7 +201,7 @@ export default async function DashboardPage({
                 </div>
               </div>
             ) : (
-              <ClaimList rows={rows} />
+              <ClaimList rows={rows} timelineEnabled={flags.claimTimeline()} />
             )}
           </div>
         </section>

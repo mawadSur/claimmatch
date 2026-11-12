@@ -11,7 +11,14 @@ import { ProfileAttributesFields } from './ProfileAttributesFields';
  * Settings form: the user's details and their email choice. There is no SMS
  * feature, so there is no text-message opt-in.
  */
-export function NotificationPrefs({ profile }: { profile: Profile }) {
+export function NotificationPrefs({
+  profile,
+  collectPhone = true,
+}: {
+  profile: Profile;
+  /** Off when CATALOG_HIDE_UNKNOWNS_ENABLED: stop collecting phone in Settings. */
+  collectPhone?: boolean;
+}) {
   const [fullName, setFullName] = useState(profile.full_name ?? '');
   const [state, setState] = useState(profile.state ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
@@ -37,7 +44,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
         body: JSON.stringify({
           full_name: fullName,
           state,
-          phone,
+          ...(collectPhone ? { phone } : {}),
           email_opt_in: emailOptIn,
           email_frequency: emailFrequency,
           match_metrics_consent: metricsConsent,
@@ -94,6 +101,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
             ))}
           </select>
         </div>
+        {collectPhone ? (
         <div className="sm:col-span-2">
           <label className="field-label" htmlFor="phone">Phone number (optional)</label>
           <input
@@ -113,6 +121,7 @@ export function NotificationPrefs({ profile }: { profile: Profile }) {
             messages.
           </p>
         </div>
+        ) : null}
       </div>
 
       <div className="mt-8 border-t border-gray-100 pt-6">

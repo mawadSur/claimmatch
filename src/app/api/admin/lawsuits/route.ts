@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminUser } from '@/lib/admin';
 import { flags } from '@/lib/flags';
+import { notifyIndexNowBestEffort, shouldNotifyIndexNowForAdminAction } from '@/lib/indexnow';
 import { closeMissingFeedPatch, keepMissingFeedPatch } from '@/lib/missing-feed-queue';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isThirdPartyFeeStatus } from '@/lib/third-party-fee';
@@ -30,6 +31,8 @@ const ALLOWED_KEYS = new Set([
   'review_status',
   'assisted_filing_allowed',
   'third_party_fee_status',
+  'final_approval_hearing_at',
+  'payment_timing_text',
 ]);
 
 const SingleAction = z.enum([
@@ -152,6 +155,15 @@ export async function PATCH(req: Request) {
     );
   }
 
+  if (shouldNotifyIndexNowForAdminAction(action)) {
+    const slug = data && typeof data === 'object' && typeof (data as { slug?: unknown }).slug === 'string'
+      ? (data as { slug: string }).slug
+      : null;
+    if (slug) {
+      void notifyIndexNowBestEffort([slug]);
+    }
+  }
+
   return NextResponse.json({ ok: true, lawsuit: data });
 }
 
@@ -174,7 +186,7 @@ async function handleBulkAction(
     .from('lawsuits')
     .update(updates)
     .in('id', ids)
-    .select('id');
+    .select('id, slug');
 
   if (error) {
     console.error('[admin/lawsuits] bulk update failed:', error);
@@ -182,6 +194,15 @@ async function handleBulkAction(
       { error: 'Could not update the settlements.' },
       { status: 400 },
     );
+  }
+
+  if (shouldNotifyIndexNowForAdminAction(action)) {
+    const slugs = ((updated ?? []) as { slug?: string | null }[])
+      .map((row) => row.slug)
+      .filter((value): value is string => Boolean(value));
+    if (slugs.length > 0) {
+      void notifyIndexNowBestEffort(slugs);
+    }
   }
 
   return NextResponse.json({
@@ -196,6 +217,8 @@ const VERIFIED_PATCH_KEYS = new Set([
   'proof_verified',
   'administrator',
   'form_field_order',
+  'final_approval_hearing_at',
+  'payment_timing_text',
 ]);
 
 function pickAllowedPatch(
@@ -231,6 +254,18 @@ function pickAllowedPatch(
       updates[key] = value;
       continue;
     }
+    if (key === 'final_approval_hearing_at') {
+      const checked = normalizeHearingDate(value);
+      if (!checked.ok) return { updates: {}, error: checked.error };
+      updates[key] = checked.value;
+      continue;
+    }
+    if (key === 'payment_timing_text') {
+      const checked = normalizePaymentTiming(value);
+      if (!checked.ok) return { updates: {}, error: checked.error };
+      updates[key] = checked.value;
+      continue;
+    }
     updates[key] = value;
   }
   return { updates };
@@ -264,4 +299,34 @@ function normalizeFieldOrder(
     return { ok: false, error: 'form_field_order must be a list of field names.' };
   }
   return { ok: true, value };
+}
+
+function normalizeHearingDate(
+  value: unknown,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (value == null || value === '') return { ok: true, value: null };
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return { ok: false, error: 'Hearing date must be YYYY-MM-DD, or blank if not announced.' };
+  }
+  const [y, m, d] = value.split('-').map(Number);
+  const check = new Date(Date.UTC(y, m - 1, d));
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) {
+    return { ok: false, error: 'Hearing date must be a real calendar day.' };
+  }
+  return { ok: true, value };
+}
+
+function normalizePaymentTiming(
+  value: unknown,
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (value == null) return { ok: true, value: null };
+  if (typeof value !== 'string') {
+    return { ok: false, error: 'Payment timing must be text, or blank if not announced.' };
+  }
+  const text = value.trim();
+  if (!text) return { ok: true, value: null };
+  if (text.length > 280) {
+    return { ok: false, error: 'Payment timing must be 280 characters or fewer.' };
+  }
+  return { ok: true, value: text };
 }

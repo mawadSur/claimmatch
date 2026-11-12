@@ -23,6 +23,9 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   getApi: () => ({ request: jest.fn(async () => ({ ok: true, status: 200, data: {} })) }),
 }));
+jest.mock('@/lib/supabase', () => ({
+  getSupabase: () => ({ auth: { resend: jest.fn() } }),
+}));
 
 function page(name: string) {
   return function Page() {

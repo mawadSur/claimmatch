@@ -18,17 +18,20 @@ import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
 import { sendOnboardingDrips } from '@/lib/onboarding-drip';
-import { submitIndexNowUrls } from '@/lib/indexnow';
+import { sendPayoutTrackerEmails } from '@/lib/payout-tracker';
+import { sendMatchAlerts } from '@/lib/match-alert-job';
 import {
   buildReport,
   checkIngestStep,
   deadlineRemindersGate,
   errorMessage,
   heldTriageGate,
+  matchAlertGate,
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
   onboardingDripGate,
+  payoutTrackerGate,
   reportHttpStatus,
   runStep,
   serviceConfigProblem,
@@ -43,6 +46,8 @@ import {
  *      closures, failed writes and empty sources make the step fail (500)
  *      unless INGEST_HELD_IS_WARNING=1 and the only problem is held closures
  *      (then 200 + a warning jobs row). Every run is stored as a jobs row.
+ *      IndexNow pings for changed public URLs live on the ingest summary
+ *      (best-effort; INDEXNOW_ENABLED).
  *   2. matchStore: upsert per-user matches (score, reasons). Off unless
  *      MATCH_STORE_ENABLED=1. Separate from email.
  *   3. matchSweep: email new matches. Paused by D50; runs only when
@@ -155,6 +160,24 @@ async function handle(req: Request) {
         : await runStep('daily/onboardingDrip', () => sendOnboardingDrips());
     }
 
+    const trackerGate = payoutTrackerGate(flags.payoutTrackerEmails());
+    if (!trackerGate.run) {
+      steps.payoutTracker = trackerGate.step;
+    } else {
+      steps.payoutTracker = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/payoutTracker', () => sendPayoutTrackerEmails());
+    }
+
+    const alertGate = matchAlertGate(flags.matchAlertEmails());
+    if (!alertGate.run) {
+      steps.matchAlerts = alertGate.step;
+    } else {
+      steps.matchAlerts = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/matchAlerts', () => sendMatchAlerts({ dryRun }));
+    }
+
     const report = buildReport('daily', steps);
     await finishIngestRun(jobId, 'cron/daily', stepToIngestRun(steps.ingest));
     await maybeAlertCronFailure(report);
@@ -167,18 +190,6 @@ async function handle(req: Request) {
     // Hobby allows two crons; the weekly checker piggybacks on Monday UTC.
     if (flags.linkCheck() && new Date().getUTCDay() === 1) {
       await runOfficialLinkCheck();
-    }
-    const ingestResult = steps.ingest?.status === 'ran' || steps.ingest?.status === 'warning'
-      ? steps.ingest.result
-      : null;
-    const changedSlugs =
-      ingestResult && typeof ingestResult === 'object' && Array.isArray((ingestResult as { changedSlugs?: unknown }).changedSlugs)
-        ? ((ingestResult as { changedSlugs: string[] }).changedSlugs)
-        : [];
-    if (!dryRun && changedSlugs.length > 0) {
-      await submitIndexNowUrls(changedSlugs, { dryRun }).catch((err) => {
-        console.warn('[cron/daily] indexnow failed:', errorMessage(err));
-      });
     }
     return NextResponse.json({ ...report, dryRun, jobId }, { status: reportHttpStatus(report) });
   } catch (err) {

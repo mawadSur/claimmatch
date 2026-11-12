@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { captureServerEvent, subscriberDistinctId } from '@/lib/analytics/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { rateLimit, ipKey } from '@/lib/ratelimit';
 import {
@@ -64,20 +66,37 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { error } = await createServiceClient()
+    const svc = createServiceClient();
+    const emails = emailMatchCandidates(email);
+    const { error } = await svc
       .from('profiles')
       .update({ email_opt_in: false })
-      .in('email', emailMatchCandidates(email))
+      .in('email', emails)
       .select('id');
     if (error) {
       // The code only: messages and details can quote the filter, which holds the address.
       console.error(`[unsubscribe] update failed (code ${error.code ?? 'unknown'})`);
       return redirectTo(req, unsubscribeResultPath('failed', email));
     }
+    const { error: subError } = await svc
+      .from('subscribers')
+      .update({ unsubscribed_at: new Date().toISOString(), confirmed: false })
+      .in('email', emails)
+      .select('id');
+    if (subError) {
+      console.error(`[unsubscribe] subscriber update failed (code ${subError.code ?? 'unknown'})`);
+      return redirectTo(req, unsubscribeResultPath('failed', email));
+    }
   } catch (err) {
     console.error(`[unsubscribe] update threw (${err instanceof Error ? err.name : 'unknown'})`);
     return redirectTo(req, unsubscribeResultPath('failed', email));
   }
+
+  await captureServerEvent({
+    event: ANALYTICS_EVENTS.match_alert_unsubscribed,
+    distinctId: subscriberDistinctId(email),
+    properties: { source: 'unsubscribe' },
+  });
 
   // Same answer whether or not an account uses this address, so the page never
   // reveals who has one. Either way, no match or digest email goes to it.

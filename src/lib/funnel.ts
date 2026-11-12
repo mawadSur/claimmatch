@@ -5,8 +5,9 @@ export type FunnelProps = Record<string, string | number | boolean | null | unde
 
 /**
  * Attach first-touch UTM/ref tags already stored on this device, plus the
- * closed-set traffic kind. Never adds email, name or other PII. Existing
- * attribution keys on `properties` win so later clicks cannot overwrite them.
+ * closed-set traffic kind (and, when flagged on, the AI/search channel).
+ * Never adds email, name or other PII. Existing attribution keys on
+ * `properties` win so later clicks cannot overwrite them.
  */
 export function withFunnelAttribution(properties: FunnelProps = {}): FunnelProps {
   return {
