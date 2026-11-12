@@ -6,6 +6,11 @@
 
 export const MIN_PASSWORD_LENGTH = 10;
 
+/** How long the check-your-email screen waits before another confirmation email. */
+export const SIGNUP_RESEND_COOLDOWN_MS = 60_000;
+
+export const SIGNUP_RESEND_SENT = 'We sent another confirmation email. Check your inbox.';
+
 export type SignupField = 'full_name' | 'email' | 'password';
 
 export type SignupFieldErrors = Partial<Record<SignupField, string>>;
@@ -77,4 +82,41 @@ export function signupErrorCodeFromMessage(message: string): SignupErrorCode {
   if (m.includes('invalid') && m.includes('email')) return 'invalid_email';
   if (m.includes('password')) return 'password_rejected';
   return 'unknown';
+}
+
+const SIGNUP_ERROR_MESSAGES: Record<SignupErrorCode, string> = {
+  name_required: 'Enter your name.',
+  email_required: 'Enter your email address.',
+  invalid_email: 'Enter a valid email address.',
+  password_required: 'Enter a password.',
+  password_too_short: `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`,
+  email_exists: 'An account with this email already exists.',
+  password_rejected: `That password wasn't accepted. Try a different one with at least ${MIN_PASSWORD_LENGTH} characters.`,
+  rate_limited: "We couldn't send your confirmation email just now. Wait a minute and try again.",
+  timeout: 'This is taking too long. Check your connection and try again.',
+  unknown: 'Something went wrong. Please try again.',
+};
+
+/** Plain text for a signup error code. Never a raw provider message. */
+export function signupErrorMessage(code: SignupErrorCode): string {
+  return SIGNUP_ERROR_MESSAGES[code];
+}
+
+/** Live password hint under the signup field. */
+export function signupPasswordHint(length: number): string {
+  if (length > 0 && length < MIN_PASSWORD_LENGTH) {
+    const needed = MIN_PASSWORD_LENGTH - length;
+    return `${needed} more character${needed === 1 ? '' : 's'} needed`;
+  }
+  return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+}
+
+/** Seconds left on the confirmation-email cooldown, never below zero. */
+export function signupResendWaitSeconds(cooldownUntil: number, now = Date.now()): number {
+  return Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+}
+
+export function signupResendWaitText(seconds: number): string {
+  if (seconds <= 0) return '';
+  return seconds === 1 ? 'You can resend in 1 second.' : `You can resend in ${seconds} seconds.`;
 }

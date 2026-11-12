@@ -21,6 +21,7 @@
     "lib/disclaimer.ts",
     "lib/lawsuit-display.ts",
     "lib/settlement-seo.ts",
+    "lib/signup-validation.ts",
     "lib/catalog-unknowns.ts",
     "lib/settlement-guides.ts",
     "lib/catalog-page.ts",
