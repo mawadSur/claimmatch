@@ -25,6 +25,7 @@ import {
   signupErrorCodeFromMessage,
   signupErrorMessage,
   signupFieldErrorCode,
+  signupLooksLikeExistingEmail,
   signupPasswordHint,
   signupResendWaitSeconds,
   signupResendWaitText,
@@ -265,6 +266,13 @@ export function AuthForm({
 
         if (signUpError) {
           showSignupError(signupErrorCodeFromMessage(signUpError.message));
+          setStatus('idle');
+          return;
+        }
+
+        // Anti-enumeration: existing email is success with identities: [].
+        if (signupLooksLikeExistingEmail(data)) {
+          showSignupError('email_exists');
           setStatus('idle');
           return;
         }

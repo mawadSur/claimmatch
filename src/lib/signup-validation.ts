@@ -79,6 +79,10 @@ export function signupErrorCodeFromMessage(message: string): SignupErrorCode {
     return 'email_exists';
   }
   if (m.includes('rate') && (m.includes('limit') || m.includes('too many'))) return 'rate_limited';
+  // Supabase 429 copy, e.g. "For security purposes, you can only request this after 54 seconds."
+  if (m.includes('for security purposes') && m.includes('after') && m.includes('second')) {
+    return 'rate_limited';
+  }
   if (m.includes('invalid') && m.includes('email')) return 'invalid_email';
   if (m.includes('password')) return 'password_rejected';
   return 'unknown';
@@ -92,7 +96,7 @@ const SIGNUP_ERROR_MESSAGES: Record<SignupErrorCode, string> = {
   password_too_short: `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`,
   email_exists: 'An account with this email already exists.',
   password_rejected: `That password wasn't accepted. Try a different one with at least ${MIN_PASSWORD_LENGTH} characters.`,
-  rate_limited: "We couldn't send your confirmation email just now. Wait a minute and try again.",
+  rate_limited: 'Please wait a minute before trying again.',
   timeout: 'This is taking too long. Check your connection and try again.',
   unknown: 'Something went wrong. Please try again.',
 };
@@ -100,6 +104,20 @@ const SIGNUP_ERROR_MESSAGES: Record<SignupErrorCode, string> = {
 /** Plain text for a signup error code. Never a raw provider message. */
 export function signupErrorMessage(code: SignupErrorCode): string {
   return SIGNUP_ERROR_MESSAGES[code];
+}
+
+/**
+ * Supabase anti-enumeration: signing up with an already-registered email
+ * returns success, no error, and a user whose identities array is empty.
+ */
+export function signupLooksLikeExistingEmail(
+  data:
+    | { user?: { identities?: unknown[] | null } | null; session?: unknown }
+    | null
+    | undefined,
+): boolean {
+  const identities = data?.user?.identities;
+  return Array.isArray(identities) && identities.length === 0;
 }
 
 /** Live password hint under the signup field. */

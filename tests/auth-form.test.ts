@@ -36,6 +36,7 @@ describe('AuthForm signed-in path', () => {
     expect(src).toContain('signupErrorMessage(');
     expect(src).not.toContain('setError(signUpError.message)');
     expect(src).toContain("errorCode === 'email_exists'");
+    expect(src).toContain('signupLooksLikeExistingEmail(data)');
     expect(src).toContain('href="/forgot-password"');
     expect(src).toContain('href={switchHref}');
   });

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { issueMatchAlertToken } from '@/lib/match-alert-token';
 
@@ -186,6 +188,23 @@ describe('consumeMatchAlertToken', () => {
       now: new Date('2026-11-12T12:00:00.000Z'),
     });
     expect(result).toEqual({ ok: false, error: 'expired' });
+  });
+});
+
+describe('one-click claim landing page', () => {
+  it('keeps the POST confirm button, brands LawsuitAI, and reads as one tap', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../src/app/match-alert/start/page.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(src).toContain('PUBLIC_BRAND');
+    expect(src).toContain('method="post"');
+    expect(src).toContain('MATCH_ALERT_START_API_PATH');
+    expect(src).toContain('Start this claim');
+    expect(src).toMatch(/One tap/);
+    expect(src).toContain('autoFocus');
+    expect(src).not.toContain('verifyOtp');
+    expect(src).not.toMatch(/onLoad|autoSubmit|useEffect/);
   });
 });
 

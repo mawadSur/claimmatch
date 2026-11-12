@@ -33,11 +33,12 @@ describe('renderLlmsTxt', () => {
       categoryHubs: [{ name: 'Data Breach', path: '/settlements/category/data-breach' }],
       feeLine: BETA_FEE_COPY,
     });
-    expect(body.startsWith('# ClaimMatch')).toBe(true);
-    expect(body).toContain(SHORT_DISCLAIMER);
+    expect(body.startsWith('# LawsuitAI')).toBe(true);
+    expect(body).not.toContain('ClaimMatch');
+    expect(body).toContain(SHORT_DISCLAIMER.replaceAll('ClaimMatch', 'LawsuitAI'));
     expect(body).toContain(OFFICIAL_FILING_IS_FREE);
-    expect(body).toContain(BETA_FEE_COPY);
-    expect(body).toContain('Matching on ClaimMatch is free.');
+    expect(body).toContain(BETA_FEE_COPY.replaceAll('ClaimMatch', 'LawsuitAI'));
+    expect(body).toContain('Matching on LawsuitAI is free.');
     expect(body).toContain('/lawsuits');
     expect(body).toContain('/settlements/closing-soon');
     expect(body).toContain('/settlements/category/data-breach');
@@ -65,7 +66,8 @@ describe('GET /llms.txt', () => {
     const body = await res.text();
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('text/plain');
-    expect(body).toContain('# ClaimMatch');
+    expect(body).toContain('# LawsuitAI');
+    expect(body).not.toContain('ClaimMatch');
     expect(body).toContain('/how-it-works');
     expect(body).toContain('/privacy');
   });

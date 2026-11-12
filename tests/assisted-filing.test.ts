@@ -142,6 +142,8 @@ describe('filing copy', () => {
     });
     expect(html).toContain('ADM-42');
     expect(html).toContain('Authorized submission confirmation');
+    expect(html).toContain('LawsuitAI');
+    expect(html).not.toContain('ClaimMatch');
     expect(html.toLowerCase()).not.toMatch(/receipt number|we file|on your behalf/);
   });
 });

@@ -230,6 +230,21 @@ describe('SignupScreen', () => {
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
+  it('treats a successful signup with empty identities as an existing account', async () => {
+    const user = userEvent.setup();
+    mockSignUp.mockResolvedValueOnce({
+      data: { user: { id: 'placeholder', identities: [] }, session: null },
+      error: null,
+    });
+    await renderScreen(<SignupScreen />, { next: '/claim/acme' });
+    await fillForm(user);
+    await user.press(screen.getByRole('button', { name: auth.createMyAccount.text }));
+    expect(await screen.findByText(signupErrorMessage('email_exists'))).toBeOnTheScreen();
+    expect(screen.getByTestId('signup-error-login')).toBeOnTheScreen();
+    expect(screen.getByTestId('signup-error-reset')).toBeOnTheScreen();
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
   it('points an existing account to log in and reset password', async () => {
     const user = userEvent.setup();
     mockSignUp.mockResolvedValueOnce({
@@ -405,6 +420,11 @@ describe('signupAuthError', () => {
       code: 'rate_limited',
       message: signupErrorMessage('rate_limited'),
     });
+    expect(
+      signupAuthError({
+        message: 'For security purposes, you can only request this after 54 seconds.',
+      }).code,
+    ).toBe('rate_limited');
     expect(signupAuthError({ message: 'User already registered' }).code).toBe('email_exists');
     expect(signupAuthError({ message: 'weird provider text' }).message).toBe(signupErrorMessage('unknown'));
     expect(signupAuthError({ message: 'weird provider text' }).message).not.toBe('weird provider text');

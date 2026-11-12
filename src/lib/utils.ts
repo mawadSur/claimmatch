@@ -236,6 +236,14 @@ export const SITE = {
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://lawsuitai.org',
 };
 
+/** Public product name in emails, /llms.txt, and the one-click claim landing page. */
+export const PUBLIC_BRAND = 'LawsuitAI';
+
+/** Rewrite user-facing ClaimMatch copy for those public surfaces only. */
+export function publicBrandCopy(text: string): string {
+  return text.replaceAll('ClaimMatch', PUBLIC_BRAND);
+}
+
 /** Absolute URL for metadata, sitemap and emails. */
 export function canonicalUrl(path = '/'): string {
   const base = SITE.url.replace(/\/$/, '');

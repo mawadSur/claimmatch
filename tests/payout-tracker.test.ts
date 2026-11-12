@@ -152,6 +152,8 @@ describe('payout tracker email copy', () => {
     });
     expect(html).toContain('/unsubscribe');
     expect(html).toContain('Acme Settlement');
+    expect(html).toContain('LawsuitAI');
+    expect(html).not.toContain('ClaimMatch');
     expect(html).toContain('Paid after final approval');
     expect(html).not.toMatch(/fee|percent|15%/i);
     expect(html).not.toMatch(/we(?:['’]ll|\s+will)\s+file/i);

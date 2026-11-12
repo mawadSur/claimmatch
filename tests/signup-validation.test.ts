@@ -6,6 +6,7 @@ import {
   signupErrorCodeFromMessage,
   signupErrorMessage,
   signupFieldErrorCode,
+  signupLooksLikeExistingEmail,
   signupPasswordHint,
   signupResendWaitSeconds,
   signupResendWaitText,
@@ -46,6 +47,25 @@ describe('signup field validation', () => {
     expect(signupErrorCodeFromMessage('Password should be at least 6 characters')).toBe('password_rejected');
     expect(signupErrorCodeFromMessage('weird provider text')).toBe('unknown');
     expect(signupErrorCodeFromMessage('email rate limit exceeded')).toBe('rate_limited');
+    expect(
+      signupErrorCodeFromMessage('For security purposes, you can only request this after 54 seconds.'),
+    ).toBe('rate_limited');
+    expect(
+      signupErrorCodeFromMessage('For security purposes, you can only request this after 12 seconds'),
+    ).toBe('rate_limited');
+  });
+});
+
+describe('signupLooksLikeExistingEmail', () => {
+  it('detects Supabase anti-enumeration: success with an empty identities array', () => {
+    expect(signupLooksLikeExistingEmail({ user: { identities: [] }, session: null })).toBe(true);
+    expect(signupLooksLikeExistingEmail({ user: { identities: [{ id: 'email' }] }, session: null })).toBe(
+      false,
+    );
+    expect(signupLooksLikeExistingEmail({ user: { identities: null }, session: null })).toBe(false);
+    expect(signupLooksLikeExistingEmail({ user: {}, session: null })).toBe(false);
+    expect(signupLooksLikeExistingEmail({ user: null, session: null })).toBe(false);
+    expect(signupLooksLikeExistingEmail(null)).toBe(false);
   });
 });
 
@@ -64,9 +84,7 @@ describe('signupErrorMessage', () => {
   ];
 
   it('maps every signup code to a short plain sentence, never the provider text', () => {
-    expect(signupErrorMessage('rate_limited')).toBe(
-      "We couldn't send your confirmation email just now. Wait a minute and try again.",
-    );
+    expect(signupErrorMessage('rate_limited')).toBe('Please wait a minute before trying again.');
     expect(signupErrorMessage('email_exists')).toBe('An account with this email already exists.');
     expect(signupErrorMessage('password_too_short')).toBe(
       `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`,

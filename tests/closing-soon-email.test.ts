@@ -94,6 +94,7 @@ describe('closing-soon email send', () => {
     expect(html).toContain('Unsubscribe');
     expect(html).toContain('1 Main Street');
     expect(html).not.toMatch(/\bmatch/i);
-    expect(html).toContain('ClaimMatch never files for you');
+    expect(html).toContain('LawsuitAI never files for you');
+    expect(html).not.toContain('ClaimMatch');
   });
 });
