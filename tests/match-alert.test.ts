@@ -268,6 +268,11 @@ describe('match-alert email', () => {
       ],
     });
     expect(html).toContain('Start this claim');
+    expect(html).toContain('LawsuitAI');
+    expect(html).not.toContain('ClaimMatch');
+    expect(html).toContain('a settlement that may match you');
+    expect(html).not.toMatch(/verified settlements/i);
+    expect(html).not.toContain('a verified settlement');
     expect(html).toContain('Verified open settlement');
     expect(html).toContain('Why it may match: Available in your state (CA)');
     expect(html).toContain('/unsubscribe?e=');

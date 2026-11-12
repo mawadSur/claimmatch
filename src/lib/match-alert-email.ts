@@ -13,10 +13,10 @@ import {
 } from '@/lib/match-alert';
 import { matchAlertStartPath } from '@/lib/match-alert-token';
 import { listUnsubscribeHeaders, unsubscribePageUrl } from '@/lib/unsubscribe';
-import { SITE, formatDeadline } from '@/lib/utils';
+import { PUBLIC_BRAND, publicBrandCopy, SITE, formatDeadline } from '@/lib/utils';
+import { resendEnvelope } from '@/lib/resend-mail';
 
 const BRAND = '#7526d1';
-const FROM = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
 
 export interface MatchAlertEmailClaim extends MatchAlertClaim {
   startUrl: string;
@@ -51,7 +51,8 @@ function getResend(): { emails: { send: (o: unknown) => Promise<unknown> } } | n
 export function renderMatchAlertEmail(opts: MatchAlertEmailOpts): string {
   const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
   const claims = opts.claims.slice(0, MATCH_ALERT_MAX_CLAIMS);
-  const countLabel = claims.length === 1 ? 'a verified settlement' : `${claims.length} verified settlements`;
+  const countLabel =
+    claims.length === 1 ? 'a settlement that may match you' : `${claims.length} settlements that may match you`;
   const cards = claims
     .map((claim) => {
       const why = claim.reasons[0]
@@ -85,18 +86,18 @@ export function renderMatchAlertEmail(opts: MatchAlertEmailOpts): string {
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
         <tr><td style="padding:0 4px 20px 4px;">
-          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(SITE.name)}</span>
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(PUBLIC_BRAND)}</span>
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">A new match to review</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${esc(countLabel)} that may apply to you. Check the official notice and file there yourself if you qualify. ${esc(SITE.name)} never files for you and does not promise a payment.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${esc(countLabel)}. Check the official notice and file there yourself if you qualify. ${esc(PUBLIC_BRAND)} never files for you and does not promise a payment.</p>
           ${cards}
           <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">${esc(OFFICIAL_FILING_IS_FREE)} <a href="${esc(money)}" style="color:${BRAND};text-decoration:underline;">How we make money</a>.</p>
         </td></tr>
         <tr><td style="padding:22px 8px 0 8px;">
-          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
-          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(SITE.name)}${postal ? `<br>${esc(postal)}` : ''}</p>
-          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. You're receiving this because you opted in to match alerts from ${esc(SITE.name)}. <a href="${esc(unsub)}" style="color:#8b859e;text-decoration:underline;">Unsubscribe</a>.</p>
+          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(SHORT_DISCLAIMER))}</p>
+          <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(PUBLIC_BRAND)}${postal ? `<br>${esc(postal)}` : ''}</p>
+          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. You're receiving this because you opted in to match alerts from ${esc(PUBLIC_BRAND)}. <a href="${esc(unsub)}" style="color:#8b859e;text-decoration:underline;">Unsubscribe</a>.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -106,8 +107,8 @@ export function renderMatchAlertEmail(opts: MatchAlertEmailOpts): string {
 }
 
 export function matchAlertSubject(claims: MatchAlertClaim[]): string {
-  if (claims.length === 1) return `A new settlement match on ${SITE.name}`;
-  return `${claims.length} new settlement matches on ${SITE.name}`;
+  if (claims.length === 1) return `A new settlement match on ${PUBLIC_BRAND}`;
+  return `${claims.length} new settlement matches on ${PUBLIC_BRAND}`;
 }
 
 export function previewMatchAlertEmail(to: string, name?: string | null): string {
@@ -157,11 +158,10 @@ export async function sendMatchAlertEmail(opts: MatchAlertEmailOpts): Promise<bo
     console.log('[match-alert] RESEND_API_KEY not set — skipping send.');
     return false;
   }
-  const from = process.env.RESEND_FROM || FROM;
   const headers = listUnsubscribeHeaders(opts.to);
   try {
     await resend.emails.send({
-      from,
+      ...resendEnvelope(),
       to: opts.to,
       subject: matchAlertSubject(opts.claims),
       html: renderMatchAlertEmail(opts),

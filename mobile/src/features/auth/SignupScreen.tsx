@@ -1,4 +1,8 @@
-import { signupPasswordHint } from '@shared/lib/signup-validation';
+import {
+  signupErrorMessage,
+  signupLooksLikeExistingEmail,
+  signupPasswordHint,
+} from '@shared/lib/signup-validation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, StyleSheet, View, type TextInputInstance } from 'react-native';
@@ -114,6 +118,12 @@ export function SignupScreen() {
         const mapped = signupAuthError(error);
         setFormError(mapped.message);
         setFormErrorCode(mapped.code);
+        setLoading(false);
+        return;
+      }
+      if (signupLooksLikeExistingEmail(data)) {
+        setFormError(signupErrorMessage('email_exists'));
+        setFormErrorCode('email_exists');
         setLoading(false);
         return;
       }

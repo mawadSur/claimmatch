@@ -138,6 +138,8 @@ describe('onboarding drip email copy', () => {
     const html = renderIncompleteOnboardingEmail({ name: 'Ada', to: 'a@example.com' });
     expect(html).toContain('/onboarding');
     expect(html).toContain('/unsubscribe');
+    expect(html).toContain('LawsuitAI');
+    expect(html).not.toContain('ClaimMatch');
     expect(html).not.toMatch(/thousands|users like you|99%/i);
   });
 

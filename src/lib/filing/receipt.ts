@@ -1,10 +1,10 @@
-import { SITE } from '@/lib/utils';
+import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { legalContact } from '@/lib/legal-contact';
+import { resendEnvelope } from '@/lib/resend-mail';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
 
 const BRAND = '#7526d1';
-const FROM = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
 
 export interface FilingReceiptOpts {
   to: string;
@@ -51,11 +51,11 @@ export function renderFilingReceiptEmail(opts: FilingReceiptOpts): string {
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
         <tr><td style="padding:0 4px 20px 4px;">
-          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;">${esc(SITE.name)}</span>
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;">${esc(PUBLIC_BRAND)}</span>
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Authorized submission confirmation</h1>
-          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} ClaimMatch sent the official form for <strong>${esc(opts.lawsuitTitle)}</strong> using the authorization you signed.</p>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} ${esc(PUBLIC_BRAND)} sent the official form for <strong>${esc(opts.lawsuitTitle)}</strong> using the authorization you signed.</p>
           <p style="margin:0 0 8px 0;font-size:15px;color:#43405a;line-height:1.55;">Administrator confirmation id: <strong>${esc(opts.administratorClaimId)}</strong></p>
           ${screenshot}
           <div style="margin-top:20px;">
@@ -63,9 +63,9 @@ export function renderFilingReceiptEmail(opts: FilingReceiptOpts): string {
           </div>
         </td></tr>
         <tr><td style="padding:22px 8px 0 8px;">
-          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(SHORT_DISCLAIMER)}</p>
+          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(SHORT_DISCLAIMER))}</p>
           ${postal ? `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(postal)}</p>` : ''}
-          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">You're receiving this because you authorized a submission on ${esc(SITE.name)}.${unsub}</p>
+          <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">You're receiving this because you authorized a submission on ${esc(PUBLIC_BRAND)}.${unsub}</p>
         </td></tr>
       </table>
     </td></tr>
@@ -84,9 +84,9 @@ export async function sendFilingReceiptEmail(opts: FilingReceiptOpts): Promise<v
   }
   try {
     await resend.emails.send({
-      from: FROM,
+      ...resendEnvelope(),
       to: opts.to,
-      subject: `Authorized submission confirmation on ${SITE.name}`,
+      subject: `Authorized submission confirmation on ${PUBLIC_BRAND}`,
       html: renderFilingReceiptEmail(opts),
     });
   } catch (err) {

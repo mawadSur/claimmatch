@@ -1,6 +1,7 @@
 import { flags } from '@/lib/flags';
+import { resendEnvelope } from '@/lib/resend-mail';
 import { createServiceClient } from '@/lib/supabase/server';
-import { SITE } from '@/lib/utils';
+import { PUBLIC_BRAND } from '@/lib/utils';
 import type { StepResult } from '@/app/api/cron/_lib/report';
 
 export type IngestAlertReason = 'failed' | 'zero_updates' | 'warning';
@@ -74,10 +75,9 @@ export async function notifyAdmins(input: { subject: string; html: string }): Pr
   if (to.length === 0) return false;
   const resend = getResend();
   if (!resend) return false;
-  const from = process.env.RESEND_FROM || 'ClaimMatch <onboarding@resend.dev>';
   try {
     await resend.emails.send({
-      from,
+      ...resendEnvelope(),
       to,
       subject: input.subject,
       html: input.html,
@@ -104,6 +104,7 @@ export function renderIngestAlertEmail(input: {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>${title}</title></head>
 <body style="font-family:system-ui,sans-serif;color:#171326;">
+  <p style="font-size:13px;color:#7526d1;font-weight:700;">${PUBLIC_BRAND}</p>
   <h1 style="font-size:18px;">${title}</h1>
   <p>Job: ${input.job}</p>
   <p>When: ${input.at}</p>
@@ -134,7 +135,7 @@ async function sendIngestAlertEmail(input: {
         : input.reason === 'warning'
           ? 'Ingest held closures'
           : 'Ingest updated 0 rows'
-    } on ${SITE.name}`,
+    } on ${PUBLIC_BRAND}`,
     html: renderIngestAlertEmail(input),
   });
 }

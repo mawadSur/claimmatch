@@ -8,7 +8,7 @@ import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { categoryHubPath, CLOSING_SOON_PATH, NEW_SETTLEMENTS_PATH, pageUrl } from '@/lib/settlement-seo';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
-import { SITE } from '@/lib/utils';
+import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
 
 export interface LlmsHubLink {
   name: string;
@@ -65,15 +65,15 @@ export function renderLlmsTxt(input: {
 } = {}): string {
   const categoryHubs = input.categoryHubs ?? FALLBACK_CATEGORY_HUBS;
   const feeLine = input.feeLine ?? publicBetaFeeCopy();
-  return `# ${SITE.name}
+  return `# ${PUBLIC_BRAND}
 
 > ${SITE.description}
 
-${SHORT_DISCLAIMER}
+${publicBrandCopy(SHORT_DISCLAIMER)}
 
-${OFFICIAL_FILING_IS_FREE} ${feeLine}
+${OFFICIAL_FILING_IS_FREE} ${publicBrandCopy(feeLine)}
 
-Matching on ClaimMatch is free.
+Matching on ${PUBLIC_BRAND} is free.
 
 ## Settlement hubs
 
