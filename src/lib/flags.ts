@@ -344,4 +344,10 @@ export const flags = {
    * tests or CI. Independent of MATCH_EMAILS_ENABLED.
    */
   matchAlertEmails: () => on('MATCH_ALERT_EMAILS_ENABLED'),
+  /**
+   * Official-site verification drafts, the admin fast-review UI, pending-review
+   * Close / Republish, and the coverage card. Off: no fetch, no drafts, no UI.
+   * Drafts never stamp verified_at and never show on public pages.
+   */
+  verifyAssist: () => on('VERIFY_ASSIST_ENABLED'),
 };
