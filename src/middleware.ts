@@ -39,8 +39,17 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except static assets and image files.
+     * Match all request paths except:
+     * - static assets and image files;
+     * - /ingest/* (PostHog proxy rewrite; no session needed);
+     * - /lawsuits/<slug>/* and /settlements/<hub>/* (public SEO pages, mostly
+     *   force-static, so a session cookie cannot change what they render);
+     * - robots.txt, sitemap.xml, llms.txt (crawler files).
+     * Each skipped request saves a middleware run plus a Supabase getUser
+     * call. These paths were about half of the requests that reached
+     * middleware in a recent 11 hour sample, so this cuts Vercel Active CPU
+     * on the Hobby team. /lawsuits (the index) still runs middleware.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|ingest/|lawsuits/|settlements/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
