@@ -90,7 +90,8 @@ language sql immutable as $$
                'eligibility_rule_drafts', 'ingest_alerts',
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
-               'claim_reminder_sends', 'payout_tracker_sends']
+               'claim_reminder_sends', 'payout_tracker_sends',
+               'verification_drafts']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]

@@ -4,6 +4,11 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { ReviewQueue } from '@/components/admin/ReviewQueue';
+import { flags } from '@/lib/flags';
+import {
+  listVerificationDraftsByLawsuitIds,
+  type VerificationDraft,
+} from '@/lib/verification-drafts-store';
 
 export const metadata: Metadata = { title: 'Review queue' };
 
@@ -19,6 +24,8 @@ export default async function AdminReviewPage() {
   const svc = createServiceClient();
 
   let items: Lawsuit[] = [];
+  let drafts: Record<string, VerificationDraft> = {};
+  const assistEnabled = flags.verifyAssist();
   try {
     const { data } = await svc
       .from('lawsuits')
@@ -27,6 +34,10 @@ export default async function AdminReviewPage() {
       .order('extraction_confidence', { ascending: true, nullsFirst: true })
       .order('created_at', { ascending: false });
     items = (data ?? []) as Lawsuit[];
+    if (assistEnabled && items.length > 0) {
+      const draftMap = await listVerificationDraftsByLawsuitIds(items.map((item) => item.id));
+      drafts = Object.fromEntries(draftMap);
+    }
   } catch {
     items = [];
   }
@@ -43,10 +54,13 @@ export default async function AdminReviewPage() {
           Lowest-confidence first — verify the details, fix the eligibility rules
           if needed, then publish or reject. Use bulk actions to clear the queue
           efficiently.
+          {assistEnabled
+            ? ' When a site-check draft says claims are closed (with evidence), Close it; when it is still open with a future deadline, Republish + verify. Nothing closes without that click.'
+            : ''}
         </p>
       </header>
 
-      <ReviewQueue items={items} />
+      <ReviewQueue items={items} drafts={drafts} assistEnabled={assistEnabled} />
     </div>
   );
 }

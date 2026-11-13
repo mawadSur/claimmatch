@@ -37,6 +37,11 @@ export const ANALYTICS_EVENTS = {
   claim_timeline_viewed: 'claim_timeline_viewed',
   match_reason_viewed: 'match_reason_viewed',
   scorecard_viewed: 'scorecard_viewed',
+  verification_draft_run: 'verification_draft_run',
+  verification_draft_accepted: 'verification_draft_accepted',
+  verification_draft_rejected: 'verification_draft_rejected',
+  verification_assist_closed: 'verification_assist_closed',
+  verification_assist_republished: 'verification_assist_republished',
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

@@ -273,6 +273,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     description: 'Classify ChatGPT / Perplexity / Bing / Gemini / Google first-touch and show an admin card.',
     read: () => flags.aiReferrerAttribution(),
   },
+  {
+    env: 'VERIFY_ASSIST_ENABLED',
+    description:
+      'Official-site verification drafts, fast review in /admin/verify, pending-review Close / Republish, and the coverage card. Drafts never go public or stamp verified_at.',
+    read: () => flags.verifyAssist(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

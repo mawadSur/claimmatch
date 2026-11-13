@@ -3,8 +3,8 @@
  * one of these. The list is asserted against create-table statements in
  * supabase/migrations so a new user-owned table cannot ship uncovered.
  *
- * Tables that only reference auth.users for an admin actor (share_links.created_by)
- * are not listed: that FK is ON DELETE SET NULL.
+ * Tables that only reference auth.users for an admin actor (share_links.created_by,
+ * verification_drafts.reviewed_by) are not listed: those FKs are ON DELETE SET NULL.
  */
 export const USER_OWNED_TABLES = [
   'profiles',
@@ -93,6 +93,7 @@ export const DELETION_IGNORE_TABLES = [
   'eligibility_rule_drafts',
   'ingest_alerts',
   'admin_access_log',
+  'verification_drafts',
 ] as const;
 
 export function tablesCreatedInMigrations(sql: string): string[] {

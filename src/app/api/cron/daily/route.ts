@@ -14,6 +14,7 @@ import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
 import { processFilingQueue } from '@/lib/filing/queue';
 import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
+import { persistVerificationDrafts } from '@/lib/verification-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
@@ -28,6 +29,7 @@ import {
   heldTriageGate,
   matchAlertGate,
   matchStoreGate,
+  verifyAssistGate,
   matchSweepGate,
   missingConfigStep,
   onboardingDripGate,
@@ -167,6 +169,15 @@ async function handle(req: Request) {
       steps.payoutTracker = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/payoutTracker', () => sendPayoutTrackerEmails());
+    }
+
+    const verifyGate = verifyAssistGate(flags.verifyAssist());
+    if (!verifyGate.run) {
+      steps.verifyAssist = verifyGate.step;
+    } else {
+      steps.verifyAssist = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/verifyAssist', () => persistVerificationDrafts());
     }
 
     const alertGate = matchAlertGate(flags.matchAlertEmails());
