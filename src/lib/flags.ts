@@ -349,8 +349,14 @@ export const flags = {
    * One-click filing (docs/designs/one-click-filing.md): the claim packet,
    * Jev checks, the member's e-signature and filing through a channel the
    * law firm enabled, with a status timeline. Off: every new route 404s, no
-   * new UI renders, nothing new is collected, and the 0037 to 0040 tables
+   * new UI renders, nothing new is collected, and the 0041 to 0044 tables
    * stay unused. Sent to the app (CLIENT_FLAG_NAMES).
    */
   oneClickFiling: () => on('ONE_CLICK_FILING_ENABLED'),
+  /**
+   * Official-site verification drafts, the admin fast-review UI, pending-review
+   * Close / Republish, and the coverage card. Off: no fetch, no drafts, no UI.
+   * Drafts never stamp verified_at and never show on public pages.
+   */
+  verifyAssist: () => on('VERIFY_ASSIST_ENABLED'),
 };

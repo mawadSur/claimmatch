@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
   authDown: false,
   ops: [] as Op[],
   deleteUserError: null as { message: string } | null,
-  /** claim_documents rows (0037) the route reads before deleting rows. */
+  /** claim_documents rows (0041) the route reads before deleting rows. */
   documents: [] as Array<{ storage_path: string }>,
 }));
 

@@ -56,8 +56,8 @@ const SPEC = {
 };
 
 describe('claim state machine', () => {
-  it('matches public.filing_claim_transition_allowed in 0038 edge for edge', () => {
-    const sql = migration('0038_one_click_filing_guards.sql');
+  it('matches public.filing_claim_transition_allowed in 0042 edge for edge', () => {
+    const sql = migration('0042_one_click_filing_guards.sql');
     const body = sql.slice(sql.indexOf('filing_claim_transition_allowed(p_from text'), sql.indexOf('$$;', sql.indexOf('filing_claim_transition_allowed(p_from text')));
     const fromSql = [...body.matchAll(/'([a-z_]*)>([a-z_]+)'/g)].map((m) => `${m[1]}>${m[2]}`).sort();
     const fromTs = Object.entries(CLAIM_TRANSITIONS)
@@ -67,8 +67,8 @@ describe('claim state machine', () => {
     expect(fromTs).toEqual(fromSql);
   });
 
-  it('adds exactly the agent-lane statuses that 0037 adds to claim_status', () => {
-    const added = [...migration('0037_one_click_filing.sql').matchAll(/add value if not exists '([a-z_]+)'/g)].map((m) => m[1]);
+  it('adds exactly the agent-lane statuses that 0041 adds to claim_status', () => {
+    const added = [...migration('0041_one_click_filing.sql').matchAll(/add value if not exists '([a-z_]+)'/g)].map((m) => m[1]);
     expect(added).toEqual([...AGENT_CLAIM_STATUSES]);
     expect(added).not.toContain('rejected');
   });
@@ -209,8 +209,8 @@ describe('errors and staff results', () => {
 });
 
 describe('signing checks the database repeats', () => {
-  it('uses the same fresh sign-in rule as filing_sign_packet in 0039', () => {
-    const sql = migration('0039_one_click_filing_functions.sql');
+  it('uses the same fresh sign-in rule as filing_sign_packet in 0043', () => {
+    const sql = migration('0043_one_click_filing_functions.sql');
     const list = /p_auth_method not in \(([^)]*)\)/.exec(sql)?.[1] ?? '';
     expect([...list.matchAll(/'([^']+)'/g)].map((m) => m[1])).toEqual([...FRESH_SIGN_IN_METHODS]);
     expect(sql).toContain(`interval '${REAUTH_MAX_AGE_SECONDS} seconds'`);

@@ -76,7 +76,7 @@ end $$;
 --   tables_tested_elsewhere  covered by another file in supabase/tests
 --                     (proof_feedback: 54_proof_feedback.sql;
 --                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql;
---                     the one-click filing tables of 0037: 75_one_click_filing.sql).
+--                     the one-click filing tables of 0041: 76_one_click_filing.sql).
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$
   select array['profiles', 'claims', 'matches', 'beta_feedback']
@@ -91,7 +91,8 @@ language sql immutable as $$
                'eligibility_rule_drafts', 'ingest_alerts',
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
-               'claim_reminder_sends', 'payout_tracker_sends']
+               'claim_reminder_sends', 'payout_tracker_sends',
+               'verification_drafts']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]

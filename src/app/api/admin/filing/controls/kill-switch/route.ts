@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/admin/filing/controls/kill-switch. On: anyone in the console,
  * effective at once (queued claims go back to the member on the next cron
- * run; pre_send checks block). Off: legal_reviewer only (0038 checks it too).
+ * run; pre_send checks block). Off: legal_reviewer only (0042 checks it too).
  */
 export async function POST(req: Request) {
   const auth = await guard(req, canOpenFilingConsole);

@@ -1,4 +1,4 @@
--- One-click filing (0037 to 0040): row security, the integrity triggers and
+-- One-click filing (0041 to 0044): row security, the integrity triggers and
 -- the server-only functions. One transaction, rolled back at the end, so it
 -- leaves nothing behind. Fixture ids end in 75.
 \set ON_ERROR_STOP 1
@@ -200,7 +200,7 @@ select pg_temp.expect_error($q$update public.esign_consents set withdrawn_at = n
 create function pg_temp.sha(t text) returns text language sql as $$
   select encode(sha256(convert_to(t, 'UTF8')), 'hex')
 $$;
--- A canonical packet as the server builds it (only the keys 0039 checks).
+-- A canonical packet as the server builds it (only the keys 0043 checks).
 create function pg_temp.canon(p_claim uuid, p_lawsuit text default '10000000-0000-4000-8000-000000000075',
                               p_spec text default '50000000-0000-4000-8000-000000000075') returns text
 language sql as $$

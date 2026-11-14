@@ -1,5 +1,5 @@
--- Lawsuit AI 0040: one-click filing, server-only functions for staff and the cron (CONTRACT).
--- EXPAND ONLY. Do not edit 0039 or earlier. Member-side functions: 0039. Design: docs/designs/one-click-filing.md.
+-- Lawsuit AI 0044: one-click filing, server-only functions for staff and the cron (CONTRACT).
+-- EXPAND ONLY. Do not edit 0043 or earlier. Member-side functions: 0043. Design: docs/designs/one-click-filing.md.
 --
 -- Each function makes one integrity-critical change in a single transaction
 -- and logs the claim change in claim_events (0006). Route handlers and the

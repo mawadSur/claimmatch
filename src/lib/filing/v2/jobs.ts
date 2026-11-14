@@ -1,7 +1,7 @@
 /**
  * Filing jobs for the agent lanes. The signatures and comments are the
  * CONTRACT (implemented by B3). Each function calls one server-only database
- * function (0039, 0040) with the service role, so a job and its claim always
+ * function (0043, 0044) with the service role, so a job and its claim always
  * change together and every change lands in claim_events. Never retries a
  * job automatically after a submission may have happened.
  */

@@ -1,7 +1,7 @@
 /**
  * Filing policies, specs and controls: drafts by staff and admins, decisions
- * by a legal_reviewer only (checked here and again by the 0038 triggers and
- * 0040 functions). Specs are checked with the schema, validateJevRules
+ * by a legal_reviewer only (checked here and again by the 0042 triggers and
+ * 0044 functions). Specs are checked with the schema, validateJevRules
  * (src/lib/jev) and the time-zone rule before a draft is saved or approved.
  */
 import type { NextResponse } from 'next/server';

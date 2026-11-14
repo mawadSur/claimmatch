@@ -14,7 +14,7 @@ export const PACKET_FORMAT = 'claimmatch.packet.v1';
 /* Claim statuses and the state machine                                       */
 /* -------------------------------------------------------------------------- */
 
-/** claim_status values added by 0037 for the agent lanes ('rejected' is legacy, hence filing_rejected). */
+/** claim_status values added by 0041 for the agent lanes ('rejected' is legacy, hence filing_rejected). */
 export const AGENT_CLAIM_STATUSES = [
   'preparing',
   'ready',
@@ -40,7 +40,7 @@ export type FilingClaimStatus = (typeof FILING_CLAIM_STATUSES)[number];
 
 /**
  * Allowed moves into, out of and between agent-lane statuses. Mirrors
- * public.filing_claim_transition_allowed (0038), which enforces it; change
+ * public.filing_claim_transition_allowed (0042), which enforces it; change
  * both together. '' is "no claim yet". Moves among self-file statuses keep
  * their existing rules (src/lib/claims.ts).
  */
@@ -80,7 +80,7 @@ export type PacketStatus = (typeof PACKET_STATUSES)[number];
 
 export const JOB_STATUSES = ['queued', 'in_progress', 'exported', 'needs_attention', 'filed', 'rejected', 'cancelled'] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
-/** At most one job per claim is in one of these (unique index, 0037). */
+/** At most one job per claim is in one of these (unique index, 0041). */
 export const OPEN_JOB_STATUSES = ['queued', 'in_progress', 'exported', 'needs_attention'] as const;
 
 export const DOCUMENT_STATUSES = ['pending_upload', 'stored', 'rejected', 'deleted'] as const;
@@ -162,7 +162,7 @@ export const MEMBER_LANE_REASON_OF: Readonly<Record<LaneReasonCode, MemberLaneRe
 
 /**
  * "File my claim" needs a real sign-in this recent (amr timestamp in the access token).
- * filing_sign_packet (0039) checks both constants again (CM015); a test keeps them equal.
+ * filing_sign_packet (0043) checks both constants again (CM015); a test keeps them equal.
  */
 export const REAUTH_MAX_AGE_SECONDS = 15 * 60;
 /** amr methods that count. Email links (otp, magiclink, recovery, invite) never do: see match-alert-start.ts. */
@@ -312,7 +312,7 @@ export const FILING_ERROR_MESSAGES: Readonly<Record<FilingErrorCode, string>> = 
   not_draft: 'Only a draft can be changed. Start a new draft.',
 };
 
-/** Database errors of 0038 to 0040 (and a few Postgres ones), as API codes. */
+/** Database errors of 0042 to 0044 (and a few Postgres ones), as API codes. */
 export const FILING_DB_ERRORS: Readonly<Record<string, FilingErrorCode>> = {
   CM001: 'invalid_transition',
   CM002: 'packet_locked',

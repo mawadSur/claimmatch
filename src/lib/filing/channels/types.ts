@@ -107,7 +107,7 @@ export interface ChannelSubmitInput<C extends AgentChannel = AgentChannel> {
 }
 
 /**
- * The outcome of one submission attempt. Map to filing_job_finish (0040):
+ * The outcome of one submission attempt. Map to filing_job_finish (0044):
  *   filed           -> job filed; claim submitted (with the number) or filed_by_claimmatch
  *   rejected        -> job rejected; claim filing_rejected
  *   needs_attention -> job needs_attention; claim stays filing; a person looks

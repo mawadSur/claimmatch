@@ -5,6 +5,12 @@ import { requireAdmin } from '@/lib/admin';
 import type { Lawsuit } from '@/lib/types';
 import { VerifyQueue } from '@/components/admin/VerifyQueue';
 import { tallyProofFeedback, type ProofFeedbackCounts } from '@/lib/proof-feedback';
+import { flags } from '@/lib/flags';
+import {
+  listVerificationDraftsByLawsuitIds,
+  type VerificationDraft,
+} from '@/lib/verification-drafts-store';
+import { loadVerifyQueueStats, sortVerifyQueue } from '@/lib/verification-draft-ui';
 
 export const metadata: Metadata = { title: 'Verify listings' };
 
@@ -17,9 +23,12 @@ export const dynamic = 'force-dynamic';
 export default async function AdminVerifyPage() {
   await requireAdmin('/admin/verify');
   const svc = createServiceClient();
+  const assistEnabled = flags.verifyAssist();
 
   let items: Lawsuit[] = [];
   let feedbackCounts = new Map<string, ProofFeedbackCounts>();
+  let drafts: Record<string, VerificationDraft> = {};
+  let stats: Record<string, { matchCount: number; viewCount: number }> = {};
   try {
     const { data } = await svc
       .from('lawsuits')
@@ -36,6 +45,15 @@ export default async function AdminVerifyPage() {
         .select('lawsuit_id, answer')
         .in('lawsuit_id', ids);
       feedbackCounts = tallyProofFeedback(feedback ?? []);
+      if (assistEnabled) {
+        const draftMap = await listVerificationDraftsByLawsuitIds(ids);
+        drafts = Object.fromEntries(draftMap);
+        stats = await loadVerifyQueueStats(svc as never, ids);
+        items = sortVerifyQueue(
+          items.map((lawsuit) => ({ lawsuit })),
+          stats,
+        ).map((row) => row.lawsuit);
+      }
     }
   } catch {
     items = [];
@@ -52,12 +70,18 @@ export default async function AdminVerifyPage() {
           Check who qualifies, the proof rule, and the administrator against the
           official notice, then mark the row verified. The public badge does not
           appear until the verified-fields flag is on.
+          {assistEnabled
+            ? ' Site-check drafts stay on this page only — they never go public or stamp verified on their own.'
+            : ''}
         </p>
       </header>
 
       <VerifyQueue
         items={items}
         feedbackCounts={Object.fromEntries(feedbackCounts)}
+        drafts={drafts}
+        stats={stats}
+        assistEnabled={assistEnabled}
       />
     </div>
   );

@@ -96,7 +96,7 @@ export function sha256Hex(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
-/** sha256Hex(canonicalJson(packet)): what claim_signatures.packet_hash stores (0037 re-checks it). */
+/** sha256Hex(canonicalJson(packet)): what claim_signatures.packet_hash stores (0041 re-checks it). */
 export function computePacketHash(packet: CanonicalPacket): string {
   return sha256Hex(canonicalJson(packet as unknown as CanonicalJsonValue));
 }
@@ -137,7 +137,7 @@ export interface BuildPacketDraftInput {
   documents: Array<{ id: string; kind: string; sha256: string | null; mime: string; size_bytes: number; status: string; source: string }>;
   /**
    * sha256Hex of spec.content.class_definition.text and spec.content.attestation.text,
-   * exactly as stored (no trimming); null without a spec. filing_sign_packet (0039)
+   * exactly as stored (no trimming); null without a spec. filing_sign_packet (0043)
    * recomputes both from the approved spec and refuses a mismatch (CM010, CM003).
    */
   hashes: { class_definition_sha256: string | null; attestation_sha256: string | null };

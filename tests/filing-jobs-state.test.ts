@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Every job change is one database function call (0039, 0040); the fake
+// Every job change is one database function call (0043, 0044); the fake
 // service client records the call and answers what the test sets.
 const db = vi.hoisted(() => ({
   rpcCalls: [] as Array<{ fn: string; args: Record<string, unknown> }>,

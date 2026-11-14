@@ -44,6 +44,7 @@ export const REQUIRED_COLUMNS: Record<string, string[]> = {
   match_alert_sends: ['email', 'lawsuit_id', 'sent_at'],
   match_alert_tokens: ['token_hash', 'email', 'lawsuit_id', 'expires_at'],
   beta_feedback: ['id', 'user_id', 'interview_opt_in', 'dismissed'],
+  verification_drafts: ['id', 'lawsuit_id', 'status', 'evidence'],
 };
 
 export const REQUIRED_FUNCTIONS = ['persist_first_attribution'] as const;

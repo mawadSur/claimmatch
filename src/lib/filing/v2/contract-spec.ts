@@ -5,7 +5,7 @@
  * statement and class definition, payout options, field order, Jev rules) and
  * the filing POLICY (whether and how Lawsuit AI may file as the member's
  * agent). Both are versioned rows (filing_specs.content, filing_policies,
- * 0037): staff draft, only a legal_reviewer approves (0038 enforces it).
+ * 0041): staff draft, only a legal_reviewer approves (0042 enforces it).
  *
  * Imports zod and ../../jev/types only, so the native app can share it later.
  */

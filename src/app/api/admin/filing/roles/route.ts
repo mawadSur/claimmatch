@@ -30,7 +30,7 @@ export async function GET(req: Request) {
 
 /**
  * POST /api/admin/filing/roles: grant a role by the person's account email.
- * legal_reviewer only by a legal_reviewer (0038 checks it again); filing_agent
+ * legal_reviewer only by a legal_reviewer (0042 checks it again); filing_agent
  * by an admin or a legal_reviewer. Nobody grants themself; granted_by is the caller.
  */
 export async function POST(req: Request) {

@@ -106,3 +106,91 @@ export async function extractLawsuit(rawText: string): Promise<ExtractedLawsuit 
     return null;
   }
 }
+
+const evidenceQuoteSchema = {
+  type: ['object', 'null'],
+  additionalProperties: false,
+  properties: {
+    quote: { type: 'string' },
+    source_url: { type: 'string' },
+  },
+  required: ['quote', 'source_url'],
+} as const;
+
+const VERIFY_ASSIST_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    deadline: { type: ['string', 'null'], description: 'Claim filing deadline as YYYY-MM-DD, or null if not stated. Never invent.' },
+    claims_status: { type: 'string', enum: ['open', 'closed', 'unknown'] },
+    eligibility_verified: { type: ['string', 'null'], description: 'Who qualifies, in the notice\'s own words. Null if not stated.' },
+    proof_verified: { type: ['string', 'null'], description: 'yes, no, optional, unknown, or null' },
+    administrator: { type: ['string', 'null'], description: 'Settlement administrator if named.' },
+    evidence: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        deadline: evidenceQuoteSchema,
+        claims_status: evidenceQuoteSchema,
+        eligibility_verified: evidenceQuoteSchema,
+        proof_verified: evidenceQuoteSchema,
+        administrator: evidenceQuoteSchema,
+      },
+      required: ['deadline', 'claims_status', 'eligibility_verified', 'proof_verified', 'administrator'],
+    },
+  },
+  required: ['deadline', 'claims_status', 'eligibility_verified', 'proof_verified', 'administrator', 'evidence'],
+} as const;
+
+const VERIFY_ASSIST_SYSTEM = `You extract claim-deadline facts from an official class-action notice or claim site.
+Rules:
+- Use only words on the page. Never invent a deadline, administrator, or class definition.
+- Each filled field MUST include a short verbatim quote from the page (evidence.<field>.quote).
+- deadline is YYYY-MM-DD or null. Do not use a hearing date as the claim deadline.
+- claims_status is closed only when the page says claims are closed or the claim period has ended.
+- proof_verified is yes / no / optional / unknown (not a boolean).
+- Leave a field null / unknown when the page does not say.`;
+
+export interface AnthropicVerificationDraft {
+  deadline: string | null;
+  claims_status: 'open' | 'closed' | 'unknown';
+  eligibility_verified: string | null;
+  proof_verified: 'yes' | 'no' | 'optional' | 'unknown' | null;
+  administrator: string | null;
+  evidence: Record<string, { quote: string; source_url: string } | null>;
+}
+
+/**
+ * Draft verified fields from official-page text. Returns null when the LLM is
+ * not configured or the call fails (caller falls back to heuristics).
+ */
+export async function extractVerificationDraft(
+  pageText: string,
+  sourceUrl: string,
+): Promise<AnthropicVerificationDraft | null> {
+  if (!anthropicConfigured()) return null;
+  const input = pageText.slice(0, 60_000);
+
+  try {
+    const params = {
+      model: 'claude-opus-4-8',
+      max_tokens: 2048,
+      thinking: { type: 'adaptive' },
+      system: VERIFY_ASSIST_SYSTEM,
+      output_config: { format: { type: 'json_schema', schema: VERIFY_ASSIST_SCHEMA } },
+      messages: [
+        {
+          role: 'user',
+          content: `Source URL: ${sourceUrl}\n\nExtract verification fields from this page text:\n\n${input}`,
+        },
+      ],
+    };
+    const res: any = await (client().messages.create as any)(params);
+    const textBlock = (res.content as any[]).find((b) => b?.type === 'text');
+    if (!textBlock?.text) return null;
+    return JSON.parse(textBlock.text) as AnthropicVerificationDraft;
+  } catch (err) {
+    console.error('[anthropic] extractVerificationDraft failed:', err);
+    return null;
+  }
+}

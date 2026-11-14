@@ -28,7 +28,7 @@ export const UNFILED_REMINDER_STATUSES = ['self_file', 'not_reported_filed'] as 
 
 /**
  * The statuses reminded today. The one-click statuses join only with the flag
- * on (they exist only after migration 0037, and asking for an unknown status
+ * on (they exist only after migration 0041, and asking for an unknown status
  * would fail the query).
  */
 export function reminderStatuses(oneClickFiling = flags.oneClickFiling()): string[] {

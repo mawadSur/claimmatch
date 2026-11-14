@@ -3,8 +3,8 @@
  * one of these. The list is asserted against create-table statements in
  * supabase/migrations so a new user-owned table cannot ship uncovered.
  *
- * Tables that only reference auth.users for an admin actor (share_links.created_by)
- * are not listed: that FK is ON DELETE SET NULL.
+ * Tables that only reference auth.users for an admin actor (share_links.created_by,
+ * verification_drafts.reviewed_by) are not listed: those FKs are ON DELETE SET NULL.
  */
 export const USER_OWNED_TABLES = [
   'profiles',
@@ -27,7 +27,7 @@ export const USER_OWNED_TABLES = [
   'payout_tracker_sends',
   'match_alert_sends',
   'beta_feedback',
-  // One-click filing (0037). Deleted with the account like claim_authorizations
+  // One-click filing (0041). Deleted with the account like claim_authorizations
   // today; whether signatures must outlive the account is the law firm's call
   // (docs/designs/one-click-filing.md, go-live checklist).
   'claim_filing_jobs',
@@ -59,7 +59,7 @@ export const CASCADE_ONLY_TABLES = ['profiles', 'claim_events'] as const;
  * drip_email_sends (0031), payout_tracker_sends (0035), match_alert_sends
  * (0036) and beta_feedback (0033) also cascade from auth.users, but are
  * deleted here too, as every user-owned table except CASCADE_ONLY_TABLES is.
- * The one-click tables (0037) go children first: jobs, voids and signatures
+ * The one-click tables (0041) go children first: jobs, voids and signatures
  * before the packets they point at, signatures before esign_consents. The
  * files under claim-documents/{user_id}/ in Storage are not rows: removing
  * them is a separate step (go-live checklist).
@@ -116,8 +116,9 @@ export const DELETION_IGNORE_TABLES = [
   'eligibility_rule_drafts',
   'ingest_alerts',
   'admin_access_log',
-  // Staff access log (0037): no foreign keys, append-only; kept per the law firm's retention decision.
+  // Staff access log (0041): no foreign keys, append-only; kept per the law firm's retention decision.
   'filing_audit_log',
+  'verification_drafts',
 ] as const;
 
 export function tablesCreatedInMigrations(sql: string): string[] {

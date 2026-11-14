@@ -1,7 +1,7 @@
 /**
  * Does the session have a real sign-in recent enough for "File my claim"?
  * The claim page asks once when it loads (it sets actions.needs_fresh_sign_in
- * through loadClaimFilingView); the sign route and filing_sign_packet (0039)
+ * through loadClaimFilingView); the sign route and filing_sign_packet (0043)
  * decide again on every signature. Rule (docs/designs/one-click-filing.md,
  * section 5): an amr entry of the verified token, for this user, whose method
  * is in FRESH_SIGN_IN_METHODS with a timestamp within REAUTH_MAX_AGE_SECONDS.

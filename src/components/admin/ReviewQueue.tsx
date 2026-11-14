@@ -23,18 +23,24 @@ import {
   parseFormFieldOrderInput,
   type VerifiedDraft,
 } from './VerifiedFieldsEditor';
+import { VerificationDraftPanel } from './VerificationDraftPanel';
+import type { VerificationDraft } from '@/lib/verification-drafts-store';
+import { applyAssistDraftToEditor } from '@/lib/verification-draft-ui';
 
 type Action = 'publish' | 'reject' | 'update' | 'verify' | 'unverify';
 type BulkAction = 'bulk_publish' | 'bulk_reject';
+
+type AssistAction = 'accept' | 'reject_draft' | 'close' | 'republish_verify';
 
 interface Row {
   lawsuit: Lawsuit;
   eligibilityText: string;
   eligibilityJson: string;
   verified: VerifiedDraft;
-  busy: Action | null;
+  busy: Action | AssistAction | null;
   message: { tone: 'success' | 'error'; text: string } | null;
   selected: boolean;
+  draft: VerificationDraft | null;
 }
 
 function toJson(value: unknown): string {
@@ -45,7 +51,7 @@ function toJson(value: unknown): string {
   }
 }
 
-function makeRow(l: Lawsuit): Row {
+function makeRow(l: Lawsuit, draft: VerificationDraft | null = null): Row {
   return {
     lawsuit: l,
     eligibilityText: l.eligibility_text ?? '',
@@ -54,6 +60,7 @@ function makeRow(l: Lawsuit): Row {
     busy: null,
     message: null,
     selected: false,
+    draft,
   };
 }
 
@@ -63,8 +70,16 @@ function makeRow(l: Lawsuit): Row {
  * PATCH /api/admin/lawsuits; publish and reject drop the row from the queue.
  * Supports bulk publish/reject for efficient queue clearing.
  */
-export function ReviewQueue({ items }: { items: Lawsuit[] }) {
-  const [rows, setRows] = useState<Row[]>(() => items.map(makeRow));
+export function ReviewQueue({
+  items,
+  drafts = {},
+  assistEnabled = false,
+}: {
+  items: Lawsuit[];
+  drafts?: Record<string, VerificationDraft>;
+  assistEnabled?: boolean;
+}) {
+  const [rows, setRows] = useState<Row[]>(() => items.map((item) => makeRow(item, drafts[item.id] ?? null)));
   const [bulkBusy, setBulkBusy] = useState<BulkAction | null>(null);
   const [bulkMessage, setBulkMessage] = useState<{
     tone: 'success' | 'error';
@@ -210,6 +225,66 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
         eligibilityJson: toJson(updated.eligibility),
         verified: draftFromLawsuit(updated),
         message: { tone: 'success', text: saved },
+      });
+    } catch {
+      patchRow(id, {
+        busy: null,
+        message: { tone: 'error', text: 'Network error — please try again.' },
+      });
+    }
+  }
+
+  async function assist(row: Row, action: AssistAction) {
+    if (!row.draft) return;
+    const id = row.lawsuit.id;
+    patchRow(id, { busy: action, message: null });
+    try {
+      const applied = applyAssistDraftToEditor(row.verified, row.draft);
+      const apiAction = action === 'reject_draft' ? 'reject' : action;
+      const res = await fetch('/api/admin/verification-drafts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: row.draft.id,
+          action: apiAction,
+          fields:
+            apiAction === 'accept' || apiAction === 'republish_verify'
+              ? {
+                  eligibility_verified: applied.eligibilityVerified,
+                  proof_verified: applied.proofVerified || null,
+                  administrator: applied.administrator,
+                  deadline: row.draft.deadline,
+                }
+              : undefined,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        patchRow(id, {
+          busy: null,
+          message: { tone: 'error', text: json?.error || 'Action failed — please try again.' },
+        });
+        return;
+      }
+      if (action === 'close' || action === 'republish_verify') {
+        setRows((rs) => rs.filter((r) => r.lawsuit.id !== id));
+        return;
+      }
+      if (action === 'reject_draft') {
+        patchRow(id, {
+          busy: null,
+          draft: null,
+          message: { tone: 'success', text: 'Draft rejected.' },
+        });
+        return;
+      }
+      const updated = (json.lawsuit as Lawsuit | undefined) ?? row.lawsuit;
+      patchRow(id, {
+        busy: null,
+        lawsuit: updated,
+        verified: draftFromLawsuit(updated),
+        draft: null,
+        message: { tone: 'success', text: 'Draft accepted and marked verified.' },
       });
     } catch {
       patchRow(id, {
@@ -421,6 +496,18 @@ export function ReviewQueue({ items }: { items: Lawsuit[] }) {
               onVerify={() => act(row, 'verify')}
               onUnverify={() => act(row, 'unverify')}
             />
+
+            {assistEnabled && row.draft ? (
+              <VerificationDraftPanel
+                lawsuit={l}
+                draft={row.draft}
+                busy={row.busy !== null}
+                onAcceptAll={() => assist(row, 'accept')}
+                onReject={() => assist(row, 'reject_draft')}
+                onClose={() => assist(row, 'close')}
+                onRepublish={() => assist(row, 'republish_verify')}
+              />
+            ) : null}
 
             {row.message && (
               <div

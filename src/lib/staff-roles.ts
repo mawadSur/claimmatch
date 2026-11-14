@@ -8,13 +8,13 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
  * read-only for builders), following src/lib/admin.ts:
  *   legal_reviewer  the law firm on retainer: the only role that approves a
  *                   filing spec or policy, turns a kill switch off or clears
- *                   an objection (0038 checks it again in the database);
+ *                   an objection (0042 checks it again in the database);
  *   filing_agent    desk staff who submit signed claims on the official site,
  *                   in their own browser, and record the result.
- * Roles live in public.staff_roles (0037), which no API role can read, so
+ * Roles live in public.staff_roles (0041), which no API role can read, so
  * they are read with the service role. There is no environment bootstrap:
  * the founder adds the first legal_reviewer with one SQL insert (granted_by
- * null); after that only a legal_reviewer adds a legal_reviewer (0038
+ * null); after that only a legal_reviewer adds a legal_reviewer (0042
  * enforces it; nobody grants themself), and an admin or a legal_reviewer adds
  * filing agents. Admin (profiles.is_admin or ADMIN_EMAILS) opens the console
  * and drafts, but never implies a role. Staff routes use the web cookie

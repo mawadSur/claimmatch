@@ -279,6 +279,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       'One-click filing: claim packet, Jev checks, member e-signature and a law-firm-approved channel. Off: new routes 404 and nothing new is collected.',
     read: () => flags.oneClickFiling(),
   },
+  {
+    env: 'VERIFY_ASSIST_ENABLED',
+    description:
+      'Official-site verification drafts, fast review in /admin/verify, pending-review Close / Republish, and the coverage card. Drafts never go public or stamp verified_at.',
+    read: () => flags.verifyAssist(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

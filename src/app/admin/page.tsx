@@ -28,6 +28,7 @@ import type { HeldClosure, IngestSummary } from '@/lib/scraper/pipeline';
 import { ingestProblems, ingestRunNeedsAttention } from '@/app/api/cron/_lib/report';
 import { StatCard } from '@/components/admin/StatCard';
 import { ReferrerChannelCard } from '@/components/admin/ReferrerChannelCard';
+import { VerificationCoverageCard } from '@/components/admin/VerificationCoverageCard';
 import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
 import { BetaFeedbackList } from '@/components/admin/BetaFeedbackList';
 import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
@@ -41,6 +42,7 @@ import {
 } from '@/lib/missing-feed-queue';
 import { listHeldClosureQueue } from '@/lib/held-closures';
 import { loadReferrerChannelStats } from '@/lib/referrer-channel-stats';
+import { loadVerificationCoverage } from '@/lib/verification-coverage';
 import { EMPTY_SOFT_LAUNCH_COUNTS, loadSoftLaunchCounts } from '@/lib/soft-launch';
 import { loadBetaInviteStats } from '@/lib/beta-invite';
 import type { BetaFeedbackRow } from '@/lib/beta-feedback';
@@ -141,6 +143,9 @@ export default async function AdminOverviewPage() {
   const referrerChannels = flags.aiReferrerAttribution()
     ? await loadReferrerChannelStats().catch(() => [])
     : [];
+  const verificationCoverage = flags.verifyAssist()
+    ? await loadVerificationCoverage().catch(() => null)
+    : null;
 
   const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString());
   const pctOf = (n: number | null, d: number | null) =>
@@ -171,6 +176,7 @@ export default async function AdminOverviewPage() {
 
       <SoftLaunchCard counts={softLaunch} betaInvites={betaInvites} />
       {flags.aiReferrerAttribution() ? <ReferrerChannelCard rows={referrerChannels} /> : null}
+      {verificationCoverage ? <VerificationCoverageCard coverage={verificationCoverage} /> : null}
       {flags.betaFeedback() ? <BetaFeedbackList rows={betaFeedback} /> : null}
       {flags.linkCheck() ? <BrokenLinksList rows={brokenLinks} /> : null}
       {flags.missingCloseQueue() ? (

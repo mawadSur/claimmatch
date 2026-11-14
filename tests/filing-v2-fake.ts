@@ -2,7 +2,7 @@
  * A small in-memory Supabase for the member filing API tests (B2). Member
  * clients (cookie, bearer) see only their own rows of the member-readable
  * tables and may write nothing but their profile, as RLS and the grants
- * allow; the service client sees and writes everything. The 0006 and 0039
+ * allow; the service client sees and writes everything. The 0006 and 0043
  * functions the routes call are emulated with their checks, so a test fails
  * when the canonical packet would not satisfy filing_sign_packet.
  */
@@ -253,7 +253,7 @@ function err(code: string, message = code): Result {
   return { data: null, error: { code, message } };
 }
 
-/** The 0006 and 0039 functions the member routes call, with their checks. */
+/** The 0006 and 0043 functions the member routes call, with their checks. */
 function runRpc(db: FakeDb, fn: string, p: Record<string, unknown>): Result {
   const claimOf = (id: unknown, user: unknown) => db.find('claims', (c) => c.id === id && c.user_id === user);
   if (fn === 'claim_start_tracking') {

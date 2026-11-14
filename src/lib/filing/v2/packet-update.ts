@@ -33,7 +33,7 @@ export type PacketUpdate =
 const STATE_CODES = new Set(US_STATES.map((s) => s.code));
 const PHONE = /^[0-9+().\-\s]*$/;
 const ZIP = /^\d{5}(?:-\d{4})?$/;
-/** jsonb text is a little longer than JSON.stringify; 0037 caps answers at 64 KB. */
+/** jsonb text is a little longer than JSON.stringify; 0041 caps answers at 64 KB. */
 const MAX_ANSWERS_JSON = 60_000;
 
 function refused(code: FilingErrorCode, path: string): PacketUpdate {

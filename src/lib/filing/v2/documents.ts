@@ -14,7 +14,7 @@ const EXTENSIONS: Readonly<Record<DocumentMime, string>> = {
   'application/pdf': 'pdf',
 };
 
-/** {user_id}/{claim_id}/{document_id}.{ext}: members may read it (0037), never .../evidence/. */
+/** {user_id}/{claim_id}/{document_id}.{ext}: members may read it (0041), never .../evidence/. */
 export function memberDocumentPath(userId: string, claimId: string, documentId: string, mime: DocumentMime): string {
   return `${userId}/${claimId}/${documentId}.${EXTENSIONS[mime]}`;
 }

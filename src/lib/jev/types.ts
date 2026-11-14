@@ -12,7 +12,7 @@
  * again in the background right before sending (pre_send). Global rules are
  * code (JEV_GLOBAL_RULE_IDS); per-settlement rules are data in the approved
  * filing spec (FilingSpecContent.jev_rules), drafted by staff and approved by
- * a legal_reviewer. Every run of a real packet is stored in jev_runs (0037).
+ * a legal_reviewer. Every run of a real packet is stored in jev_runs (0041).
  *
  * Imports zod and type-only relative paths only, so the native app can share
  * this file later (mobile/shared.json rules).

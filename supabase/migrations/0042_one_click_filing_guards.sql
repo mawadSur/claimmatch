@@ -1,5 +1,5 @@
--- Lawsuit AI 0038: one-click filing, integrity triggers (CONTRACT).
--- EXPAND ONLY. Do not edit 0037 or earlier. Design: docs/designs/one-click-filing.md.
+-- Lawsuit AI 0042: one-click filing, integrity triggers (CONTRACT).
+-- EXPAND ONLY. Do not edit 0041 or earlier. Design: docs/designs/one-click-filing.md.
 --
 -- These triggers hold whatever the caller does (route code, a console, SQL):
 --   * claims move between one-click statuses only along the allowed edges;

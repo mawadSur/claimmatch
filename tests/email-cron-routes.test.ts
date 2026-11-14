@@ -18,6 +18,7 @@ const m = vi.hoisted(() => {
     persistStoredMatches: vi.fn(),
     sendPayoutTrackerEmails: vi.fn(),
     sendMatchAlerts: vi.fn(),
+    persistVerificationDrafts: vi.fn(),
     notifyNewMatches: vi.fn(),
     claimDue: vi.fn(),
     completeJob: vi.fn(),
@@ -39,6 +40,7 @@ vi.mock('@/lib/match-sweep', () => ({ runMatchSweep: m.runMatchSweep }));
 vi.mock('@/lib/match-store', () => ({ persistStoredMatches: m.persistStoredMatches }));
 vi.mock('@/lib/payout-tracker', () => ({ sendPayoutTrackerEmails: m.sendPayoutTrackerEmails }));
 vi.mock('@/lib/match-alert-job', () => ({ sendMatchAlerts: m.sendMatchAlerts }));
+vi.mock('@/lib/verification-drafts-store', () => ({ persistVerificationDrafts: m.persistVerificationDrafts }));
 vi.mock('@/lib/notifications', () => ({ notifyNewMatches: m.notifyNewMatches }));
 vi.mock('@/lib/jobs', () => ({
   claimDue: m.claimDue,
@@ -90,6 +92,7 @@ beforeEach(() => {
   m.persistStoredMatches.mockResolvedValue({ users: 1, persisted: 1 });
   m.sendPayoutTrackerEmails.mockResolvedValue({ candidates: 0, emailed: 0, skipped: null });
   m.sendMatchAlerts.mockResolvedValue({ considered: 0, planned: 0, emailed: 0, skipped: 'flag_off', dryRun: false, plans: [] });
+  m.persistVerificationDrafts.mockResolvedValue({ considered: 0, drafted: 0, failed: 0, skipped: 0, skippedReason: null });
   m.claimDue.mockResolvedValue([]);
   m.startIngestRun.mockResolvedValue('job-daily');
   m.finishIngestRun.mockResolvedValue(undefined);
@@ -130,6 +133,7 @@ describe('/api/cron/daily', () => {
         'deadlineReminders',
         'onboardingDrip',
         'payoutTracker',
+        'verifyAssist',
         'matchAlerts',
       ],
       failedSteps: [],
@@ -141,6 +145,7 @@ describe('/api/cron/daily', () => {
         deadlineReminders: { status: 'skipped', reason: 'paused (deadline reminders)' },
         onboardingDrip: { status: 'skipped', reason: 'paused (onboarding drip)' },
         payoutTracker: { status: 'skipped', reason: 'paused (payout tracker emails)' },
+        verifyAssist: { status: 'skipped', reason: 'paused (verification drafts)' },
         matchAlerts: { status: 'skipped', reason: 'paused (match alerts)' },
       },
     });
@@ -178,6 +183,16 @@ describe('/api/cron/daily', () => {
     expect(status).toBe(200);
     expect(m.sendPayoutTrackerEmails).toHaveBeenCalledOnce();
     expect(body.ranSteps).toEqual(['ingest', 'payoutTracker']);
+  });
+
+  it('runs verification drafts only when VERIFY_ASSIST_ENABLED=1', async () => {
+    expect(m.persistVerificationDrafts).not.toHaveBeenCalled();
+    vi.stubEnv('VERIFY_ASSIST_ENABLED', '1');
+    m.persistVerificationDrafts.mockResolvedValue({ considered: 0, drafted: 0, failed: 0, skipped: 0, skippedReason: null });
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.persistVerificationDrafts).toHaveBeenCalledOnce();
+    expect(body.ranSteps).toEqual(['ingest', 'verifyAssist']);
   });
 
   it('runs match alerts only when MATCH_ALERT_EMAILS_ENABLED=1', async () => {

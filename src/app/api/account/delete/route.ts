@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 type ServiceClient = ReturnType<typeof createServiceClient>;
 
 /**
- * One-click filing files (0037): proof uploads and filing screenshots live in
+ * One-click filing files (0041): proof uploads and filing screenshots live in
  * the private claim-documents bucket under {user_id}/. Their claim_documents
  * rows go with the account, and the retention sweep finds files only through
  * those rows, so the files are removed first. Paths outside this user's

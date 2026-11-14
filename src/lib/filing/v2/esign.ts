@@ -28,7 +28,7 @@ export function esignText(version: string = ESIGN_TEXT_VERSION): string | null {
   return Object.prototype.hasOwnProperty.call(TEXTS, version) ? TEXTS[version] : null;
 }
 
-/** esign_consents.text_sha256: SHA-256 of the UTF-8 text (0037 checks it). */
+/** esign_consents.text_sha256: SHA-256 of the UTF-8 text (0041 checks it). */
 export function esignTextSha256(text: string = ESIGN_TEXT_V1): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }

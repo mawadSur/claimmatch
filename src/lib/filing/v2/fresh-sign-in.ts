@@ -3,7 +3,7 @@
  * entry of the verified access token whose method is in FRESH_SIGN_IN_METHODS.
  * Email links (otp, magiclink, recovery, invite; for example a match-alert
  * one-click start, src/lib/match-alert-start.ts) never count, and neither do
- * string-only amr entries (no time). filing_sign_packet (0039) checks the
+ * string-only amr entries (no time). filing_sign_packet (0043) checks the
  * same rule again (CM015). Server only.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';

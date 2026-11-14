@@ -123,6 +123,20 @@ export function payoutTrackerGate(enabled: boolean): Gate {
       };
 }
 
+/** Official-site verification drafts. Never stamps verified_at. */
+export function verifyAssistGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (verification drafts)',
+          resume: 'Set VERIFY_ASSIST_ENABLED=1 to draft verified fields from official claim sites.',
+        },
+      };
+}
+
 /** Opt-in new-match alerts with one-click start. Independent of D50 match emails. */
 export function matchAlertGate(enabled: boolean): Gate {
   return enabled

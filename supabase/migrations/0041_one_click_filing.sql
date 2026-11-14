@@ -1,17 +1,17 @@
--- Lawsuit AI 0037: one-click filing, tables and row security (CONTRACT).
+-- Lawsuit AI 0041: one-click filing, tables and row security (CONTRACT).
 -- EXPAND ONLY. Do not edit 0036 or earlier. Design: docs/designs/one-click-filing.md.
 --
 -- Inert until ONE_CLICK_FILING_ENABLED=1. Every integrity-critical write is made
--- by server code with the service role, through the functions of 0039 (member
--- side) and 0040 (staff side); 0038's triggers hold whatever the caller. Members
+-- by server code with the service role, through the functions of 0043 (member
+-- side) and 0044 (staff side); 0042's triggers hold whatever the caller. Members
 -- only read their own packets, uploads, signatures, voids and e-sign consents.
 --
 -- Runs in one transaction: the new claim_status values are added first and
 -- nothing in this file uses them.
 -- Safe to re-run. Nothing is deleted or rewritten. One existing grant changes
 -- (Phase 0): members can no longer insert claim_authorizations rows.
--- Rollback, only while every new table is empty: drop the functions of 0040,
--- 0039 and 0038, then these tables in reverse order; enum values stay.
+-- Rollback, only while every new table is empty: drop the functions of 0044,
+-- 0043 and 0042, then these tables in reverse order; enum values stay.
 
 -- 1. Claim statuses for the agent lanes (meanings in the design doc, section 4).
 --    'rejected' is a legacy value of the retired flow, hence 'filing_rejected'.
@@ -462,7 +462,7 @@ do $$
 begin
   if to_regclass('storage.buckets') is null or to_regclass('storage.objects') is null
      or to_regprocedure('storage.foldername(text)') is null then
-    raise notice '0037: no Supabase storage schema here; skipping the claim-documents bucket';
+    raise notice '0041: no Supabase storage schema here; skipping the claim-documents bucket';
     return;
   end if;
   insert into storage.buckets (id, name, public) values ('claim-documents', 'claim-documents', false)

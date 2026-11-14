@@ -403,6 +403,10 @@ export type MatchLabelKind = 'not_relevant' | 'filed' | 'paid';
 
 export type EligibilityDraftStatus = 'pending' | 'approved' | 'rejected';
 
+export type VerificationDraftStatus = 'pending' | 'accepted' | 'rejected' | 'failed';
+
+export type VerificationDraftClaimsStatus = 'open' | 'closed' | 'unknown';
+
 export interface ClaimAuthorization {
   id: string;
   claim_id: string;

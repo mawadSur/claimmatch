@@ -12,6 +12,7 @@ import {
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
+  verifyAssistGate,
   reportHttpStatus,
   runStep,
   serviceConfigProblem,
@@ -107,6 +108,15 @@ describe('D50 gates', () => {
       },
     });
     expect(matchAlertGate(true)).toEqual({ run: true });
+    expect(verifyAssistGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (verification drafts)',
+        resume: expect.stringContaining('VERIFY_ASSIST_ENABLED=1'),
+      },
+    });
+    expect(verifyAssistGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {
