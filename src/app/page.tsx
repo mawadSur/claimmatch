@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
 import { pickClosingSoon } from '@/lib/closing-soon';
+import { pickTopPayouts } from '@/lib/top-payouts';
+import { HomeFeatures } from '@/components/home/HomeFeatures';
 import { homeStats } from '@/lib/home-stats';
 import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
 import { HomeHero } from '@/components/home/HomeHero';
@@ -32,7 +34,7 @@ const SCREENS = {
     src: '/screens/catalog-desktop.webp',
     width: 1600,
     height: 1000,
-    alt: 'The ClaimMatch settlement list on a laptop: open class-action settlements, each with its payout, deadline and proof rule.',
+    alt: 'The Lawsuit AI settlement list on a laptop: open class-action settlements, each with its payout, deadline and proof rule.',
   },
   catalog: {
     src: '/screens/catalog-mobile.webp',
@@ -56,7 +58,7 @@ const SCREENS = {
     src: '/screens/dashboard-mobile.webp',
     width: 780,
     height: 1688,
-    alt: 'The ClaimMatch dashboard on a phone, listing a sample account’s claims grouped by what to do next, each with its deadline.',
+    alt: 'The Lawsuit AI dashboard on a phone, listing a sample account’s claims grouped by what to do next, each with its deadline.',
   },
 } satisfies Record<string, Screen>;
 
@@ -111,7 +113,7 @@ const homeMeta = publicPageMetadata({
 });
 export const metadata: Metadata = {
   ...homeMeta,
-  // Skip the layout "%s · ClaimMatch" template so the site name is not doubled.
+  // Skip the layout "%s · Lawsuit AI" template so the site name is not doubled.
   title: { absolute: `${SITE.name} — ${SITE.tagline}` },
 };
 
@@ -130,7 +132,13 @@ async function loadHomeCatalog(): Promise<{ lawsuits: Lawsuit[]; failed: boolean
 
 export default async function HomePage() {
   const catalog = await loadHomeCatalog();
+  // "Closing soon" always gets the nearest deadlines; the top-payout list picks
+  // from the rest so no row shows twice and no urgent deadline is hidden.
   const closing = { rows: pickClosingSoon(catalog.lawsuits, 5), failed: catalog.failed };
+  const closingIds = new Set(closing.rows.map((row) => row.id));
+  const top = catalog.failed
+    ? []
+    : pickTopPayouts(catalog.lawsuits.filter((row) => !closingIds.has(row.id)), 5);
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
   const accountFirst = flags.homeAccountFirstCta();
@@ -143,6 +151,20 @@ export default async function HomePage() {
   const account = { href: '/signup', label: 'Create a free account' };
   const primary = accountFirst ? account : browse;
   const secondary = accountFirst ? browse : account;
+
+  const unverifiedNotice = (
+    <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3.5 text-sm leading-relaxed text-amber-950">
+      <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden />
+      <p>
+        <strong className="font-semibold">Unverified: check the official site.</strong>{' '}
+        These listings come from SettleSignal, a public data source, and we haven’t
+        checked most of them yet.
+        {flags.verifiedFields() ? ' Ones we have checked show a “Verified” badge.' : ''} Before
+        you file, confirm the deadline (including the exact cutoff time) and who
+        qualifies on the official settlement site.
+      </p>
+    </div>
+  );
 
   return (
     <>
@@ -161,8 +183,37 @@ export default async function HomePage() {
 
       <HowItWorks
         steps={HOW_STEPS}
-        caption="Real screens from ClaimMatch. The settlements shown are real catalog listings; the account details are a sample."
+        caption="Real screens from Lawsuit AI. The settlements shown are real catalog listings; the account details are a sample."
       />
+
+      {top.length > 0 && (
+        <section className="section-y bg-brand-50" aria-labelledby="top-heading">
+          <div className="container-page">
+            <div
+              className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+              data-reveal
+            >
+              <div>
+                <p className="eyebrow">Top open settlements</p>
+                <h2 id="top-heading" className="mt-3 text-4xl font-medium leading-[1.08] sm:text-5xl">
+                  Biggest payouts still open
+                </h2>
+                <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
+                  Open settlements with the highest payout each listing states. Actual payments
+                  depend on the settlement, so check the official notice.
+                </p>
+              </div>
+              <Link href="/lawsuits" className="btn-secondary shrink-0">
+                See all settlements <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+            <div className="mt-8">{unverifiedNotice}</div>
+            <div className="mt-6">
+              <HomeSettlementList lawsuits={top} />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="section-y bg-white" aria-labelledby="open-heading">
         <div className="container-page">
@@ -184,15 +235,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-8 flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3.5 text-sm leading-relaxed text-amber-950">
-            <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-            <p>
-              <strong className="font-semibold">Unverified: check the official site.</strong>{' '}
-              These listings come from SettleSignal, a public data source, and we
-              haven’t checked them yet. Before you file, confirm the deadline (including
-              the exact cutoff time) and who qualifies on the official settlement site.
-            </p>
-          </div>
+          {top.length === 0 && <div className="mt-8">{unverifiedNotice}</div>}
 
           {closing.failed ? (
             <div
@@ -234,6 +277,8 @@ export default async function HomePage() {
           showNoProof={wedges.showNoProof}
         />
       )}
+
+      <HomeFeatures />
 
       <HomeTrust />
 

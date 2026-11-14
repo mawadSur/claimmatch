@@ -86,7 +86,8 @@ describe('public pages', () => {
   });
 
   it('FAQ structured data goes through jsonLd()', () => {
-    for (const rel of ['src/app/pricing/page.tsx', 'src/app/trust/page.tsx', 'src/components/home/HomeFaq.tsx']) {
+    // Home FAQ markup moved to /faq so the same Q&As are marked up once site-wide.
+    for (const rel of ['src/app/pricing/page.tsx', 'src/app/trust/page.tsx', 'src/app/faq/page.tsx']) {
       const src = read(rel);
       expect(src).toContain('FAQPage');
       expect(src).toContain('__html: jsonLd(');

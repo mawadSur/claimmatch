@@ -41,6 +41,7 @@ export function Footer() {
               )}
               <li><Link href="/settlements/new" className={LINK}>New settlements</Link></li>
               <li><Link href="/how-it-works" className={LINK}>How it works</Link></li>
+              <li><Link href="/faq" className={LINK}>FAQ</Link></li>
               <li><Link href="/pricing" className={LINK}>Pricing</Link></li>
               <li><Link href="/how-we-make-money" className={LINK}>How we make money</Link></li>
               <li><Link href="/signup" className={LINK}>Create a free account</Link></li>
@@ -92,7 +93,7 @@ export function Footer() {
             <address className="whitespace-pre-line not-italic">{contact.postalAddress}</address>
           )}
           <p>
-            © {new Date().getFullYear()} {contact.legalEntity ?? 'ClaimMatch'}
+            © {new Date().getFullYear()} {contact.legalEntity ?? 'Lawsuit AI'}
           </p>
         </div>
       </div>

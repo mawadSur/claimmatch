@@ -1,27 +1,32 @@
 import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { jsonLd } from '@/lib/jsonld';
-import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import {
+  OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy, whoFilesAnswer,
+} from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
-export function homeFaqItems(disclose = flags.feeDisclosure()) {
+/** `mayFile` follows the fee disclosure and one-click filing, so the answers never contradict each other. */
+export function homeFaqItems(
+  disclose = flags.feeDisclosure(),
+  mayFile = disclose || flags.oneClickFiling(),
+) {
   return [
     {
-      q: 'Is ClaimMatch free?',
+      q: 'Is Lawsuit AI free?',
       a: disclose
         ? feeEveryClaimCopy()
         : `${publicBetaFeeCopy()} ${OFFICIAL_FILING_IS_FREE}`,
     },
     {
       q: 'Do you file claims for me?',
-      a: 'No. You file every claim yourself on the official settlement website. ClaimMatch never files for you.',
+      a: whoFilesAnswer(mayFile),
     },
     {
       q: 'Do you handle settlement payments?',
       a: 'No. We never handle settlement payments. If a claim is paid, the settlement administrator pays you directly.',
     },
     {
-      q: 'How does ClaimMatch make money?',
+      q: 'How does Lawsuit AI make money?',
       a: disclose
         ? feeEveryClaimCopy()
         : `${publicBetaFeeCopy()} We don’t run ads or sell paid plans today, and we do not sell your personal information.`,
@@ -46,9 +51,14 @@ export function HomeFaq() {
           <p className="mt-5 max-w-sm text-lg leading-relaxed text-ink-muted">
             The things people ask before they trust a settlement site.
           </p>
-          <Link href="/trust" className="text-link mt-6 inline-flex min-h-tap items-center gap-1 text-sm">
-            More on how ClaimMatch works <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          <div className="mt-6 flex flex-col items-start gap-1 text-sm">
+            <Link href="/faq" className="text-link inline-flex min-h-tap items-center gap-1">
+              See all questions <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link href="/trust" className="text-link inline-flex min-h-tap items-center gap-1">
+              More on how Lawsuit AI works <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="divide-y divide-slate-200 border-y border-slate-200">
           {items.map((item) => (
@@ -64,20 +74,7 @@ export function HomeFaq() {
           ))}
         </div>
       </div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd({
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: items.map((item) => ({
-              '@type': 'Question',
-              name: item.q,
-              acceptedAnswer: { '@type': 'Answer', text: item.a },
-            })),
-          }),
-        }}
-      />
+      {/* FAQPage JSON-LD lives on /faq only, so the same Q&As are marked up once site-wide. */}
     </section>
   );
 }

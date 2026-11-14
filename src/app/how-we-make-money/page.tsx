@@ -11,7 +11,9 @@ export function generateMetadata(): Metadata {
   const disclose = flags.feeDisclosure();
   const description = disclose
     ? feeEveryClaimCopy()
-    : 'ClaimMatch is free during beta; copy-ready details; you file on the official site.';
+    : flags.oneClickFiling()
+      ? 'Lawsuit AI is free during beta: copy-ready details, plus one-click filing through the official site for some settlements.'
+      : 'Lawsuit AI is free during beta; copy-ready details; you file on the official site.';
   return publicPageMetadata({
     title: 'How we make money',
     description,

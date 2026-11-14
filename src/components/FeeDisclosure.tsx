@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, filingFact, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 /**
  * Single public fee surface. Default: free during beta. When
- * FEE_DISCLOSURE_ENABLED=1, states that ClaimMatch files the claim and
+ * FEE_DISCLOSURE_ENABLED=1, states that Lawsuit AI files the claim and
  * charges a recovery share only if the user is paid.
  */
 export function FeeDisclosure({
@@ -16,14 +16,16 @@ export function FeeDisclosure({
 }) {
   const body = flags.feeDisclosure()
     ? feeEveryClaimCopy()
-    : `${publicBetaFeeCopy()} You always file on the official site, and ClaimMatch never files for you.`;
+    : flags.oneClickFiling()
+      ? `${publicBetaFeeCopy()} ${filingFact(true).body}`
+      : `${publicBetaFeeCopy()} You always file on the official site, and Lawsuit AI never files for you.`;
 
   if (compact) {
     return (
       <p className={className || 'text-sm text-ink-muted'}>
         {body}{' '}
         <Link href="/how-we-make-money" className="text-link">
-          How ClaimMatch makes money
+          How Lawsuit AI makes money
         </Link>
       </p>
     );
@@ -37,7 +39,7 @@ export function FeeDisclosure({
         href="/how-we-make-money"
         className="text-link mt-3 inline-flex text-sm"
       >
-        How ClaimMatch makes money
+        How Lawsuit AI makes money
       </Link>
     </div>
   );

@@ -2,21 +2,17 @@ import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ExternalLink, FileSearch, HandCoins, Lock } from 'lucide-react';
 import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
+import { filingFact } from '@/lib/copy';
 
 /**
  * Trust facts. Every line must stay literally true of the product today;
  * add one only when the product does it (same rule as TrustBadges).
  */
-const FACTS = [
-  {
-    icon: ExternalLink,
-    title: 'You file on the official site',
-    body: 'You file every claim on the settlement’s own website, where filing is always free. ClaimMatch never files for you.',
-  },
+const OTHER_FACTS = [
   {
     icon: HandCoins,
     title: 'We never handle settlement payments',
-    body: 'If a claim is paid, the settlement administrator pays you directly. The money never passes through ClaimMatch.',
+    body: 'If a claim is paid, the settlement administrator pays you directly. The money never passes through Lawsuit AI.',
   },
   {
     icon: FileSearch,
@@ -31,6 +27,8 @@ const FACTS = [
 ] as const;
 
 export function HomeTrust() {
+  // "Who files" follows the fee disclosure and one-click filing flags (copy.ts).
+  const FACTS = [{ icon: ExternalLink, ...filingFact() }, ...OTHER_FACTS];
   return (
     <section aria-labelledby="trust-heading" className="section-y bg-brand-50">
       <div className="container-page">
@@ -43,7 +41,7 @@ export function HomeTrust() {
               </h2>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted">
                 Every claim goes through the official settlement site, and every listing
-                shows where it came from. Here is exactly how ClaimMatch works.
+                shows where it came from. Here is exactly how Lawsuit AI works.
               </p>
             </div>
 
@@ -61,7 +59,7 @@ export function HomeTrust() {
 
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
               <Link href="/trust" className="text-link inline-flex min-h-tap items-center gap-1">
-                Is ClaimMatch legit? Read the facts <ArrowRight className="h-4 w-4" aria-hidden />
+                Is Lawsuit AI legit? Read the facts <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link href="/privacy" className="text-link inline-flex min-h-tap items-center">
                 Privacy policy

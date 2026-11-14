@@ -3,18 +3,18 @@ import Link from 'next/link';
 import {
   ArrowRight, Search, ListChecks, ExternalLink, ClipboardCheck, CheckCircle2,
   Database, Info, ShieldAlert, ShoppingBag, Car, Lock, Landmark, HeartPulse,
-  Briefcase, Utensils, Cpu, Gift,
+  Briefcase, Utensils, Cpu, Gift, ChevronDown,
 } from 'lucide-react';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
-import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, filingFact, lawsuitAiMayFile, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
 export const metadata: Metadata = publicPageMetadata({
   title: 'How it works',
   description:
-    'Find a settlement that is open for claims, check who qualifies on the official notice, file on the official site yourself, and keep track of your claim. Free.',
+    'Find a settlement that is open for claims, check who qualifies on the official notice, file through the official settlement site, and keep track of your claim.',
   path: '/how-it-works',
 });
 
@@ -26,7 +26,7 @@ const STEPS = [
     body: 'Browse settlements that are open for claims. Each listing shows the deadline we have on file and, when our source lists it, a link to the official settlement site.',
     points: [
       'The closest deadlines are easy to spot',
-      'Listings are unverified for now, so check the official site',
+      'Most listings are unverified, so check the official site',
     ],
   },
   {
@@ -43,7 +43,7 @@ const STEPS = [
     n: '3',
     icon: ExternalLink,
     title: 'File on the official site',
-    body: 'Fill out and send the claim form on the settlement’s official website. ClaimMatch never files or submits a claim for you.',
+    body: 'Fill out and send the claim form on the settlement’s official website. Lawsuit AI never files or submits a claim for you.',
     points: [
       'Filing on the official site is free',
       'Save the confirmation number the site gives you',
@@ -52,7 +52,7 @@ const STEPS = [
   {
     n: '4',
     icon: ClipboardCheck,
-    title: 'Keep track in ClaimMatch',
+    title: 'Keep track in Lawsuit AI',
     body: 'Come back and tell us you filed. Add your confirmation number if you got one. Your claims stay in one list, so you can see what’s done and what isn’t.',
     points: [
       'Your claim shows “Submitted” only after you add the confirmation number',
@@ -78,9 +78,17 @@ const STATUSES = [
     label: 'Not reported filed',
     body: 'The deadline passed and you didn’t tell us you filed.',
   },
+];
+
+/**
+ * Statuses only some older claims carry. Every label a claim can show must be
+ * explained here (tests/claims-model.test.ts), but new visitors never see these,
+ * so they sit in a collapsed section below the current ones.
+ */
+const OLDER_STATUSES = [
   {
     label: 'Not filed',
-    body: 'An earlier version of ClaimMatch wrongly showed this claim as filed. ClaimMatch didn’t file it. If you filed on the official site yourself, tell us. If not, check the official site: you may still be able to file before the deadline.',
+    body: 'An earlier version of Lawsuit AI wrongly showed this claim as filed. Lawsuit AI didn’t file it. If you filed on the official site yourself, tell us. If not, check the official site: you may still be able to file before the deadline.',
   },
   {
     label: 'Status not confirmed',
@@ -108,6 +116,17 @@ const CATEGORY_ICONS: Record<string, typeof Gift> = {
 
 export default function HowItWorksPage() {
   const disclose = flags.feeDisclosure();
+  // Who files follows the fee disclosure and one-click filing (copy.ts), so
+  // this page never says "you always file" while Lawsuit AI may file for you.
+  const mayFile = lawsuitAiMayFile();
+  const steps = mayFile
+    ? STEPS.map((s) =>
+        s.n === '3'
+          ? { ...s, title: 'File through the official site', body: filingFact(true).body }
+          : s,
+      )
+    : STEPS;
+  const assistant = disclose ? 'Lawsuit AI is a claim assistant.' : 'Lawsuit AI is a free claim assistant.';
 
   return (
     <>
@@ -117,12 +136,13 @@ export default function HowItWorksPage() {
           <div className="mx-auto max-w-3xl text-center">
             <span className="badge-brand mx-auto">How it works</span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              You file. <span className="text-brand-600">We help you stay on top of it.</span>
+              {mayFile ? 'Find it. Claim it.' : 'You file.'}{' '}
+              <span className="text-brand-600">We help you stay on top of it.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
-              {disclose
-                ? 'ClaimMatch is a claim assistant. We help you find settlements that are open, point you to the official notice and claim site, and keep track of the claims you file. You always file on the official site yourself.'
-                : 'ClaimMatch is a free claim assistant. We help you find settlements that are open, point you to the official notice and claim site, and keep track of the claims you file. You always file on the official site yourself.'}
+              {assistant} We help you find settlements that are open, point you to the official
+              notice and claim site, and keep track of your claims.
+              {mayFile ? '' : ' You always file on the official site yourself.'}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
@@ -140,7 +160,7 @@ export default function HowItWorksPage() {
       <section className="container-page py-12" aria-labelledby="steps-heading">
         <h2 id="steps-heading" className="sr-only">The four steps</h2>
         <ol className="space-y-6">
-          {STEPS.map((s) => (
+          {steps.map((s) => (
             <li
               key={s.n}
               className="grid gap-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:grid-cols-[auto_1fr] sm:p-8"
@@ -175,7 +195,7 @@ export default function HowItWorksPage() {
               What your claim status means
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-ink-muted">
-              Your claim’s status in ClaimMatch is based on what you tell us. The
+              Your claim’s status in Lawsuit AI is based on what you tell us. The
               settlement administrator decides whether a claim is approved and paid.
             </p>
           </div>
@@ -192,6 +212,22 @@ export default function HowItWorksPage() {
               </div>
             ))}
           </dl>
+          <details className="group mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-card">
+            <summary className="flex min-h-tap cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+              Statuses you may see on older claims
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <dl className="mt-4 space-y-4">
+              {OLDER_STATUSES.map((s) => (
+                <div key={s.label} className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-5">
+                  <dt className="shrink-0 sm:w-56">
+                    <span className="badge-gray">{s.label}</span>
+                  </dt>
+                  <dd className="text-sm text-ink-muted">{s.body}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
         </div>
       </section>
 
@@ -217,8 +253,8 @@ export default function HowItWorksPage() {
                   SettleSignal
                 </a>
                 , a public settlement data source shared under the CC BY 4.0 license. We
-                haven’t checked each listing ourselves yet, so each one is labeled
-                “Unverified: check the official site.”
+                haven’t checked most listings ourselves yet. Until we check one, it is
+                labeled “Unverified: check the official site.”
               </p>
               <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-amber-900">
                 <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -247,14 +283,17 @@ export default function HowItWorksPage() {
             {LAWSUIT_CATEGORIES.map((cat) => {
               const Icon = CATEGORY_ICONS[cat] ?? Gift;
               return (
-                <li
-                  key={cat}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-card sm:p-4"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                    <Icon className="h-5 w-5" aria-hidden />
-                  </span>
-                  <span className="text-sm font-semibold text-ink">{cat}</span>
+                <li key={cat}>
+                  {/* The filtered catalog always resolves, even for a category with nothing open today. */}
+                  <Link
+                    href={`/lawsuits?category=${encodeURIComponent(cat)}`}
+                    className="flex min-h-tap items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-card transition-colors hover:border-brand-200 hover:bg-brand-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:p-4"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="text-sm font-semibold text-ink">{cat}</span>
+                  </Link>
                 </li>
               );
             })}
@@ -282,6 +321,11 @@ export default function HowItWorksPage() {
               Is it really free?
             </Link>
           </div>
+          <p className="mt-6 text-sm">
+            <Link href="/faq" className="text-link inline-flex min-h-tap items-center gap-1">
+              More questions? Read the FAQ <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </p>
 
           <div className="mx-auto mt-10 max-w-2xl text-left">
             <Disclaimer />

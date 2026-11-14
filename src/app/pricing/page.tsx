@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Search, HelpCircle, CheckCircle2, XCircle, BadgeCheck } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, filingFact, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -18,14 +18,16 @@ export function generateMetadata(): Metadata {
   }
   return publicPageMetadata({
     title: 'Pricing',
-    description: `${publicBetaFeeCopy()} You file on the official settlement site.`,
+    description: flags.oneClickFiling()
+      ? `${publicBetaFeeCopy()} ${OFFICIAL_FILING_IS_FREE}`
+      : `${publicBetaFeeCopy()} You file on the official settlement site.`,
     path: '/pricing',
   });
 }
 
 const FREE = [
   'Browsing settlements that are open for claims',
-  'Your ClaimMatch account',
+  'Your Lawsuit AI account',
   'Keeping track of the claims you file',
 ];
 
@@ -40,7 +42,7 @@ function pricingFaq(disclose: boolean) {
     const fee = feeEveryClaimCopy();
     return [
       {
-        q: 'Does ClaimMatch cost anything?',
+        q: 'Does Lawsuit AI cost anything?',
         a: fee,
       },
       {
@@ -49,17 +51,17 @@ function pricingFaq(disclose: boolean) {
       },
       {
         q: 'Do I have to pay to file a claim?',
-        a: `No. You file on the official settlement website. ${OFFICIAL_FILING_IS_FREE}`,
+        a: `No. ${OFFICIAL_FILING_IS_FREE}`,
       },
       {
-        q: 'How does ClaimMatch make money?',
+        q: 'How does Lawsuit AI make money?',
         a: `${fee} We don’t run ads or sell paid plans, and we do not sell your personal information.`,
       },
     ];
   }
   return [
     {
-      q: 'Does ClaimMatch cost anything?',
+      q: 'Does Lawsuit AI cost anything?',
       a: `${publicBetaFeeCopy()} We don’t charge you to browse settlements, create an account or keep track of your claims.`,
     },
     {
@@ -68,10 +70,12 @@ function pricingFaq(disclose: boolean) {
     },
     {
       q: 'Do I have to pay to file a claim?',
-      a: `No. You file on the official settlement website. ${OFFICIAL_FILING_IS_FREE}`,
+      a: flags.oneClickFiling()
+        ? `No. ${OFFICIAL_FILING_IS_FREE}`
+        : `No. You file on the official settlement website. ${OFFICIAL_FILING_IS_FREE}`,
     },
     {
-      q: 'How does ClaimMatch make money?',
+      q: 'How does Lawsuit AI make money?',
       a: `${publicBetaFeeCopy()} We don’t run ads or sell paid plans today, and we do not sell your personal information.`,
     },
   ];
@@ -109,8 +113,10 @@ export default function PricingPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               {disclose
-                ? `${feeEveryClaimCopy()} You file on the official settlement site, and the settlement administrator pays you directly.`
-                : `${publicBetaFeeCopy()} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
+                ? `${feeEveryClaimCopy()} You can always file on the official settlement site yourself instead, where filing is free.`
+                : flags.oneClickFiling()
+                  ? `${publicBetaFeeCopy()} ${filingFact(true).body}`
+                  : `${publicBetaFeeCopy()} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
             </p>
           </div>
         </div>
@@ -194,6 +200,11 @@ export default function PricingPage() {
               Create a free account <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
+          <p className="mt-6 text-sm">
+            <Link href="/faq" className="text-link inline-flex min-h-tap items-center gap-1">
+              More questions? Read the FAQ <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </p>
 
           <div className="mt-10">
             <TrustBadges />
