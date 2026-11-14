@@ -1,5 +1,5 @@
 import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { legalContact } from '@/lib/legal-contact';
 import { resendEnvelope } from '@/lib/resend-mail';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
@@ -63,7 +63,7 @@ export function renderFilingReceiptEmail(opts: FilingReceiptOpts): string {
           </div>
         </td></tr>
         <tr><td style="padding:22px 8px 0 8px;">
-          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(SHORT_DISCLAIMER))}</p>
+          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(shortDisclaimer()))}</p>
           ${postal ? `<p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(postal)}</p>` : ''}
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">You're receiving this because you authorized a submission on ${esc(PUBLIC_BRAND)}.${unsub}</p>
         </td></tr>

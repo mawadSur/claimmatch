@@ -15,6 +15,20 @@ export function parseTokenHash(raw: unknown): string | null {
   return typeof raw === 'string' && /^[A-Za-z0-9_-]{8,256}$/.test(raw) ? raw : null;
 }
 
+/**
+ * PKCE auth code. Supabase's default email templates link through its own
+ * /verify endpoint and then redirect here with ?code=..., not ?token_hash=.
+ * Codes are opaque url-safe strings (a UUID today); reject anything else.
+ */
+export function parseAuthCode(raw: unknown): string | null {
+  return typeof raw === 'string' && /^[A-Za-z0-9_-]{8,256}$/.test(raw) ? raw : null;
+}
+
+/** Supabase redirects with ?error= / ?error_code= when a link is expired or already used. */
+export function hasLinkError(sp: Record<string, string | string[] | undefined>): boolean {
+  return Boolean(sp.error || sp.error_code || sp.error_description);
+}
+
 /** Where to go after a link is verified. Recovery always sets a new password. */
 export function confirmDestination(
   type: EmailOtpType,

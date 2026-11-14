@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
@@ -88,7 +88,7 @@ export function Footer() {
             . We reformat it, and we have not verified each listing. Always check the
             official settlement website.
           </p>
-          <p>{SHORT_DISCLAIMER}</p>
+          <p>{shortDisclaimer()}</p>
           {contact.postalAddress && (
             <address className="whitespace-pre-line not-italic">{contact.postalAddress}</address>
           )}

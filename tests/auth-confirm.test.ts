@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const m = vi.hoisted(() => ({ verifyOtp: vi.fn(), applySessionFlags: vi.fn() }));
+const m = vi.hoisted(() => ({ verifyOtp: vi.fn(), exchangeCodeForSession: vi.fn(), applySessionFlags: vi.fn() }));
 
 vi.mock('@/lib/session-flags', () => ({ applySessionFlags: m.applySessionFlags }));
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: async () => ({ auth: { verifyOtp: m.verifyOtp } }),
+  createClient: async () => ({ auth: { verifyOtp: m.verifyOtp, exchangeCodeForSession: m.exchangeCodeForSession } }),
 }));
 
 import { POST } from '@/app/auth/confirm/verify/route';
@@ -28,6 +28,8 @@ function verify(fields: Record<string, string>, cookie?: string) {
 beforeEach(() => {
   m.verifyOtp.mockReset();
   m.verifyOtp.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.test' } }, error: null });
+  m.exchangeCodeForSession.mockReset();
+  m.exchangeCodeForSession.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.test' } }, error: null });
   m.applySessionFlags.mockReset();
   m.applySessionFlags.mockResolvedValue({ internal: false, cohort: null });
 });
@@ -81,6 +83,19 @@ describe('POST /auth/confirm/verify', () => {
     expect(rec.headers.get('location')).toBe(`${ORIGIN}/forgot-password?link=expired`);
   });
 
+  it('exchanges a PKCE code from the default email template and lands on reset-password', async () => {
+    const res = await verify({ code: '0b7c5e1a-3d2f-4c55-9e1a-2f6b8d0c4a11', type: 'recovery' });
+    expect(m.exchangeCodeForSession).toHaveBeenCalledWith('0b7c5e1a-3d2f-4c55-9e1a-2f6b8d0c4a11');
+    expect(m.verifyOtp).not.toHaveBeenCalled();
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/reset-password`);
+  });
+
+  it('sends a failed code exchange to request a new reset link', async () => {
+    m.exchangeCodeForSession.mockResolvedValue({ data: {}, error: { message: 'invalid' } });
+    const res = await verify({ code: '0b7c5e1a-3d2f-4c55-9e1a-2f6b8d0c4a11', type: 'recovery' });
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/forgot-password?link=expired`);
+  });
+
   it('rejects a malformed request before calling Supabase', async () => {
     const res = await verify({ token_hash: 'bad token', type: 'signup' });
     expect(m.verifyOtp).not.toHaveBeenCalled();
@@ -99,5 +114,29 @@ describe('GET /auth/confirm page', () => {
     expect(html).toContain('action="/auth/confirm/verify"');
     expect(html).toContain('Confirm my email');
     expect(m.verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it('turns a ?code= recovery link into the reset button (no "link isn\'t complete")', async () => {
+    const { default: ConfirmPage } = await import('@/app/auth/confirm/page');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const el = await ConfirmPage({
+      searchParams: Promise.resolve({ type: 'recovery', code: '0b7c5e1a-3d2f-4c55-9e1a-2f6b8d0c4a11' }),
+    });
+    const html = renderToStaticMarkup(el);
+    expect(html).toContain('Continue to reset password');
+    expect(html).toContain('name="code" value="0b7c5e1a-3d2f-4c55-9e1a-2f6b8d0c4a11"');
+    expect(html).not.toContain('isn’t complete');
+    expect(m.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
+  it('shows an expired screen when Supabase redirects with an error', async () => {
+    const { default: ConfirmPage } = await import('@/app/auth/confirm/page');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const el = await ConfirmPage({
+      searchParams: Promise.resolve({ type: 'recovery', error: 'access_denied', error_code: 'otp_expired' }),
+    });
+    const html = renderToStaticMarkup(el);
+    expect(html).toContain('This link has expired');
+    expect(html).toContain('href="/forgot-password"');
   });
 });

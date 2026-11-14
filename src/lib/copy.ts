@@ -39,6 +39,16 @@ export function lawsuitAiMayFile(
 const MAY_FILE_SENTENCE =
   'For some settlements, Lawsuit AI files this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.';
 
+/**
+ * Disclaimer sentences used instead of "does not file … for anyone" while
+ * lawsuitAiMayFile() is true (src/lib/disclaimer.ts). Owner-approved wording
+ * for the one-click launch; have counsel review before turning the flags on.
+ */
+export const MAY_FILE_LEGAL_SENTENCE =
+  'Where Lawsuit AI offers one-click filing and you review and sign a claim, Lawsuit AI files the claim for you on the official settlement website; otherwise you file every claim yourself. Lawsuit AI never receives or handles settlement payments.';
+export const MAY_FILE_SHORT_SENTENCE =
+  'Where you choose one-click filing and sign the claim, Lawsuit AI files the claim for you; otherwise you file every claim yourself on the official settlement website.';
+
 /** Answer to "Do you file claims for me?" / "Who files my claim?". */
 export function whoFilesAnswer(mayFile = lawsuitAiMayFile()): string {
   return mayFile

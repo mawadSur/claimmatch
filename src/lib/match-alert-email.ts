@@ -4,7 +4,7 @@
  */
 import { commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { OFFICIAL_FILING_IS_FREE } from '@/lib/copy';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { legalContact } from '@/lib/legal-contact';
 import {
   MATCH_ALERT_MAX_CLAIMS,
@@ -95,7 +95,7 @@ export function renderMatchAlertEmail(opts: MatchAlertEmailOpts): string {
           <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">${esc(OFFICIAL_FILING_IS_FREE)} <a href="${esc(money)}" style="color:${BRAND};text-decoration:underline;">How we make money</a>.</p>
         </td></tr>
         <tr><td style="padding:22px 8px 0 8px;">
-          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(SHORT_DISCLAIMER))}</p>
+          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(shortDisclaimer()))}</p>
           <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(PUBLIC_BRAND)}${postal ? `<br>${esc(postal)}` : ''}</p>
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. You're receiving this because you opted in to match alerts from ${esc(PUBLIC_BRAND)}. <a href="${esc(unsub)}" style="color:#8b859e;text-decoration:underline;">Unsubscribe</a>.</p>
         </td></tr>

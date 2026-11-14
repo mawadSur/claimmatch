@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FileText, ShieldAlert } from 'lucide-react';
-import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
+import { legalDisclaimer } from '@/lib/disclaimer-flags';
+import { MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
+import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -9,7 +11,7 @@ import { publicPageMetadata } from '@/lib/site-metadata';
 export const metadata: Metadata = publicPageMetadata({
   title: 'Terms of Service',
   description:
-    'Interim terms for using Lawsuit AI, a free claim assistant. Lawsuit AI is not a law firm, gives no legal advice, never files claims for you and never handles settlement money.',
+    'Interim terms for using Lawsuit AI. Lawsuit AI is not a law firm, gives no legal advice and never handles settlement money.',
   path: '/terms',
 });
 
@@ -20,6 +22,10 @@ export default function TermsPage() {
   const contact = legalContact();
   const operator = contact.legalEntity;
   const hasContact = Boolean(contact.email || contact.postalAddress);
+  // Filing and fee lines follow FEE_DISCLOSURE_ENABLED / ONE_CLICK_FILING_ENABLED
+  // (copy.ts). With both off, the wording is unchanged.
+  const mayFile = lawsuitAiMayFile();
+  const disclose = flags.feeDisclosure();
 
   return (
     <div className="bg-gradient-to-b from-brand-50 to-white">
@@ -51,9 +57,17 @@ export default function TermsPage() {
             <ShieldAlert className="h-4 w-4" aria-hidden /> The short version
           </div>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted">
-            <li>Lawsuit AI is a free claim assistant. It is not a law firm and gives no legal advice.</li>
-            <li>You file every claim yourself on the official settlement website. Lawsuit AI never files, submits or signs a claim for you.</li>
-            <li>Lawsuit AI never handles settlement money and never takes a share of it.</li>
+            <li>Lawsuit AI is a {disclose ? '' : 'free '}claim assistant. It is not a law firm and gives no legal advice.</li>
+            <li>
+              {mayFile
+                ? MAY_FILE_SHORT_SENTENCE
+                : 'You file every claim yourself on the official settlement website. Lawsuit AI never files, submits or signs a claim for you.'}
+            </li>
+            <li>
+              {disclose
+                ? 'Lawsuit AI never handles settlement money. If a claim is paid, the settlement administrator pays you directly.'
+                : 'Lawsuit AI never handles settlement money and never takes a share of it.'}
+            </li>
             <li>Our settlement listings are not verified. The official settlement website is the final word.</li>
           </ul>
         </div>
@@ -89,9 +103,9 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-ink">3. What Lawsuit AI does not do</h2>
             <ul className="ml-5 list-disc space-y-2">
               <li>
-                Lawsuit AI does not file, submit or sign claims for you. You decide whether
-                to file, and you file directly with the settlement administrator, usually on
-                the official settlement website.
+                {mayFile
+                  ? `${MAY_FILE_SHORT_SENTENCE} You decide whether to file.`
+                  : 'Lawsuit AI does not file, submit or sign claims for you. You decide whether to file, and you file directly with the settlement administrator, usually on the official settlement website.'}
               </li>
               <li>
                 Lawsuit AI is not your agent or representative. It does not deal with
@@ -214,7 +228,7 @@ export default function TermsPage() {
               use) the Service.
             </p>
             <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-ink-muted">
-              {LEGAL_DISCLAIMER}
+              {legalDisclaimer()}
             </p>
           </section>
 

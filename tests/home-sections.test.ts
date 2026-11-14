@@ -9,6 +9,12 @@ import { homeFeatures } from '@/components/home/HomeFeatures';
 import { faqGroups, allFaqItems } from '@/lib/faq';
 import { homeFaqItems } from '@/components/home/HomeFaq';
 import { filingFact, lawsuitAiMayFile, whoFilesAnswer } from '@/lib/copy';
+import {
+  APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER, LEGAL_DISCLAIMER, SHORT_DISCLAIMER,
+} from '@/lib/disclaimer';
+import {
+  appLegalDisclaimer, appShortDisclaimer, legalDisclaimer, shortDisclaimer,
+} from '@/lib/disclaimer-flags';
 import { SAMPLE_TESTIMONIALS, showSampleTestimonials } from '@/lib/sample-testimonials';
 import { Testimonials } from '@/components/home/Testimonials';
 import { MIN_TESTIMONIALS, type Testimonial } from '@/lib/testimonials';
@@ -125,6 +131,19 @@ describe('FAQ', () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it('disclaimers are word-for-word unchanged with the flags off and drop "does not file" when on', () => {
+    expect(legalDisclaimer(false, true)).toBe(LEGAL_DISCLAIMER);
+    expect(shortDisclaimer(false, true)).toBe(SHORT_DISCLAIMER);
+    expect(appLegalDisclaimer(false, true)).toBe(APP_LEGAL_DISCLAIMER);
+    expect(appShortDisclaimer(false, true)).toBe(APP_SHORT_DISCLAIMER);
+    for (const text of [legalDisclaimer(true, false), shortDisclaimer(true, false), appLegalDisclaimer(true, false), appShortDisclaimer(true, false)]) {
+      expect(text).not.toMatch(/does not file|You file every claim yourself on the official settlement website\.$|free claim assistant/);
+      expect(text).toContain('Lawsuit AI files the claim for you');
+      expect(text).toContain('not a law firm');
+    }
+    expect(legalDisclaimer(true, true)).toContain('never receives or handles settlement payments');
   });
 
   it('has unique questions with non-empty answers', () => {
