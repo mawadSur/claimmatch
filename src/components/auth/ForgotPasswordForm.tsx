@@ -34,6 +34,14 @@ export function ForgotPasswordForm({ linkExpired = false }: { linkExpired?: bool
         setStatus('idle');
         return;
       }
+      // A server-side failure (e.g. the email could not be sent) must not
+      // look like success. Supabase answers 200 for unknown addresses, so
+      // this still never reveals whether an account exists.
+      if (err && (err.status ?? 0) >= 500) {
+        setError('We couldn’t send the reset email right now. Try again in a few minutes.');
+        setStatus('idle');
+        return;
+      }
       setStatus('sent');
     } catch {
       setError('Something went wrong. Check your connection and try again.');
