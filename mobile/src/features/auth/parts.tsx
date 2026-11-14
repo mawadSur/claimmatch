@@ -42,7 +42,7 @@ const TILES: Record<'brand' | 'success' | 'danger', { background: ColorToken; ic
   danger: { background: 'dangerSurface', icon: 'dangerIcon' },
 };
 
-/** "New to ClaimMatch? Create an account": a short prompt and its link, wrapping at large text sizes. */
+/** "New to Lawsuit AI? Create an account": a short prompt and its link, wrapping at large text sizes. */
 export function SwitchPrompt({ prompt, link, onPress }: { prompt: string; link: string; onPress: () => void }) {
   return (
     <View style={styles.switch}>

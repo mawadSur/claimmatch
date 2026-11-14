@@ -16,7 +16,7 @@ import { cleanContactValue as clean, deliverableContactEmail } from './contact-e
 export interface LegalContact {
   /** Inbox that receives privacy, legal and data requests. */
   email: string | null;
-  /** Legal name of the business that runs ClaimMatch. */
+  /** Legal name of the business that runs Lawsuit AI. */
   legalEntity: string | null;
   /** Mailing address. May span several lines. */
   postalAddress: string | null;

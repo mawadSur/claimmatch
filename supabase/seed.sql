@@ -1,4 +1,4 @@
--- ClaimMatch — seed for `supabase db reset`.
+-- Lawsuit AI — seed for `supabase db reset`.
 --
 -- Intentionally empty. The catalog comes only from the ingest
 -- (src/lib/scraper/pipeline.ts), and every new record waits for human review

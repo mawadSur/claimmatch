@@ -99,7 +99,7 @@ function legacyRow(id: string): DashboardRow {
     tone: 'red',
     group: 'needs_filing',
     deadlineText: 'Deadline Dec 1, 2026 · 29 days left',
-    nextStep: 'ClaimMatch did not file this. File on the official site, or tell us if you already did.',
+    nextStep: 'Lawsuit AI did not file this. File on the official site, or tell us if you already did.',
     action: { label: 'Tell us', href: `/claim/old-settlement-${id}` },
   };
 }
@@ -200,13 +200,13 @@ function setupUser() {
 }
 
 describe('legacy notices', () => {
-  it('says ClaimMatch did not file the claim, what to do, and opens the official claim form', async () => {
+  it('says Lawsuit AI did not file the claim, what to do, and opens the official claim form', async () => {
     const user = setupUser();
     replies.dashboard = [response([notice('a')], [legacyRow('a')])];
     await renderDashboard();
 
     const card = within(screen.getByTestId('dashboard-notices'));
-    expect(card.getByText('ClaimMatch did not file your claim')).toBeOnTheScreen();
+    expect(card.getByText('Lawsuit AI did not file your claim')).toBeOnTheScreen();
     expect(card.getByText(noticeListBody(1) as string)).toBeOnTheScreen();
     expect(
       card.getByText(`${notices.haventFiledYet.text} ${notices.stillCan.text} ${notices.beforeTheDeadline.text} Dec 1, 2026.`),
@@ -306,7 +306,7 @@ describe('legacy notices', () => {
     replies.dashboard = [response(items)];
     await renderDashboard();
 
-    expect(screen.getByText('ClaimMatch did not file your claims')).toBeOnTheScreen();
+    expect(screen.getByText('Lawsuit AI did not file your claims')).toBeOnTheScreen();
     expect(screen.getByText('Old Settlement e')).toBeOnTheScreen();
     expect(screen.queryByText('Old Settlement f')).toBeNull();
     const showAll = screen.getByRole('button', { name: 'Show all 7' });
@@ -332,12 +332,12 @@ describe('legacy notices', () => {
     });
     await waitFor(() => expect(sent('/api/mobile/dashboard')).toHaveLength(2));
     expect(screen.getByText(copy.notYetMessage)).toBeOnTheScreen();
-    expect(screen.getByText('ClaimMatch did not file your claims')).toBeOnTheScreen();
+    expect(screen.getByText('Lawsuit AI did not file your claims')).toBeOnTheScreen();
 
     await act(async () => blur());
     expect(screen.queryByText(copy.notYetMessage)).toBeNull();
     expect(screen.queryByText('Old Settlement a')).toBeNull();
-    expect(screen.getByText('ClaimMatch did not file your claim')).toBeOnTheScreen();
+    expect(screen.getByText('Lawsuit AI did not file your claim')).toBeOnTheScreen();
   });
 });
 

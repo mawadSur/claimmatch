@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 type Op =
   | { op: 'insert'; table: string; row: unknown }
   | { op: 'delete'; table: string; column?: string; value?: unknown }
+  | { op: 'removeFiles'; bucket: string; paths: string[] }
   | { op: 'deleteUser'; id: string };
 
 const h = vi.hoisted(() => ({
@@ -12,6 +13,8 @@ const h = vi.hoisted(() => ({
   authDown: false,
   ops: [] as Op[],
   deleteUserError: null as { message: string } | null,
+  /** claim_documents rows (0037) the route reads before deleting rows. */
+  documents: [] as Array<{ storage_path: string }>,
 }));
 
 // The service client records every write the route makes, in order. A delete
@@ -24,6 +27,9 @@ vi.mock('@/lib/supabase/server', () => ({
   },
   createServiceClient: () => ({
     from: (table: string) => ({
+      select: () => ({
+        eq: () => ({ limit: async () => ({ data: table === 'claim_documents' ? h.documents : [], error: null }) }),
+      }),
       insert: async (row: unknown) => {
         h.ops.push({ op: 'insert', table, row });
         return { error: null };
@@ -39,6 +45,14 @@ vi.mock('@/lib/supabase/server', () => ({
         };
       },
     }),
+    storage: {
+      from: (bucket: string) => ({
+        remove: async (paths: string[]) => {
+          h.ops.push({ op: 'removeFiles', bucket, paths });
+          return { error: null };
+        },
+      }),
+    },
     auth: {
       admin: {
         deleteUser: async (id: string) => {
@@ -104,6 +118,7 @@ beforeEach(() => {
   h.cookieClients = 0;
   h.ops = [];
   h.deleteUserError = null;
+  h.documents = [];
   errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -127,6 +142,23 @@ describe('POST /api/account/delete', () => {
       { op: 'deleteUser', id: webId },
     ]);
     expect(h.ops).toContainEqual({ op: 'delete', table: 'referrals', column: 'referrer_id', value: webId });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  it('removes the account’s one-click files from Storage before their rows, and nothing outside its folder', async () => {
+    h.documents = [
+      { storage_path: `${webId}/claim-1/doc-1.pdf` },
+      { storage_path: `${webId}/claim-1/evidence/shot-1.png` },
+      { storage_path: 'someone-else/claim-9/doc-9.pdf' },
+    ];
+    expect((await remove()).status).toBe(200);
+    const removed = h.ops.findIndex((o) => o.op === 'removeFiles');
+    expect(h.ops[removed]).toEqual({
+      op: 'removeFiles',
+      bucket: 'claim-documents',
+      paths: [`${webId}/claim-1/doc-1.pdf`, `${webId}/claim-1/evidence/shot-1.png`],
+    });
+    expect(removed).toBeLessThan(h.ops.findIndex((o) => o.op === 'delete' && o.table === 'claim_documents'));
     expect(errorLog).not.toHaveBeenCalled();
   });
 

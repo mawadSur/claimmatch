@@ -1,6 +1,12 @@
 import { filingStatusLabel } from '@/lib/filing/queue';
 import type { FilingJob } from '@/lib/types';
 
+/**
+ * The retired assisted-filing job list (ASSISTED_FILING_ENABLED, 0015).
+ * A job that stopped for any reason, including a check on the official
+ * site, is never handed to the member to solve for a machine: they finish
+ * the claim themselves. One-click claims show in FilingSummaryList instead.
+ */
 export function FilingStatusList({
   jobs,
   titles,
@@ -16,7 +22,7 @@ export function FilingStatusList({
         Authorized submissions
       </h2>
       <p className="mt-1 text-sm text-ink-muted">
-        Status of jobs you authorized ClaimMatch to send to an administrator.
+        Status of jobs you authorized Lawsuit AI to send to an administrator.
       </p>
       <ul className="mt-4 divide-y divide-gray-100">
         {jobs.map((job) => (
@@ -30,7 +36,7 @@ export function FilingStatusList({
               )}
               {job.needs_user_reason && (
                 <p className="mt-1 text-sm text-ink-muted">
-                  Needs input: {job.needs_user_reason === 'captcha' ? 'a captcha' : 'missing information'}
+                  Finish this claim yourself on the official site. Your details are on the claim page.
                 </p>
               )}
               {job.error && job.status === 'failed' && (

@@ -151,7 +151,7 @@ describe('the official-notice guides (the app’s catalog and settlement screens
 describe('the app wording of the disclaimers', () => {
   it('is the website text with only "this website" and "this site" changed', () => {
     expect(APP_LEGAL_DISCLAIMER).toBe(
-      LEGAL_DISCLAIMER.replace('The information on this website', 'The information on ClaimMatch').replace(
+      LEGAL_DISCLAIMER.replace('The information on this website', 'The information on Lawsuit AI').replace(
         'Using this website or contacting us',
         'Using this app or contacting us',
       ),

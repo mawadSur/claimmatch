@@ -357,9 +357,9 @@ describe('claim flow', () => {
         `${shared.creditFooterLead.text} ${shared.creditFooterSite.text}${shared.creditFooterUsedUnder.text} ${shared.creditFooterLicense.text}${shared.creditFooterTail.text}`,
       ),
     ).toBeOnTheScreen();
-    // Step 2 never says the official form is inside ClaimMatch.
+    // Step 2 never says the official form is inside Lawsuit AI.
     expect(screen.getByText(copy.opensInBrowser.text)).toBeOnTheScreen();
-    expect(screen.queryByText(/inside ClaimMatch/)).toBeNull();
+    expect(screen.queryByText(/inside Lawsuit AI/)).toBeNull();
   });
 
   it('says where to look when there is no official link or rules', async () => {

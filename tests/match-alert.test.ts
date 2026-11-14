@@ -58,7 +58,7 @@ describe('MATCH_ALERT_EMAILS_ENABLED', () => {
   it('never sends from tests even when the flag and Resend look configured', () => {
     vi.stubEnv('MATCH_ALERT_EMAILS_ENABLED', '1');
     vi.stubEnv('RESEND_API_KEY', 're_test');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St');
     const blocked = matchAlertSendBlocked();
     expect(blocked.blocked).toBe(true);
@@ -76,7 +76,7 @@ describe('MATCH_ALERT_EMAILS_ENABLED', () => {
   it('refuses sendMatchAlertEmail from tests even with a Resend key', async () => {
     vi.stubEnv('MATCH_ALERT_EMAILS_ENABLED', '1');
     vi.stubEnv('RESEND_API_KEY', 're_test');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     const sent = await sendMatchAlertEmail({
       to: 'ada@example.com',
       claims: [
@@ -268,7 +268,7 @@ describe('match-alert email', () => {
       ],
     });
     expect(html).toContain('Start this claim');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
     expect(html).toContain('a settlement that may match you');
     expect(html).not.toMatch(/verified settlements/i);

@@ -8,7 +8,7 @@ import {
   safeNextPath,
 } from '@/lib/safe-next';
 
-const SITE = 'https://claimmatch.vercel.app';
+const SITE = 'https://lawsuitai.org';
 
 describe('safeNextPath', () => {
   it('keeps paths on this site, with their query and hash', () => {

@@ -12,7 +12,7 @@ import { defineCopy } from './types';
  */
 export const store = defineCopy({
   /** Both stores' app name (30 characters at most). */
-  name: { text: 'ClaimMatch', source: 'src/lib/utils.ts' },
+  name: { text: 'Lawsuit AI', source: 'src/lib/utils.ts' },
   /** App Store subtitle (30 characters at most). */
   subtitle: { text: 'Free claim assistant', source: 'src/lib/utils.ts' },
   /** Google Play short description (80 characters at most). */

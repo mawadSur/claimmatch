@@ -86,7 +86,7 @@ function RootStack() {
         name="onboarding"
         options={{
           presentation: 'fullScreenModal',
-          // The screen starts with its own "Welcome to ClaimMatch" headline.
+          // The screen starts with its own "Welcome to Lawsuit AI" headline.
           title: '',
           headerRight: () => <ModalCloseButton />,
         }}

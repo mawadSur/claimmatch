@@ -53,7 +53,7 @@ const WELCOME_STEPS = [
   dashboard.welcomeStep4.text,
 ];
 
-/** "You’re all set" and how ClaimMatch works, after onboarding (?welcome=1). */
+/** "You’re all set" and how Lawsuit AI works, after onboarding (?welcome=1). */
 export function WelcomeCard({ onBrowse }: { onBrowse: () => void }) {
   return (
     <Card style={[styles.card, styles.welcome]} testID="dashboard-welcome">

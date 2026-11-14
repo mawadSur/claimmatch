@@ -42,7 +42,7 @@ export default async function AdminCatalogPage() {
           The 100 newest settlements across every review state. Feature the best
           ones for the homepage; unpublish anything that shouldn&rsquo;t be live.
           Visitors see published settlements that are still open and file their
-          own claims on the official administrator&rsquo;s site. ClaimMatch
+          own claims on the official administrator&rsquo;s site. Lawsuit AI
           never files for anyone.
         </p>
       </header>

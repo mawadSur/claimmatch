@@ -75,7 +75,8 @@ end $$;
 --                     as a signed-in user and prove that nothing changed.
 --   tables_tested_elsewhere  covered by another file in supabase/tests
 --                     (proof_feedback: 54_proof_feedback.sql;
---                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql).
+--                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql;
+--                     the one-click filing tables of 0037: 75_one_click_filing.sql).
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$
   select array['profiles', 'claims', 'matches', 'beta_feedback']
@@ -98,7 +99,11 @@ language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
                'match_events', 'match_feature_snapshots', 'match_labels',
                'profile_facts', 'consent', 'drip_email_sends',
-               'match_alert_sends', 'match_alert_tokens']
+               'match_alert_sends', 'match_alert_tokens',
+               'staff_roles', 'filing_policies', 'filing_controls', 'filing_specs',
+               'claim_packets', 'claim_documents', 'esign_consents', 'claim_signatures',
+               'claim_signature_voids', 'jev_runs', 'filing_export_batches',
+               'claim_filing_jobs', 'filing_audit_log']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as

@@ -10,6 +10,10 @@ import { CorrectiveNoticeList } from '@/components/claims/CorrectiveNoticeList';
 import { YourMatches } from '@/components/claims/YourMatches';
 import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
+import { FilingSummaryList } from '@/components/filing/FilingSummaryList';
+import { loadOneClickDashboard } from '@/components/filing/dashboard-data';
+import { isOneClickStatus } from '@/components/filing/filing-model';
+import { ONE_CLICK_COPY } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import {
@@ -33,6 +37,9 @@ export const dynamic = 'force-dynamic';
 /**
  * The dashboard: ranked matches from the matcher, the user's claims grouped
  * by next step, the corrective notice, and a secondary "Closing soon" list.
+ * With ONE_CLICK_FILING_ENABLED on it adds "Filing status" (one-click claims
+ * and a "Ready to file" count) and the one-click entry on strong matches
+ * whose settlement has an agent lane.
  */
 export default async function DashboardPage({
   searchParams,
@@ -73,6 +80,20 @@ export default async function DashboardPage({
     strongCount: matches.filter((row) => row.strength === 'strong').length,
     possibleCount: matches.filter((row) => row.strength !== 'strong').length,
   });
+  // One-click filing: null (nothing read) while ONE_CLICK_FILING_ENABLED is off.
+  // Lanes are looked up for strong matches only; possible matches never get the one-click entry.
+  const oneClick = await loadOneClickDashboard({
+    supabase,
+    userId: user.id,
+    now,
+    strongMatchIds: matches.filter((row) => row.strength === 'strong').map((row) => row.id),
+  });
+  // One-click claims show under "Filing status"; "Your claims" keeps the self-file ones
+  // (and all of them when the filing list could not be read, so none disappears).
+  const oneClickClaimIds = new Set(
+    oneClick?.summaries ? claims.items.filter((item) => isOneClickStatus(item.claim.status)).map((item) => item.claim.id) : [],
+  );
+  const claimRows = rows.filter((row) => !oneClickClaimIds.has(row.claimId));
   const hasReportedFiling = claims.items.some(
     (item) => item.claim.status === 'reported_filed' || item.claim.status === 'submitted',
   );
@@ -116,18 +137,22 @@ export default async function DashboardPage({
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
             {firstName ? `Hi, ${firstName}.` : 'Your claims'}
           </h1>
-          <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
-            Track the claims you file on official settlement sites.{' '}
-            {flags.feeDisclosure()
-              ? 'Official filing stays free.'
-              : 'ClaimMatch is free during beta.'}{' '}
-            It doesn&rsquo;t file for you and never handles settlement payments.
-          </p>
+          {oneClick ? (
+            <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">{ONE_CLICK_COPY.dashboardIntro}</p>
+          ) : (
+            <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
+              Track the claims you file on official settlement sites.{' '}
+              {flags.feeDisclosure()
+                ? 'Official filing stays free.'
+                : 'Lawsuit AI is free during beta.'}{' '}
+              It doesn&rsquo;t file for you and never handles settlement payments.
+            </p>
+          )}
         </header>
 
         {denied === 'admin' && (
           <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            You don&rsquo;t have access to the admin area. It&rsquo;s only for ClaimMatch staff.
+            You don&rsquo;t have access to the admin area. It&rsquo;s only for Lawsuit AI staff.
           </p>
         )}
         {password === 'updated' && (
@@ -136,7 +161,7 @@ export default async function DashboardPage({
           </p>
         )}
 
-        {welcome === '1' && <WelcomeCard />}
+        {welcome === '1' && <WelcomeCard oneClick={Boolean(oneClick)} />}
 
         {/* Always rendered (it shows nothing without notices) so its answers stay
             on screen after router.refresh() drops the answered rows. */}
@@ -171,10 +196,13 @@ export default async function DashboardPage({
           failed={catalog.error}
           needsProfile={needsProfile}
           metricsEnabled={flags.matchMetrics()}
-          fileForYou={flags.assistedFiling()}
+          fileForYou={!oneClick && flags.assistedFiling()}
+          oneClickLanes={oneClick?.lanes ?? null}
           canDismiss={flags.matchStore()}
           matchReasonEnabled={flags.matchReason()}
         />
+
+        {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
 
         {flags.assistedFiling() && (
           <FilingStatusList
@@ -201,7 +229,7 @@ export default async function DashboardPage({
                 </div>
               </div>
             ) : (
-              <ClaimList rows={rows} timelineEnabled={flags.claimTimeline()} />
+              <ClaimList rows={claimRows} timelineEnabled={flags.claimTimeline()} />
             )}
           </div>
         </section>
@@ -214,13 +242,15 @@ export default async function DashboardPage({
   );
 }
 
-function WelcomeCard() {
-  const steps = [
-    'Find an open settlement in our list.',
-    'Read the official notice to see if you qualify.',
-    'File on the official site. It’s free, and you do it yourself.',
-    'Come back and tell us you filed. We keep your deadline and confirmation number in one place.',
-  ];
+function WelcomeCard({ oneClick = false }: { oneClick?: boolean }) {
+  const steps: readonly string[] = oneClick
+    ? ONE_CLICK_COPY.welcomeSteps
+    : [
+        'Find an open settlement in our list.',
+        'Read the official notice to see if you qualify.',
+        'File on the official site. It’s free, and you do it yourself.',
+        'Come back and tell us you filed. We keep your deadline and confirmation number in one place.',
+      ];
   return (
     <section
       aria-labelledby="welcome-title"
@@ -230,7 +260,7 @@ function WelcomeCard() {
         <CheckCircle2 className="h-5 w-5 text-success-600" aria-hidden />
         You&rsquo;re all set
       </h2>
-      <p className="mt-1 text-sm text-ink-muted">Here&rsquo;s how ClaimMatch works:</p>
+      <p className="mt-1 text-sm text-ink-muted">Here&rsquo;s how Lawsuit AI works:</p>
       <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink">
         {steps.map((s) => (
           <li key={s}>{s}</li>

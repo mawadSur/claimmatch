@@ -2,7 +2,7 @@
   "name": "claimmatch",
   "version": "0.1.0",
   "private": true,
-  "description": "ClaimMatch — find class-action settlements and lawsuits you're eligible for, and get matched automatically.",
+  "description": "Lawsuit AI — find class-action settlements and lawsuits you're eligible for, and get matched automatically.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

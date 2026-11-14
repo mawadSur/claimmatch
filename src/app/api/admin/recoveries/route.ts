@@ -31,7 +31,7 @@ const BodySchema = z
  *   deny      → mark 'denied'
  *
  * Turned off (404) unless ADMIN_RECOVERIES_ENABLED=1 (flags.adminRecoveries,
- * read on the server). ClaimMatch never handles settlement money; these rows
+ * read on the server). Lawsuit AI never handles settlement money; these rows
  * come from the retired e-sign flow and are kept for the follow-up in the
  * private plan (D38).
  *

@@ -29,7 +29,7 @@ export async function generateMetadata({
   const view = resolveUnsubscribeView(await searchParams);
   return {
     title: TITLES[view.kind],
-    description: 'Stop getting ClaimMatch emails about new settlements.',
+    description: 'Stop getting Lawsuit AI emails about new settlements.',
     robots: { index: false, follow: false },
     // The link carries an encoded email address; never send it on as a referrer.
     referrer: 'no-referrer',
@@ -113,7 +113,7 @@ function ConfirmView({ view }: { view: Extract<UnsubscribeView, { kind: 'confirm
       </IconTile>
       <h1 className="mt-6 text-2xl font-extrabold sm:text-3xl">
         Unsubscribe <span className="break-words text-brand-700">{view.maskedEmail}</span> from
-        ClaimMatch emails?
+        Lawsuit AI emails?
       </h1>
       <p className="mx-auto mt-3 max-w-sm text-ink-muted">
         You&rsquo;ll stop getting emails about new settlements. We may still email you about your
@@ -199,7 +199,7 @@ function MissingView() {
       </IconTile>
       <h1 className="mt-6 text-2xl font-extrabold sm:text-3xl">{TITLES.missing}</h1>
       <p className="mx-auto mt-3 max-w-sm text-ink-muted">
-        Open any ClaimMatch email and use the Unsubscribe link at the bottom. Or sign in and turn
+        Open any Lawsuit AI email and use the Unsubscribe link at the bottom. Or sign in and turn
         off emails in Settings.
       </p>
       <SettingsAndHome />

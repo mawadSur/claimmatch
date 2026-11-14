@@ -25,7 +25,7 @@ function Label({ text }: { text: string }) {
 
 /**
  * The claim's status and deadline at the top of the flow (ClaimFlow.tsx
- * StatusPanel), with the note that ClaimMatch doesn’t file claims. A
+ * StatusPanel), with the note that Lawsuit AI doesn’t file claims. A
  * fictional settlement shows its status only: there is nothing to file.
  */
 export function StatusPanel({ display, deadline, now, fictional }: StatusPanelProps) {

@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 
 const GONE = {
   error:
-    'This feature was removed. ClaimMatch does not file claims for you. Open each settlement, file on its official site, then tell us you filed.',
+    'This feature was removed. Lawsuit AI does not file claims for you. Open each settlement, file on its official site, then tell us you filed.',
   code: 'gone',
 };
 

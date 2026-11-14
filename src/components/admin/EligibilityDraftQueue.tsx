@@ -31,7 +31,7 @@ export function EligibilityDraftQueue({ items }: { items: DraftRow[] }) {
       }
       setRows((current) => current.filter((row) => row.id !== id));
     } catch {
-      setMessage('Could not reach ClaimMatch.');
+      setMessage('Could not reach Lawsuit AI.');
     }
     setBusy(null);
   }

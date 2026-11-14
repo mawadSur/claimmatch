@@ -76,7 +76,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * Uses the browser Supabase client. Reads ?next to send users back where they
  * came from after logging in. Must be rendered inside <Suspense> because it
  * calls useSearchParams(). `switchPrompt={false}` leaves out the "New to
- * ClaimMatch? / Already have an account?" line, for a page that offers the
+ * Lawsuit AI? / Already have an account?" line, for a page that offers the
  * other form itself.
  */
 export function AuthForm({
@@ -589,7 +589,7 @@ export function AuthForm({
 
       {switchPrompt && (
         <p className="mt-5 text-center text-sm text-ink-muted">
-          {isSignup ? 'Already have an account?' : 'New to ClaimMatch?'}{' '}
+          {isSignup ? 'Already have an account?' : 'New to Lawsuit AI?'}{' '}
           <Link
             href={switchHref}
             className="text-link"

@@ -28,7 +28,7 @@ import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
 const DESCRIPTION =
-  'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by ClaimMatch, so check the official site before you file. Filing is free.';
+  'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by Lawsuit AI, so check the official site before you file. Filing is free.';
 
 /** Public catalog: no per-user content. CDN / ISR cache for 15 minutes. */
 export const revalidate = 900;
@@ -129,7 +129,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
             Class action settlements that are taking claims now. Check who qualifies on
             the official site, file there for free, and keep track of your claim in
-            ClaimMatch.
+            Lawsuit AI.
             {flags.catalogValueRank()
               ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
               : ''}
@@ -272,7 +272,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             >
               CC BY 4.0
             </a>
-            . ClaimMatch may have shortened or reformatted them.
+            . Lawsuit AI may have shortened or reformatted them.
           </p>
         )}
       </section>

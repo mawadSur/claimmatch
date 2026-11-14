@@ -25,17 +25,17 @@ jest.mock('@/lib/api', () => ({
 describe('corrective notice copy', () => {
   it('titles the dashboard notice by how many claims the old flow called filed', () => {
     expect(noticeListTitle(0)).toBe('A settlement in your list was not real');
-    expect(noticeListTitle(1)).toBe('ClaimMatch did not file your claim');
-    expect(noticeListTitle(4)).toBe('ClaimMatch did not file your claims');
+    expect(noticeListTitle(1)).toBe('Lawsuit AI did not file your claim');
+    expect(noticeListTitle(4)).toBe('Lawsuit AI did not file your claims');
   });
 
   it('explains the wrong "Claim filed" message for one or many claims', () => {
     expect(noticeListBody(0)).toBeNull();
     expect(noticeListBody(1)).toBe(
-      'Earlier, ClaimMatch showed “Claim filed” for the settlement below. That was wrong. We never sent anything to a settlement administrator, and we never file claims for anyone. Tell us where things stand.',
+      'Earlier, Lawsuit AI showed “Claim filed” for the settlement below. That was wrong. We never sent anything to a settlement administrator, and we never file claims for anyone. Tell us where things stand.',
     );
     expect(noticeListBody(2)).toBe(
-      'Earlier, ClaimMatch showed “Claim filed” for the settlements below. That was wrong. We never sent anything to a settlement administrator, and we never file claims for anyone. For each one, tell us where things stand.',
+      'Earlier, Lawsuit AI showed “Claim filed” for the settlements below. That was wrong. We never sent anything to a settlement administrator, and we never file claims for anyone. For each one, tell us where things stand.',
     );
   });
 
@@ -49,7 +49,7 @@ describe('corrective notice copy', () => {
   it('says a fictional settlement was not real, on the claim screen and the dashboard', () => {
     expect(fictionalNoticeText('Robocall TCPA Settlement')).toBe(`“Robocall TCPA Settlement” ${notices.fictionalText.text}`);
     expect(fictionalRowText()).toBe(
-      'This settlement was test data that should never have been shown as a real settlement. ClaimMatch did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.',
+      'This settlement was test data that should never have been shown as a real settlement. Lawsuit AI did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.',
     );
   });
 });

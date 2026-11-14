@@ -13,7 +13,7 @@ export const catalog = defineCopy({
     source: 'src/app/lawsuits/page.tsx',
   },
   intro: {
-    text: 'Class action settlements that are taking claims now. Check who qualifies on the official site, file there for free, and keep track of your claim in ClaimMatch.',
+    text: 'Class action settlements that are taking claims now. Check who qualifies on the official site, file there for free, and keep track of your claim in Lawsuit AI.',
     source: 'src/app/lawsuits/page.tsx',
   },
 

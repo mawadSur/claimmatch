@@ -192,7 +192,7 @@ describe('consumeMatchAlertToken', () => {
 });
 
 describe('one-click claim landing page', () => {
-  it('keeps the POST confirm button, brands LawsuitAI, and reads as one tap', () => {
+  it('keeps the POST confirm button, brands Lawsuit AI, and reads as one tap', () => {
     const src = readFileSync(
       fileURLToPath(new URL('../src/app/match-alert/start/page.tsx', import.meta.url)),
       'utf8',

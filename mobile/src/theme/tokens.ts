@@ -1,7 +1,7 @@
 import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
 /**
- * ClaimMatch design tokens, mirroring the website (tailwind.config.ts and
+ * Lawsuit AI design tokens, mirroring the website (tailwind.config.ts and
  * src/app/globals.css). Screens use the semantic `colors`, `space`, `radii`,
  * `shadows` and `typography` below and never raw hex values.
  *

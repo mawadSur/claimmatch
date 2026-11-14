@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
  * "File on your behalf" also covers files/filed/filing/submit(s/ted/ting) with
  * up to 60 characters between the verb and "on your behalf"; it passes only
  * when a negation word sits in the same clause, within four words before the
- * verb ("ClaimMatch never files on your behalf") or inside the phrase
+ * verb ("Lawsuit AI never files on your behalf") or inside the phrase
  * ("files nothing on your behalf"). Anything else needs an ALLOWLIST entry.
  */
 
@@ -55,7 +55,7 @@ const RULES: Rule[] = [
     // "We file" has its own rule above.
     id: 'we submit',
     pattern:
-      /\b(?:(?:claimmatch|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:files?|filed|submits?|submitted)|we(?:['’]ll|\s+will|\s+can)?\s+(?:submits?|submitted))\b(?!\s+(?:nothing|no)\b)/gi,
+      /\b(?:(?:claimmatch|lawsuit\s*ai|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:files?|filed|submits?|submitted)|we(?:['’]ll|\s+will|\s+can)?\s+(?:submits?|submitted))\b(?!\s+(?:nothing|no)\b)/gi,
     negatable: true,
   },
   { id: 'N% match', pattern: /(?:\d{1,3}|\})\s?%\s*match/gi },
@@ -112,13 +112,13 @@ const RULES: Rule[] = [
   { id: 'being filed', pattern: /\b(?:is|are|was|were)\s+being\s+(?:filed|submitted)\b/gi, negatable: true },
   {
     id: 'filed by claimmatch',
-    pattern: /\b(?:filed|submitted|sent)\s+(?:by|through|via)\s+(?:claimmatch|our\s+team|us)\b/gi,
+    pattern: /\b(?:filed|submitted|sent)\s+(?:by|through|via)\s+(?:claimmatch|lawsuit\s*ai|our\s+team|us)\b/gi,
     negatable: true,
   },
   {
     id: 'we send your claim',
     pattern:
-      /\b(?:we|claimmatch|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:sends?|sent|forwards?|forwarded|transmits?|transmitted|delivers?|delivered)\s+(?:your|the|this|each)\s+claims?\b/gi,
+      /\b(?:we|claimmatch|lawsuit\s*ai|our\s+team)(?:['’]ll|\s+will|\s+can)?\s+(?:sends?|sent|forwards?|forwarded|transmits?|transmitted|delivers?|delivered)\s+(?:your|the|this|each)\s+claims?\b/gi,
     negatable: true,
   },
   { id: 'match score', pattern: /\bmatch(?:ing)?\s+scores?\b|\bscore\s*:?\s*\d{1,3}\s*(?:%|\/\s*100\b|out\s+of\s+100\b)/gi },
@@ -152,16 +152,15 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     text: 'not a legal determination that you qualify',
     reason: 'Negated: stored match results are “not a legal determination that you qualify” (the “not” is five words back, past the four-word window). That sentence only.',
   },
-  {
-    file: 'src/lib/copy.ts',
-    rule: 'we file',
-    reason: 'Owner: full-service primary CTA (“We’ll file it for you”), shown only when ASSISTED_FILING_ENABLED=1.',
-  },
-  {
-    file: 'src/lib/copy.ts',
-    rule: 'we submit',
-    reason: 'Owner: fee disclosure says ClaimMatch files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.',
-  },
+  // src/lib/copy.ts: exact texts only, so a new filing claim there always needs its own entry.
+  { file: 'src/lib/copy.ts', rule: 'we file', text: 'We’ll file it for you',
+    reason: 'Owner: full-service primary CTA (“We’ll file it for you”), shown only when ASSISTED_FILING_ENABLED=1.' },
+  { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
+    reason: 'Owner: fee disclosure says Lawsuit AI files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.' },
+  { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
+    reason: 'One-click filing (ONE_CLICK_FILING_ENABLED=1): agent-lane wording, shown only for a claim whose settlement has a filing channel the law firm enabled.' },
+  { file: 'src/lib/copy.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
+    reason: 'One-click filing: the filed_by_claimmatch status, true for that claim; it never reads “Submitted” until the administrator’s number arrives.' },
 ];
 
 const NEGATION =
@@ -296,7 +295,7 @@ describe('copy guard rules', () => {
     ['const a = <dt>Receipt</dt>;', 'receipt label'],
     ['const a = <Row label="Receipt" value={n} />;', 'receipt label'],
     ['const a = "We submit your claim to the administrator";', 'we submit'],
-    ['const a = "ClaimMatch files your claim for you";', 'we submit'],
+    ['const a = "Lawsuit AI files your claim for you";', 'we submit'],
     ['const a = "Our team submitted it";', 'we submit'],
     ['const a = "92% match";', 'N% match'],
     ['const a = `${pct}% match`;', 'N% match'],
@@ -304,7 +303,7 @@ describe('copy guard rules', () => {
     ['const a = "You are owed $180";', 'you are owed'],
     ['const a = "you may be owed money";', 'you are owed'],
     ['const a = "We never take a cut";', 'never take a cut'],
-    ['const a = "ClaimMatch never takes a cut";', 'never take a cut'],
+    ['const a = "Lawsuit AI never takes a cut";', 'never take a cut'],
     ['const a = "take a cut of a settlement";', 'take a cut'],
     ['const a = "Touch your settlement money or take a cut";', 'take a cut'],
     ["const a = \"Right now, it doesn't make money\";", "doesn't make money"],
@@ -337,9 +336,9 @@ describe('copy guard rules', () => {
     ['const a = "Guaranteed payout";', 'guaranteed payout'],
     ['const a = "Your payment is guaranteed";', 'guaranteed payout'],
     ['const a = "Your claim is being filed";', 'being filed'],
-    ['const a = "Your claim was submitted by ClaimMatch";', 'filed by claimmatch'],
+    ['const a = "Your claim was submitted by Lawsuit AI";', 'filed by claimmatch'],
     ['const a = "We send your claim to the administrator";', 'we send your claim'],
-    ['const a = "ClaimMatch forwards the claim for you";', 'we send your claim'],
+    ['const a = "Lawsuit AI forwards the claim for you";', 'we send your claim'],
     ['const a = "Match score: 87";', 'match score'],
     ['const a = "Score: 87%";', 'match score'],
   ])('flags %s', (text, rule) => {
@@ -347,9 +346,9 @@ describe('copy guard rules', () => {
   });
 
   it.each([
-    'const a = "ClaimMatch never files claims";',
-    'const a = "ClaimMatch files nothing";',
-    'const a = "ClaimMatch did not file this claim";',
+    'const a = "Lawsuit AI never files claims";',
+    'const a = "Lawsuit AI files nothing";',
+    'const a = "Lawsuit AI did not file this claim";',
     'const a = "This claim now shows Not filed yet";',
     'const a = "Reported filed by you";',
     'const a = "No receipt needed";',
@@ -359,13 +358,13 @@ describe('copy guard rules', () => {
   });
 
   it.each([
-    'const a = "ClaimMatch never files on your behalf";',
-    'const a = "ClaimMatch does not file claims on your behalf";',
+    'const a = "Lawsuit AI never files on your behalf";',
+    'const a = "Lawsuit AI does not file claims on your behalf";',
     'const a = "Nothing is filed or submitted on your behalf";',
     'const a = "We don’t submit anything on your behalf";',
-    'const a = "ClaimMatch files nothing on your behalf";',
+    'const a = "Lawsuit AI files nothing on your behalf";',
     'const a = "We don’t file for you";',
-    'const a = "ClaimMatch did not file this claim";',
+    'const a = "Lawsuit AI did not file this claim";',
     'const a = row.receipt_number;',
     'const a = "No receipt needed";',
     'const a = "no winner yet";',
@@ -379,7 +378,7 @@ describe('copy guard rules', () => {
     '/* You’re owed $50B */ const a = 1;',
     'const a = "copy-ready details";',
     'const a = "We never handle settlement payments";',
-    'const a = "ClaimMatch never files for you";',
+    'const a = "Lawsuit AI never files for you";',
     'const a = "Free during beta";',
     'const a = profile.prefill_consent_at;',
     '// We never take a cut. Pending counsel. Draft for review.\nconst a = 1;',
@@ -398,7 +397,7 @@ describe('copy guard rules', () => {
     'const a = "We do not promise that you will receive any payment.";',
     'const a = "We don’t guarantee payment";',
     'const a = "Nothing is being filed for you";',
-    'const a = "ClaimMatch never sends your claim anywhere";',
+    'const a = "Lawsuit AI never sends your claim anywhere";',
     'const a = { score: 0, reasons: [] };',
   ])('allows %s', (text) => {
     expect(flagged(text)).toEqual([]);

@@ -15,7 +15,7 @@ function siteHost(): string {
   try {
     return new URL(SITE.url).host.replace(/^www\./, '');
   } catch {
-    return 'ClaimMatch';
+    return 'Lawsuit AI';
   }
 }
 

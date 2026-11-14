@@ -229,19 +229,19 @@ export const US_STATES: { code: string; name: string }[] = [
 ];
 
 export const SITE = {
-  name: 'ClaimMatch',
+  name: 'Lawsuit AI',
   tagline: 'Free claim assistant for class-action settlements',
   description:
     'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://lawsuitai.org',
 };
 
-/** Public product name in emails, /llms.txt, and the one-click claim landing page. */
-export const PUBLIC_BRAND = 'LawsuitAI';
+/** Public product name everywhere (site, app, emails, /llms.txt). */
+export const PUBLIC_BRAND = SITE.name;
 
-/** Rewrite user-facing ClaimMatch copy for those public surfaces only. */
+/** Map legacy product names (ClaimMatch, LawsuitAI) in older copy or stored text to the public brand. */
 export function publicBrandCopy(text: string): string {
-  return text.replaceAll('ClaimMatch', PUBLIC_BRAND);
+  return text.replace(/\b(?:ClaimMatch|LawsuitAI)\b/g, PUBLIC_BRAND);
 }
 
 /** Absolute URL for metadata, sitemap and emails. */

@@ -58,7 +58,7 @@ describe('ingest alert email', () => {
     });
     expect(html).toContain('Catalog ingest failed');
     expect(html).toContain('feed timed out');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
   });
 

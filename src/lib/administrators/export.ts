@@ -35,7 +35,9 @@ const CSV_COLUMNS: Array<keyof AuthorizedClaimExportRow> = [
 ];
 
 function csvEscape(value: unknown): string {
-  const s = value == null ? '' : String(value);
+  let s = value == null ? '' : String(value);
+  // Spreadsheet formula injection: a cell that starts like a formula is kept as text.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

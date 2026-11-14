@@ -138,7 +138,7 @@ describe('onboarding drip email copy', () => {
     const html = renderIncompleteOnboardingEmail({ name: 'Ada', to: 'a@example.com' });
     expect(html).toContain('/onboarding');
     expect(html).toContain('/unsubscribe');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
     expect(html).not.toMatch(/thousands|users like you|99%/i);
   });
@@ -174,7 +174,7 @@ describe('sendOnboardingDrips flag and sender gate', () => {
 
   it('refuses without a postal address even when the flag is on', async () => {
     vi.stubEnv('ONBOARDING_DRIP_ENABLED', '1');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     vi.stubEnv('RESEND_API_KEY', 're_test');
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '');
     const result = await sendOnboardingDrips();
@@ -189,7 +189,7 @@ describe('the did-you-file drip on a guided settlement', () => {
 
   beforeEach(() => {
     vi.stubEnv('ONBOARDING_DRIP_ENABLED', '1');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     vi.stubEnv('RESEND_API_KEY', 're_test');
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St, Springfield');
     db.sent = [];

@@ -53,7 +53,7 @@ describe('match email CAN-SPAM footer', () => {
     expect(html).toMatch(/opted in to match alerts/);
     expect(html).toContain('/unsubscribe');
     expect(html).toContain('/settings');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
   });
 });

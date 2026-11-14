@@ -129,7 +129,7 @@ export function OnboardingWizard({
       );
     } catch {
       setAction(null);
-      setError({ message: 'We couldn’t reach ClaimMatch. Check your connection and try again.' });
+      setError({ message: 'We couldn’t reach Lawsuit AI. Check your connection and try again.' });
     }
   }
 

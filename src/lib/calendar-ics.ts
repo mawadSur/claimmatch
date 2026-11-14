@@ -89,13 +89,13 @@ export function buildDeadlineIcs(input: DeadlineIcsInput): string | null {
     .filter(Boolean)
     .join('\n');
 
-  const uid = input.uid?.trim() || `claimmatch-deadline-${start}@claimmatch`;
+  const uid = input.uid?.trim() || `lawsuitai-$1-${start}@claimmatch`;
   const stamp = icsUtcStamp(input.dtstamp ?? new Date());
 
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//ClaimMatch//Settlement Deadline//EN',
+    'PRODID:-//Lawsuit AI//Settlement Deadline//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

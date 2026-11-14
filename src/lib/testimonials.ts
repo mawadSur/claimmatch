@@ -1,5 +1,5 @@
 /**
- * Reviews from real ClaimMatch users, shown on the home page.
+ * Reviews from real Lawsuit AI users, shown on the home page.
  *
  * Only real reviews go here: words a real user wrote or said, published with
  * their written permission. Never write, reword or "seed" a review, and never
@@ -9,7 +9,7 @@
  * the same: no invented payouts, reviews or testimonials.
  *
  * To add one:
- *   1. Ask someone who used ClaimMatch for a sentence or two about it.
+ *   1. Ask someone who used Lawsuit AI for a sentence or two about it.
  *   2. Get written permission to publish it under the name they choose
  *      (first name and last initial is typical).
  *   3. Paste their words exactly. Trimming for length is fine; rewording is not.

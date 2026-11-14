@@ -22,7 +22,7 @@ import { YourDataSection } from './YourDataSection';
 
 /**
  * /settings (src/app/settings/page.tsx plus the app-only rows of plan 3.3).
- * Signed in: your details and emails, deadline reminders, Share ClaimMatch,
+ * Signed in: your details and emails, deadline reminders, Share Lawsuit AI,
  * Your data with account deletion, Legal, Sign out and the app version.
  * Signed out: Log in, Create a free account, Legal, Privacy Policy and Terms.
  */

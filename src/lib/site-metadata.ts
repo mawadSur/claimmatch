@@ -6,7 +6,7 @@ export const SITE_OG_IMAGE = {
   url: '/opengraph-image',
   width: 1200,
   height: 630,
-  alt: 'ClaimMatch — find open class-action settlements',
+  alt: 'Lawsuit AI — find open class-action settlements',
 } as const;
 
 export function settlementOgImagePath(slug: string): string {

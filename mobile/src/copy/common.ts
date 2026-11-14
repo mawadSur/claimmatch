@@ -3,7 +3,7 @@ import { defineCopy } from './types';
 /** Copy shared across screens: errors, retry, the unverified notice. */
 export const common = defineCopy({
   networkError: {
-    text: "We couldn't reach ClaimMatch. Check your internet connection and try again.",
+    text: "We couldn't reach Lawsuit AI. Check your internet connection and try again.",
     source: 'src/components/claims/claim-api.ts',
   },
   loggedOut: {
@@ -61,7 +61,7 @@ export const common = defineCopy({
     source: 'plan 3.3 (loading states)',
     mobileOnly: true,
   },
-  /** Never "inside ClaimMatch": official sites and forms are not ClaimMatch's. */
+  /** Never "inside Lawsuit AI": official sites and forms are not Lawsuit AI's. */
   opensInBrowserHint: {
     text: 'Opens in a browser.',
     source: 'plan 3.3 (in-app browser)',

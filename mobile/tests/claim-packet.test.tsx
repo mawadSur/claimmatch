@@ -89,7 +89,7 @@ beforeEach(() => {
 afterEach(() => client.clear());
 
 describe('PrefillPacket', () => {
-  it('shows the details with the note that ClaimMatch never files, in the default order', async () => {
+  it('shows the details with the note that Lawsuit AI never files, in the default order', async () => {
     await showPacket();
     expect(screen.getByText(copy.packetTitle.text)).toBeOnTheScreen();
     expect(screen.getByText(copy.packetNote.text)).toBeOnTheScreen();

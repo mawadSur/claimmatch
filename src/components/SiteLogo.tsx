@@ -26,7 +26,7 @@ export function SiteLogo({
       >
         <Scale className={icon} aria-hidden />
       </span>
-      <span>ClaimMatch</span>
+      <span>Lawsuit AI</span>
     </Link>
   );
 }

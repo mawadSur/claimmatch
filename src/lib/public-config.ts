@@ -3,10 +3,10 @@
  * env. Unset / placeholder values stay null so we never print a Sur Consulting
  * inbox, a TODO token, or a project name nobody created.
  *
- * TODO (B2): NEXT_PUBLIC_CONTACT_EMAIL — ClaimMatch inbox, not Sur Consulting
+ * TODO (B2): NEXT_PUBLIC_CONTACT_EMAIL — Lawsuit AI inbox, not Sur Consulting
  * TODO (B2/B5): NEXT_PUBLIC_LEGAL_ENTITY, NEXT_PUBLIC_POSTAL_ADDRESS
  * TODO (B3): NEXT_PUBLIC_SITE_URL — claimmatch.com (or the chosen domain)
- * TODO (B6): NEXT_PUBLIC_POSTHOG_KEY + NEXT_PUBLIC_POSTHOG_PROJECT — ClaimMatch
+ * TODO (B6): NEXT_PUBLIC_POSTHOG_KEY + NEXT_PUBLIC_POSTHOG_PROJECT — Lawsuit AI
  *            PostHog project, not the "Sur Website" project
  */
 

@@ -9,12 +9,12 @@ describe('normalizeLegalContact', () => {
     expect(
       normalizeLegalContact({
         email: '  privacy@claimmatch-test.org ',
-        legalEntity: ' ClaimMatch LLC ',
+        legalEntity: ' Lawsuit AI LLC ',
         postalAddress: ' 1 Main St\\nSpringfield, IL 62701 ',
       }),
     ).toEqual({
       email: 'privacy@claimmatch-test.org',
-      legalEntity: 'ClaimMatch LLC',
+      legalEntity: 'Lawsuit AI LLC',
       postalAddress: '1 Main St\nSpringfield, IL 62701',
     });
   });

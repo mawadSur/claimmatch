@@ -9,7 +9,7 @@ import { publicPageMetadata } from '@/lib/site-metadata';
 export const metadata: Metadata = publicPageMetadata({
   title: 'Terms of Service',
   description:
-    'Interim terms for using ClaimMatch, a free claim assistant. ClaimMatch is not a law firm, gives no legal advice, never files claims for you and never handles settlement money.',
+    'Interim terms for using Lawsuit AI, a free claim assistant. Lawsuit AI is not a law firm, gives no legal advice, never files claims for you and never handles settlement money.',
   path: '/terms',
 });
 
@@ -31,8 +31,8 @@ export default function TermsPage() {
           </span>
           <h1 className="mt-4 text-4xl font-extrabold">Terms of Service</h1>
           <p className="mt-3 text-ink-muted">
-            These terms cover your use of ClaimMatch. Please read them. By using
-            ClaimMatch, you agree to them.
+            These terms cover your use of Lawsuit AI. Please read them. By using
+            Lawsuit AI, you agree to them.
           </p>
           <p className="mt-2 text-sm text-ink-muted">Last updated: {LAST_UPDATED}</p>
         </div>
@@ -51,9 +51,9 @@ export default function TermsPage() {
             <ShieldAlert className="h-4 w-4" aria-hidden /> The short version
           </div>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-ink-muted">
-            <li>ClaimMatch is a free claim assistant. It is not a law firm and gives no legal advice.</li>
-            <li>You file every claim yourself on the official settlement website. ClaimMatch never files, submits or signs a claim for you.</li>
-            <li>ClaimMatch never handles settlement money and never takes a share of it.</li>
+            <li>Lawsuit AI is a free claim assistant. It is not a law firm and gives no legal advice.</li>
+            <li>You file every claim yourself on the official settlement website. Lawsuit AI never files, submits or signs a claim for you.</li>
+            <li>Lawsuit AI never handles settlement money and never takes a share of it.</li>
             <li>Our settlement listings are not verified. The official settlement website is the final word.</li>
           </ul>
         </div>
@@ -64,8 +64,8 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-ink">1. About these terms</h2>
             <p>
               These terms are an agreement between you and{' '}
-              {operator ? `${operator}, which runs ClaimMatch` : 'ClaimMatch'} (“ClaimMatch,”
-              “we” or “us”) about your use of the ClaimMatch website and services (the
+              {operator ? `${operator}, which runs Lawsuit AI` : 'Lawsuit AI'} (“Lawsuit AI,”
+              “we” or “us”) about your use of the Lawsuit AI website and services (the
               “Service”). By using the Service or creating an account, you agree to these
               terms and to our{' '}
               <Link href="/privacy" className={LINK}>
@@ -77,28 +77,28 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-ink">2. What ClaimMatch does</h2>
+            <h2 className="text-xl font-bold text-ink">2. What Lawsuit AI does</h2>
             <p>
-              ClaimMatch shows class-action settlements that may be open for claims, links
+              Lawsuit AI shows class-action settlements that may be open for claims, links
               to official settlement information when our source provides it, and lets you
               keep track of claims you file yourself.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-ink">3. What ClaimMatch does not do</h2>
+            <h2 className="text-xl font-bold text-ink">3. What Lawsuit AI does not do</h2>
             <ul className="ml-5 list-disc space-y-2">
               <li>
-                ClaimMatch does not file, submit or sign claims for you. You decide whether
+                Lawsuit AI does not file, submit or sign claims for you. You decide whether
                 to file, and you file directly with the settlement administrator, usually on
                 the official settlement website.
               </li>
               <li>
-                ClaimMatch is not your agent or representative. It does not deal with
+                Lawsuit AI is not your agent or representative. It does not deal with
                 courts or settlement administrators for you.
               </li>
               <li>
-                ClaimMatch never receives, holds or sends settlement payments, and never
+                Lawsuit AI never receives, holds or sends settlement payments, and never
                 takes a share of any payment you receive.
               </li>
             </ul>
@@ -107,7 +107,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">4. Not a law firm; no legal advice</h2>
             <p>
-              ClaimMatch is not a law firm. We are not lawyers, we do not represent you,
+              Lawsuit AI is not a law firm. We are not lawyers, we do not represent you,
               and nothing on the Service is legal advice. Using the Service or contacting
               us does not create an attorney-client relationship. Decisions about whether
               to file a claim, opt out of a settlement or object to it are yours. Consider
@@ -122,11 +122,11 @@ export default function TermsPage() {
               and we have not verified them. Information can be wrong, incomplete or out
               of date. Courts and settlement administrators set the deadlines, who
               qualifies and how much is paid, and these can change. Deadlines on
-              ClaimMatch are shown as dates; the official settlement website gives the
+              Lawsuit AI are shown as dates; the official settlement website gives the
               exact cutoff time.
             </p>
             <p>
-              A listing on ClaimMatch does not mean you qualify or that you will be paid.
+              A listing on Lawsuit AI does not mean you qualify or that you will be paid.
               Always check the official settlement website before you rely on any
               information.
             </p>
@@ -135,7 +135,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">6. Keeping track of your claims</h2>
             <p>
-              When you tell us you filed a claim or add a confirmation number, ClaimMatch
+              When you tell us you filed a claim or add a confirmation number, Lawsuit AI
               records what you tell us. We do not check it with the settlement
               administrator. The administrator’s records decide the real status of your
               claim.
@@ -163,7 +163,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">8. Cost</h2>
             <p>
-              ClaimMatch is free to use. We never take a share of any settlement payment.
+              Lawsuit AI is free to use. We never take a share of any settlement payment.
               See our{' '}
               <Link href="/pricing" className={LINK}>
                 Pricing page
@@ -194,7 +194,7 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">10. Ending your use</h2>
             <p>
-              You can stop using ClaimMatch at any time, and you can ask us to delete your
+              You can stop using Lawsuit AI at any time, and you can ask us to delete your
               account as described in our{' '}
               <Link href="/privacy" className={LINK}>
                 Privacy Policy
@@ -208,7 +208,7 @@ export default function TermsPage() {
             <p>
               The Service is provided “as is” and “as available,” without warranties of
               any kind, express or implied. To the fullest extent the law allows,
-              ClaimMatch and the people who run it are not liable for any indirect,
+              Lawsuit AI and the people who run it are not liable for any indirect,
               incidental, special, consequential or punitive damages, or for any lost
               claims, payments or opportunities, arising from your use of (or inability to
               use) the Service.

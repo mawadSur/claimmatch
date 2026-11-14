@@ -8,6 +8,7 @@ import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { signedOutClaimHref } from '@/lib/signup-context';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
+import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
 import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
 import { Disclaimer } from '@/components/Disclaimer';
 
@@ -23,7 +24,9 @@ export const dynamic = 'force-dynamic';
  * signed-out people to log in and back). A settlement the user already tracks
  * stays readable after it closes or leaves the catalog (account-only view);
  * without a claim, unlisted and fictional settlements are a 404, and a closed
- * one still takes "I filed my claim" until 30 days after its deadline.
+ * one still takes "I filed my claim" until 30 days after its deadline. With
+ * ONE_CLICK_FILING_ENABLED on, the one-click flow joins it (strong matches on
+ * an agent lane, and claims already in a one-click status).
  */
 export default async function ClaimPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -103,6 +106,18 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     );
   }
 
+  // One-click filing: null (nothing read) while ONE_CLICK_FILING_ENABLED is off.
+  const oneClick = await loadOneClickClaimPage({
+    supabase,
+    userId: user.id,
+    accountEmail: user.email ?? null,
+    slug: settlement.slug,
+    lawsuitId: settlement.id,
+    claim,
+    context,
+    now,
+  });
+
   return (
     <section className="container-narrow py-10 sm:py-12">
       {flags.signupContext() ? <SignupContextReturned claimPath={`/claim/${settlement.slug}`} /> : null}
@@ -114,6 +129,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           initialClaim={claim}
           nowIso={now.toISOString()}
           profile={screen.profile}
+          oneClick={oneClick}
         />
       </div>
       <div className="mt-10">

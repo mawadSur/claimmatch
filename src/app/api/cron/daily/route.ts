@@ -12,7 +12,6 @@ import { persistStoredMatches } from '@/lib/match-store';
 import { runMatchSweep } from '@/lib/match-sweep';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { maybeRecordIngestAlert } from '@/lib/ingest-alerts';
-import { processFilingQueue } from '@/lib/filing/queue';
 import { persistEligibilityDrafts } from '@/lib/eligibility-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
@@ -181,8 +180,16 @@ async function handle(req: Request) {
     const report = buildReport('daily', steps);
     await finishIngestRun(jobId, 'cron/daily', stepToIngestRun(steps.ingest));
     await maybeAlertCronFailure(report);
-    if (flags.assistedFiling()) {
-      await runStep('daily/filing', () => processFilingQueue());
+    // The legacy assisted-filing queue (0015) is retired and never drained. On
+    // Vercel Hobby (daily crons only) the one-click filing step runs here; on
+    // Pro, GET /api/cron/filing runs it as well. Both are safe to overlap.
+    if (flags.oneClickFiling()) {
+      await runStep('daily/filing', async () => {
+        const run = await (await import('@/lib/filing/channels/cron')).runFilingCron();
+        const failed = Object.keys(run.steps).filter((name) => run.steps[name].status === 'failed');
+        if (failed.length > 0) throw new Error(`filing steps failed: ${failed.join(', ')}`);
+        return run;
+      });
     }
     if (flags.eligibilityDrafts()) {
       await runStep('daily/eligibilityDrafts', () => persistEligibilityDrafts());

@@ -2,10 +2,16 @@
  * 7-day and 1-day claim deadline reminders for signed-in users who opted in
  * to email. Idempotent via claim_reminder_sends. Never sends without
  * email_opt_in. Cron-only.
+ *
+ * One-click filing (ONE_CLICK_FILING_ENABLED): a claim the member is still
+ * preparing, or that needs them, is reminded too (with its own wording); a
+ * claim that is signed or further along never is, so nobody is prompted to
+ * file a second time (NO_REMINDER_STATUSES).
  */
 import { flags } from '@/lib/flags';
 import { daysUntilDeadline } from '@/lib/claim-deadlines';
 import { sendDeadlineReminderEmail } from '@/lib/email';
+import { NO_REMINDER_STATUSES, REMINDER_AGENT_STATUSES } from '@/lib/filing/v2/contract';
 import { guidedDeadline } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
@@ -19,6 +25,26 @@ export const DEADLINE_REMINDER_DAYS: Record<DeadlineReminderKind, number> = {
 
 /** Claim statuses that mean the person has not reported filing yet. */
 export const UNFILED_REMINDER_STATUSES = ['self_file', 'not_reported_filed'] as const;
+
+/**
+ * The statuses reminded today. The one-click statuses join only with the flag
+ * on (they exist only after migration 0037, and asking for an unknown status
+ * would fail the query).
+ */
+export function reminderStatuses(oneClickFiling = flags.oneClickFiling()): string[] {
+  return oneClickFiling ? [...UNFILED_REMINDER_STATUSES, ...REMINDER_AGENT_STATUSES] : [...UNFILED_REMINDER_STATUSES];
+}
+
+/** Signed or further along (or withdrawn): never reminded. */
+export function remindsForStatus(status: string, oneClickFiling = flags.oneClickFiling()): boolean {
+  if ((NO_REMINDER_STATUSES as readonly string[]).includes(status)) return false;
+  return reminderStatuses(oneClickFiling).includes(status);
+}
+
+/** A one-click claim the member has not signed yet: reminded with the one-click wording. */
+export function isAgentReminderStatus(status: string): boolean {
+  return (REMINDER_AGENT_STATUSES as readonly string[]).includes(status);
+}
 
 export interface DeadlineReminderCandidate {
   claimId: string;
@@ -92,20 +118,22 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
   const now = opts.now ?? new Date();
   const supabase = createServiceClient();
 
+  const oneClick = flags.oneClickFiling();
   const { data: claimData, error: claimError } = await supabase
     .from('claims')
     .select('id, user_id, status, lawsuit_id')
-    .in('status', [...UNFILED_REMINDER_STATUSES]);
+    .in('status', reminderStatuses(oneClick));
   if (claimError) {
     throw new Error(`[deadline-reminders] loading claims failed: ${claimError.message}`);
   }
 
-  const claims = (claimData ?? []) as Array<{
+  const claims = ((claimData ?? []) as Array<{
     id: string;
     user_id: string;
     status: string;
     lawsuit_id: string | null;
-  }>;
+  }>).filter((claim) => remindsForStatus(claim.status, oneClick));
+  const statusOf = new Map(claims.map((claim) => [claim.id, claim.status]));
   const lawsuitIds = Array.from(new Set(claims.map((c) => c.lawsuit_id).filter((id): id is string => Boolean(id))));
   const userIds = Array.from(new Set(claims.map((c) => c.user_id)));
   if (lawsuitIds.length === 0 || userIds.length === 0) {
@@ -169,14 +197,17 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
 
   let emailed = 0;
   for (const candidate of candidates) {
-    const sent = await sendDeadlineReminderEmail(candidate.email, {
-      name: candidate.name ?? undefined,
-      title: candidate.title,
-      slug: candidate.slug,
-      deadline: candidate.deadline,
-      kind: candidate.kind,
-      to: candidate.email,
-    });
+    const agent = isAgentReminderStatus(statusOf.get(candidate.claimId) ?? '');
+    const sent = agent
+      ? await sendAgentClaimReminder(candidate)
+      : await sendDeadlineReminderEmail(candidate.email, {
+          name: candidate.name ?? undefined,
+          title: candidate.title,
+          slug: candidate.slug,
+          deadline: candidate.deadline,
+          kind: candidate.kind,
+          to: candidate.email,
+        });
     if (!sent) continue;
     const { error: writeError } = await supabase.from('claim_reminder_sends').insert({
       user_id: candidate.userId,
@@ -194,6 +225,19 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
   }
 
   return { candidates: candidates.length, emailed, skipped: null };
+}
+
+/** The one-click wording ("not signed yet"); the self-file email says to file on the official site. */
+async function sendAgentClaimReminder(candidate: DeadlineReminderCandidate): Promise<boolean> {
+  const { sendAgentReminderEmail } = await import('@/lib/filing/channels/member-notices');
+  return sendAgentReminderEmail({
+    to: candidate.email,
+    title: candidate.title,
+    slug: candidate.slug,
+    deadline: candidate.deadline,
+    kind: candidate.kind,
+    claimId: candidate.claimId,
+  });
 }
 
 async function loadSentKinds(

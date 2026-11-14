@@ -100,12 +100,12 @@ export interface FilingStepsProps {
 
 /**
  * The three steps (ClaimFlow.tsx FilingSteps): (1) check you qualify, (2) file
- * on the official site, (3) tell us you filed. ClaimMatch never files: the
+ * on the official site, (3) tell us you filed. Lawsuit AI never files: the
  * official form opens in the in-app browser, and when it closes the screen
  * scrolls to Step 3. Each step is its own child of the scroll content.
  *
  * Assisted filing (ASSISTED_FILING_ENABLED) is not in the app (plan 7, item
- * 6): Step 2 is always the self-file step, which never says ClaimMatch files.
+ * 6): Step 2 is always the self-file step, which never says Lawsuit AI files.
  */
 export function FilingSteps({ settlement, context, claim, profile, onChange }: FilingStepsProps) {
   const router = useRouter();

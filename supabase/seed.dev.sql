@@ -1,4 +1,4 @@
--- ClaimMatch — DEV ONLY: made-up settlements for a LOCAL or STAGING database.
+-- Lawsuit AI — DEV ONLY: made-up settlements for a LOCAL or STAGING database.
 --
 -- NEVER run this against production. None of these 16 settlements exist.
 -- They (and the 4 made-up "sources" below) were published in production

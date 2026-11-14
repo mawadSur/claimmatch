@@ -7,6 +7,10 @@ import { AUTHORIZATION_TEXT_V1, AUTHORIZATION_VERSION } from '@/lib/filing/autho
 /**
  * Per-claim e-sign. The full text version is stored with the timestamp, IP
  * and user agent on the server. Hidden unless assisted filing is allowed.
+ *
+ * @deprecated Retired with ASSISTED_FILING_ENABLED: one-click filing
+ * (src/components/filing, ONE_CLICK_FILING_ENABLED) replaces it, and the
+ * claim page never shows it while one-click filing is on.
  */
 export function AuthorizeFiling({
   lawsuitId,
@@ -49,7 +53,7 @@ export function AuthorizeFiling({
       setMessage('Authorization saved. We will show progress on your dashboard.');
     } catch {
       setStatus('error');
-      setMessage('We could not reach ClaimMatch. Try again in a minute.');
+      setMessage('We could not reach Lawsuit AI. Try again in a minute.');
     }
   }
 
@@ -61,7 +65,7 @@ export function AuthorizeFiling({
     >
       <h3 className="text-base font-bold text-ink">{FILE_FOR_YOU_CTA}</h3>
       <p className="mt-1 text-sm text-ink-muted">
-        Authorize ClaimMatch to process and submit this claim. After you sign, it
+        Authorize Lawsuit AI to process and submit this claim. After you sign, it
         goes to the filing queue. Review the official notice yourself first.
       </p>
       <div className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-sm leading-relaxed text-ink">

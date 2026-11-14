@@ -7,7 +7,7 @@ import { settings } from '@/copy/settings';
 import { referralLink } from './links';
 
 /**
- * "Share ClaimMatch" (src/components/ReferralCard.tsx) as one row that opens
+ * "Share Lawsuit AI" (src/components/ReferralCard.tsx) as one row that opens
  * the system share sheet with the personal referral link. No click or
  * sign-up counts. Before the account has a referral code, the row says so.
  */

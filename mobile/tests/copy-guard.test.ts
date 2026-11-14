@@ -365,7 +365,7 @@ describe('mobile copy guard', () => {
     ['const a = "You will receive up to $250";', 'you will be paid'],
     ['const a = "Guaranteed payout";', 'guaranteed payout'],
     ['const a = "Your claim is being filed";', 'being filed'],
-    ['const a = "Your claim was submitted by ClaimMatch";', 'filed by claimmatch'],
+    ['const a = "Your claim was submitted by Lawsuit AI";', 'filed by claimmatch'],
     ['const a = "We send your claim to the administrator";', 'we send your claim'],
     ['const a = "Match score: 87";', 'match score'],
   ])('flags %s', (text, rule) => {
@@ -373,7 +373,7 @@ describe('mobile copy guard', () => {
   });
 
   it.each([
-    'const a = "ClaimMatch never files claims";',
+    'const a = "Lawsuit AI never files claims";',
     'const a = "If you qualify, file on the official site";',
     'const a = "Check that you qualify";',
     'const a = "Read the official notice to be sure you qualify before you file.";',
@@ -402,7 +402,7 @@ describe('mobile copy guard', () => {
 
   it('finds no banned phrase in app.json', () => {
     const strings = appConfigStrings();
-    expect(strings).toContain('ClaimMatch');
+    expect(strings).toContain('Lawsuit AI');
     const found = strings.flatMap((text) => scanSource('mobile/app.json', `const a = ${JSON.stringify(text)};`));
     expect(found).toEqual([]);
   });

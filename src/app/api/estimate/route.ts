@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
 const GONE = {
-  error: 'This feature was removed. ClaimMatch does not estimate what you could get.',
+  error: 'This feature was removed. Lawsuit AI does not estimate what you could get.',
   code: 'gone',
 };
 

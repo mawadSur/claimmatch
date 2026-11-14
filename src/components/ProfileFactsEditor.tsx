@@ -35,7 +35,7 @@ export function ProfileFactsEditor({ initial }: { initial: ProfileFact[] }) {
       }
     } catch {
       setStatus('error');
-      setMessage('We couldn’t reach ClaimMatch. Check your connection and try again.');
+      setMessage('We couldn’t reach Lawsuit AI. Check your connection and try again.');
     }
   }
 

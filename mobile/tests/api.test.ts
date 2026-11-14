@@ -223,7 +223,7 @@ describe('createApiClient', () => {
       ok: false,
       status: 0,
       code: 'network',
-      error: "We couldn't reach ClaimMatch. Check your internet connection and try again.",
+      error: "We couldn't reach Lawsuit AI. Check your internet connection and try again.",
       loggedOut: false,
     });
     expect(session.refreshAccessToken).not.toHaveBeenCalled();

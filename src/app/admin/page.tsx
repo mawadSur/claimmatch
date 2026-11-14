@@ -162,7 +162,7 @@ export default async function AdminOverviewPage() {
           Operations dashboard
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Members, catalog review and claim tracking. ClaimMatch never files
+          Members, catalog review and claim tracking. Lawsuit AI never files
           claims or handles settlement money. Counts refresh on each load.
         </p>
       </header>
@@ -287,7 +287,7 @@ export default async function AdminOverviewPage() {
         subtitle={
           needsMigration
             ? 'Members file on official sites and report it here. Some counts need migration 0006.'
-            : 'Members file on official sites and report it here. ClaimMatch files nothing.'
+            : 'Members file on official sites and report it here. Lawsuit AI files nothing.'
         }
       >
         <StatCard

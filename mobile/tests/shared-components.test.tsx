@@ -228,7 +228,7 @@ describe('SettleSignalCredit', () => {
     await render(<SettleSignalCredit />);
     expect(
       screen.getByText(
-        'Listings from SettleSignal are adapted from SettleSignal (settlesignal.com) under CC BY 4.0. ClaimMatch may have shortened or reformatted them.',
+        'Listings from SettleSignal are adapted from SettleSignal (settlesignal.com) under CC BY 4.0. Lawsuit AI may have shortened or reformatted them.',
       ),
     ).toBeOnTheScreen();
     await user.press(screen.getByRole('link', { name: 'SettleSignal (settlesignal.com)' }));

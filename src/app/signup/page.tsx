@@ -11,7 +11,7 @@ import { NEUTRAL_BETA_FEE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 export const metadata: Metadata = {
   title: 'Create your free account',
   description:
-    'Create a free ClaimMatch account to keep track of the settlement claims you file on official settlement websites.',
+    'Create a free Lawsuit AI account to keep track of the settlement claims you file on official settlement websites.',
 };
 
 const BETA_BULLETS = [

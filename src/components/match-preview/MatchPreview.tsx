@@ -113,7 +113,7 @@ export function MatchPreview({
       setStep('results');
       posthog?.capture('match_preview_completed', { match_count: rows.length });
     } catch {
-      setError('We couldn’t reach ClaimMatch. Check your connection and try again.');
+      setError('We couldn’t reach Lawsuit AI. Check your connection and try again.');
     } finally {
       setBusy(false);
     }

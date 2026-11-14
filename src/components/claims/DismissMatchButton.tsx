@@ -26,7 +26,7 @@ export function DismissMatchButton({ matchId, title }: { matchId: string; title:
       }
       router.refresh();
     } catch {
-      setError('Could not reach ClaimMatch.');
+      setError('Could not reach Lawsuit AI.');
       setBusy(false);
     }
   }

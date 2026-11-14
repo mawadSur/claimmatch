@@ -22,7 +22,7 @@ const STEPS = [
     n: '1',
     icon: Search,
     title: 'Find open settlements',
-    body: 'ClaimMatch lists class-action settlements that are still open for claims in the US.',
+    body: 'Lawsuit AI lists class-action settlements that are still open for claims in the US.',
   },
   {
     n: '2',
@@ -34,7 +34,7 @@ const STEPS = [
     n: '3',
     icon: ExternalLink,
     title: 'You submit on the official site',
-    body: 'Filing happens on the settlement’s official website. ClaimMatch is not a law firm and never files for you.',
+    body: 'Filing happens on the settlement’s official website. Lawsuit AI is not a law firm and never files for you.',
   },
 ];
 
@@ -50,7 +50,7 @@ export default function InvitePage() {
             Find open settlements you may qualify for
           </h1>
           <p className="mt-4 text-lg text-ink-muted">
-            ClaimMatch helps you find open US class-action settlements, copy a
+            Lawsuit AI helps you find open US class-action settlements, copy a
             packet for the official form, and keep track of what you file. You
             submit on the official site. It is free during beta.
           </p>

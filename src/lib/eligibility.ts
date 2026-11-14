@@ -9,7 +9,7 @@ import type { EligibilityQuestion } from './types';
  * the matcher will start using it — no code changes needed.
  *
  * Never add questions about health (medications, medical devices, conditions)
- * or financial account numbers. ClaimMatch does not collect either.
+ * or financial account numbers. Lawsuit AI does not collect either.
  */
 export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
   {
@@ -66,7 +66,7 @@ export const ELIGIBILITY_QUESTIONS: EligibilityQuestion[] = [
 /**
  * Question keys that were removed and must never be asked or stored again.
  * took_medication asked about prescription drugs and medical devices: that is
- * health data, which ClaimMatch does not collect. Answers saved before the
+ * health data, which Lawsuit AI does not collect. Answers saved before the
  * removal stay in profiles.attributes until the deletion step in the private
  * plan (Phase 0 item 4, D38); nothing should read them.
  */

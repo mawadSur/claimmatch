@@ -5,7 +5,7 @@ import { SETTLEMENT_OG_TAGLINE, settlementOgCopy } from '@/lib/settlement-og';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'Class-action settlement on ClaimMatch';
+export const alt = 'Class-action settlement on Lawsuit AI';
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -23,7 +23,7 @@ function GenericCard() {
         color: 'white',
       }}
     >
-      <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>ClaimMatch</div>
+      <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>Lawsuit AI</div>
       <div style={{ fontSize: 64, fontWeight: 800, marginTop: 16, lineHeight: 1.1 }}>
         Find settlements you qualify for
       </div>
@@ -54,7 +54,7 @@ function SettlementCard({
         color: 'white',
       }}
     >
-      <div style={{ display: 'flex', fontSize: 24, opacity: 0.9 }}>ClaimMatch</div>
+      <div style={{ display: 'flex', fontSize: 24, opacity: 0.9 }}>Lawsuit AI</div>
       <div style={{ fontSize: title.length > 70 ? 44 : 54, fontWeight: 800, lineHeight: 1.15, maxWidth: 1040 }}>
         {title}
       </div>

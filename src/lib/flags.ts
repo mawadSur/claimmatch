@@ -17,6 +17,7 @@ export const CLIENT_FLAG_NAMES = [
   'MATCH_METRICS_ENABLED',
   'FEE_DISCLOSURE_ENABLED',
   'CATALOG_HIDE_UNKNOWNS_ENABLED',
+  'ONE_CLICK_FILING_ENABLED',
 ] as const;
 export type ClientFlagName = (typeof CLIENT_FLAG_NAMES)[number];
 
@@ -125,9 +126,9 @@ export const flags = {
    */
   stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
   /**
-   * Full-service filing is the primary path. Off: no e-sign, queue, worker
-   * or filing CTA. On: match CTAs offer “we’ll file it for you”, then
-   * per-claim authorization and the filing queue.
+   * Legacy assisted-filing scaffolding (0015). Keep off: one-click filing
+   * (ONE_CLICK_FILING_ENABLED) replaces it. Even on, a settlement is offered
+   * only where its own assisted_filing_allowed marker is true.
    */
   assistedFiling: () => on('ASSISTED_FILING_ENABLED'),
   /**
@@ -161,7 +162,7 @@ export const flags = {
    */
   payoutReport: () => on('PAYOUT_REPORT_ENABLED'),
   /**
-   * Public 15-percent-of-recovery fee on every ClaimMatch claim. Off: the
+   * Public 15-percent-of-recovery fee on every Lawsuit AI claim. Off: the
    * site keeps saying it is free during beta (counsel review still open).
    */
   feeDisclosure: () => on('FEE_DISCLOSURE_ENABLED'),
@@ -344,4 +345,12 @@ export const flags = {
    * tests or CI. Independent of MATCH_EMAILS_ENABLED.
    */
   matchAlertEmails: () => on('MATCH_ALERT_EMAILS_ENABLED'),
+  /**
+   * One-click filing (docs/designs/one-click-filing.md): the claim packet,
+   * Jev checks, the member's e-signature and filing through a channel the
+   * law firm enabled, with a status timeline. Off: every new route 404s, no
+   * new UI renders, nothing new is collected, and the 0037 to 0040 tables
+   * stay unused. Sent to the app (CLIENT_FLAG_NAMES).
+   */
+  oneClickFiling: () => on('ONE_CLICK_FILING_ENABLED'),
 };

@@ -60,7 +60,7 @@ async function handle(req: Request) {
           ? 'CLOSING_SOON_EMAIL_ENABLED is off'
           : closingReady.reason,
       resume:
-        'Set CLOSING_SOON_EMAIL_ENABLED=1 only after a ClaimMatch inbox, verified sender, and postal address exist (B2/B3).',
+        'Set CLOSING_SOON_EMAIL_ENABLED=1 only after a Lawsuit AI inbox, verified sender, and postal address exist (B2/B3).',
     };
   } else {
     const configProblem = serviceConfigProblem(process.env);

@@ -106,7 +106,7 @@ describe('deadline reminder email', () => {
     });
     expect(html).toContain('/unsubscribe');
     expect(html).toContain('Acme Settlement');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
     expect(html).toMatch(/Nov 12, 2026/);
     expect(html).not.toMatch(/thousands|users like you|99%/i);

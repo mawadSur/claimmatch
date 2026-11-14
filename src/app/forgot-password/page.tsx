@@ -4,7 +4,7 @@ import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
 export const metadata: Metadata = {
   title: 'Forgot your password?',
-  description: 'Get a link to reset your ClaimMatch password.',
+  description: 'Get a link to reset your Lawsuit AI password.',
 };
 
 export default async function ForgotPasswordPage({

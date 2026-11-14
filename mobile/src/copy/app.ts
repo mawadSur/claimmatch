@@ -3,7 +3,7 @@ import { defineCopy } from './types';
 /** App shell: tab labels, the update gate, the configuration error and not-found. */
 export const app = defineCopy({
   appName: {
-    text: 'ClaimMatch',
+    text: 'Lawsuit AI',
     source: 'src/components/SiteLogo.tsx',
   },
   tabSettlements: {
@@ -20,17 +20,17 @@ export const app = defineCopy({
   },
 
   updateRequiredTitle: {
-    text: 'Update ClaimMatch',
+    text: 'Update Lawsuit AI',
     source: 'plan 3.2 (minBuild update gate)',
     mobileOnly: true,
   },
   updateRequiredBodyIos: {
-    text: 'This version of ClaimMatch is no longer supported. Get the latest version from the App Store, then open the app again.',
+    text: 'This version of Lawsuit AI is no longer supported. Get the latest version from the App Store, then open the app again.',
     source: 'plan 3.2 (minBuild update gate)',
     mobileOnly: true,
   },
   updateRequiredBodyAndroid: {
-    text: 'This version of ClaimMatch is no longer supported. Get the latest version from Google Play, then open the app again.',
+    text: 'This version of Lawsuit AI is no longer supported. Get the latest version from Google Play, then open the app again.',
     source: 'plan 3.2 (minBuild update gate)',
     mobileOnly: true,
   },
@@ -45,7 +45,7 @@ export const app = defineCopy({
     mobileOnly: true,
   },
   configErrorBody: {
-    text: 'ClaimMatch needs these values to start. Add them to mobile/.env.local (see .env.example) or to the EAS environment, then rebuild the app.',
+    text: 'Lawsuit AI needs these values to start. Add them to mobile/.env.local (see .env.example) or to the EAS environment, then rebuild the app.',
     source: 'plan 4 (environment)',
     mobileOnly: true,
   },

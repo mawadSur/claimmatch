@@ -31,12 +31,12 @@ export function ReferralCard({
     <div className="rounded-2xl border border-brand-100 bg-brand-50 p-6">
       <div className="flex items-center gap-2 text-brand-700">
         <Gift className="h-5 w-5" />
-        <h2 className="text-lg font-bold">Share ClaimMatch</h2>
+        <h2 className="text-lg font-bold">Share Lawsuit AI</h2>
       </div>
       <p className="mt-1 text-sm text-ink-muted">
         Know someone who might qualify for a settlement? Send them your personal
         referral link. It keeps a ref code (and any UTMs) through signup.
-        ClaimMatch is free for them too, and they file on the official site themselves.
+        Lawsuit AI is free for them too, and they file on the official site themselves.
       </p>
 
       {link ? (

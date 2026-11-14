@@ -5,7 +5,7 @@ import { LAWSUIT_CATEGORIES } from './types';
 /**
  * LLM extraction pipeline. Turns unstructured settlement text (scraped from an
  * administrator site or aggregator) into a structured, machine-readable
- * ClaimMatch lawsuit record with a confidence score, using Claude Opus 4.8 with
+ * Lawsuit AI lawsuit record with a confidence score, using Claude Opus 4.8 with
  * adaptive thinking and a strict JSON schema (structured outputs).
  *
  * Degrades gracefully: if ANTHROPIC_API_KEY is unset it returns null so the
@@ -58,7 +58,7 @@ const EXTRACTION_SCHEMA = {
   ],
 } as const;
 
-const SYSTEM = `You are ClaimMatch's settlement data analyst. You read raw text from
+const SYSTEM = `You are Lawsuit AI's settlement data analyst. You read raw text from
 class-action settlement pages and extract a single, accurate, structured record.
 Rules:
 - Only extract real, currently-open class-action settlements. If the text is not

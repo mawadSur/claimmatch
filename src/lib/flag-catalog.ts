@@ -114,7 +114,7 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   },
   {
     env: 'FEE_DISCLOSURE_ENABLED',
-    description: 'Public recovery-share fee on every ClaimMatch claim.',
+    description: 'Public recovery-share fee on every Lawsuit AI claim.',
     read: () => flags.feeDisclosure(),
   },
   {
@@ -272,6 +272,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     env: 'AI_REFERRER_ATTRIBUTION_ENABLED',
     description: 'Classify ChatGPT / Perplexity / Bing / Gemini / Google first-touch and show an admin card.',
     read: () => flags.aiReferrerAttribution(),
+  },
+  {
+    env: 'ONE_CLICK_FILING_ENABLED',
+    description:
+      'One-click filing: claim packet, Jev checks, member e-signature and a law-firm-approved channel. Off: new routes 404 and nothing new is collected.',
+    read: () => flags.oneClickFiling(),
   },
 ];
 

@@ -14,12 +14,12 @@ export const onboarding = defineCopy({
     source: 'src/app/onboarding/page.tsx',
   },
   title: {
-    text: 'Welcome to ClaimMatch',
+    text: 'Welcome to Lawsuit AI',
     source: 'src/app/onboarding/page.tsx',
   },
   /** "{intro} {howItWorks}" above the steps; step 2 repeats {intro} alone (plan 5). */
   intro: {
-    text: 'ClaimMatch is a free claim assistant. It never files for you and never handles settlement payments.',
+    text: 'Lawsuit AI is a free claim assistant. It never files for you and never handles settlement payments.',
     source: 'src/app/onboarding/page.tsx',
   },
   howItWorks: {

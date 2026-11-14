@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { EXPLICIT_DELETE_ORDER } from '@/lib/account-deletion';
+import { CLAIM_DOCUMENTS_BUCKET } from '@/lib/filing/v2/contract-base';
 import { isJsonRequest } from '@/lib/json-request';
 import { rateLimit } from '@/lib/ratelimit';
 import { AUTH_UNAVAILABLE, getRequestUser } from '@/lib/supabase/request-user';
@@ -7,6 +8,34 @@ import { createServiceClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type ServiceClient = ReturnType<typeof createServiceClient>;
+
+/**
+ * One-click filing files (0037): proof uploads and filing screenshots live in
+ * the private claim-documents bucket under {user_id}/. Their claim_documents
+ * rows go with the account, and the retention sweep finds files only through
+ * those rows, so the files are removed first. Paths outside this user's
+ * folder are never touched. Never throws; failures are logged without paths.
+ */
+async function removeClaimDocumentFiles(svc: ServiceClient, userId: string): Promise<void> {
+  try {
+    const { data, error } = await svc.from('claim_documents').select('storage_path').eq('user_id', userId).limit(5000);
+    if (error) {
+      console.error('[account-delete] claim document read failed', { code: error.code });
+      return;
+    }
+    const paths = ((data ?? []) as Array<{ storage_path?: unknown }>)
+      .map((row) => row.storage_path)
+      .filter((path): path is string => typeof path === 'string' && path.startsWith(`${userId}/`));
+    for (let i = 0; i < paths.length; i += 100) {
+      const { error: removeError } = await svc.storage.from(CLAIM_DOCUMENTS_BUCKET).remove(paths.slice(i, i + 100));
+      if (removeError) console.error('[account-delete] claim document files not removed', { name: removeError.name });
+    }
+  } catch (err) {
+    console.error('[account-delete] claim document files not removed', { name: (err as Error)?.name });
+  }
+}
 
 /**
  * POST /api/account/delete — self-serve deletion. Body must be { confirm: "DELETE" }.
@@ -55,6 +84,8 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('[account-delete] audit failed', err);
   }
+
+  await removeClaimDocumentFiles(svc, user.id);
 
   // The profile is never deleted here: if deleteUser failed after that, the
   // user would keep a valid session with no profile row.

@@ -27,7 +27,7 @@ import { claimHref, claimRoute, isClaimHref, type ClaimHref } from '@/features/s
  * and account deletion removes it (cancelAllReminders), so the next account
  * on this device starts with reminders off.
  */
-export const REMINDERS_ENABLED_KEY = 'claimmatch-deadline-reminders';
+export const REMINDERS_ENABLED_KEY = 'lawsuitai-$1-reminders';
 /** Android notification channel for the reminders. */
 export const REMINDER_CHANNEL_ID = 'deadline-reminders';
 export const REMINDER_HOUR = 9;
@@ -52,7 +52,7 @@ export interface PlannedReminder {
   href: ClaimHref;
 }
 
-/** "{title}. Deadline {date}. If you qualify, file on the official site, then tell us in ClaimMatch." */
+/** "{title}. Deadline {date}. If you qualify, file on the official site, then tell us in Lawsuit AI." */
 export function reminderText(title: string, deadline: string): string {
   // A title ending in "Inc." must not give "Inc.. Deadline".
   const name = title.trim().replace(/[\s.]+$/, '');

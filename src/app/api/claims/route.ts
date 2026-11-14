@@ -29,7 +29,7 @@ function reply(body: unknown, status = 200, headers: Record<string, string> = {}
 /**
  * POST /api/claims: start tracking a settlement. Creates the signed-in user's
  * claim as "Not filed yet" (self_file) when they have none, or returns the one
- * they have. ClaimMatch files nothing: the user files on the official site and
+ * they have. Lawsuit AI files nothing: the user files on the official site and
  * reports it with PATCH /api/claims/[id].
  *
  *   { lawsuit_id }                          save it before filing: the settlement
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       return reply(
         {
           error:
-            'This page is out of date. Please refresh it. ClaimMatch does not file claims: you file on the official site, then tell us here.',
+            'This page is out of date. Please refresh it. Lawsuit AI does not file claims: you file on the official site, then tell us here.',
           code: 'gone',
         },
         410,

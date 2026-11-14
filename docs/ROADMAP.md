@@ -1,16 +1,16 @@
-# ClaimMatch roadmap
+# Lawsuit AI roadmap
 
 _Last updated 2026-10-16. This replaces the July 2026 roadmap, which no longer
 describes the product. Do not bring back copy or features from it._
 
 ## The product
 
-ClaimMatch is a free claim assistant for class-action settlements. People find
+Lawsuit AI is a free claim assistant for class-action settlements. People find
 settlements that are open for claims, check whether they qualify on the official
 notice, file on the official administrator's site themselves, and keep track of
-their claims in ClaimMatch.
+their claims in Lawsuit AI.
 
-- ClaimMatch never files or submits a claim for anyone and never handles
+- Lawsuit AI never files or submits a claim for anyone and never handles
   settlement money. Payments go from the administrator to the user. Not taking
   a cut of settlements is an internal position under review, not a public
   promise; monetization undecided (D4).
