@@ -46,13 +46,13 @@ const SingleAction = z.enum([
 ]);
 
 const SingleBodySchema = z.object({
-  id: z.string().uuid('A valid settlement id is required.'),
+  id: z.guid({ error: (iss) => (iss.code === 'invalid_format' ? 'A valid settlement id is required.' : undefined) }),
   action: SingleAction,
-  patch: z.record(z.unknown()).optional(),
+  patch: z.record(z.string(), z.unknown()).optional(),
 });
 
 const BulkBodySchema = z.object({
-  ids: z.array(z.string().uuid()).min(1, 'At least one settlement id is required.'),
+  ids: z.array(z.guid()).min(1, 'At least one settlement id is required.'),
   action: z.enum(['bulk_publish', 'bulk_reject']),
 });
 

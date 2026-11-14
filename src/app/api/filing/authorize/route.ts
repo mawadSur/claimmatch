@@ -16,8 +16,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const Body = z.object({
-  lawsuit_id: z.string().uuid(),
-  claim_id: z.string().uuid().optional().nullable(),
+  lawsuit_id: z.guid(),
+  claim_id: z.guid().optional().nullable(),
   accepted: z.literal(true),
   text_version: z.string().optional(),
 });

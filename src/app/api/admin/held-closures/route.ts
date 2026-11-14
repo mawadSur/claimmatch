@@ -17,7 +17,7 @@ const SingleSchema = z.object({
   action: z.enum(['approve', 'dismiss']),
   fingerprint: z.string().max(4000).optional(),
   changes: z.array(z.string()).optional(),
-  patch: z.record(z.unknown()).optional(),
+  patch: z.record(z.string(), z.unknown()).optional(),
 });
 
 const BulkSchema = z.object({

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 export const runtime = 'nodejs';
 
 const InviteSchema = z.object({
-  emails: z.array(z.string().email()).min(1).max(20),
+  emails: z.array(z.email()).min(1).max(20),
 });
 
 /** POST /api/referrals — record referral invites for the current user. */

@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const PatchBody = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   action: z.enum(['accept', 'reject', 'close', 'republish_verify']),
   notes: z.string().max(2000).optional(),
   fields: z
@@ -28,7 +28,7 @@ const PatchBody = z.object({
 });
 
 const PostBody = z.object({
-  lawsuitId: z.string().uuid().optional(),
+  lawsuitId: z.guid().optional(),
 });
 
 /**

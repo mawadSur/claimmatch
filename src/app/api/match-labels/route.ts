@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const Body = z.object({
-  lawsuit_id: z.string().uuid(),
+  lawsuit_id: z.guid(),
   label: z.string(),
   payout_amount: z.number().min(0).max(100000).optional().nullable(),
   score: z.number().min(0).max(1).optional().nullable(),
