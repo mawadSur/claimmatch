@@ -13,6 +13,10 @@ export interface StatusPanelProps {
   /** The time the screen's facts were read at (the response's `now`). */
   now: Date;
   fictional: boolean;
+  /** One-click claims: the filing status (displayClaimStatus doesn't know it). */
+  badge?: { label: string; tone: ClaimDisplay['tone'] } | null;
+  /** One-click filing on: the lane's note replaces the general one. */
+  note?: string;
 }
 
 function Label({ text }: { text: string }) {
@@ -28,7 +32,8 @@ function Label({ text }: { text: string }) {
  * StatusPanel), with the note that Lawsuit AI doesn’t file claims. A
  * fictional settlement shows its status only: there is nothing to file.
  */
-export function StatusPanel({ display, deadline, now, fictional }: StatusPanelProps) {
+export function StatusPanel({ display, deadline, now, fictional, badge, note }: StatusPanelProps) {
+  const shown = badge ?? display;
   if (fictional) {
     return (
       <Card style={styles.panel} testID="claim-status">
@@ -41,8 +46,8 @@ export function StatusPanel({ display, deadline, now, fictional }: StatusPanelPr
     <Card style={styles.panel} testID="claim-status">
       <View style={styles.item}>
         <Label text={copy.yourClaim.text} />
-        {display ? (
-          <ClaimStatusBadge label={display.label} tone={display.tone} />
+        {shown ? (
+          <ClaimStatusBadge label={shown.label} tone={shown.tone} />
         ) : (
           <Badge label={copy.notTrackingYet.text} tone="gray" />
         )}
@@ -57,7 +62,7 @@ export function StatusPanel({ display, deadline, now, fictional }: StatusPanelPr
           <Icon icon={ShieldCheck} size="sm" color="infoIcon" />
         </View>
         <AppText variant="caption" color="textMuted" style={styles.noteText}>
-          {copy.statusNote.text}
+          {note ?? copy.statusNote.text}
         </AppText>
       </View>
     </Card>

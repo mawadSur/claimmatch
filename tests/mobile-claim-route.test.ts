@@ -18,6 +18,8 @@ const h = vi.hoisted(() => {
     reads: [] as Read[],
     rateOk: true,
     rateCalls: [] as unknown[][],
+    oneClick: null as { canStart: boolean; view: unknown; accountEmail: string | null } | null,
+    oneClickCalls: [] as Record<string, unknown>[],
   };
   const client = (name: string) => ({
     from: (table: string) => {
@@ -81,6 +83,13 @@ vi.mock('@/lib/claims-server', async (importOriginal) => {
     logClaimsError: () => undefined,
   };
 });
+
+vi.mock('@/components/filing/claim-page-data', () => ({
+  loadOneClickClaimPage: async (args: Record<string, unknown>) => {
+    h.oneClickCalls.push(args);
+    return h.oneClick;
+  },
+}));
 
 vi.mock('@/lib/ratelimit', () => ({
   rateLimit: (key: string, options: unknown) => {
@@ -169,6 +178,8 @@ beforeEach(() => {
   h.reads = [];
   h.rateOk = true;
   h.rateCalls = [];
+  h.oneClick = null;
+  h.oneClickCalls = [];
 });
 
 afterEach(() => {
@@ -277,6 +288,7 @@ describe('GET /api/mobile/claim/[slug]: what it answers', () => {
       'context',
       'kind',
       'now',
+      'oneClick',
       'profile',
       'settlement',
       'slug',
@@ -322,5 +334,29 @@ describe('GET /api/mobile/claim/[slug]: what it answers', () => {
     const profileRead = h.reads.find((r) => r.table === 'profiles');
     expect(profileRead?.select).toBe(PACKET_PROFILE_COLUMNS);
     expect(profileRead?.select).not.toMatch(/attributes/);
+  });
+});
+
+describe('GET /api/mobile/claim/[slug]: one-click filing', () => {
+  it('sends oneClick null when the loader says one-click filing is off', async () => {
+    const body = await expectReply(await get(), 200);
+    expect(body.oneClick).toBeNull();
+    expect(h.oneClickCalls).toHaveLength(1);
+    expect(h.oneClickCalls[0]).toMatchObject({ userId: 'user-a', slug: 'real-settlement', lawsuitId: SETTLEMENT_ID });
+  });
+
+  it('sends only the start decision, never the filing view or the account email', async () => {
+    h.oneClick = { canStart: true, view: { secret: 'packet' }, accountEmail: 'ada@lawsuitai.org' };
+    const body = await expectReply(await get(), 200);
+    expect(body.oneClick).toEqual({ canStart: true });
+    expect(JSON.stringify(body.oneClick)).not.toMatch(/packet|ada@/);
+  });
+
+  it('never asks for a closed settlement', async () => {
+    h.lookup = { ok: true, settlement: settlement({ deadline: '2026-08-01' }) };
+    h.claimRow = null;
+    const body = await expectReply(await get(), 200);
+    expect(body.kind).toBe('closed');
+    expect(h.oneClickCalls).toEqual([]);
   });
 });

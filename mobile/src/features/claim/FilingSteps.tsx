@@ -40,7 +40,7 @@ function Muted({ children }: { children: ReactNode }) {
 }
 
 /** One numbered step: the number and title, then the step's content. */
-function Step({ n, title, children, testID }: { n: number; title: string; children: ReactNode; testID?: string }) {
+export function NumberedStep({ n, title, children, testID }: { n: number; title: string; children: ReactNode; testID?: string }) {
   return (
     <Card style={styles.step} testID={testID}>
       <View style={styles.stepHeader}>
@@ -96,6 +96,12 @@ export interface FilingStepsProps {
   claim: ClaimView | null;
   profile: PacketProfile | null;
   onChange: OnClaimChange;
+  /** One-click filing on: Step 2 is "Finish on the official site" (the web's stepTwoTitle). */
+  stepTwoTitle?: string;
+  /** Why Lawsuit AI can't file this claim, at the top of Step 2. */
+  stepTwoLead?: readonly string[];
+  /** A claim prepared in Lawsuit AI and now self-filed: its answers to copy, in Step 2. */
+  prepared?: ReactNode;
 }
 
 /**
@@ -107,7 +113,16 @@ export interface FilingStepsProps {
  * Assisted filing (ASSISTED_FILING_ENABLED) is not in the app (plan 7, item
  * 6): Step 2 is always the self-file step, which never says Lawsuit AI files.
  */
-export function FilingSteps({ settlement, context, claim, profile, onChange }: FilingStepsProps) {
+export function FilingSteps({
+  settlement,
+  context,
+  claim,
+  profile,
+  onChange,
+  stepTwoTitle,
+  stepTwoLead = [],
+  prepared,
+}: FilingStepsProps) {
   const router = useRouter();
   const targets = useFlowTargetsApi();
   const openOfficialForm = useOfficialFormOpener(() => targets?.reveal('step3'));
@@ -115,7 +130,7 @@ export function FilingSteps({ settlement, context, claim, profile, onChange }: F
 
   return (
     <>
-      <Step n={1} title={copy.step1Title.text} testID="claim-step-1">
+      <NumberedStep n={1} title={copy.step1Title.text} testID="claim-step-1">
         {settlement.eligibility ? (
           <View style={styles.tight}>
             <Muted>{copy.listingSays.text}</Muted>
@@ -141,9 +156,12 @@ export function FilingSteps({ settlement, context, claim, profile, onChange }: F
             {copy.notChecked.text}
           </AppText>
         </View>
-      </Step>
+      </NumberedStep>
 
-      <Step n={2} title={copy.step2Title.text} testID="claim-step-2">
+      <NumberedStep n={2} title={stepTwoTitle ?? copy.step2Title.text} testID="claim-step-2">
+        {stepTwoLead.map((reason) => (
+          <Muted key={reason}>{reason}</Muted>
+        ))}
         {officialUrl ? (
           <View style={styles.tight}>
             <Button
@@ -180,11 +198,12 @@ export function FilingSteps({ settlement, context, claim, profile, onChange }: F
         <Panel>
           <Muted>{copy.filingIsFree.text}</Muted>
         </Panel>
+        {prepared}
         <PrefillPacket profile={profile} formFieldOrder={settlement.formFieldOrder} />
-      </Step>
+      </NumberedStep>
 
       <FlowTarget name="step3" testID="claim-step-3-target">
-        <Step n={3} title={copy.step3Title.text} testID="claim-step-3">
+        <NumberedStep n={3} title={copy.step3Title.text} testID="claim-step-3">
           <View style={styles.tight}>
             <Muted>{copy.keepTogether.text}</Muted>
             <TextLink label={copy.goToYourClaims.text} onPress={() => router.dismissTo('/dashboard')} />
@@ -196,7 +215,7 @@ export function FilingSteps({ settlement, context, claim, profile, onChange }: F
             allowSave={context.openForClaims}
             onChange={onChange}
           />
-        </Step>
+        </NumberedStep>
       </FlowTarget>
     </>
   );

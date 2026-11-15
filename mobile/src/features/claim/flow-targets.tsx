@@ -15,12 +15,13 @@ import {
  * - 'step3': Step 3, when the official site's browser closes after Step 2.
  * - 'announcement': the "Saved…" confirmation after every claim change.
  * - 'yourClaim': the "Your claim" card, focused when a report succeeds.
+ * - 'filingNeed': one-click Step "What we still need", for "Change" in Review and sign.
  *
  * Each FlowTarget must be a direct child of the scroll view's content, so its
  * layout y is its offset in the content. A target that is not laid out yet
  * is scrolled to (and focused) as soon as it is.
  */
-export type FlowTargetName = 'announcement' | 'yourClaim' | 'step3';
+export type FlowTargetName = 'announcement' | 'yourClaim' | 'step3' | 'filingNeed';
 
 export interface FlowTargets {
   /** Scrolls `target` to the top of the visible area and moves focus to `focus` (if any). */

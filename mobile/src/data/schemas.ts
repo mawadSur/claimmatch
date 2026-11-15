@@ -170,6 +170,8 @@ const claimScreenSchema = z.discriminatedUnion('kind', [
     context: settlementContextSchema,
     claim: claimViewSchema.nullable(),
     profile: packetProfileSchema.nullable(),
+    // Absent from older servers; null while ONE_CLICK_FILING_ENABLED is off.
+    oneClick: z.object({ canStart: z.boolean() }).nullable().optional(),
   }),
 ]);
 

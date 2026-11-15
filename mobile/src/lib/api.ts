@@ -91,6 +91,11 @@ export interface RequestOptions<T> {
   /** Validates a 2xx JSON body, for example a zod schema's `parse`. Throwing makes the request fail. */
   parse?: (json: unknown) => T;
   signal?: AbortSignal;
+  /**
+   * Extra request headers, such as the filing API's Idempotency-Key. They
+   * never replace Accept, Content-Type or Authorization.
+   */
+  headers?: Readonly<Record<string, string>>;
 }
 
 export interface ApiClient {
@@ -226,11 +231,15 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     const useAuth = opts.auth ?? true;
     const method = opts.method ?? (opts.body === undefined ? 'GET' : 'POST');
     const body = opts.body === undefined ? undefined : JSON.stringify(opts.body);
+    const extraHeaders = Object.fromEntries(
+      Object.entries(opts.headers ?? {}).filter(([name]) => !/^(?:accept|content-type|authorization)$/i.test(name)),
+    );
     // A fresh RequestInit per attempt, so a retry never shares headers with the first try.
     const init = (token?: string): RequestInit => ({
       method,
       body,
       headers: {
+        ...extraHeaders,
         Accept: 'application/json',
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : null),
