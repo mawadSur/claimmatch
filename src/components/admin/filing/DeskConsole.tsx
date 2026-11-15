@@ -78,6 +78,11 @@ function QueueTable({
             <tr key={job.id}>
               <td className="px-3 py-2 font-medium text-ink">
                 {job.settlement_title}
+                {job.is_test ? (
+                  <span className="ml-2 align-middle">
+                    <Badge tone="gold" title="One-click test-mode job: sent only to the test inbox">TEST</Badge>
+                  </span>
+                ) : null}
                 {job.needs_attention_reason ? <p className="font-mono text-xs text-ink-muted">{job.needs_attention_reason}</p> : null}
               </td>
               <td className="px-3 py-2 text-ink-muted">{formatDay(job.deadline)}</td>
@@ -237,6 +242,12 @@ export function DeskConsole({
               ) : null}
             </div>
           </div>
+          {job.job.is_test ? (
+            <Notice tone="warn">
+              <strong>TEST JOB.</strong> Made in one-click test mode by an internal tester. It is not a real claim: never file it on
+              a real official site. Its emails go only to the test inbox.
+            </Notice>
+          ) : null}
           <div className="grid gap-6 xl:grid-cols-[3fr,2fr]">
             <DeskPacket view={job} now={now} />
             <div className="space-y-4">

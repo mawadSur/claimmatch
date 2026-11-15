@@ -104,7 +104,7 @@ language sql immutable as $$
                'staff_roles', 'filing_policies', 'filing_controls', 'filing_specs',
                'claim_packets', 'claim_documents', 'esign_consents', 'claim_signatures',
                'claim_signature_voids', 'jev_runs', 'filing_export_batches',
-               'claim_filing_jobs', 'filing_audit_log']
+               'claim_filing_jobs', 'filing_audit_log', 'filing_legal_record_archive']
 $$;
 
 -- For each protected table, the row count and an md5 of every row, read as

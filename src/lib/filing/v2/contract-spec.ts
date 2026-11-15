@@ -411,6 +411,20 @@ export interface FilingPolicyRecord extends FilingPolicyContent {
   approved_at: string | null;
 }
 
+/**
+ * The desk's rule for checks on the official form, per settlement (0045,
+ * founder decision on issue #52). 'stop' (default): any check keeps the desk
+ * off and is a hard stop while filing. 'staff_completes_captcha': a desk
+ * agent, a person in their own normal browser, may complete a CAPTCHA the
+ * site shows them; emailed or texted codes, identity checks and account logins
+ * still stop. Nothing in code ever sees, solves or relays a challenge.
+ * Only a legal_reviewer loosens it (0045 trigger, CM006).
+ */
+export const DESK_CHALLENGE_MODES = ['stop', 'staff_completes_captcha'] as const;
+export type DeskChallengeMode = (typeof DESK_CHALLENGE_MODES)[number];
+/** The only checks 'staff_completes_captcha' lets the desk complete. */
+export const STAFF_COMPLETABLE_CHALLENGES: readonly OfficialFormChallenge[] = ['captcha'];
+
 /** filing_controls: effective at once, no approval. */
 export interface FilingControlsRecord {
   lawsuit_id: string | null;
@@ -418,6 +432,8 @@ export interface FilingControlsRecord {
   kill_switch: boolean;
   kill_switch_reason: string | null;
   objection_received_at: string | null;
+  /** Settlement rows only (0045); absent or unknown reads as 'stop'. */
+  desk_challenge_mode?: DeskChallengeMode;
 }
 
 /**
@@ -443,6 +459,8 @@ export interface EffectiveFilingPolicy {
   kill_switch: boolean;
   kill_switch_scope: 'settlement' | 'administrator' | null;
   objection_received_at: string | null;
+  /** From the settlement's controls row only; 'stop' unless a legal_reviewer changed it. */
+  desk_challenge_mode: DeskChallengeMode;
 }
 
 /** The safe default: no approved policy, nothing in force, self_file. */
@@ -460,4 +478,5 @@ export const DEFAULT_EFFECTIVE_POLICY: EffectiveFilingPolicy = {
   kill_switch: false,
   kill_switch_scope: null,
   objection_received_at: null,
+  desk_challenge_mode: 'stop',
 };

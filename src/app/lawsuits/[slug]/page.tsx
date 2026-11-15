@@ -45,6 +45,7 @@ import {
   settlementPath,
 } from '@/lib/settlement-seo';
 import { flags } from '@/lib/flags';
+import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { settlementOgImagePath } from '@/lib/site-metadata';
 import { deadlineUrgencyLabel, formatDeadline, isDeadlinePassed, SITE } from '@/lib/utils';
 import { AddToCalendarLink } from '@/components/settlement/AddToCalendarLink';
@@ -133,6 +134,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function LawsuitDetailPage({ params }: Params) {
   const { slug } = await params;
+  // The one-click test settlement has no public page (testers open /claim/<slug>).
+  if (isTestSettlementSlug(slug)) notFound();
   const result = await lookupLawsuitBySlug(slug);
   if (result.status === 'missing') notFound();
   if (result.status === 'error') {

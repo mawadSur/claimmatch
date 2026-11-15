@@ -31,7 +31,8 @@ export function DeskRules() {
         </li>
         <li>
           If the site shows a CAPTCHA, a code by email or text, an identity check or a login, stop. Do not solve it
-          or ask anyone to. Record “Stopped at a check”: the member finishes on the official site.
+          or ask anyone to. Record “Stopped at a check”: the member finishes on the official site. The one exception
+          is a CAPTCHA on a settlement whose job screen says the law firm allows you to complete it yourself.
         </li>
         <li>
           Send only what the member signed. Never add, change or guess an answer, and never enter bank, card or
@@ -86,6 +87,24 @@ function DocumentRow({ doc }: { doc: DeskPacketView['documents'][number] }) {
  * pre-send check, every field in the official form's order with a copy
  * button, the proof documents and the member's e-signature block.
  */
+/**
+ * The settlement's challenge rule (0045). 'stop' adds nothing to the desk
+ * rules; the loosened rule is spelled out with its limits on every job.
+ */
+export function ChallengeRule({ mode }: { mode: DeskPacketView['challenge_mode'] }) {
+  if (mode !== 'staff_completes_captcha') return null;
+  return (
+    <Notice tone="warn">
+      <p className="font-semibold">CAPTCHA rule for this settlement</p>
+      <p>
+        The law firm allows you to complete a CAPTCHA this official site shows you, yourself, by hand, in your own
+        browser. Never use a tool, extension or service for it, and never ask anyone else to. A code by email or
+        text, an identity check or a login is still a hard stop: record “Stopped at a check”.
+      </p>
+    </Notice>
+  );
+}
+
 export function DeskPacket({ view, now }: { view: DeskPacketView; now: Date }) {
   const formUrl = httpsUrl(view.settlement.official_form_url);
   const blocked = view.checks.outcome === 'block';
@@ -123,6 +142,7 @@ export function DeskPacket({ view, now }: { view: DeskPacketView; now: Date }) {
           ) : (
             <Notice tone="danger">This claim has no usable official form link. Record “Not submitted” and tell the team.</Notice>
           )}
+          <ChallengeRule mode={view.challenge_mode} />
           {view.instructions ? (
             <div className="rounded-lg bg-gray-50 p-3 text-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Instructions</p>

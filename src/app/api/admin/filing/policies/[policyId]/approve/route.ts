@@ -1,5 +1,6 @@
 import { policyContentOf, POLICY_SELECT } from '@/lib/filing/channels/policy';
 import { ApproveRequestSchema } from '@/lib/filing/v2/contract-staff';
+import { policyApprovalProblems } from '@/lib/filing/v2/approval-checks';
 import { FilingPolicyContentSchema } from '@/lib/filing/v2/contract-spec';
 import { canApproveFilingConfig, recordStaffAccess } from '@/lib/staff-roles';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -14,7 +15,8 @@ export const dynamic = 'force-dynamic';
  * POST /api/admin/filing/policies/{policyId}/approve: legal_reviewer only.
  * The previous approved version of the target is superseded. Records the
  * reviewer, the time, the notes and the documents reviewed (filing_approve_policy).
- * A draft edited after the reviewer read it (expected_updated_at) is refused.
+ * A draft edited after the reviewer read it (expected_updated_at) is refused,
+ * and so is one whose enabled channels lack their checks (approval-checks.ts).
  */
 export async function POST(req: Request, { params }: { params: Promise<{ policyId: string }> }) {
   const auth = await guard(req, canApproveFilingConfig);
@@ -32,6 +34,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ policyI
   if (changed) return changed;
   const content = FilingPolicyContentSchema.safeParse(policyContentOf(row as Record<string, unknown>));
   if (!content.success) return fail('spec_invalid', { fields: zodFields(content.error) });
+  // Checklist item 12: a claims address verified at its source; an agreement before bulk or API filing.
+  const problems = policyApprovalProblems(content.data, body.data.documents_reviewed);
+  if (problems.length) return fail('spec_invalid', { fields: problems });
   const { data, error } = await svc.rpc('filing_approve_policy', {
     p_policy_id: id.id,
     p_reviewer_id: auth.staff.id,

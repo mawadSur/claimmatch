@@ -1,7 +1,8 @@
 import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
-import { FICTIONAL_SLUGS, isFictionalSlug } from './fictional-slugs';
+import { isFictionalSlug } from './fictional-slugs';
+import { LIST_HIDDEN_SLUGS } from './test-settlements';
 import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
 import {
   applySettlementGuide,
@@ -95,7 +96,7 @@ export async function lookupLawsuits(
       // Also every guided slug, whatever its feed deadline says: the official
       // deadline replaces it below, before the open rule decides.
       .or(catalogDeadlineFilter(now))
-      .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
+      .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`)
       // Known deadlines first (soonest), then rows with no deadline.
       .order('deadline', { ascending: true, nullsFirst: false })
       .order('is_featured', { ascending: false });
@@ -199,7 +200,7 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
       .from('lawsuits')
       .select('*')
       .eq('review_status', 'published')
-      .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
+      .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`)
       .order('deadline', { ascending: true, nullsFirst: false })
       .limit(1000);
     if (error) {

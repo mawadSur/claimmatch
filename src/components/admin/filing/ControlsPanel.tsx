@@ -6,6 +6,7 @@ import { KillSwitchRequestSchema, ObjectionRequestSchema, type FilingTarget } fr
 import { AnySuccessSchema, staffJson, staffPaths, type ApiError, type FieldIssue } from './api';
 import { formatDateTime, localInputToIso } from './format';
 import { zodIssues } from './forms';
+import { DeskChallengeCard } from './DeskChallengeCard';
 import type { ControlsView, FilingPermissions, SettlementSummary } from './types';
 import { AreaField, Badge, ErrorNote, FieldIssues, Notice, Panel, TextField } from './ui';
 
@@ -217,6 +218,12 @@ export function ControlsPanel({
           <ControlsCard key={t.key} permissions={permissions} control={t} onChanged={onChanged} />
         ))}
       </div>
+      <DeskChallengeCard
+        permissions={permissions}
+        lawsuitId={summary.lawsuit_id}
+        view={targets.find((t) => t.key === 'settlement')?.view ?? null}
+        onChanged={onChanged}
+      />
       {targets.some((t) => t.view?.objection_received_at) ? (
         <Notice tone="warn" className="mt-4">
           An objection is on record. Agent filing stays off until a legal reviewer clears it.

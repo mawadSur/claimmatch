@@ -86,13 +86,20 @@ export function laneTitle(lane: LaneView | null): string {
  * offered, or a signed claim on its way); otherwise the self-file note.
  */
 export function claimPageNote(args: { status: string | null; lane: LaneView | null; offerStart: boolean }): string {
+  return claimFiledByLawsuitAi(args) ? ONE_CLICK_AGENT_NOTE : ONE_CLICK_SELF_FILE_NOTE;
+}
+
+/**
+ * Lawsuit AI files (or offers to file) this claim: signed and later on an
+ * agent lane, being prepared on one, or offered one-click on one. Decides the
+ * claim page's note, its disclaimer and PrefillPacket's lead (checklist item 13).
+ */
+export function claimFiledByLawsuitAi(args: { status: string | null; lane: LaneView | null; offerStart: boolean }): boolean {
   const { status, lane, offerStart } = args;
   const agentLane = Boolean(lane?.agent && isAgentLane(lane.lane));
-  if (status === 'signed' || status === 'queued' || status === 'filing' || status === 'filed_by_claimmatch') {
-    return ONE_CLICK_AGENT_NOTE;
-  }
-  if (status && isIntakeStatus(status)) return agentLane ? ONE_CLICK_AGENT_NOTE : ONE_CLICK_SELF_FILE_NOTE;
-  return offerStart && agentLane ? ONE_CLICK_AGENT_NOTE : ONE_CLICK_SELF_FILE_NOTE;
+  if (status === 'signed' || status === 'queued' || status === 'filing' || status === 'filed_by_claimmatch') return true;
+  if (status && isIntakeStatus(status)) return agentLane;
+  return offerStart && agentLane;
 }
 
 /** What happens after signing on this lane; null on self_file. */

@@ -19,6 +19,7 @@ import { FilingSpecContentSchema } from '../v2/contract-spec';
 import { formatCalendarDate } from './dates';
 import { orderedPacketFields } from './packet-fields';
 import { signedAtText } from './administrator-email';
+import { noticeAllowed } from './test-mode';
 
 const BRAND_COLOR = '#7526d1';
 
@@ -212,6 +213,9 @@ export async function notifyMember(event: MemberNoticeEvent): Promise<boolean> {
     ]);
     const to = typeof profile?.email === 'string' ? profile.email.trim() : '';
     if (!to.includes('@') || !lawsuit) return false;
+    // Test mode: internal testers only, and the subject says it is a test.
+    const allowed = noticeAllowed(to);
+    if (!allowed.send) return false;
     const signed = event.kind === 'queued' && event.signatureId ? await signedCopy(svc, event.signatureId) : null;
     const rendered = renderNotice(
       noticeCopy(event.kind, {
@@ -227,6 +231,7 @@ export async function notifyMember(event: MemberNoticeEvent): Promise<boolean> {
     const sent = await sendTransactionalEmail({
       to,
       ...rendered,
+      ...(allowed.subjectPrefix ? { subject: `${allowed.subjectPrefix} ${rendered.subject}` } : {}),
       idempotencyKey: `notice:${event.kind}:${event.eventId}`,
     });
     if (sent.status !== 'sent') {

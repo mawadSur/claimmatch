@@ -83,11 +83,16 @@ import {
   ONE_CLICK_SELF_FILE_NOTE,
 } from '@/lib/copy';
 import { CLAIM_ID, DESK_LANE, LAWSUIT_ID, SELF_FILE_LANE, filingView, readyView } from './filing-ui-fixtures';
+import { CLAIM_AGENT_LEGAL_SENTENCE, PREFILL_AGENT_LANE_NOTE } from '@/lib/copy';
+import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
+import { claimLegalDisclaimer, legalDisclaimer } from '@/lib/disclaimer-flags';
+import { claimFiledByLawsuitAi } from '@/components/filing/filing-model';
 
 const NOW = new Date('2026-11-12T15:00:00Z');
 const OFFICIAL = 'https://www.widget-admin.com/claim';
 const LEGACY_NOTE = 'Lawsuit AI doesn’t file claims for you';
 const escape = (s: string) => s.replace(/&/g, '&amp;');
+const escapeQuotes = (s: string) => escape(s).replace(/'/g, '&#x27;');
 
 function settlementRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -306,5 +311,57 @@ describe('ClaimFlow with one-click data', () => {
     expect(html).toContain(ONE_CLICK_COPY.actions.reopen);
     expect(html).not.toContain('Open the official claim form');
     expect(html).not.toContain('Tell us when you’ve filed');
+  });
+});
+
+describe('per-claim disclaimers (go-live checklist item 13)', () => {
+  const SELF_FILE_PACKET_NOTE = 'Lawsuit AI never files for you.';
+
+  it('flag off: the site-wide disclaimer and packet note, word for word', async () => {
+    const html = await render();
+    expect(html).toContain(escapeQuotes(LEGAL_DISCLAIMER));
+    expect(html).toContain(SELF_FILE_PACKET_NOTE);
+    expect(html).not.toContain(CLAIM_AGENT_LEGAL_SENTENCE);
+  });
+
+  it('flag on, an agent lane offered: says Lawsuit AI files this claim, in the disclaimer and the packet', async () => {
+    vi.stubEnv('ONE_CLICK_FILING_ENABLED', '1');
+    const html = await render();
+    expect(html).toContain(CLAIM_AGENT_LEGAL_SENTENCE);
+    expect(html).toContain(PREFILL_AGENT_LANE_NOTE);
+    expect(html).not.toContain(SELF_FILE_PACKET_NOTE);
+    expect(html).not.toContain('does not file, submit or sign claims for anyone');
+  });
+
+  it('flag on, the self-file lane: unchanged site text, never the agent sentence', async () => {
+    vi.stubEnv('ONE_CLICK_FILING_ENABLED', '1');
+    h.preview.mockResolvedValue(new Map([[LAWSUIT_ID, SELF_FILE_LANE]]));
+    const html = await render();
+    expect(html).not.toContain(CLAIM_AGENT_LEGAL_SENTENCE);
+    expect(html).toContain(escapeQuotes(legalDisclaimer()));
+    expect(html).toContain(SELF_FILE_PACKET_NOTE);
+  });
+
+  it('claimLegalDisclaimer swaps only the filing sentence, only with the flag on', () => {
+    expect(claimLegalDisclaimer(false, true, true)).toBe(legalDisclaimer(undefined, true));
+    expect(claimLegalDisclaimer(true, false, true)).toBe(legalDisclaimer(undefined, true));
+    const agent = claimLegalDisclaimer(true, true, true);
+    expect(agent).toContain(CLAIM_AGENT_LEGAL_SENTENCE);
+    expect(agent.replace(CLAIM_AGENT_LEGAL_SENTENCE, '')).toBe(
+      LEGAL_DISCLAIMER.replace('Lawsuit AI does not file, submit or sign claims for anyone, and it never receives or handles settlement payments.', ''),
+    );
+    expect(claimLegalDisclaimer(true, true, false)).toContain('a claim assistant, not a law firm');
+  });
+
+  it('claimFiledByLawsuitAi: signed and later, or an agent lane being prepared or offered', () => {
+    for (const status of ['signed', 'queued', 'filing', 'filed_by_claimmatch']) {
+      expect(claimFiledByLawsuitAi({ status, lane: SELF_FILE_LANE, offerStart: false })).toBe(true);
+    }
+    expect(claimFiledByLawsuitAi({ status: 'preparing', lane: DESK_LANE, offerStart: false })).toBe(true);
+    expect(claimFiledByLawsuitAi({ status: 'preparing', lane: SELF_FILE_LANE, offerStart: false })).toBe(false);
+    expect(claimFiledByLawsuitAi({ status: null, lane: DESK_LANE, offerStart: true })).toBe(true);
+    expect(claimFiledByLawsuitAi({ status: null, lane: DESK_LANE, offerStart: false })).toBe(false);
+    expect(claimFiledByLawsuitAi({ status: 'self_file', lane: DESK_LANE, offerStart: false })).toBe(false);
+    expect(claimFiledByLawsuitAi({ status: 'submitted', lane: DESK_LANE, offerStart: false })).toBe(false);
   });
 });

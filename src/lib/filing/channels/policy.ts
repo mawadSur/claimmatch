@@ -9,6 +9,7 @@ import {
   DEFAULT_EFFECTIVE_POLICY,
   FilingPolicyContentSchema,
   type ChannelConfig,
+  type DeskChallengeMode,
   type EffectiveFilingPolicy,
   type FilingControlsRecord,
   type FilingPolicyRecord,
@@ -58,6 +59,7 @@ export function resolvePolicyLevels(input: PolicyLevels): EffectiveFilingPolicy 
     kill_switch_scope: killSettlement ? ('settlement' as const) : killAdmin ? ('administrator' as const) : null,
     objection_received_at:
       input.settlementControls?.objection_received_at ?? input.administratorControls?.objection_received_at ?? null,
+    desk_challenge_mode: deskChallengeModeOf(input.settlementControls?.desk_challenge_mode),
   };
   const feeStatus = ['unknown', 'allowed', 'barred'].includes(input.thirdPartyFeeStatus)
     ? input.thirdPartyFeeStatus
@@ -137,6 +139,11 @@ export function policyRecordFromRow(
   return { ...FilingPolicyContentSchema.parse({}), agent_filing: 'prohibited', ...meta };
 }
 
+/** Anything but the one loosened value reads as 'stop'. */
+export function deskChallengeModeOf(value: unknown): DeskChallengeMode {
+  return value === 'staff_completes_captcha' ? 'staff_completes_captcha' : 'stop';
+}
+
 /** A filing_controls row as a record (absent fields are "off"). */
 export function controlsRecordFromRow(row: Record<string, unknown> | null | undefined): FilingControlsRecord | null {
   if (!row) return null;
@@ -146,5 +153,6 @@ export function controlsRecordFromRow(row: Record<string, unknown> | null | unde
     kill_switch: row.kill_switch === true,
     kill_switch_reason: typeof row.kill_switch_reason === 'string' ? row.kill_switch_reason : null,
     objection_received_at: typeof row.objection_received_at === 'string' ? row.objection_received_at : null,
+    desk_challenge_mode: deskChallengeModeOf(row.desk_challenge_mode),
   };
 }

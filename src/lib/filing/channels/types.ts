@@ -64,6 +64,12 @@ export interface FilingJobRecord {
   closed_at: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * 0046: created in one-click test mode. Sent only to ONE_CLICK_TEST_INBOX,
+   * never to an administrator, never in a real bulk export. Absent on rows
+   * read before 0046 (counts as false).
+   */
+  is_test?: boolean;
 }
 
 /** The member's e-signature block, as sent with a claim (typed name, time, packet hash). */
@@ -104,6 +110,12 @@ export interface ChannelSubmitInput<C extends AgentChannel = AgentChannel> {
   documents: ChannelDocument[];
   settlement: { id: string; title: string; deadline: string | null };
   now: Date;
+  /**
+   * Test mode or a test job (src/lib/filing/channels/test-mode.ts): the only
+   * address an email may go to, and whether the member's copy may be sent
+   * (only to an INTERNAL_EMAILS tester). Absent: a real send.
+   */
+  sandbox?: { inbox: string; memberCopy: boolean };
 }
 
 /**

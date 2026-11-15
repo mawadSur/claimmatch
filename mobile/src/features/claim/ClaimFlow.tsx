@@ -8,9 +8,11 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
-import { AppText, Card, Divider, Notice } from '@/components/ui';
+import { AppText, Card, Divider, Notice, Skeleton } from '@/components/ui';
 import { checkOnClaimSentence, claim as copy } from '@/copy/claim';
+import { filing as filingCopy } from '@/copy/filing';
 import type { FlowClaimScreen } from '@/data/claims';
+import { FilingTimeline, OneClickEntry, OneClickFiling, PreparedAnswers, hasOneClickHistory, useOneClick } from '@/features/filing';
 import { ExternalTextLink } from '@/features/shared';
 import { space } from '@/theme/tokens';
 
@@ -34,11 +36,14 @@ function YourClaimCard({
   context,
   claim,
   onChange,
+  history,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
   claim: ClaimView;
   onChange: OnClaimChange;
+  /** The one-click history of a claim that went through one-click filing. */
+  history?: ReactNode;
 }) {
   const headingRef = useFocusNode('yourClaim');
   return (
@@ -51,6 +56,7 @@ function YourClaimCard({
           </AppText>
         </View>
         <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+        {history}
         {settlement.officialUrl ? (
           <View style={styles.tight}>
             <Divider />
@@ -92,6 +98,10 @@ export function ClaimFlow({ data, claimAtLoad }: ClaimFlowProps) {
     if (!message) return;
     setAnnouncement({ message, focus: options?.reported ? 'yourClaim' : 'announcement' });
   }, []);
+  const announce = useCallback((message: string) => setAnnouncement({ message, focus: 'announcement' }), []);
+  // One-click filing (ONE_CLICK_FILING_ENABLED): null while it is off, and the screen is as before.
+  const oc = useOneClick(data, announce);
+  const history = oc?.view && hasOneClickHistory(oc.view) ? <FilingTimeline entries={oc.view.timeline} /> : null;
 
   // Show the confirmation and move focus: to the "Your claim" card after a
   // report (whose form is gone), else to the confirmation itself.
@@ -123,8 +133,16 @@ export function ClaimFlow({ data, claimAtLoad }: ClaimFlowProps) {
         onAnswered={onChange}
       />
     );
+  } else if (oc?.active) {
+    body = oc.view ? (
+      <OneClickFiling view={oc.view} onView={oc.onView} />
+    ) : oc.loadFailed ? (
+      <Notice tone="error" body={filingCopy.loadFailed.text} testID="filing-load-failed" />
+    ) : (
+      <Skeleton height={160} />
+    );
   } else if (claim && reported) {
-    body = <YourClaimCard settlement={settlement} context={context} claim={claim} onChange={onChange} />;
+    body = <YourClaimCard settlement={settlement} context={context} claim={claim} onChange={onChange} history={history} />;
   } else if (context.deadlinePassed || (!claimAtLoad && !context.openForClaims)) {
     // After the deadline; or, with no claim when the screen loaded, a listing
     // our list marks closed (D41: still being re-checked). Keyed on the claim
@@ -134,14 +152,38 @@ export function ClaimFlow({ data, claimAtLoad }: ClaimFlowProps) {
     body = (
       <>
         <Caveat context={context} />
-        <FilingSteps settlement={settlement} context={context} claim={claim} profile={profile} onChange={onChange} />
+        {oc?.offerStart ? <OneClickEntry lawsuitId={settlement.id} lane={oc.lane} onStarted={oc.onView} /> : null}
+        <FilingSteps
+          settlement={settlement}
+          context={context}
+          claim={claim}
+          profile={profile}
+          onChange={onChange}
+          stepTwoTitle={oc ? filingCopy.selfFileTitle.text : undefined}
+          stepTwoLead={oc?.reasons}
+          prepared={
+            oc?.handedBack ? (
+              <>
+                <PreparedAnswers view={oc.handedBack} />
+                {hasOneClickHistory(oc.handedBack) ? <FilingTimeline entries={oc.handedBack.timeline} /> : null}
+              </>
+            ) : null
+          }
+        />
       </>
     );
   }
 
   return (
     <>
-      <StatusPanel display={display} deadline={settlement.deadline} now={now} fictional={context.fictional} />
+      <StatusPanel
+        display={display}
+        deadline={settlement.deadline}
+        now={now}
+        fictional={context.fictional}
+        badge={oc?.badge}
+        note={oc?.note}
+      />
       {announcement ? (
         <FlowTarget
           name="announcement"

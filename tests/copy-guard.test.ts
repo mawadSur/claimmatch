@@ -161,6 +161,11 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'One-click filing (ONE_CLICK_FILING_ENABLED=1): agent-lane wording, shown only for a claim whose settlement has a filing channel the law firm enabled.' },
   { file: 'src/lib/copy.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
     reason: 'One-click filing: the filed_by_claimmatch status, true for that claim; it never reads “Submitted” until the administrator’s number arrives.' },
+  // mobile/src/copy/filing.ts: the app's verbatim copies of the two src/lib/copy.ts entries above (issue #51).
+  { file: 'mobile/src/copy/filing.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
+    reason: 'App copy of ONE_CLICK_AGENT_TITLE / ONE_CLICK_AGENT_NOTE, shown only for an agent-lane claim while ONE_CLICK_FILING_ENABLED=1.' },
+  { file: 'mobile/src/copy/filing.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
+    reason: 'App copy of ONE_CLICK_FILED_LABEL: the filed_by_claimmatch status, true for that claim.' },
 ];
 
 const NEGATION =

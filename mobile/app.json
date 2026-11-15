@@ -154,6 +154,15 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Lawsuit AI uses the camera only when you tap Take a photo, to add proof to a claim.",
+          "photosPermission": "Lawsuit AI uses only the photos you choose, to add proof to a claim.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-document-picker",
+      [
         "@react-native-community/datetimepicker",
         {
           "android": {

@@ -13,6 +13,7 @@ import { ChannelConfigSchema, type ChannelConfig, type FilingSpecContent } from 
 import { addBusinessDaysCapped, endOfDay, lastDayForAgent, specTimeZone, withinCutoff } from './dates';
 import type { LaneDecision, LaneInput } from './index';
 import { channelSupports } from './support';
+import { effectiveDeskChallengeMode } from '../v2/authorization-text';
 
 function selfFile(policyId: string | null, reasons: LaneReasonCode[]): LaneDecision {
   return { lane: 'self_file', agent: false, channel: null, policyId, reasons, lastDayForAgent: null, dueBy: null };
@@ -71,7 +72,13 @@ function decide(input: LaneInput): LaneDecision {
       reasons.push('deadline_too_close');
       continue;
     }
-    const support = channelSupports(config.type, { config, spec: spec.content, needsDocuments: input.needsDocuments });
+    const support = channelSupports(config.type, {
+      config,
+      spec: spec.content,
+      needsDocuments: input.needsDocuments,
+      // Only where the authorization the member signs says so (authorization-text.ts).
+      challengeMode: effectiveDeskChallengeMode(policy.desk_challenge_mode),
+    });
     if (!support.ok) {
       reasons.push(support.reason);
       continue;

@@ -9,6 +9,7 @@
 import type { z } from 'zod';
 import type { JevResult } from '@/lib/jev/types';
 import { staffLockOwner, type StaffUser } from '@/lib/staff-roles';
+import { effectiveDeskChallengeMode } from '../v2/authorization-text';
 import type { DeskPacketView, JobSummarySchema } from '../v2/contract-staff';
 import { deadlineOf, type JobContext } from './context';
 import { documentLabel, orderedPacketFields } from './packet-fields';
@@ -37,6 +38,7 @@ export function jobSummary(
     locked_by_me: locked && me !== null && job.lock_owner === staffLockOwner(me),
     needs_attention_reason: job.needs_attention_reason ?? null,
     created_at: job.created_at,
+    is_test: job.is_test === true,
   };
 }
 
@@ -51,6 +53,8 @@ export function buildDeskView(ctx: JobContext, jev: JevResult, me: StaffUser): D
     job: summary,
     claim: { id: ctx.claim.id, status: ctx.claim.status },
     settlement: { title: ctx.settlement.lawsuit.title, official_form_url: ctx.spec.content.official_form.url, deadline },
+    // The rule the member's signed authorization covers, never a later loosening.
+    challenge_mode: effectiveDeskChallengeMode(ctx.settlement.policy.desk_challenge_mode, ctx.signature.authorization_text_version),
     signature: {
       id: ctx.signature.signature_id,
       typed_name: ctx.signature.typed_name,

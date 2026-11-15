@@ -280,6 +280,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.oneClickFiling(),
   },
   {
+    env: 'ONE_CLICK_FILING_TEST_MODE',
+    description:
+      'One-click test mode (with ONE_CLICK_FILING_ENABLED off): only INTERNAL_EMAILS testers and filing staff see one-click; filing emails go only to ONE_CLICK_TEST_INBOX; jobs are marked is_test.',
+    read: () => flags.oneClickFilingTestMode(),
+  },
+  {
     env: 'VERIFY_ASSIST_ENABLED',
     description:
       'Official-site verification drafts, fast review in /admin/verify, pending-review Close / Republish, and the coverage card. Drafts never go public or stamp verified_at.',

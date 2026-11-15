@@ -82,6 +82,14 @@ export type ClaimScreenResponse =
       context: SettlementContext;
       claim: ClaimView | null;
       profile: PacketProfile | null;
+      /**
+       * One-click filing (ONE_CLICK_FILING_ENABLED): null while it is off, so
+       * the app shows the self-file steps unchanged; absent from older
+       * servers. `canStart` is the web claim page's rule for offering "Start
+       * my claim" (a strong match on an agent lane, open for claims, and no
+       * one-click claim under way yet).
+       */
+      oneClick?: { canStart: boolean } | null;
     };
 
 /** GET /api/mobile/claim/[slug], status 404 (not_found) or 503 (load_error). */

@@ -16,7 +16,9 @@ import {
   serviceRoleConfigured,
   startTrackingClaim,
 } from '@/lib/claims-server';
+import { isInternalEmail } from '@/lib/internal-users';
 import { rateLimit } from '@/lib/ratelimit';
+import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { isJsonRequest } from '@/lib/json-request';
 
 export const runtime = 'nodejs';
@@ -112,7 +114,8 @@ export async function POST(req: Request) {
   }
   const settlement = lookup.settlement;
   const context = claimContext(settlement);
-  if (!settlement || !context.published || context.fictional) {
+  // The one-click test settlement is for INTERNAL_EMAILS testers only (src/lib/test-settlements.ts).
+  if (!settlement || !context.published || context.fictional || (isTestSettlementSlug(settlement.slug) && !isInternalEmail(user.email))) {
     return reply({ error: "We couldn't find that settlement." }, 404);
   }
   if (intent === 'report_filed') {
