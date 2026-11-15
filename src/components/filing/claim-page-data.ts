@@ -84,6 +84,8 @@ export async function loadOneClickClaimPage(args: {
   supabase: SupabaseClient;
   userId: string;
   accountEmail: string | null;
+  /** The account can sign in again with Google (see OneClickClaimProps). */
+  reauthWithGoogle?: boolean;
   slug: string;
   lawsuitId: string;
   claim: ClaimView | null;
@@ -92,7 +94,7 @@ export async function loadOneClickClaimPage(args: {
 }): Promise<OneClickClaimProps | null> {
   if (!flags.oneClickFiling()) return null;
   const { supabase, userId, claim, context, now } = args;
-  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail };
+  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false };
   // Only a settlement still taking claims can start one-click (the API says so too).
   const startable = context.openForClaims && !context.deadlinePassed && !context.fictional;
 

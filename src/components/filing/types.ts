@@ -25,6 +25,8 @@ export interface OneClickClaimProps {
   loadFailed: boolean;
   /** The account's sign-in email, for signing in again before "File my claim". */
   accountEmail: string | null;
+  /** Offer Google for that sign-in: the account has a Google identity and OAUTH_SIGN_IN_ENABLED is on. */
+  reauthWithGoogle?: boolean;
 }
 
 /** The dashboard's one-click data; null when the flag is off. */

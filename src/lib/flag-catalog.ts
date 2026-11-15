@@ -285,6 +285,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       'Official-site verification drafts, fast review in /admin/verify, pending-review Close / Republish, and the coverage card. Drafts never go public or stamp verified_at.',
     read: () => flags.verifyAssist(),
   },
+  {
+    env: 'OAUTH_SIGN_IN_ENABLED',
+    description:
+      'Continue with Google on /login and /signup, and Google sign-in again before e-signing a one-click claim (web only). Kill switch: set to 1 in production once Google is enabled in Supabase Auth.',
+    read: () => flags.oauthSignIn(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

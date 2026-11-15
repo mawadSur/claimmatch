@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { AuthForm } from '@/components/AuthForm';
+import { flags } from '@/lib/flags';
 import { safeNextPath } from '@/lib/safe-next';
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default async function LoginPage({
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
               {/* From a claim, "New to Lawsuit AI?" comes once, with the button below. */}
-              <AuthForm mode="login" switchPrompt={!fromClaim} />
+              <AuthForm mode="login" switchPrompt={!fromClaim} oauth={flags.oauthSignIn()} />
             </Suspense>
           </div>
 

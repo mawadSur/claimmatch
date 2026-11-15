@@ -73,7 +73,11 @@ export default function SignupPage() {
 
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
-              <AuthForm mode="signup" storeNote={trustCopy ? WHAT_WE_STORE_MINIMAL : undefined} />
+              <AuthForm
+                mode="signup"
+                storeNote={trustCopy ? WHAT_WE_STORE_MINIMAL : undefined}
+                oauth={flags.oauthSignIn()}
+              />
             </Suspense>
           </div>
 

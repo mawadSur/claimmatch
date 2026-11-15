@@ -78,7 +78,12 @@ export function useOneClickClaim({
   return {
     active,
     flow: !active ? null : filing ? (
-      <OneClickFiling view={filing} accountEmail={oneClick.accountEmail} onChange={onFilingChange} />
+      <OneClickFiling
+        view={filing}
+        accountEmail={oneClick.accountEmail}
+        reauthWithGoogle={oneClick.reauthWithGoogle}
+        onChange={onFilingChange}
+      />
     ) : (
       <p role="alert" className="flex items-start gap-2 rounded-2xl border border-danger-50 bg-white p-5 text-sm text-ink shadow-card">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger-700" aria-hidden />

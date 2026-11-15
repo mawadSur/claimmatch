@@ -7,6 +7,7 @@ import { loadClaimScreen } from '@/lib/claim-screen-server';
 import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { signedOutClaimHref } from '@/lib/signup-context';
+import { hasGoogleIdentity } from '@/lib/oauth';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
 import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
@@ -111,6 +112,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     supabase,
     userId: user.id,
     accountEmail: user.email ?? null,
+    reauthWithGoogle: flags.oauthSignIn() && hasGoogleIdentity(user),
     slug: settlement.slug,
     lawsuitId: settlement.id,
     claim,

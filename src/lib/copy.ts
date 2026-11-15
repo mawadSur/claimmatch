@@ -296,6 +296,11 @@ export const ONE_CLICK_COPY = {
     noPassword: 'No password yet, or forgot it?',
     setPassword: 'Set a password',
     done: 'You’re signed in. You can sign your claim now.',
+    googleBody: 'Filing a claim needs a sign-in in the last 15 minutes, with Google or your password. A sign-in link from an email doesn’t count.',
+    google: 'Sign in again with Google',
+    googleWorking: 'Opening Google…',
+    googleFailed: 'We couldn’t open Google sign-in. Try again, or use your password.',
+    orPassword: 'Or use your password',
   },
   actions: {
     selfFile: 'Finish on the official site instead',
@@ -353,4 +358,18 @@ export const ONE_CLICK_COPY = {
     'Follow the steps on the claim page to file.',
     'Check each claim’s status and confirmation number here.',
   ],
+} as const;
+
+/** Issue #50: "Continue with Google" on /login and /signup (OAUTH_SIGN_IN_ENABLED). */
+export const OAUTH_COPY = {
+  google: 'Continue with Google',
+  working: 'Opening Google…',
+  divider: 'or use your email',
+  /** Shown next to the button on /login, where a new person can also create an account. */
+  agreeLead: 'New here? Continuing with Google creates your free account, and you agree to the',
+  terms: 'Terms',
+  and: 'and',
+  privacy: 'Privacy Policy',
+  /** Google sign-in came back without signing the person in (canceled, or Google said no). */
+  failed: 'Google sign-in didn’t finish. Try again, or use your email and password.',
 } as const;

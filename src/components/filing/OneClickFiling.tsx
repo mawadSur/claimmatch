@@ -35,10 +35,12 @@ type OnView = (view: ClaimFilingView, message: string) => void;
 export function OneClickFiling({
   view,
   accountEmail,
+  reauthWithGoogle = false,
   onChange,
 }: {
   view: ClaimFilingView;
   accountEmail: string | null;
+  reauthWithGoogle?: boolean;
   onChange: OnView;
 }) {
   const [busy, setBusy] = useState(false);
@@ -91,7 +93,7 @@ export function OneClickFiling({
         </FilingStep>
         <FilingStep n={n + 2} title={view.lane.agent ? steps.review : ONE_CLICK_SELF_FILE_TITLE}>
           {view.lane.agent ? (
-            <ReviewSignStep view={view} accountEmail={accountEmail} busy={busy} onView={onChange} refresh={refresh} />
+            <ReviewSignStep view={view} accountEmail={accountEmail} reauthWithGoogle={reauthWithGoogle} busy={busy} onView={onChange} refresh={refresh} />
           ) : (
             <SelfFileLaneStep view={view} busy={busy} onView={onChange} />
           )}
