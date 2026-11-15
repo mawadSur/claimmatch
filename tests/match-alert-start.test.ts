@@ -219,6 +219,8 @@ describe('/api/match-alert/start', () => {
   });
 
   it('POST consumes a valid token and lands on the claim', async () => {
+    // The route reads the clock: pin it inside the fixture token's 72-hour window.
+    vi.useFakeTimers({ now: new Date('2026-11-12T12:05:00.000Z'), toFake: ['Date'] });
     const { token } = issued();
     const res = await POST(
       new Request('https://claimmatch.test/api/match-alert/start', {
@@ -231,6 +233,7 @@ describe('/api/match-alert/start', () => {
       }),
     );
     expect(res.status).toBe(303);
+    vi.useRealTimers();
     expect(new URL(res.headers.get('location') ?? '').pathname).toBe('/claim/verified-open');
   });
 });

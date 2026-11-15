@@ -87,7 +87,7 @@ describe('processWorkerChannels: one send per job, never twice', () => {
     claim: { id: ID(101), user_id: ID(30), lawsuit_id: ID(2), status: 'filing' },
     signature: { signature_id: ID(5) },
     packet: { documents: [] },
-    packetRow: { id: ID(4) },
+    packetRow: { id: ID(4), is_test: false },
     spec: { id: ID(3), version: 1, content: { deadline: null } },
     settlement: {
       lawsuit: { id: ID(2), title: 'Acme', deadline: '2026-12-31' },

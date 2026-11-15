@@ -12,6 +12,7 @@ import type { JevResult } from '@/lib/jev/types';
 import { todayInDeadlineZone } from '@/lib/utils';
 import { CLAIM_DOCUMENTS_BUCKET, DOCUMENT_RETENTION_DAYS } from '../v2/contract';
 import { enqueueFiling, recordFilingResult, withdrawFiling } from '../v2/jobs';
+import { oneClickTestMode } from '../one-click-access';
 import {
   laneFor,
   loadJobContext,
@@ -136,17 +137,21 @@ function virtualJob(sig: Record<string, unknown>, claim: { id: string; user_id: 
 /**
  * A signed claim with no job (queueing failed after the signature): queue it
  * on the signed lane only if Jev pre_send passes; otherwise send it back to
- * the member (needs_you) or to the official site (self_file).
+ * the member (needs_you) or to the official site (self_file). Outside test
+ * mode a packet made in test mode (claim_packets.is_test, 0047) is skipped
+ * and counted in `test`: a tester's leftover is never queued as a real filing
+ * (the database refuses it too). In test mode it is queued as a test job.
  */
 export async function repairSignedWithoutJob(
   svc: ServiceClient,
   now: Date,
   settlements: Map<string, SettlementFiling | null>,
   shouldStop: () => boolean = () => false,
-): Promise<{ queued: number; returned: number; skipped: number }> {
+): Promise<{ queued: number; returned: number; skipped: number; test: number }> {
   const { data, error } = await svc.from('claims').select('id, user_id, lawsuit_id').eq('status', 'signed').limit(50);
   if (error) throw new Error(`signed claims: ${error.code ?? 'read failed'}`);
-  const out = { queued: 0, returned: 0, skipped: 0 };
+  const out = { queued: 0, returned: 0, skipped: 0, test: 0 };
+  const testMode = oneClickTestMode();
   for (const claim of (data ?? []) as Array<{ id: string; user_id: string; lawsuit_id: string }>) {
     if (shouldStop()) break;
     const { data: sigs } = await svc
@@ -164,6 +169,15 @@ export async function repairSignedWithoutJob(
     if (job) {
       out.skipped += 1;
       continue;
+    }
+    if (!testMode) {
+      // Any doubt (an unreadable packet) is a skip, never a real filing.
+      const { data: packet, error: packetError } = await svc.from('claim_packets').select('is_test').eq('id', String(sig.packet_id)).maybeSingle();
+      const isTest = packetError || !packet ? null : (packet as { is_test?: unknown }).is_test;
+      if (isTest !== false) {
+        out[isTest === true ? 'test' : 'skipped'] += 1;
+        continue;
+      }
     }
     const loaded = await loadJobContext(svc, virtualJob(sig, claim), settlements);
     if (!loaded.ok || loaded.ctx.signature.voided) {

@@ -9,6 +9,7 @@
 import { runJev } from '../../jev/index';
 import { JEV_REFUSE_TO_STORE_CODES, type JevMode, type JevResult, type JevTrigger } from '../../jev/types';
 import { createServiceClient } from '@/lib/supabase/server';
+import { oneClickTestMode } from '../one-click-access';
 import type { FilingErrorCode, JevIssueView } from './contract';
 import { derivePacketState, type ClaimContext, type PacketContent, type PacketState } from './claim-context';
 import type { DocumentRecord } from './documents';
@@ -162,6 +163,8 @@ export async function createPacket(ctx: ClaimContext): Promise<{ ok: true; packe
       spec_version: spec?.version ?? null,
       status: 'open',
       revision: 1,
+      // 0047: a packet made in test mode never becomes a real filing, also after go-live.
+      is_test: oneClickTestMode(),
       answers: {},
       member_snapshot: {},
       packet_hash: state.hash,

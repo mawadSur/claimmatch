@@ -49,9 +49,12 @@ const DESK: LaneDecision = {
 };
 const agent = { id: ID(40), email: null, isAdmin: false, roles: ['filing_agent' as const] };
 
+/** The signed packet enqueueFiling checks first (claim_packets.is_test, 0047): a real one. */
+const REAL_PACKET = { claim_signatures: { packet_id: ID(7) }, claim_packets: { is_test: false } };
+
 beforeEach(() => {
   db.rpcCalls = [];
-  db.rows = {};
+  db.rows = { ...REAL_PACKET };
   db.notices = [];
   db.rpcAnswer = () => ({ data: null, error: null });
 });
@@ -78,7 +81,7 @@ describe('enqueueFiling (filing_enqueue)', () => {
 
   it('maps a concurrent insert (23505) to the job that won', async () => {
     db.rpcAnswer = () => ({ data: null, error: { code: '23505', message: 'duplicate key' } });
-    db.rows = { claim_filing_jobs: JOB, claims: { status: 'queued' } };
+    db.rows = { ...REAL_PACKET, claim_filing_jobs: JOB, claims: { status: 'queued' } };
     expect(await enqueueFiling({ signatureId: ID(5), decision: DESK, actor: 'system', now: NOW })).toMatchObject({ ok: true, created: false, job: JOB });
   });
 

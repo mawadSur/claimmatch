@@ -59,10 +59,30 @@ export interface EnqueueFilingInput {
 }
 
 /**
+ * Whether the signed packet was made in one-click test mode (claim_packets.is_test,
+ * 0047). Unreadable is null: the caller treats it as a test packet outside test mode.
+ */
+async function signedPacketIsTest(svc: ReturnType<typeof createServiceClient>, signatureId: string): Promise<boolean | null> {
+  const { data: sig, error } = await svc.from('claim_signatures').select('packet_id').eq('id', signatureId).maybeSingle();
+  if (error || !sig) return null;
+  const { data: packet, error: packetError } = await svc
+    .from('claim_packets')
+    .select('is_test')
+    .eq('id', String((sig as { packet_id: unknown }).packet_id))
+    .maybeSingle();
+  if (packetError || !packet) return null;
+  const flag = (packet as { is_test?: unknown }).is_test;
+  return typeof flag === 'boolean' ? flag : null;
+}
+
+/**
  * filing_enqueue: claim signed -> queued with one open job. Idempotent per
  * signature (created false on a repeat). In one-click test mode it is
  * filing_enqueue_test (0046), which marks the new job is_test in the same
- * transaction, so no worker can take it as a real job.
+ * transaction, so no worker can take it as a real job. Outside test mode a
+ * packet made in test mode (0047) is refused (lane_unavailable) before
+ * anything is queued, and so is one whose test mark cannot be read; the
+ * database refuses a real job for a test packet as well.
  */
 export async function enqueueFiling(
   input: EnqueueFilingInput,
@@ -73,7 +93,12 @@ export async function enqueueFiling(
   }
   if (!UUID.test(input.signatureId)) return jobFailure('invalid_request');
   const svc = createServiceClient();
-  const { data, error } = await svc.rpc(oneClickTestMode() ? 'filing_enqueue_test' : 'filing_enqueue', {
+  const testMode = oneClickTestMode();
+  if (!testMode && (await signedPacketIsTest(svc, input.signatureId)) !== false) {
+    console.warn('[filing/jobs] test-mode packet not queued for real', { signature: input.signatureId });
+    return jobFailure('lane_unavailable');
+  }
+  const { data, error } = await svc.rpc(testMode ? 'filing_enqueue_test' : 'filing_enqueue', {
     p_signature_id: input.signatureId,
     p_channel: decision.lane,
     p_policy_id: decision.policyId,

@@ -347,6 +347,7 @@ What test mode guarantees:
 
 - **Who:** signed-in accounts in `INTERNAL_EMAILS` (web, and the app only when it sends its token to `/api/mobile/config`, which the current app build does not), plus admins and staff with a filing role on `/admin/filing`. The console shows a TEST MODE banner and a TEST badge on test jobs.
 - **Jobs:** every new job is created by `filing_enqueue_test` (0046) and marked `claim_filing_jobs.is_test`. A test job stays a test job, also after one-click goes live.
+- **Packets (0047):** every packet made in test mode is marked `claim_packets.is_test`, and a test packet stays a test packet. The database refuses a real (non-test) job for a test packet. After one-click goes live, a leftover test signature is never queued for real: the repair sweep skips it (counted as `test` in the cron's `repair` step), `enqueueFiling` refuses it, the worker sandboxes any job whose packet is a test packet, and the desk hands a leftover test job back to the tester instead of showing it. A tester who wants to file a real claim after go-live starts a new claim.
 - **Emails:** `administrator_email` goes only to `ONE_CLICK_TEST_INBOX`, with a `[TEST]` subject, no administrator address or CC, and the member's copy only to an internal tester. With no valid `ONE_CLICK_TEST_INBOX`, nothing is sent and the job goes to needs attention (`test_inbox_missing`). Member notices go only to internal testers, subject prefixed `[TEST]`.
 - **No callouts:** `administrator_api` never calls an administrator for a test job (`test_mode_no_api`).
 - **Bulk:** a real export never includes a test job. In test mode an export takes test jobs only, needs `ONE_CLICK_TEST_INBOX`, is stored with `filing_export_batches.is_test` and its file name starts with `TEST-`. Never upload it anywhere.
@@ -390,7 +391,11 @@ for the `[TEST]` email, then the claim's status timeline and the TEST job on
 
 1. `npx tsx scripts/one-click-test-settlement.ts --off --apply` (kill switch on, settlement unpublished; nothing deleted).
 2. Remove `ONE_CLICK_FILING_TEST_MODE` (and `ONE_CLICK_TEST_INBOX` if unused) in Vercel and redeploy. The routes 404 again and the cron stops.
-3. Test rows stay for review (`select * from claim_filing_jobs where is_test`). They never go to an administrator, also after one-click goes live.
+3. Test rows stay for review (`select * from claim_filing_jobs where is_test`, `select * from claim_packets where is_test`). They never go to an administrator, also after one-click goes live.
+
+### Test packets (0047), before turning on ONE_CLICK_FILING_ENABLED
+
+Apply `0047_one_click_test_packets.sql` **before** deploying the code that reads `claim_packets.is_test` (without the column, starting a one-click claim fails, the worker cannot load a job and puts it in needs attention, and the repair sweep and `enqueueFiling` queue nothing; nothing is ever sent for real). On the run that adds the column it marks as test every packet that has a test job and, on a database with no real filing job (production today), every existing packet. Then check: `select count(*) from claim_packets where not is_test` should be 0 on production before go-live.
 
 ## Rollback
 

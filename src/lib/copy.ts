@@ -66,6 +66,56 @@ export function filingFact(mayFile = lawsuitAiMayFile()): { title: string; body:
       };
 }
 
+/*
+ * Public pages while Lawsuit AI may file for the viewer (issue #53). Each
+ * page keeps its "never files" text for viewers one-click is not on for
+ * (src/lib/filing/public-filing.ts decides); these replace it otherwise.
+ * Counsel to approve with the other one-click texts.
+ */
+
+/** never_files: one-click is not on for this viewer. agent: it is, and this settlement has an agent lane. */
+export type SettlementFilingMode = 'never_files' | 'agent' | 'self_file';
+
+/** The settlement page's "How filing works" step 2 and sidebar points, per mode other than never_files. */
+export const SETTLEMENT_FILING_COPY = {
+  agent: {
+    step: {
+      title: 'File it yourself, or choose one-click filing',
+      body: 'For this settlement, Lawsuit AI can file your claim with the settlement administrator after you review and sign it, if you qualify and live in a state it covers. Or file it yourself on the official site, where filing is free. Lawsuit AI never handles settlement payments.',
+    },
+    points: [
+      'Lawsuit AI can file this claim for you after you review and sign it',
+      'You can always file on the official site yourself instead',
+      'Lawsuit AI never handles settlement payments',
+    ],
+  },
+  self_file: {
+    step: {
+      title: 'File on the official site yourself',
+      body: 'Filing is free. You file this claim yourself on the official site. Lawsuit AI never handles settlement payments.',
+    },
+    points: ['You file on the official site yourself', 'Lawsuit AI never handles settlement payments', 'Save your confirmation number in one place'],
+  },
+} as const;
+
+const SOME_SETTLEMENTS = 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.';
+
+/** Site-wide pages (invite, onboarding, scorecard, how it works) when Lawsuit AI may file for this viewer. */
+export const MAY_FILE_PAGE_COPY = {
+  inviteIntro:
+    'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. For some settlements it can file the claim for you after you sign it; otherwise you submit on the official site. It is free during beta.',
+  inviteStep: {
+    title: 'You choose who files',
+    body: `${SOME_SETTLEMENTS} Otherwise you file on the settlement’s official website. Lawsuit AI is not a law firm.`,
+  },
+  inviteBullet: 'You can always file on the official settlement website yourself.',
+  onboardingIntro:
+    'Lawsuit AI is a free claim assistant. For some settlements it can file the claim for you after you review and sign it. It never handles settlement payments.',
+  onboardingStep: `File on the official site yourself, where it’s free. ${SOME_SETTLEMENTS}`,
+  scorecard: `${SOME_SETTLEMENTS} Otherwise you file on the official settlement site yourself. Lawsuit AI never handles settlement payments.`,
+  howItWorksStep: `Fill out and send the claim form on the settlement’s official website. ${SOME_SETTLEMENTS}`,
+} as const;
+
 /** Primary match CTA when ASSISTED_FILING_ENABLED=1. */
 export const FILE_FOR_YOU_CTA = 'We’ll file it for you';
 

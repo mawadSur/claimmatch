@@ -62,7 +62,8 @@ import { OfficialFormLink } from '@/components/settlement/OfficialFormLink';
 import { SettlementEligibilityQuiz } from '@/components/settlement/SettlementEligibilityQuiz';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
-import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT } from '@/lib/copy';
+import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, SETTLEMENT_FILING_COPY } from '@/lib/copy';
+import { settlementFilingMode } from '@/lib/filing/public-filing';
 import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
@@ -163,7 +164,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
     lawsuit.description.trim() !== payout &&
     lawsuit.description.trim() !== summary;
   const facts = overlayVerifiedFacts(settlementAnswerFacts(lawsuit), lawsuit);
-  const faqs = settlementFaqs(lawsuit);
+  // Who files (issue #53). A static page has no viewer: unchanged until one-click is on for everyone.
+  const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
+  const faqs = settlementFaqs(lawsuit, filingMode !== 'never_files');
   const claimHref = `/claim/${lawsuit.slug}`;
   const qualifyEnabled = flags.settlementPageCta() && open;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
@@ -394,10 +397,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
                     title: 'Check that you qualify',
                     body: 'Read the official notice. It has the exact rules and the deadline.',
                   },
-                  {
-                    title: 'File on the official site yourself',
-                    body: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
-                  },
+                  filingMode === 'never_files'
+                    ? {
+                        title: 'File on the official site yourself',
+                        body: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
+                      }
+                    : SETTLEMENT_FILING_COPY[filingMode].step,
                   {
                     title: 'Keep track in Lawsuit AI',
                     body: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
@@ -540,11 +545,14 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   <p className="mt-2 text-center text-xs text-ink-muted">{BROWSE_NO_ACCOUNT}</p>
                 )}
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
-                  {[
-                    'You file on the official site yourself',
-                    'Lawsuit AI never files for you or handles settlement payments',
-                    'Save your confirmation number in one place',
-                  ].map((t) => (
+                  {(filingMode === 'never_files'
+                    ? [
+                        'You file on the official site yourself',
+                        'Lawsuit AI never files for you or handles settlement payments',
+                        'Save your confirmation number in one place',
+                      ]
+                    : SETTLEMENT_FILING_COPY[filingMode].points
+                  ).map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden="true" />
                       {t}

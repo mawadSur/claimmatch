@@ -33,6 +33,7 @@ import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
 import { BetaFeedbackList } from '@/components/admin/BetaFeedbackList';
 import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
 import { flags } from '@/lib/flags';
+import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
 import { listBrokenOfficialLinks } from '@/lib/link-check';
 import { MissingFeedQueue } from '@/components/admin/MissingFeedQueue';
 import { HeldClosuresQueue } from '@/components/admin/HeldClosuresQueue';
@@ -167,8 +168,9 @@ export default async function AdminOverviewPage() {
           Operations dashboard
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-ink-muted">
-          Members, catalog review and claim tracking. Lawsuit AI never files
-          claims or handles settlement money. Counts refresh on each load.
+          {oneClickEnabledFor({ kind: 'staff', isStaff: true })
+            ? 'Members, catalog review and claim tracking. Lawsuit AI never handles settlement money. Counts refresh on each load.'
+            : 'Members, catalog review and claim tracking. Lawsuit AI never files claims or handles settlement money. Counts refresh on each load.'}
         </p>
       </header>
 

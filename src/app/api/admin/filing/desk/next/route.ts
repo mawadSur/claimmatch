@@ -24,6 +24,8 @@ const MAX_HAND_BACKS_PER_TAKE = 5;
  * A job whose pre_send check blocks for good is handed back to the member
  * (deskHandBackReason) and the next one is taken. In one-click test mode the
  * desk takes test jobs only: a real job goes straight back to the queue.
+ * Outside test mode a test job is never shown: it is handed back to the
+ * tester (self_file) and the next job is taken.
  */
 export async function POST(req: Request) {
   const auth = await guard(req, canWorkFilingDesk, 'desk_next');
@@ -41,6 +43,22 @@ export async function POST(req: Request) {
     if (oneClickTestMode() && job.is_test !== true) {
       await recordFilingResult({ jobId: job.id, lockOwner, outcome: 'not_submitted', actor: 'staff', now });
       return fail('lane_unavailable');
+    }
+    if (!oneClickTestMode() && job.is_test === true) {
+      // A test job left over from test mode is never entered on a real official site:
+      // it goes back to the tester (self_file, member-safe reason) and the next job is taken.
+      const back = await recordFilingResult({
+        jobId: job.id,
+        lockOwner,
+        outcome: 'hand_back_to_member',
+        reasonCode: 'test_job_after_go_live',
+        result: { test_job_after_go_live: true },
+        actor: 'staff',
+        now,
+      });
+      if (!back.ok) return fail('lane_unavailable');
+      if (asked) return reply({ job: null });
+      continue;
     }
     const logged = await recordStaffAccess({
       staff: auth.staff,

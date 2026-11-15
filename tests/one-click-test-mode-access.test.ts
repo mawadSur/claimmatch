@@ -8,9 +8,28 @@ const m = vi.hoisted(() => ({
   runFilingCron: vi.fn(),
   rpc: vi.fn(),
   notifyMember: vi.fn(),
+  /** claim_packets.is_test of the signed packet (0047); null: unreadable. */
+  packetIsTest: { value: false as boolean | null },
 }));
 vi.mock('@/lib/supabase/request-user', () => ({ getRequestUser: m.getRequestUser }));
-vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(), createServiceClient: () => ({ rpc: m.rpc }) }));
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(),
+  createServiceClient: () => ({
+    rpc: m.rpc,
+    from: (table: string) => {
+      const chain: Record<string, unknown> = {};
+      for (const op of ['select', 'eq']) chain[op] = () => chain;
+      chain.maybeSingle = async () => {
+        if (table === 'claim_signatures') return { data: { packet_id: '00000000-0000-4000-8000-000000000007' }, error: null };
+        if (table === 'claim_packets') {
+          return { data: m.packetIsTest.value === null ? null : { is_test: m.packetIsTest.value }, error: null };
+        }
+        return { data: null, error: null };
+      };
+      return chain;
+    },
+  }),
+}));
 vi.mock('@/lib/admin', () => ({ getAdminUser: vi.fn(), adminDeniedPath: vi.fn(() => '/login') }));
 vi.mock('@/lib/staff-roles', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/staff-roles')>()),
@@ -43,7 +62,8 @@ function signedIn(email: string | null) {
 }
 
 beforeEach(() => {
-  for (const fn of Object.values(m)) fn.mockReset();
+  for (const fn of [m.getRequestUser, m.staffForRequest, m.runFilingCron, m.rpc, m.notifyMember]) fn.mockReset();
+  m.packetIsTest.value = false;
   vi.stubEnv('INTERNAL_EMAILS', `${TESTER}, qa@lawsuitai.example`);
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -213,5 +233,22 @@ describe('enqueueFiling', () => {
     setMode('both');
     await enqueueFiling({ signatureId: ID(5), decision, actor: 'user', now: new Date() });
     expect(m.rpc.mock.calls[1][0]).toBe('filing_enqueue');
+  });
+
+  it('once live, a leftover test-mode packet is never queued for real (issue #53)', async () => {
+    m.rpc.mockResolvedValue({ data: { created: true, job, claim: { status: 'queued' } }, error: null });
+    for (const mode of ['live', 'both'] as const) {
+      setMode(mode);
+      m.packetIsTest.value = true;
+      expect(await enqueueFiling({ signatureId: ID(5), decision, actor: 'system', now: new Date() })).toMatchObject({ ok: false, code: 'lane_unavailable' });
+      m.packetIsTest.value = null;
+      expect(await enqueueFiling({ signatureId: ID(5), decision, actor: 'system', now: new Date() })).toMatchObject({ ok: false, code: 'lane_unavailable' });
+    }
+    expect(m.rpc).not.toHaveBeenCalled();
+    // In test mode the same packet still goes through filing_enqueue_test.
+    setMode('test');
+    m.packetIsTest.value = true;
+    await enqueueFiling({ signatureId: ID(5), decision, actor: 'system', now: new Date() });
+    expect(m.rpc.mock.calls.map((c) => c[0])).toEqual(['filing_enqueue_test']);
   });
 });

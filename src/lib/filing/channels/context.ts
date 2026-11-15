@@ -201,7 +201,8 @@ export interface JobContext {
   claim: { id: string; user_id: string; lawsuit_id: string; status: string };
   signature: SignatureBlock & { statement_sha256: string; voided: boolean };
   packet: CanonicalPacket;
-  packetRow: { id: string; status: string; health_consent_text_sha256: string | null };
+  /** is_test (0047): made in one-click test mode; never sent as a real filing. */
+  packetRow: { id: string; status: string; health_consent_text_sha256: string | null; is_test?: boolean | null };
   spec: SpecRow;
   settlement: SettlementFiling;
   documents: ChannelDocument[];
@@ -223,7 +224,7 @@ export async function loadJobContext(
       .eq('id', job.signature_id)
       .maybeSingle(),
     svc.from('claim_signature_voids').select('id').eq('signature_id', job.signature_id).maybeSingle(),
-    svc.from('claim_packets').select('id, status, health_consent_text_sha256').eq('id', job.packet_id).maybeSingle(),
+    svc.from('claim_packets').select('id, status, health_consent_text_sha256, is_test').eq('id', job.packet_id).maybeSingle(),
   ]);
   if (!claim || !sig || !packetRow) return { ok: false, reason: 'record_missing' };
   const canonical = String(sig.packet_canonical ?? '');

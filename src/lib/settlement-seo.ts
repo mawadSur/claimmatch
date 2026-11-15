@@ -176,16 +176,22 @@ export function settlementAnswerFacts(
  * FAQ answers are built only from stored fields plus product facts (you file
  * on the official site). No invented payouts, reviews or testimonials.
  */
-export function settlementFaqs(lawsuit: Lawsuit): FaqItem[] {
+export function settlementFaqs(
+  lawsuit: Lawsuit,
+  // copy.ts lawsuitAiMayFile, inlined: this file is shared with the app (mobile/shared.json) and imports only ./ files.
+  mayFile = flags.feeDisclosure() || flags.oneClickFiling(),
+): FaqItem[] {
   const name = lawsuit.title.trim();
   const facts = settlementAnswerFacts(lawsuit);
   const eligibility = eligibilitySummary(lawsuit.eligibility_text);
   const official = officialLinkFor(lawsuit);
 
+  // "Never files" only while Lawsuit AI files nothing for this page's viewers (issue #53).
+  const neverFiles = mayFile ? '' : ' Lawsuit AI never files for you.';
   const officialHow =
     official?.kind === 'official'
-      ? ` File on the official site (${official.host}). Lawsuit AI never files for you.`
-      : ' File on the official settlement website. Lawsuit AI never files for you.';
+      ? ` File on the official site (${official.host}).${neverFiles}`
+      : ` File on the official settlement website.${neverFiles}`;
 
   return [
     {
