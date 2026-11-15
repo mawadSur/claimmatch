@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron, cronRequestIsDryRun } from '@/lib/cron-auth';
 import { flags } from '@/lib/flags';
+import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
 import {
   failStaleIngestRuns,
   finishIngestRun,
@@ -194,7 +195,7 @@ async function handle(req: Request) {
     // The legacy assisted-filing queue (0015) is retired and never drained. On
     // Vercel Hobby (daily crons only) the one-click filing step runs here; on
     // Pro, GET /api/cron/filing runs it as well. Both are safe to overlap.
-    if (flags.oneClickFiling()) {
+    if (oneClickEnabledFor({ kind: 'system' })) {
       await runStep('daily/filing', async () => {
         const run = await (await import('@/lib/filing/channels/cron')).runFilingCron();
         const failed = Object.keys(run.steps).filter((name) => run.steps[name].status === 'failed');

@@ -37,6 +37,7 @@ export function jobSummary(
     locked_by_me: locked && me !== null && job.lock_owner === staffLockOwner(me),
     needs_attention_reason: job.needs_attention_reason ?? null,
     created_at: job.created_at,
+    is_test: job.is_test === true,
   };
 }
 

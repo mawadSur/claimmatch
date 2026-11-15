@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { flags } from '@/lib/flags';
 import { UuidSchema } from '@/lib/filing/v2/contract';
-import { requireStaff } from '@/lib/staff-roles';
 import { BulkConsole } from '@/components/admin/filing/BulkConsole';
+import { TestModeBanner } from '@/components/admin/filing/TestModeBanner';
+import { requireOneClickStaff } from '../_lib/gate';
 import { filingPermissions } from '../_lib/permissions';
 
 export const metadata: Metadata = { title: 'Bulk exports' };
@@ -15,9 +14,13 @@ export default async function FilingBulkPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  if (!flags.oneClickFiling()) notFound();
-  const staff = await requireStaff('/admin/filing/bulk');
+  const staff = await requireOneClickStaff('/admin/filing/bulk');
   const { lawsuit } = await searchParams;
   const lawsuitId = typeof lawsuit === 'string' && UuidSchema.safeParse(lawsuit).success ? lawsuit : null;
-  return <BulkConsole permissions={filingPermissions(staff)} lawsuitId={lawsuitId} />;
+  return (
+    <>
+      <TestModeBanner />
+      <BulkConsole permissions={filingPermissions(staff)} lawsuitId={lawsuitId} />
+    </>
+  );
 }

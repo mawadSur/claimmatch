@@ -13,6 +13,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ClaimView, SettlementContext } from '@/lib/claims';
 import { flags } from '@/lib/flags';
+import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
 import { loadClaimFilingView, previewLanes } from '@/lib/filing/v2/view';
 import type { ClaimFilingView, LaneView } from '@/lib/filing/v2/contract';
 import { lookupLawsuitBySlug } from '@/lib/lawsuits';
@@ -90,7 +91,8 @@ export async function loadOneClickClaimPage(args: {
   context: SettlementContext;
   now: Date;
 }): Promise<OneClickClaimProps | null> {
-  if (!flags.oneClickFiling()) return null;
+  // One gate (src/lib/filing/one-click-access.ts): in test mode, INTERNAL_EMAILS testers only.
+  if (!oneClickEnabledFor({ kind: 'member', email: args.accountEmail })) return null;
   const { supabase, userId, claim, context, now } = args;
   const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail };
   // Only a settlement still taking claims can start one-click (the API says so too).

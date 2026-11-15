@@ -85,6 +85,7 @@ export default async function DashboardPage({
   const oneClick = await loadOneClickDashboard({
     supabase,
     userId: user.id,
+    email: user.email,
     now,
     strongMatchIds: matches.filter((row) => row.strength === 'strong').map((row) => row.id),
   });

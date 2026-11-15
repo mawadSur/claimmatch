@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { oneClickTestMode } from '@/lib/filing/one-click-access';
 import { UuidSchema } from '@/lib/filing/v2/contract-spec';
 import { claimNextDeskJob, recordFilingResult } from '@/lib/filing/v2/jobs';
 import { canWorkFilingDesk, recordStaffAccess, staffLockOwner } from '@/lib/staff-roles';
@@ -21,7 +22,8 @@ const MAX_HAND_BACKS_PER_TAKE = 5;
  * when nothing is due. Logged (take_job) before anything is shown; when the
  * log cannot be written the job goes back to the queue (nothing was sent).
  * A job whose pre_send check blocks for good is handed back to the member
- * (deskHandBackReason) and the next one is taken.
+ * (deskHandBackReason) and the next one is taken. In one-click test mode the
+ * desk takes test jobs only: a real job goes straight back to the queue.
  */
 export async function POST(req: Request) {
   const auth = await guard(req, canWorkFilingDesk, 'desk_next');
@@ -36,6 +38,10 @@ export async function POST(req: Request) {
     if (!taken.ok) return fail(taken.code);
     if (!taken.job) return reply({ job: null });
     const job = taken.job;
+    if (oneClickTestMode() && job.is_test !== true) {
+      await recordFilingResult({ jobId: job.id, lockOwner, outcome: 'not_submitted', actor: 'staff', now });
+      return fail('lane_unavailable');
+    }
     const logged = await recordStaffAccess({
       staff: auth.staff,
       action: 'take_job',

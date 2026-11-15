@@ -290,6 +290,63 @@ is on, those requests 401 unless a bypass secret is sent.
 3. Playwright sends it as `x-vercel-protection-bypass` (and `x-vercel-set-bypass-cookie: samesitenone`).
 4. If the GitHub secret is **absent**, the smoke job prints a notice and **exits 0** (does not fail the PR).
 
+## One-click test mode (testing one-click filing on production)
+
+Test mode turns one-click filing on for internal testers only, with
+`ONE_CLICK_FILING_ENABLED` still off. Everyone else sees today's site: the
+member API and staff API answer 404, the pages render as before, and the
+app's config says off. Gate: `src/lib/filing/one-click-access.ts`. If both
+flags are on, test mode changes nothing (normal live behavior).
+
+What test mode guarantees:
+
+- **Who:** signed-in accounts in `INTERNAL_EMAILS` (web, and the app only when it sends its token to `/api/mobile/config`, which the current app build does not), plus admins and staff with a filing role on `/admin/filing`. The console shows a TEST MODE banner and a TEST badge on test jobs.
+- **Jobs:** every new job is created by `filing_enqueue_test` (0046) and marked `claim_filing_jobs.is_test`. A test job stays a test job, also after one-click goes live.
+- **Emails:** `administrator_email` goes only to `ONE_CLICK_TEST_INBOX`, with a `[TEST]` subject, no administrator address or CC, and the member's copy only to an internal tester. With no valid `ONE_CLICK_TEST_INBOX`, nothing is sent and the job goes to needs attention (`test_inbox_missing`). Member notices go only to internal testers, subject prefixed `[TEST]`.
+- **No callouts:** `administrator_api` never calls an administrator for a test job (`test_mode_no_api`).
+- **Bulk:** a real export never includes a test job. In test mode an export takes test jobs only, needs `ONE_CLICK_TEST_INBOX`, is stored with `filing_export_batches.is_test` and its file name starts with `TEST-`. Never upload it anywhere.
+- **Real data untouched:** in test mode the filing cron first checks that there is no real job and no packet owned by anyone outside `INTERNAL_EMAILS`. If there is, it runs no step and fails (`testMode` step, 500) so the alert fires. The desk refuses to take a real job, and the worker never sends one.
+
+### Turn it on
+
+1. Apply `0046_one_click_test_mode.sql` in the SQL editor (after 0041 to 0044). Additive; rollback SQL is in its header. Apply it **before** deploying this code: bulk exports filter on `is_test`.
+2. Vercel env (Production), then redeploy:
+   - `ONE_CLICK_FILING_TEST_MODE=1`
+   - `ONE_CLICK_TEST_INBOX=<an inbox the team reads>` (required; sends are refused without it)
+   - `INTERNAL_EMAILS=<tester1@...,tester2@...>` (comma-separated; these are the only members who see one-click)
+   - Leave `ONE_CLICK_FILING_ENABLED` unset. Resend (`RESEND_API_KEY`, verified sender) must work for the email lane.
+3. Give a tester a `legal_reviewer` role (`staff_roles`) if nobody has one, so drafts can be approved.
+
+### Create the test settlement
+
+```bash
+# Dry run: prints the settlement, spec and policy it would write
+ONE_CLICK_TEST_INBOX=... npx tsx scripts/one-click-test-settlement.ts
+# Write the drafts, then approve them as a legal_reviewer (or approve in /admin/filing/settlements/<id>)
+NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ONE_CLICK_TEST_INBOX=... \
+  npx tsx scripts/one-click-test-settlement.ts --apply --approve-as <legal_reviewer user id>
+```
+
+It creates `lawsuit-ai-one-click-test-settlement` ("[TEST] ... (not a real
+settlement)", example.test claim site, deadline 60 days out) with a spec and
+a policy whose only channel is `administrator_email` to the test inbox. It is
+published (the claim flow needs that) but left out of every public list,
+sitemap and matching job, its `/lawsuits/<slug>` page is a 404, and
+`/claim/<slug>` is a 404 for anyone not in `INTERNAL_EMAILS`.
+
+Tester flow: sign in as an internal account, answer "bought consumer goods"
+in onboarding (the settlement's one rule), open
+`/claim/lawsuit-ai-one-click-test-settlement`, fill the packet and sign. Run
+the cron (`GET /api/cron/filing` with `CRON_SECRET`) and check the test inbox
+for the `[TEST]` email, then the claim's status timeline and the TEST job on
+`/admin/filing/desk`.
+
+### Turn it off
+
+1. `npx tsx scripts/one-click-test-settlement.ts --off --apply` (kill switch on, settlement unpublished; nothing deleted).
+2. Remove `ONE_CLICK_FILING_TEST_MODE` (and `ONE_CLICK_TEST_INBOX` if unused) in Vercel and redeploy. The routes 404 again and the cron stops.
+3. Test rows stay for review (`select * from claim_filing_jobs where is_test`). They never go to an administrator, also after one-click goes live.
+
 ## Rollback
 
 - **Before step 4 (0008):** a Vercel instant rollback to the previous deployment works. The old "file" action still errors because of 0006's check.

@@ -10,9 +10,16 @@
  *   uploads    upload slots older than two hours -> deleted
  *   retention  member uploads past their retention -> deleted
  * Nothing here fills, scrapes or submits an official claim website.
+ *
+ * Test mode (ONE_CLICK_FILING_TEST_MODE with ONE_CLICK_FILING_ENABLED off):
+ * the run first checks that every one-click row belongs to the test (no real
+ * job, no packet of anyone outside INTERNAL_EMAILS). If not, no step runs and
+ * the run fails loudly: real members' claims are never touched in test mode.
  */
 import { randomUUID } from 'node:crypto';
+import { isInternalEmail } from '@/lib/internal-users';
 import { createServiceClient } from '@/lib/supabase/server';
+import { oneClickTestMode } from '../one-click-access';
 import { claimNextJob, recordFilingResult, WORKER_LOCK_MINUTES } from '../v2/jobs';
 import type { AgentChannel } from '../v2/contract-spec';
 import { deadlineOf, loadJobContext, preSendCheck, type ServiceClient, type SettlementFiling } from './context';
@@ -25,6 +32,7 @@ import {
   staffAlerts,
 } from './cron-sweeps';
 import { getChannelAdapter } from './index';
+import { sandboxFor } from './test-mode';
 import type { ChannelSubmitResult, FilingJobRecord } from './types';
 
 export const WORKER_CHANNELS: readonly AgentChannel[] = ['administrator_email', 'administrator_api'];
@@ -108,6 +116,9 @@ async function sendOne(
   const config = ctx.settlement.policy.channels.find((c) => c.type === job.channel);
   const adapter = getChannelAdapter(job.channel);
   if (!config || !adapter.submit) return attention(config ? 'channel_not_automatic' : 'channel_not_enabled');
+  // Test mode and test jobs (./test-mode.ts): the test inbox only, never an administrator.
+  const sandbox = sandboxFor(job, job.channel, () => ctx.packet.member.email);
+  if (sandbox.kind === 'refused') return finish(job, lockOwner, now, sandbox.result);
   let res: ChannelSubmitResult;
   try {
     res = await adapter.submit({
@@ -123,6 +134,7 @@ async function sendOne(
         deadline: deadlineOf(ctx.settlement.lawsuit, ctx.spec).deadline,
       },
       now,
+      ...(sandbox.kind === 'sandboxed' ? { sandbox: sandbox.sandbox } : {}),
     });
   } catch (err) {
     // The request may have left our servers: a person decides, nothing is sent again.
@@ -158,6 +170,28 @@ export async function processWorkerChannels(
   return counts;
 }
 
+/** Packets read per test-mode check; more than this is not a test. */
+export const TEST_MODE_MAX_PACKETS = 500;
+
+/**
+ * Test mode only: null when every one-click row is test data, else why not.
+ * Reads job flags and packet owners' emails only.
+ */
+export async function testModePreflight(svc: ServiceClient): Promise<string | null> {
+  const realJob = await svc.from('claim_filing_jobs').select('id').eq('is_test', false).limit(1);
+  if (realJob.error) return 'test_mode_check_failed';
+  if ((realJob.data ?? []).length > 0) return 'real_filing_jobs_present';
+  const packets = await svc.from('claim_packets').select('user_id').limit(TEST_MODE_MAX_PACKETS + 1);
+  if (packets.error) return 'test_mode_check_failed';
+  const owners = [...new Set(((packets.data ?? []) as Array<{ user_id: string }>).map((p) => p.user_id))];
+  if ((packets.data ?? []).length > TEST_MODE_MAX_PACKETS) return 'real_packets_present';
+  if (owners.length === 0) return null;
+  const profiles = await svc.from('profiles').select('id, email').in('id', owners);
+  if (profiles.error) return 'test_mode_check_failed';
+  const emails = new Map(((profiles.data ?? []) as Array<{ id: string; email: string | null }>).map((p) => [p.id, p.email]));
+  return owners.every((id) => isInternalEmail(emails.get(id))) ? null : 'real_packets_present';
+}
+
 async function step(steps: Record<string, FilingCronStep>, name: string, fn: () => Promise<unknown>): Promise<void> {
   try {
     steps[name] = { status: 'ran', result: await fn() };
@@ -179,6 +213,20 @@ export async function runFilingCron(
 
   const budgetMs = opts.budgetMs ?? SEND_TIME_BUDGET_MS;
   const shouldStop = () => Date.now() - startedAt > budgetMs;
+
+  if (oneClickTestMode()) {
+    let blocked: string | null = 'test_mode_check_failed';
+    try {
+      blocked = await testModePreflight(svc);
+    } catch {
+      // blocked stays set: nothing runs.
+    }
+    if (blocked) {
+      console.error('[filing/cron] test mode: refused to run', { reason: blocked });
+      return { ok: false, runId, steps: { testMode: { status: 'failed', error: blocked } } };
+    }
+    steps.testMode = { status: 'ran', result: { onlyTestData: true } };
+  }
 
   await step(steps, 'locks', () => expireStaleLocks(svc, now));
   await step(steps, 'repair', () => repairSignedWithoutJob(svc, now, settlements, shouldStop));

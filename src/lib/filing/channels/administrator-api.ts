@@ -12,6 +12,10 @@ import { AdministratorApiConfigSchema } from '../v2/contract-spec';
 import type { ChannelSubmitInput, ChannelSubmitResult } from './types';
 
 export async function submitAdministratorApi(input: ChannelSubmitInput<'administrator_api'>): Promise<ChannelSubmitResult> {
+  // Test mode and test jobs never reach an administrator's API (./test-mode.ts).
+  if (input.job.is_test === true || input.sandbox) {
+    return { status: 'needs_attention', reason_code: 'test_mode_no_api', detail: null };
+  }
   const config = AdministratorApiConfigSchema.safeParse(input.config);
   if (!config.success) return { status: 'needs_attention', reason_code: 'channel_config_invalid', detail: null };
   const adapter = getAdministratorAdapter(config.data.adapter);

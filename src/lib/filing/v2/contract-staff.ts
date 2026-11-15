@@ -230,6 +230,8 @@ export const JobSummarySchema = z.object({
   locked_by_me: z.boolean(),
   needs_attention_reason: z.string().nullable(),
   created_at: IsoDateTimeSchema,
+  /** 0046: a one-click test-mode job (the desk shows a TEST banner). Absent: a real job. */
+  is_test: z.boolean().optional(),
 });
 export const JobListResponseSchema = z.object({ items: z.array(JobSummarySchema), next_cursor: z.string().nullable() });
 

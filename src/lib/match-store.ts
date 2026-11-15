@@ -1,6 +1,6 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
-import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import { LIST_HIDDEN_SLUGS } from '@/lib/test-settlements';
 import { factsFromRows } from '@/lib/profile-facts';
 import { catalogDeadlineFilter, openGuidedCatalog } from '@/lib/settlement-guides';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
@@ -38,7 +38,7 @@ export async function persistStoredMatches(): Promise<MatchStoreResult> {
     .in('status', ['open', 'closing_soon'])
     // The catalog's read and rule: a guided settlement by its official deadline.
     .or(catalogDeadlineFilter(now))
-    .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
+    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
   if (lawsuitErr) {
     throw new Error(`[match-store] loading settlements failed: ${lawsuitErr.message}`);
   }
