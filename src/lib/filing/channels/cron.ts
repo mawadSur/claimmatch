@@ -24,6 +24,7 @@ import {
   retentionSweep,
   staffAlerts,
 } from './cron-sweeps';
+import { archiveRetentionSweep, pruneJevPartialRuns } from '../retention';
 import { getChannelAdapter } from './index';
 import type { ChannelSubmitResult, FilingJobRecord } from './types';
 
@@ -189,6 +190,8 @@ export async function runFilingCron(
   await step(steps, 'alerts', () => staffAlerts(svc, now));
   await step(steps, 'uploads', () => expirePendingUploads(svc, now));
   await step(steps, 'retention', () => retentionSweep(svc, now));
+  await step(steps, 'jev_retention', () => pruneJevPartialRuns(svc, now));
+  await step(steps, 'archive_retention', () => archiveRetentionSweep(svc, now));
 
   return { ok: Object.values(steps).every((s) => s.status === 'ran'), runId, steps };
 }

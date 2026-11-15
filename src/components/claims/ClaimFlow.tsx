@@ -141,6 +141,7 @@ export function ClaimFlow({
           settlement={stepsSettlement} context={context} claim={claim} profile={profile}
           onChange={onChange} onOpenOfficialForm={openedOfficialForm}
           stepTwoTitle={oc?.stepTwoTitle} stepTwoLead={oc?.stepTwoLead} prepared={oc?.prepared}
+          agentLane={oc?.filesForMember ?? false}
         />
       </>
     );
@@ -302,6 +303,7 @@ function FilingSteps({
   stepTwoTitle,
   stepTwoLead,
   prepared,
+  agentLane = false,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -313,6 +315,8 @@ function FilingSteps({
   stepTwoTitle?: string;
   stepTwoLead?: React.ReactNode;
   prepared?: React.ReactNode;
+  /** Lawsuit AI files (or offers to file) this claim: PrefillPacket's lead says so. */
+  agentLane?: boolean;
 }) {
   return (
     <ol className="space-y-5" aria-label="How to file">
@@ -396,7 +400,7 @@ function FilingSteps({
           the official site.
         </p>
         {prepared}
-        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} formFieldOrder={settlement.formFieldOrder} />
+        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} formFieldOrder={settlement.formFieldOrder} agentLane={agentLane} />
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">

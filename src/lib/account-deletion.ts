@@ -27,9 +27,10 @@ export const USER_OWNED_TABLES = [
   'payout_tracker_sends',
   'match_alert_sends',
   'beta_feedback',
-  // One-click filing (0041). Deleted with the account like claim_authorizations
-  // today; whether signatures must outlive the account is the law firm's call
-  // (docs/designs/one-click-filing.md, go-live checklist).
+  // One-click filing (0041). Deleted with the account. With
+  // LEGAL_RECORDS_ON_ACCOUNT_DELETION set to anonymize_and_retain or retain
+  // (src/lib/filing/legal-records.ts), signatures, voids, consents, jobs and
+  // evidence are first copied to filing_legal_record_archive (0045).
   'claim_filing_jobs',
   'claim_signature_voids',
   'claim_signatures',
@@ -61,8 +62,8 @@ export const CASCADE_ONLY_TABLES = ['profiles', 'claim_events'] as const;
  * deleted here too, as every user-owned table except CASCADE_ONLY_TABLES is.
  * The one-click tables (0041) go children first: jobs, voids and signatures
  * before the packets they point at, signatures before esign_consents. The
- * files under claim-documents/{user_id}/ in Storage are not rows: removing
- * them is a separate step (go-live checklist).
+ * files under claim-documents/{user_id}/ in Storage are not rows: the route
+ * removes them first (except evidence the 'retain' mode keeps).
  */
 export const EXPLICIT_DELETE_ORDER = [
   'filing_jobs',
@@ -118,6 +119,8 @@ export const DELETION_IGNORE_TABLES = [
   'admin_access_log',
   // Staff access log (0041): no foreign keys, append-only; kept per the law firm's retention decision.
   'filing_audit_log',
+  // Legal records kept after deletion (0045): no foreign keys, no account id; retention sweep only.
+  'filing_legal_record_archive',
   'verification_drafts',
 ] as const;
 

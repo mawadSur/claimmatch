@@ -6,7 +6,7 @@
 import {
   APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER, LEGAL_DISCLAIMER, SHORT_DISCLAIMER,
 } from '@/lib/disclaimer';
-import { MAY_FILE_LEGAL_SENTENCE, MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
+import { CLAIM_AGENT_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 /* -------------------------------------------------------------------------- */
@@ -39,4 +39,19 @@ export function appLegalDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.f
 
 export function appShortDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
   return adapt(APP_SHORT_DISCLAIMER, SELF_FILE_SHORT_SENTENCE, MAY_FILE_SHORT_SENTENCE, mayFile, free);
+}
+
+/**
+ * The legal disclaimer for one claim page (go-live checklist item 13). When
+ * Lawsuit AI files this claim (`filesThisClaim`: one-click on and an agent
+ * lane the law firm enabled, from claimFiledByLawsuitAi), the filing sentence
+ * says so for this claim; otherwise it is legalDisclaimer() word for word.
+ */
+export function claimLegalDisclaimer(
+  filesThisClaim: boolean,
+  oneClickOn = flags.oneClickFiling(),
+  free = !flags.feeDisclosure(),
+): string {
+  if (!filesThisClaim || !oneClickOn) return legalDisclaimer(undefined, free);
+  return adapt(LEGAL_DISCLAIMER, SELF_FILE_LEGAL_SENTENCE, CLAIM_AGENT_LEGAL_SENTENCE, true, free);
 }

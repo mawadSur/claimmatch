@@ -267,7 +267,8 @@ export function toPolicyRecord(row: Record<string, unknown>): FilingPolicyRecord
   };
 }
 
-export const CONTROLS_COLUMNS = 'lawsuit_id, administrator_id, kill_switch, kill_switch_reason, objection_received_at';
+export const CONTROLS_COLUMNS =
+  'lawsuit_id, administrator_id, kill_switch, kill_switch_reason, objection_received_at, desk_challenge_mode';
 
 export function toControlsRecord(row: Record<string, unknown>): FilingControlsRecord {
   return {
@@ -276,5 +277,6 @@ export function toControlsRecord(row: Record<string, unknown>): FilingControlsRe
     kill_switch: row.kill_switch === true,
     kill_switch_reason: str(row.kill_switch_reason),
     objection_received_at: isoTime(row.objection_received_at),
+    desk_challenge_mode: row.desk_challenge_mode === 'staff_completes_captcha' ? 'staff_completes_captcha' : 'stop',
   };
 }
