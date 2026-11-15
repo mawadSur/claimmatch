@@ -8,6 +8,8 @@
  * Claims already reported or filed are never started again. Server only.
  */
 import { serviceRoleConfigured } from '@/lib/claims-server';
+import { isInternalEmail } from '@/lib/internal-users';
+import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { createServiceClient } from '@/lib/supabase/server';
 import { contentOf, loadClaimContext, PROFILE_COLUMNS, settlementLane, toProfileRecord, derivePacketState } from './claim-context';
 import type { FilingErrorCode } from './contract';
@@ -56,6 +58,8 @@ export async function startFiling(caller: FilingCaller, lawsuitId: string, req: 
   if (!envs.ok) return { ok: false, code: 'settlement_unavailable' };
   const env = envs.envs.get(lawsuitId);
   if (!env || !env.context.published || env.context.fictional) return { ok: false, code: 'not_found' };
+  // The one-click test settlement is for INTERNAL_EMAILS testers only, also once one-click is live.
+  if (isTestSettlementSlug(env.settlement.slug) && !isInternalEmail(user.email)) return { ok: false, code: 'not_found' };
   const open = openForClaimsNow(env, env.approvedSpec?.content ?? null, now);
 
   let created = false;

@@ -1,4 +1,4 @@
-import { FICTIONAL_SLUGS, isFictionalSlug } from '@shared/lib/fictional-slugs';
+import { isFictionalSlug } from '@shared/lib/fictional-slugs';
 import { isPublicLawsuit, OPEN_STATUSES } from '@shared/lib/open-for-claims';
 import {
   applySettlementGuide,
@@ -7,6 +7,7 @@ import {
   settlementProofDetail,
 } from '@shared/lib/settlement-guides';
 import { settlementFaqs, type FaqItem } from '@shared/lib/settlement-seo';
+import { isTestSettlementSlug, LIST_HIDDEN_SLUGS } from '@shared/lib/test-settlements';
 import type { Lawsuit } from '@shared/lib/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -83,7 +84,8 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<GuidedRow[]> {
     .eq('review_status', 'published')
     .in('status', [...OPEN_STATUSES])
     .or(catalogDeadlineFilter(at))
-    .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`)
+    // The fictional slugs and the one-click test settlement (src/lib/test-settlements.ts).
+    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`)
     .order('deadline', { ascending: true, nullsFirst: false })
     .order('is_featured', { ascending: false });
   if (signal) query = query.abortSignal(signal);
@@ -105,6 +107,8 @@ export type SettlementLookup =
  */
 export async function fetchSettlementBySlug(slug: string, signal?: AbortSignal): Promise<SettlementLookup> {
   if (!slug || isFictionalSlug(slug)) return { status: 'missing', fictional: isFictionalSlug(slug) };
+  // The one-click test settlement has no public page, on the web or here.
+  if (isTestSettlementSlug(slug)) return { status: 'missing', fictional: false };
   let query = getSupabase()
     .from('lawsuits')
     .select(CATALOG_COLUMNS)
