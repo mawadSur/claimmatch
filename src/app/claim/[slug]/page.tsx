@@ -9,6 +9,8 @@ import { flags } from '@/lib/flags';
 import { signedOutClaimHref } from '@/lib/signup-context';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
+import { claimFiledByLawsuitAi } from '@/components/filing/filing-model';
+import { claimLegalDisclaimer } from '@/lib/disclaimer-flags';
 import { SignupContextReturned } from '@/components/analytics/SignupContextReturned';
 import { Disclaimer } from '@/components/Disclaimer';
 
@@ -117,6 +119,14 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     context,
     now,
   });
+  // Checklist item 13: the disclaimer says Lawsuit AI files this claim only when it does (or offers to).
+  const filesThisClaim = oneClick
+    ? claimFiledByLawsuitAi({
+        status: oneClick.view?.claim.status ?? claim?.status ?? null,
+        lane: oneClick.lane,
+        offerStart: oneClick.canStart,
+      })
+    : false;
 
   return (
     <section className="container-narrow py-10 sm:py-12">
@@ -133,7 +143,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
         />
       </div>
       <div className="mt-10">
-        <Disclaimer compact />
+        <Disclaimer compact text={claimLegalDisclaimer(filesThisClaim)} />
       </div>
     </section>
   );

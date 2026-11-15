@@ -68,6 +68,9 @@ export function controlsView(row: Row) {
     kill_switch_changed_at: str(row.kill_switch_changed_at),
     objection_received_at: str(row.objection_received_at),
     objection_notes: str(row.objection_notes),
+    desk_challenge_mode: row.desk_challenge_mode === 'staff_completes_captcha' ? ('staff_completes_captcha' as const) : ('stop' as const),
+    desk_challenge_notes: str(row.desk_challenge_notes),
+    desk_challenge_changed_at: str(row.desk_challenge_changed_at),
   };
 }
 

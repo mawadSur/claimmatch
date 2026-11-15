@@ -185,6 +185,7 @@ export const staffPaths = {
   rejectPolicy: (id: string) => `${B}/policies/${enc(id)}/reject`,
   killSwitch: () => `${B}/controls/kill-switch`,
   objection: () => `${B}/controls/objection`,
+  deskChallenge: () => `${B}/controls/desk-challenge`,
   specs: () => `${B}/specs`,
   spec: (id: string) => `${B}/specs/${enc(id)}`,
   validateSpec: (id: string) => `${B}/specs/${enc(id)}/validate`,

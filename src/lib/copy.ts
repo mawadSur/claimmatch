@@ -118,6 +118,19 @@ export const ONE_CLICK_FILED_LABEL = 'Filed by Lawsuit AI · waiting for the con
 export const ONE_CLICK_AGENT_NOTE =
   'Lawsuit AI files this claim for you after you sign it. Any payment comes to you from the settlement administrator, not from Lawsuit AI.';
 
+/**
+ * Per-claim disclaimer sentence (go-live checklist item 13): replaces the
+ * filing sentence of the legal disclaimer on a claim page only when Lawsuit AI
+ * files that claim (an agent lane the law firm enabled, one-click on). Every
+ * other claim keeps the site-wide sentence. Counsel to approve.
+ */
+export const CLAIM_AGENT_LEGAL_SENTENCE =
+  'For this claim, after you review and sign it, Lawsuit AI files this claim for you with the settlement administrator; you can still choose to file it yourself on the official site instead. Lawsuit AI never receives or handles settlement payments.';
+
+/** PrefillPacket's lead on a claim Lawsuit AI may file: the details are for filing it yourself instead. */
+export const PREFILL_AGENT_LANE_NOTE =
+  'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. Lawsuit AI files this claim for you only after you choose one-click filing and sign it.';
+
 /** The claim page's status note on the self-file lane while one-click filing is on. */
 export const ONE_CLICK_SELF_FILE_NOTE =
   'Lawsuit AI doesn’t file this claim for you. You finish it on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.';

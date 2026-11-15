@@ -10,6 +10,7 @@ import { JevIssueSchema } from '../../jev/types';
 import {
   AGENT_CHANNELS,
   AGENT_FILING_VALUES,
+  DESK_CHALLENGE_MODES,
   DOCUMENT_MIME_TYPES,
   FilingPolicyContentSchema,
   FilingSpecContentSchema,
@@ -48,6 +49,7 @@ export const STAFF_AUDIT_ACTIONS = [
   'kill_switch_off',
   'objection_recorded',
   'objection_cleared',
+  'desk_challenge_rule_set',
   'grant_role',
   'revoke_role',
 ] as const;
@@ -117,6 +119,23 @@ export const KillSwitchRequestSchema = z
 export const ObjectionRequestSchema = z
   .object({ target: TargetSchema, received_at: IsoDateTimeSchema.nullable(), notes: z.string().trim().max(5000).nullable() })
   .strict();
+/**
+ * POST /api/admin/filing/controls/desk-challenge (0045): a settlement's desk
+ * challenge rule. legal_reviewer only, either way; loosening it needs notes
+ * (what the law firm reviewed: the site's terms, the administrator's letter).
+ */
+export const DeskChallengeRequestSchema = z
+  .object({
+    lawsuit_id: UuidSchema,
+    mode: z.enum(DESK_CHALLENGE_MODES),
+    notes: z.string().trim().max(5000).nullable(),
+  })
+  .strict()
+  .superRefine((body, ctx) => {
+    if (body.mode !== 'stop' && !body.notes) {
+      ctx.addIssue({ code: 'custom', path: ['notes'], message: 'Say what the law firm reviewed before allowing this' });
+    }
+  });
 export const ControlsViewSchema = z.object({
   target: TargetSchema,
   kill_switch: z.boolean(),
@@ -124,6 +143,9 @@ export const ControlsViewSchema = z.object({
   kill_switch_changed_at: IsoDateTimeSchema.nullable(),
   objection_received_at: IsoDateTimeSchema.nullable(),
   objection_notes: z.string().nullable(),
+  desk_challenge_mode: z.enum(DESK_CHALLENGE_MODES),
+  desk_challenge_notes: z.string().nullable(),
+  desk_challenge_changed_at: IsoDateTimeSchema.nullable(),
 });
 export const ControlsResponseSchema = z.object({ controls: ControlsViewSchema });
 
@@ -269,6 +291,8 @@ export const DeskPacketViewSchema = z.object({
   /** pre_send Jev result, staff-audience issues included. */
   checks: z.object({ outcome: z.enum(['pass', 'warn', 'block']), issues: z.array(JevIssueSchema) }),
   lock: z.object({ mine: z.boolean(), expires_at: IsoDateTimeSchema.nullable() }),
+  /** The settlement's desk challenge rule (0045); 'stop' unless a legal_reviewer changed it. */
+  challenge_mode: z.enum(DESK_CHALLENGE_MODES),
 });
 export type DeskPacketView = z.infer<typeof DeskPacketViewSchema>;
 export const DeskNextResponseSchema = z.object({ job: DeskPacketViewSchema.nullable() });

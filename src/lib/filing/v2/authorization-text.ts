@@ -10,7 +10,7 @@
  * affiliated with the settlement, filing on the official site is free,
  * payment is not guaranteed, and nothing suggests filing yourself is riskier.
  */
-import type { AgentChannel } from './contract-spec';
+import type { AgentChannel, DeskChallengeMode } from './contract-spec';
 
 export const AGENT_AUTHORIZATION_VERSION = 'agent-auth-v1';
 
@@ -44,4 +44,23 @@ export function agentAuthorizationText(lane: AgentChannel): string {
 /** The text of a version and lane, or null for a version this server does not offer. */
 export function authorizationTextFor(version: string, lane: AgentChannel): string | null {
   return version === AGENT_AUTHORIZATION_VERSION ? agentAuthorizationText(lane) : null;
+}
+
+/**
+ * The authorization versions whose desk text tells the member a desk agent
+ * may complete a CAPTCHA by hand. agent-auth-v1 says the agent stops at any
+ * robot check, so none does yet: a settlement's 'staff_completes_captcha'
+ * rule (0045) has no effect until the law firm approves a new version that
+ * says so and it is added here. A claim signed under an older version is
+ * always filed under 'stop', whatever the settlement's rule says later.
+ */
+export const VERSIONS_COVERING_STAFF_CAPTCHA: ReadonlySet<string> = new Set<string>();
+
+/** The challenge rule that actually applies to a claim signed (or to be signed) under `authorizationVersion`. */
+export function effectiveDeskChallengeMode(
+  mode: DeskChallengeMode | undefined,
+  authorizationVersion: string = AGENT_AUTHORIZATION_VERSION,
+  covering: ReadonlySet<string> = VERSIONS_COVERING_STAFF_CAPTCHA,
+): DeskChallengeMode {
+  return mode === 'staff_completes_captcha' && covering.has(authorizationVersion) ? 'staff_completes_captcha' : 'stop';
 }

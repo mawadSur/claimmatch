@@ -6,6 +6,7 @@ import type { ClaimTone, ClaimView } from '@/lib/claims';
 import { ONE_CLICK_COPY, ONE_CLICK_SELF_FILE_TITLE } from '@/lib/copy';
 import type { ClaimFilingView } from '@/lib/filing/v2/contract';
 import {
+  claimFiledByLawsuitAi,
   claimPageNote,
   claimViewFromFiling,
   filingStatusDisplay,
@@ -36,6 +37,8 @@ export interface OneClickClaimParts {
   prepared: ReactNode;
   badge: { label: string; tone: ClaimTone } | null;
   note: string;
+  /** Lawsuit AI files (or offers to file) this claim: PrefillPacket says so (checklist item 13). */
+  filesForMember: boolean;
 }
 
 /**
@@ -104,5 +107,6 @@ export function useOneClickClaim({
     ) : null,
     badge: active && claim ? filingStatusDisplay(claim.status, claim.confirmation_number) : null,
     note: claimPageNote({ status: claim?.status ?? null, lane, offerStart }),
+    filesForMember: claimFiledByLawsuitAi({ status: claim?.status ?? null, lane, offerStart }),
   };
 }

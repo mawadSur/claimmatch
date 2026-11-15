@@ -162,6 +162,7 @@ export function fakeResolvePolicy(input: ResolvePolicyInput): EffectiveFilingPol
     kill_switch: kill,
     kill_switch_scope: kill ? 'settlement' : null,
     objection_received_at: null,
+    desk_challenge_mode: 'stop',
   };
 }
 

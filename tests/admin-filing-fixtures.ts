@@ -174,6 +174,9 @@ export function controls(overrides: Partial<ControlsView> = {}): ControlsView {
     kill_switch_changed_at: null,
     objection_received_at: null,
     objection_notes: null,
+    desk_challenge_mode: 'stop',
+    desk_challenge_notes: null,
+    desk_challenge_changed_at: null,
     ...overrides,
   });
 }
@@ -236,6 +239,7 @@ export function deskView(overrides: Partial<DeskPacketView> = {}): DeskPacketVie
     instructions: 'Use the long form, not the quick claim.',
     checks: { outcome: 'pass', issues: [] },
     lock: { mine: true, expires_at: '2026-11-12T15:30:00.000Z' },
+    challenge_mode: 'stop',
     ...overrides,
   });
 }

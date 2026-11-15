@@ -1,8 +1,11 @@
 import { Info } from 'lucide-react';
 import { legalDisclaimer } from '@/lib/disclaimer-flags';
 
-/** Reusable legal disclaimer box. Shown on claim + detail pages and legal pages. */
-export function Disclaimer({ compact = false }: { compact?: boolean }) {
+/**
+ * Reusable legal disclaimer box. Shown on claim + detail pages and legal pages.
+ * A claim page passes its per-claim text (claimLegalDisclaimer).
+ */
+export function Disclaimer({ compact = false, text }: { compact?: boolean; text?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -13,7 +16,7 @@ export function Disclaimer({ compact = false }: { compact?: boolean }) {
           compact ? 'line-clamp-4' : ''
         }`}
       >
-        {legalDisclaimer()}
+        {text ?? legalDisclaimer()}
       </p>
     </div>
   );

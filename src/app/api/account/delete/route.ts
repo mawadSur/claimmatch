@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { EXPLICIT_DELETE_ORDER } from '@/lib/account-deletion';
+import { archiveLegalRecords, legalRecordsMode } from '@/lib/filing/legal-records';
 import { CLAIM_DOCUMENTS_BUCKET } from '@/lib/filing/v2/contract-base';
 import { isJsonRequest } from '@/lib/json-request';
 import { rateLimit } from '@/lib/ratelimit';
@@ -16,9 +17,11 @@ type ServiceClient = ReturnType<typeof createServiceClient>;
  * the private claim-documents bucket under {user_id}/. Their claim_documents
  * rows go with the account, and the retention sweep finds files only through
  * those rows, so the files are removed first. Paths outside this user's
- * folder are never touched. Never throws; failures are logged without paths.
+ * folder are never touched, nor are evidence files the legal-record archive
+ * keeps (`keep`, mode 'retain' only). Never throws; failures are logged
+ * without paths.
  */
-async function removeClaimDocumentFiles(svc: ServiceClient, userId: string): Promise<void> {
+async function removeClaimDocumentFiles(svc: ServiceClient, userId: string, keep: ReadonlySet<string>): Promise<void> {
   try {
     const { data, error } = await svc.from('claim_documents').select('storage_path').eq('user_id', userId).limit(5000);
     if (error) {
@@ -27,7 +30,7 @@ async function removeClaimDocumentFiles(svc: ServiceClient, userId: string): Pro
     }
     const paths = ((data ?? []) as Array<{ storage_path?: unknown }>)
       .map((row) => row.storage_path)
-      .filter((path): path is string => typeof path === 'string' && path.startsWith(`${userId}/`));
+      .filter((path): path is string => typeof path === 'string' && path.startsWith(`${userId}/`) && !keep.has(path));
     for (let i = 0; i < paths.length; i += 100) {
       const { error: removeError } = await svc.storage.from(CLAIM_DOCUMENTS_BUCKET).remove(paths.slice(i, i + 100));
       if (removeError) console.error('[account-delete] claim document files not removed', { name: removeError.name });
@@ -79,13 +82,28 @@ export async function POST(req: Request) {
   }
 
   const svc = createServiceClient();
+
+  // Legal records (go-live checklist item 8): with a keeping mode the law firm
+  // chose, they are copied to the archive first. If that fails nothing is
+  // deleted, so a record the firm must keep is never lost.
+  const legalMode = legalRecordsMode();
+  let keptFiles: ReadonlySet<string> = new Set();
+  if (legalMode !== 'delete') {
+    const archived = await archiveLegalRecords(svc, user.id, legalMode, new Date());
+    if (!archived.ok) {
+      console.error('[account-delete] legal records not archived', { step: archived.step });
+      return NextResponse.json({ error: 'Could not finish deleting the account. Please try again.' }, { status: 500 });
+    }
+    keptFiles = new Set(archived.keptPaths);
+  }
+
   try {
     await svc.from('account_deletion_audit').insert({ reason: 'self_serve' });
   } catch (err) {
     console.error('[account-delete] audit failed', err);
   }
 
-  await removeClaimDocumentFiles(svc, user.id);
+  await removeClaimDocumentFiles(svc, user.id, keptFiles);
 
   // The profile is never deleted here: if deleteUser failed after that, the
   // user would keep a valid session with no profile row.

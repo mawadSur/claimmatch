@@ -7,6 +7,7 @@ import { flags } from '@/lib/flags';
 import { packetFieldOrder, type PacketFieldKey } from '@/lib/form-field-order';
 import { US_STATES } from '@/lib/utils';
 import type { PacketProfile } from '@/lib/claim-screen';
+import { PREFILL_AGENT_LANE_NOTE } from '@/lib/copy';
 
 type PacketFields = {
   full_name: string;
@@ -17,6 +18,10 @@ type PacketFields = {
   city: string;
   state: string;
 };
+
+/** The lead everywhere Lawsuit AI does not file the claim (unchanged; the app's copy mirrors it). */
+const SELF_FILE_NOTE =
+  'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI never files for you.';
 
 const FIELD_LABELS: Record<keyof PacketFields, string> = {
   full_name: 'Full name',
@@ -53,11 +58,14 @@ export function PrefillPacket({
   lawsuitId,
   lawsuitSlug,
   formFieldOrder,
+  agentLane = false,
 }: {
   profile: PacketProfile | null;
   lawsuitId?: string;
   lawsuitSlug?: string;
   formFieldOrder?: string[] | null;
+  /** Lawsuit AI files (or offers to file) this claim (checklist item 13); false keeps the self-file lead. */
+  agentLane?: boolean;
 }) {
   const posthog = usePostHog();
   const [fields, setFields] = useState<PacketFields>({
@@ -143,11 +151,7 @@ export function PrefillPacket({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold">Copy-ready details from your profile</h3>
-          <p className="mt-1 text-sm text-ink-muted">
-            Name, email, phone, address and state you saved. Edit anything
-            that&rsquo;s wrong, then copy into the official form. Lawsuit AI never
-            files for you.
-          </p>
+          <p className="mt-1 text-sm text-ink-muted">{agentLane ? PREFILL_AGENT_LANE_NOTE : SELF_FILE_NOTE}</p>
         </div>
         <button
           type="button"

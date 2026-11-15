@@ -9,7 +9,10 @@ import {
   AdministratorBulkConfigSchema,
   AdministratorEmailConfigSchema,
   FilingDeskConfigSchema,
+  STAFF_COMPLETABLE_CHALLENGES,
   type AgentChannel,
+  type DeskChallengeMode,
+  type OfficialFormChallenge,
   type ChannelConfigFor,
   type FilingSpecContent,
 } from '../v2/contract-spec';
@@ -19,16 +22,37 @@ export interface SupportInput<C extends AgentChannel> {
   config: ChannelConfigFor<C>;
   spec: FilingSpecContent;
   needsDocuments: boolean;
+  /** The settlement's desk challenge rule (0045); absent means 'stop'. */
+  challengeMode?: DeskChallengeMode;
 }
 
 const OK: ChannelSupport = { ok: true };
 
-/** filing_desk: staff in their own browser. Any challenge the official site is known to show keeps it off. */
+/**
+ * The known checks the desk cannot get past for this settlement: every one
+ * under 'stop'; under 'staff_completes_captcha' every one but a CAPTCHA.
+ */
+export function blockingChallenges(
+  challenges: readonly OfficialFormChallenge[] | undefined,
+  mode: DeskChallengeMode | undefined,
+): OfficialFormChallenge[] {
+  const all = [...(challenges ?? [])];
+  if (mode !== 'staff_completes_captcha') return all;
+  return all.filter((c) => !STAFF_COMPLETABLE_CHALLENGES.includes(c));
+}
+
+/**
+ * filing_desk: staff in their own browser. A check the official site is known
+ * to show keeps it off, unless the law firm let staff complete that kind
+ * (only a CAPTCHA, only with 'staff_completes_captcha').
+ */
 export function deskSupports(input: SupportInput<'filing_desk'>): ChannelSupport {
   const config = FilingDeskConfigSchema.safeParse(input.config);
   if (!config.success) return { ok: false, reason: 'channel_config_invalid' };
   if (input.needsDocuments && !config.data.accepts_documents) return { ok: false, reason: 'channel_cannot_carry_documents' };
-  if ((input.spec.official_form?.challenges ?? []).length > 0) return { ok: false, reason: 'form_has_challenge' };
+  if (blockingChallenges(input.spec.official_form?.challenges, input.challengeMode).length > 0) {
+    return { ok: false, reason: 'form_has_challenge' };
+  }
   return OK;
 }
 
@@ -83,7 +107,7 @@ export function apiSupports(input: SupportInput<'administrator_api'>): ChannelSu
 
 export function channelSupports(
   channel: AgentChannel,
-  input: { config: unknown; spec: FilingSpecContent; needsDocuments: boolean },
+  input: { config: unknown; spec: FilingSpecContent; needsDocuments: boolean; challengeMode?: DeskChallengeMode },
 ): ChannelSupport {
   switch (channel) {
     case 'filing_desk':
