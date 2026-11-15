@@ -19,12 +19,41 @@ export const CONFIRMATION_MIN = 3;
 export const CONFIRMATION_MAX = 64;
 export const FILED_ON_EARLIEST = '2000-01-01';
 
+/*
+ * This file is shared with the native app (mobile/shared.json), which builds it
+ * against its own zod 3 while the web uses zod 4. So it sticks to API both
+ * versions accept: string messages, `{ message }`, transforms and regexes.
+ */
+
+/** zod 3's name for a value's type, as its default invalid_type message used it. */
+function parsedTypeName(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  if (typeof v === 'number' && Number.isNaN(v)) return 'nan';
+  return typeof v;
+}
+
+/**
+ * A string, with one message when the value is missing (undefined) and
+ * another when it is some other type: what zod 3's required_error and
+ * invalid_type_error gave, written so zod 3 and zod 4 behave the same.
+ */
+function stringInput(missing: string, notText: (v: unknown) => string) {
+  return z.unknown().transform((v, ctx): string => {
+    if (typeof v === 'string') return v;
+    ctx.addIssue({ code: 'custom', message: v === undefined ? missing : notText(v) });
+    return z.NEVER;
+  });
+}
+
+/** Any 8-4-4-4-12 hex id, as zod 3's .uuid() accepted (zod 4's checks the version bits). */
+const UUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 /** Trimmed, 3-64 characters of letters, digits, spaces and - # / . */
-export const confirmationNumberSchema = z
-  .string({
-    required_error: 'Enter your confirmation number.',
-    invalid_type_error: 'Enter the confirmation number as text.',
-  })
+export const confirmationNumberSchema = stringInput(
+  'Enter your confirmation number.',
+  () => 'Enter the confirmation number as text.',
+)
   .transform((v) => v.trim().replace(/\s+/g, ' '))
   .pipe(
     z
@@ -59,7 +88,7 @@ const claimPatchSchema = z.discriminatedUnion('action', [
     confirmation_number: z.preprocess(blankToUndefined, confirmationNumberSchema.optional()),
     filed_on: z.preprocess(
       blankToUndefined,
-      z.string({ invalid_type_error: 'Enter the filing date as YYYY-MM-DD.' }).optional(),
+      z.string({ message: 'Enter the filing date as YYYY-MM-DD.' }).optional(),
     ),
   }),
   z.object({ action: z.literal('add_confirmation'), confirmation_number: confirmationNumberSchema }),
@@ -70,7 +99,11 @@ const claimPatchSchema = z.discriminatedUnion('action', [
 function firstMessage(error: z.ZodError): string {
   const issue = error.issues[0];
   if (!issue) return 'Invalid request.';
-  if (issue.code === 'invalid_union_discriminator') return 'Unknown action.';
+  // No option matches `action`: zod 3 reports invalid_union_discriminator,
+  // zod 4 invalid_union (this schema has no other union).
+  if ((issue.code as string) === 'invalid_union_discriminator' || issue.code === 'invalid_union') {
+    return 'Unknown action.';
+  }
   if (issue.path.length === 0) return 'Invalid request.';
   return issue.message;
 }
@@ -98,10 +131,10 @@ export const START_INTENTS = ['track', 'report_filed'] as const;
 export type StartIntent = (typeof START_INTENTS)[number];
 
 const startTrackingSchema = z.object({
-  lawsuit_id: z
-    .string({ required_error: 'Pick a settlement first.' })
-    .uuid("That settlement link isn't valid. Go back and pick the settlement again."),
-  intent: z.enum(START_INTENTS, { errorMap: () => ({ message: 'Unknown action.' }) }).default('track'),
+  lawsuit_id: stringInput('Pick a settlement first.', (v) => `Expected string, received ${parsedTypeName(v)}`).pipe(
+    z.string().regex(UUID_PATTERN, "That settlement link isn't valid. Go back and pick the settlement again."),
+  ),
+  intent: z.enum(START_INTENTS, { message: 'Unknown action.' }).default('track'),
 });
 
 /**

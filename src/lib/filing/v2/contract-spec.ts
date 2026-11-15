@@ -12,7 +12,8 @@
 import { z } from 'zod';
 import { JevConditionSchema, JevRuleSchema } from '../../jev/types';
 
-export const UuidSchema = z.string().uuid();
+// Any 8-4-4-4-12 hex id, as zod 3's .uuid() accepted (zod 4's .uuid() also checks version bits).
+export const UuidSchema = z.guid();
 export const Sha256HexSchema = z.string().regex(/^[0-9a-f]{64}$/, 'Expected a lowercase SHA-256 hex digest');
 export const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 export const IsoDateTimeSchema = z.string().datetime({ offset: true });

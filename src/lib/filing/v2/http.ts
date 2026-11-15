@@ -7,7 +7,7 @@
  */
 import { NextResponse } from 'next/server';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
-import type { ZodError, ZodType, ZodTypeDef } from 'zod';
+import type { ZodError, ZodType } from 'zod';
 import { flags } from '@/lib/flags';
 import { isJsonRequest } from '@/lib/json-request';
 import { rateLimit } from '@/lib/ratelimit';
@@ -98,7 +98,7 @@ export function zodFields(error: ZodError): FieldError[] {
 /** Reads and checks a JSON body. An empty body counts as {} (for the routes that take an empty object). */
 export async function parseJsonBody<T>(
   req: Request,
-  schema: ZodType<T, ZodTypeDef, unknown>,
+  schema: ZodType<T, unknown>,
 ): Promise<{ ok: true; data: T } | { ok: false; response: Response }> {
   let raw: unknown = {};
   try {

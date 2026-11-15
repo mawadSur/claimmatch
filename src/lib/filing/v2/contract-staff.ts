@@ -383,7 +383,7 @@ export const AuditEntryViewSchema = z.object({
   claim_id: UuidSchema.nullable(),
   job_id: UuidSchema.nullable(),
   lawsuit_id: UuidSchema.nullable(),
-  detail: z.record(z.unknown()),
+  detail: z.record(z.string(), z.unknown()),
   created_at: IsoDateTimeSchema,
 });
 export const AuditListResponseSchema = z.object({ entries: z.array(AuditEntryViewSchema), next_cursor: z.string().nullable() });

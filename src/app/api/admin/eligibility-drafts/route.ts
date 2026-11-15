@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const PatchBody = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   action: z.enum(['approve', 'reject']),
   notes: z.string().max(2000).optional(),
 });

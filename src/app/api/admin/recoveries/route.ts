@@ -8,16 +8,16 @@ export const runtime = 'nodejs';
 
 const BodySchema = z
   .object({
-    id: z.string().uuid('A valid recovery id is required.'),
+    id: z.guid({ error: (iss) => (iss.code === 'invalid_format' ? 'A valid recovery id is required.' : undefined) }),
     action: z.enum(['record', 'mark_paid', 'deny']),
     // Only meaningful for 'record'. fee_amount / net_amount are DB-generated
     // columns computed from gross_amount — the client never sets them.
-    gross_amount: z.number().finite().nonnegative().optional(),
+    gross_amount: z.number().nonnegative().optional(),
   })
   .superRefine((val, ctx) => {
     if (val.action === 'record' && val.gross_amount == null) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['gross_amount'],
         message: 'A gross amount is required to record a recovery.',
       });
