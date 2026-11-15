@@ -22,6 +22,7 @@ vi.mock('@/lib/filing/channels/member-notices', () => ({ notifyMember: m.notifyM
 import { GET as cronGet } from '@/app/api/cron/filing/route';
 import { GET as configGet } from '@/app/api/mobile/config/route';
 import { guard } from '@/app/api/admin/filing/_lib/http';
+import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
 import { loadOneClickDashboard } from '@/components/filing/dashboard-data';
 import { oneClickEnabledFor, oneClickMayBeOn, oneClickMode } from '@/lib/filing/one-click-access';
 import { beginFilingRoute } from '@/lib/filing/v2/http';
@@ -172,7 +173,68 @@ describe('GET /api/mobile/config', () => {
   it('live: on for everyone without reading the token', async () => {
     setMode('live');
     expect(await flagOf(await get())).toBe(true);
+    expect(await flagOf(await get('Bearer t'))).toBe(true);
     expect(m.getRequestUser).not.toHaveBeenCalled();
+  });
+
+  it('test mode: a rejected, malformed or uncheckable token still gets the public config (200, one-click off)', async () => {
+    setMode('test');
+    const answers = [
+      { user: null, supabase: null, via: 'bearer' },
+      { user: null, supabase: null, via: 'bearer', unavailable: true },
+    ];
+    for (const answer of answers) {
+      m.getRequestUser.mockResolvedValueOnce(answer);
+      const res = await get('Bearer t');
+      expect(res.status).toBe(200);
+      expect(await flagOf(res)).toBe(false);
+    }
+    m.getRequestUser.mockRejectedValueOnce(new Error('auth exploded'));
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const thrown = await get('Bearer');
+    expect(thrown.status).toBe(200);
+    expect(await flagOf(thrown)).toBe(false);
+    expect(JSON.stringify(errorLog.mock.calls)).not.toMatch(/exploded/);
+    errorLog.mockRestore();
+  });
+
+  it('gives the same answer as the claim screen gate for the same account', async () => {
+    for (const mode of ['off', 'test', 'live'] as const) {
+      setMode(mode);
+      for (const email of [TESTER, MEMBER]) {
+        signedIn(email);
+        expect(await flagOf(await get('Bearer t')), `${mode} ${email}`).toBe(oneClickEnabledFor({ kind: 'member', email }));
+      }
+    }
+  });
+});
+
+describe('GET /api/mobile/claim/[slug] (the app claim screen) uses the same gate', () => {
+  const args = (email: string) => ({
+    supabase: { from: vi.fn() } as never,
+    userId: ID(1),
+    accountEmail: email,
+    slug: 'lawsuit-ai-one-click-test-settlement',
+    lawsuitId: ID(2),
+    claim: null,
+    context: { openForClaims: true, deadlinePassed: false, fictional: true } as never,
+    now: new Date(),
+  });
+
+  it('test mode: no one-click for a member outside INTERNAL_EMAILS, before reading anything; a tester gets it', async () => {
+    setMode('test');
+    const member = args(MEMBER);
+    expect(await loadOneClickClaimPage(member)).toBeNull();
+    expect((member.supabase as unknown as { from: ReturnType<typeof vi.fn> }).from).not.toHaveBeenCalled();
+    // A tester gets the one-click state (no "Start my claim" on a fictional settlement).
+    expect(await loadOneClickClaimPage(args(TESTER))).toMatchObject({ canStart: false, accountEmail: TESTER });
+  });
+
+  it('off: nobody; live: everyone', async () => {
+    setMode('off');
+    expect(await loadOneClickClaimPage(args(TESTER))).toBeNull();
+    setMode('live');
+    expect(await loadOneClickClaimPage(args(MEMBER))).toMatchObject({ accountEmail: MEMBER });
   });
 });
 

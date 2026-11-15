@@ -352,6 +352,12 @@ describe('GET /api/mobile/claim/[slug]: one-click filing', () => {
     expect(JSON.stringify(body.oneClick)).not.toMatch(/packet|ada@/);
   });
 
+  it('asks the one-click gate with the bearer account’s own email (test mode allows INTERNAL_EMAILS testers only)', async () => {
+    h.bearerUser = { id: 'user-b', email: 'tester@lawsuitai.example' } as { id: string };
+    await expectReply(await get('real-settlement', 'Bearer app-header.app-payload.app-signature'), 200);
+    expect(h.oneClickCalls[0]).toMatchObject({ userId: 'user-b', accountEmail: 'tester@lawsuitai.example' });
+  });
+
   it('never asks for a closed settlement', async () => {
     h.lookup = { ok: true, settlement: settlement({ deadline: '2026-08-01' }) };
     h.claimRow = null;
