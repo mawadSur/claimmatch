@@ -6,6 +6,7 @@
  * job automatically after a submission may have happened.
  */
 import { createServiceClient } from '@/lib/supabase/server';
+import { oneClickTestMode } from '../one-click-access';
 import type { LaneDecision } from '../channels/index';
 import type { MemberNoticeEvent } from '../channels/member-notices';
 import { memberSafeReason, type MemberSafeReason } from '../channels/reasons';
@@ -57,7 +58,12 @@ export interface EnqueueFilingInput {
   now: Date;
 }
 
-/** filing_enqueue: claim signed -> queued with one open job. Idempotent per signature (created false on a repeat). */
+/**
+ * filing_enqueue: claim signed -> queued with one open job. Idempotent per
+ * signature (created false on a repeat). In one-click test mode it is
+ * filing_enqueue_test (0046), which marks the new job is_test in the same
+ * transaction, so no worker can take it as a real job.
+ */
 export async function enqueueFiling(
   input: EnqueueFilingInput,
 ): Promise<{ ok: true; created: boolean; job: FilingJobRecord; claimStatus: string } | JobFailure> {
@@ -67,7 +73,7 @@ export async function enqueueFiling(
   }
   if (!UUID.test(input.signatureId)) return jobFailure('invalid_request');
   const svc = createServiceClient();
-  const { data, error } = await svc.rpc('filing_enqueue', {
+  const { data, error } = await svc.rpc(oneClickTestMode() ? 'filing_enqueue_test' : 'filing_enqueue', {
     p_signature_id: input.signatureId,
     p_channel: decision.lane,
     p_policy_id: decision.policyId,

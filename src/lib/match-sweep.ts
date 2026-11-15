@@ -1,7 +1,7 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
-import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import { LIST_HIDDEN_SLUGS } from '@/lib/test-settlements';
 import {
   isEmailableStoredMatch,
   MATCH_EMAIL_SCORE_THRESHOLD,
@@ -48,7 +48,7 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
     .eq('review_status', 'published')
     .in('status', ['open', 'closing_soon'])
     .or(catalogDeadlineFilter(now))
-    .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
+    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
   if (lawsuitErr) {
     // Fail loudly so the cron reports an error instead of a quiet "0 sent".
     throw new Error(`[match-sweep] loading settlements failed: ${lawsuitErr.message}`);

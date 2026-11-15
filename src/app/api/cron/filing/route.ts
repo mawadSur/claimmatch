@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { FILING_ERROR_MESSAGES } from '@/lib/filing/v2/contract';
-import { flags } from '@/lib/flags';
+import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
 import { serviceConfigProblem } from '../_lib/report';
 
 /**
@@ -9,7 +9,8 @@ import { serviceConfigProblem } from '../_lib/report';
  * (src/lib/filing/channels/cron.ts): expired locks, signed claims without a
  * job, hand-backs, worker-channel sends, staff alerts, expired uploads and
  * document retention. CRON_SECRET as the other cron routes. With
- * ONE_CLICK_FILING_ENABLED off it answers 404 before auth or any read.
+ * one-click off (ONE_CLICK_FILING_ENABLED and ONE_CLICK_FILING_TEST_MODE both
+ * off) it answers 404 before auth or any read. In test mode it runs sandboxed.
  * Any failed step makes the answer a 500 (never a silent 200).
  */
 export const runtime = 'nodejs';
@@ -19,7 +20,7 @@ export const maxDuration = 300;
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
 async function handle(req: Request) {
-  if (!flags.oneClickFiling()) {
+  if (!oneClickEnabledFor({ kind: 'system' })) {
     return NextResponse.json({ error: FILING_ERROR_MESSAGES.not_found, code: 'not_found' }, { status: 404, headers: NO_STORE });
   }
   if (!authorizeCron(req)) {

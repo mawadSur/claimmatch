@@ -1,6 +1,7 @@
 import { addCalendarDays } from '@shared/lib/claim-deadlines';
 import { FICTIONAL_SLUGS } from '@shared/lib/fictional-slugs';
 import { GUIDED_SLUGS, SETTLEMENT_GUIDES_VERSION, getSettlementGuide } from '@shared/lib/settlement-guides';
+import { ONE_CLICK_TEST_SLUG } from '@shared/lib/test-settlements';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
@@ -123,7 +124,8 @@ describe('catalog query', () => {
     // Every guided slug too, whatever its feed deadline: its official deadline decides after the read.
     expect(calls('or')).toEqual([[`deadline.is.null,deadline.gte.2026-11-02,slug.in.(${GUIDED_SLUGS.join(',')})`]]);
     expect(GUIDED_SLUGS).toContain(GUIDED_SLUG);
-    expect(calls('not')).toEqual([['slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`]]);
+    // The fictional slugs and the one-click test settlement, as on the web.
+    expect(calls('not')).toEqual([['slug', 'in', `(${[...FICTIONAL_SLUGS, ONE_CLICK_TEST_SLUG].join(',')})`]]);
     expect(calls('order')).toEqual([
       ['deadline', { ascending: true, nullsFirst: false }],
       ['is_featured', { ascending: false }],
@@ -248,6 +250,11 @@ describe('settlement lookup', () => {
   it('never requests a fictional slug and says it was fictional', async () => {
     const result = await fetchSettlementBySlug(FICTIONAL_SLUGS[1]);
     expect(result).toEqual({ status: 'missing', fictional: true });
+    expect(mockState.calls).toEqual([]);
+  });
+
+  it('never requests the one-click test settlement: it has no public page', async () => {
+    await expect(fetchSettlementBySlug(ONE_CLICK_TEST_SLUG)).resolves.toEqual({ status: 'missing', fictional: false });
     expect(mockState.calls).toEqual([]);
   });
 

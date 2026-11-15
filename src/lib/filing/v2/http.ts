@@ -8,10 +8,10 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { ZodError, ZodType } from 'zod';
-import { flags } from '@/lib/flags';
 import { isJsonRequest } from '@/lib/json-request';
 import { rateLimit } from '@/lib/ratelimit';
 import { getRequestUser } from '@/lib/supabase/request-user';
+import { oneClickEnabledFor, oneClickMayBeOn } from '../one-click-access';
 import {
   FILING_DB_ERRORS,
   FILING_ERROR_HTTP,
@@ -75,12 +75,14 @@ export type Begin = { ok: true; caller: FilingCaller } | { ok: false; response: 
 /**
  * Every member route starts here, in this order: the flag (404, before auth
  * or any read), the caller (401, or 503 when Auth could not check a token),
+ * one-click for this caller (404: in test mode only INTERNAL_EMAILS testers),
  * the rate limit (429), and for writes the JSON media type (415).
  */
 export async function beginFilingRoute(req: Request, limit: FilingLimit, opts: { json?: boolean } = {}): Promise<Begin> {
-  if (!flags.oneClickFiling()) return { ok: false, response: fail('not_found') };
+  if (!oneClickMayBeOn()) return { ok: false, response: fail('not_found') };
   const auth = await getRequestUser(req);
   if (!auth.user) return { ok: false, response: fail(auth.unavailable ? 'auth_unavailable' : 'unauthorized') };
+  if (!oneClickEnabledFor({ kind: 'member', email: auth.user.email })) return { ok: false, response: fail('not_found') };
   const rule = FILING_RATE_LIMITS[limit];
   const verdict = rateLimit(`${rule.key}:${auth.user.id}`, { limit: rule.limit, windowMs: rule.windowMs });
   if (!verdict.ok) return { ok: false, response: fail('rate_limited', { retryAfter: verdict.retryAfter }) };

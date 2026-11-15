@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { loadClaimScreen } from '@/lib/claim-screen-server';
 import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
+import { isInternalEmail } from '@/lib/internal-users';
+import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { signedOutClaimHref } from '@/lib/signup-context';
 import { hasGoogleIdentity } from '@/lib/oauth';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
@@ -38,6 +40,8 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(signedOutClaimHref(`/claim/${slug}`));
+  // The one-click test settlement is for INTERNAL_EMAILS testers only (src/lib/test-settlements.ts).
+  if (isTestSettlementSlug(slug) && !isInternalEmail(user.email)) notFound();
 
   const now = new Date();
   const screen = await loadClaimScreen(supabase, user.id, slug, now);

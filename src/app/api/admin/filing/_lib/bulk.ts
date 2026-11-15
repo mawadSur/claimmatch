@@ -5,9 +5,16 @@
  * channel's CSV, records the batch (hash and count only) and the audit row,
  * and marks the jobs exported (awaiting the administrator's results). Staff
  * upload the file to the administrator's portal themselves.
+ *
+ * Test jobs (claim_filing_jobs.is_test, 0046) are never in a real export. In
+ * one-click test mode an export takes test jobs only, needs
+ * ONE_CLICK_TEST_INBOX like every test-mode send, is recorded as a test batch
+ * and its file name starts with TEST: it is never for an administrator.
  */
 import { buildBulkCsv, bulkFileName, type BulkRowInput } from '@/lib/filing/channels/bulk';
 import { loadJobContext, loadSettlementFiling, preSendCheck, sha256Text, type ServiceClient } from '@/lib/filing/channels/context';
+import { testInbox } from '@/lib/filing/channels/test-mode';
+import { oneClickTestMode } from '@/lib/filing/one-click-access';
 import type { FilingJobRecord } from '@/lib/filing/channels/types';
 import { AdministratorBulkConfigSchema, type ChannelConfigFor } from '@/lib/filing/v2/contract-spec';
 import type { FilingErrorCode } from '@/lib/filing/v2/contract';
@@ -41,13 +48,17 @@ export async function exportBulk(
     return { ok: false, code: 'lane_unavailable' };
   }
   const config: ChannelConfigFor<'administrator_bulk'> = parsed.data;
+  const testBatch = oneClickTestMode();
+  if (testBatch && !testInbox()) return { ok: false, code: 'lane_unavailable' };
   const limit = Math.min(input.maxRows ?? config.max_rows, config.max_rows);
-  const { data: candidates, error } = await svc
+  const queued = svc
     .from('claim_filing_jobs')
     .select('id')
     .eq('channel', 'administrator_bulk')
     .eq('status', 'queued')
-    .eq('lawsuit_id', input.lawsuitId)
+    .eq('lawsuit_id', input.lawsuitId);
+  // A real export never carries a test job; a test-mode export carries nothing else.
+  const { data: candidates, error } = await (testBatch ? queued.eq('is_test', true) : queued.neq('is_test', true))
     .lte('run_after', now.toISOString())
     .order('due_by', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: true })
@@ -106,6 +117,7 @@ export async function exportBulk(
       columns,
       file_sha256: fileSha,
       created_by: staff.id,
+      ...(testBatch ? { is_test: true, notes: 'TEST batch (one-click test mode): never upload to an administrator.' } : {}),
     })
     .select('id')
     .single();
@@ -120,7 +132,7 @@ export async function exportBulk(
     lawsuitId: input.lawsuitId,
     targetTable: 'filing_export_batches',
     targetId: batchId,
-    detail: { rows: rows.length, file_sha256: fileSha, job_ids: rows.map((r) => r.jobId), skipped },
+    detail: { rows: rows.length, file_sha256: fileSha, job_ids: rows.map((r) => r.jobId), skipped, ...(testBatch ? { test: true } : {}) },
     req,
   });
   if (!logged) {
@@ -149,7 +161,7 @@ export async function exportBulk(
   return {
     ok: true,
     csv,
-    fileName: bulkFileName(config.file_name_prefix, settlement.lawsuit.slug, batchId, now),
+    fileName: `${testBatch ? 'TEST-' : ''}${bulkFileName(config.file_name_prefix, settlement.lawsuit.slug, batchId, now)}`,
     batchId,
     rows: rows.length,
     sha256: fileSha,

@@ -1,6 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { requireAdmin } from '@/lib/admin';
 import { flags } from '@/lib/flags';
+import { oneClickEnabledFor, oneClickMayBeOn } from '@/lib/filing/one-click-access';
 import { getStaffUser, type StaffUser } from '@/lib/staff-roles';
 import { createServiceClient } from '@/lib/supabase/server';
 import { AdminNav, type AdminNavCounts } from '@/components/admin/AdminNav';
@@ -9,7 +10,7 @@ import { FilingNavLink } from '@/components/admin/filing/FilingNavLink';
 /**
  * Admin area shell. Server-guards every /admin route: only signed-in admins get
  * past this, everyone else is bounced to login with a return path. With
- * ONE_CLICK_FILING_ENABLED on, staff who hold a filing role without being
+ * one-click on for staff (ONE_CLICK_FILING_ENABLED, or test mode), staff who hold a filing role without being
  * admins (the law firm's legal_reviewer, desk filing_agent) also get past it,
  * with only the filing console link: every other /admin page still calls
  * requireAdmin itself, and every /admin/filing page calls requireStaff.
@@ -19,9 +20,9 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (flags.oneClickFiling()) {
+  if (oneClickMayBeOn()) {
     const staff = await getStaffUser();
-    if (staff && !staff.isAdmin) return <FilingStaffShell staff={staff}>{children}</FilingStaffShell>;
+    if (staff && !staff.isAdmin && oneClickEnabledFor({ kind: 'staff', isStaff: true })) return <FilingStaffShell staff={staff}>{children}</FilingStaffShell>;
   }
   const admin = await requireAdmin('/admin');
 
@@ -44,7 +45,7 @@ export default async function AdminLayout({
             </div>
           </div>
           {/* One-click filing console link; AdminNav already shows one when the legacy flag is on. */}
-          {flags.oneClickFiling() && !flags.assistedFiling() ? (
+          {oneClickEnabledFor({ kind: 'staff', isStaff: true }) && !flags.assistedFiling() ? (
             <div className="flex flex-wrap items-center gap-1.5">
               <AdminNav counts={counts} />
               <FilingNavLink />

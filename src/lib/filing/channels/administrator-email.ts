@@ -9,6 +9,11 @@
  * Never sent twice automatically: Resend's Idempotency-Key is the job's key,
  * and any failure once Resend was called is needs_attention for a person.
  * Header injection: every header value is one line, addresses are checked.
+ *
+ * Test mode (input.sandbox, ./test-mode.ts): the email goes only to the test
+ * inbox with a "[TEST]" subject, the member's copy only to an internal tester,
+ * and no configured administrator address or CC is used. A test job without a
+ * sandbox is never sent.
  */
 import { createHash } from 'node:crypto';
 import { sendTransactionalEmail } from '@/lib/email-transactional';
@@ -17,6 +22,7 @@ import type { CanonicalPacket } from '../v2/contract';
 import { AdministratorEmailConfigSchema, type FilingSpecContent } from '../v2/contract-spec';
 import { documentLabel, orderedPacketFields } from './packet-fields';
 import { isPlainAddress } from './support';
+import { TEST_SUBJECT_PREFIX } from './test-mode';
 import type { ChannelSubmitInput, ChannelSubmitResult, SignatureBlock } from './types';
 
 const EXTENSION: Record<string, string> = {
@@ -160,6 +166,9 @@ export async function submitAdministratorEmail(input: ChannelSubmitInput<'admini
     return attention('channel_config_invalid');
   }
   const config = parsed.data;
+  const sandbox = input.sandbox ?? null;
+  if (input.job.is_test === true && !sandbox) return attention('test_inbox_missing');
+  if (sandbox && !isPlainAddress(sandbox.inbox)) return attention('test_inbox_missing');
   const signed = input.packet.documents;
   if (signed.length > 0 && !config.attach_documents) return attention('documents_not_carried');
 
@@ -192,16 +201,20 @@ export async function submitAdministratorEmail(input: ChannelSubmitInput<'admini
     spec: input.spec.content,
     signature: input.signature,
     reference: input.job.id,
-    subjectPrefix: config.subject_prefix ? headerSafe(config.subject_prefix, 120) : null,
+    subjectPrefix: sandbox
+      ? headerSafe([TEST_SUBJECT_PREFIX, config.subject_prefix].filter(Boolean).join(' '), 120)
+      : config.subject_prefix
+        ? headerSafe(config.subject_prefix, 120)
+        : null,
     attachments: listed,
   });
-  const to = config.to.toLowerCase();
-  const cc = [...new Set([input.packet.member.email, ...config.cc].map((a) => a.trim().toLowerCase()))].filter(
-    (a) => a !== to && isPlainAddress(a),
-  );
+  const recipient = sandbox ? sandbox.inbox : config.to;
+  const to = recipient.toLowerCase();
+  const copies = sandbox ? (sandbox.memberCopy ? [input.packet.member.email] : []) : [input.packet.member.email, ...config.cc];
+  const cc = [...new Set(copies.map((a) => a.trim().toLowerCase()))].filter((a) => a !== to && isPlainAddress(a));
 
   const sent = await sendTransactionalEmail({
-    to: config.to,
+    to: recipient,
     cc,
     subject: rendered.subject,
     html: rendered.html,
@@ -221,12 +234,18 @@ export async function submitAdministratorEmail(input: ChannelSubmitInput<'admini
         kind: 'email',
         provider: 'resend',
         provider_message_id: sent.id ?? '',
-        to: config.to,
+        to: recipient,
         sent_at: sentAt,
         body_sha256: sha256OfBytes(JSON.stringify(rendered)),
         attachment_sha256s: signed.map((d) => d.sha256),
       },
     ],
-    result: { channel: 'administrator_email', provider_message_id: sent.id, cc_count: cc.length, attachments: signed.length },
+    result: {
+      channel: 'administrator_email',
+      provider_message_id: sent.id,
+      cc_count: cc.length,
+      attachments: signed.length,
+      ...(sandbox ? { test_mode: true } : {}),
+    },
   };
 }

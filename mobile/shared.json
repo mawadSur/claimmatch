@@ -4,6 +4,7 @@
   "entries": [
     "lib/types.ts",
     "lib/fictional-slugs.ts",
+    "lib/test-settlements.ts",
     "lib/flags.ts",
     "lib/utils.ts",
     "lib/open-for-claims.ts",

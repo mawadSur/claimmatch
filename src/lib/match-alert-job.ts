@@ -4,7 +4,7 @@
  */
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
 import { captureServerEvent, subscriberDistinctId } from '@/lib/analytics/server';
-import { FICTIONAL_SLUGS } from '@/lib/fictional-slugs';
+import { LIST_HIDDEN_SLUGS } from '@/lib/test-settlements';
 import {
   matchAlertEmailsEnabled,
   matchAlertSendBlocked,
@@ -77,7 +77,7 @@ export async function sendMatchAlerts(opts: {
     .eq('review_status', 'published')
     .in('status', ['open', 'closing_soon'])
     .or(catalogDeadlineFilter(now))
-    .not('slug', 'in', `(${FICTIONAL_SLUGS.join(',')})`);
+    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
   if (lawsuitErr) {
     throw new Error(`[match-alert] loading settlements failed: ${lawsuitErr.message}`);
   }

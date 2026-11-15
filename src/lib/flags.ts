@@ -354,6 +354,16 @@ export const flags = {
    */
   oneClickFiling: () => on('ONE_CLICK_FILING_ENABLED'),
   /**
+   * One-click filing test mode, for testing on production with
+   * ONE_CLICK_FILING_ENABLED off: only signed-in INTERNAL_EMAILS testers (and
+   * filing staff on the console) get one-click; everyone else sees today's
+   * site. Every outbound filing email goes to ONE_CLICK_TEST_INBOX only (none
+   * without it), administrator_api never calls out, and every job is marked
+   * is_test (0046). Read it only through src/lib/filing/one-click-access.ts.
+   * Server only (not sent to the app).
+   */
+  oneClickFilingTestMode: () => on('ONE_CLICK_FILING_TEST_MODE'),
+  /**
    * Official-site verification drafts, the admin fast-review UI, pending-review
    * Close / Republish, and the coverage card. Off: no fetch, no drafts, no UI.
    * Drafts never stamp verified_at and never show on public pages.

@@ -88,7 +88,7 @@ describe('the retired assisted path', () => {
   it('stops draining the old queue from the daily cron', () => {
     const daily = source('src/app/api/cron/daily/route.ts');
     expect(daily).not.toMatch(/processFilingQueue|@\/lib\/filing\/queue/);
-    expect(daily).toMatch(/flags\.oneClickFiling\(\)/);
+    expect(daily).toMatch(/oneClickEnabledFor\(\{ kind: 'system' \}\)/);
   });
 });
 

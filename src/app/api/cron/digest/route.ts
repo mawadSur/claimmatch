@@ -15,6 +15,7 @@ import {
 import type { Lawsuit, Match, Profile } from '@/lib/types';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { recordCronFailure } from '@/lib/jobs';
+import { isTestSettlementSlug } from '@/lib/test-settlements';
 import {
   D50_PAUSED,
   buildReport,
@@ -178,7 +179,9 @@ async function sendClosingSoon(): Promise<{
 
   // Guides first: a guided settlement is open (pickClosingSoonEmailRows applies
   // the open-for-claims rule) and closing soon by its official deadline.
-  const items = pickClosingSoonEmailRows(applySettlementGuides((lawsuitData ?? []) as Lawsuit[])).map((row) => ({
+  const items = pickClosingSoonEmailRows(
+    applySettlementGuides(((lawsuitData ?? []) as Lawsuit[]).filter((row) => !isTestSettlementSlug(row.slug))),
+  ).map((row) => ({
     title: row.title,
     slug: row.slug,
     deadline: row.deadline as string,

@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import type { z, ZodTypeAny } from 'zod';
 import { FILING_DB_ERRORS, FILING_ERROR_HTTP, FILING_ERROR_MESSAGES, FILING_RATE_LIMITS, type FilingErrorCode } from '@/lib/filing/v2/contract';
-import { flags } from '@/lib/flags';
+import { oneClickEnabledFor, oneClickMayBeOn } from '@/lib/filing/one-click-access';
 import { isJsonRequest } from '@/lib/json-request';
 import { rateLimit } from '@/lib/ratelimit';
 import { canOpenFilingConsole, recordStaffAccess, staffForRequest, type StaffAccessEntry, type StaffCheck, type StaffUser } from '@/lib/staff-roles';
@@ -64,10 +64,11 @@ export async function guard(
   check: StaffCheck,
   limit: keyof typeof FILING_RATE_LIMITS = 'staff',
 ): Promise<{ ok: true; staff: StaffUser } | Failure> {
-  if (!flags.oneClickFiling()) return { ok: false, res: fail('not_found') };
+  if (!oneClickMayBeOn()) return { ok: false, res: fail('not_found') };
   if (req.method !== 'GET' && req.method !== 'HEAD' && !sameOrigin(req)) return { ok: false, res: fail('forbidden') };
   const auth = await staffForRequest(canOpenFilingConsole);
   if (!auth.ok) return { ok: false, res: fail(auth.status === 401 ? 'unauthorized' : 'forbidden') };
+  if (!oneClickEnabledFor({ kind: 'staff', isStaff: true })) return { ok: false, res: fail('not_found') };
   if (!check(auth.staff)) return { ok: false, res: fail('role_required') };
   const rule = FILING_RATE_LIMITS[limit];
   const rl = rateLimit(`${rule.key}:${auth.staff.id}`, { limit: rule.limit, windowMs: rule.windowMs });
