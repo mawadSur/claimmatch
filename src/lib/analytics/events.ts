@@ -14,6 +14,10 @@ export const ANALYTICS_EVENTS = {
   signup_completed: 'signup_completed',
   signup_error: 'signup_error',
   login_completed: 'login_completed',
+  /** "Continue with Google" clicked (provider and form only, no PII). */
+  oauth_started: 'oauth_started',
+  /** Google sign-in could not start (a mapped error code only). A canceled return is not captured. */
+  oauth_error: 'oauth_error',
   profile_completed: 'profile_completed',
   matches_viewed: 'matches_viewed',
   match_viewed: 'match_viewed',
@@ -46,7 +50,7 @@ export const ANALYTICS_EVENTS = {
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];
 
-export const SIGNUP_EVIDENCE = ['session_after_signup', 'email_confirmed'] as const;
+export const SIGNUP_EVIDENCE = ['session_after_signup', 'email_confirmed', 'oauth_sign_in'] as const;
 export type SignupEvidence = (typeof SIGNUP_EVIDENCE)[number];
 
 export function profileCompletedProperties(input: {

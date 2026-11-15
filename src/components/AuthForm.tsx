@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
 import { rememberSignupContext } from '@/lib/signup-context';
 import {
@@ -77,16 +78,19 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * came from after logging in. Must be rendered inside <Suspense> because it
  * calls useSearchParams(). `switchPrompt={false}` leaves out the "New to
  * Lawsuit AI? / Already have an account?" line, for a page that offers the
- * other form itself.
+ * other form itself. `oauth` (OAUTH_SIGN_IN_ENABLED, read by the page) adds
+ * "Continue with Google" above the email form.
  */
 export function AuthForm({
   mode,
   switchPrompt = true,
   storeNote,
+  oauth = false,
 }: {
   mode: Mode;
   switchPrompt?: boolean;
   storeNote?: string;
+  oauth?: boolean;
 }) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
@@ -387,6 +391,11 @@ export function AuthForm({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
+      {oauth && (
+        <div className="mb-4">
+          <GoogleSignInButton mode={mode} next={next} />
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>
         {!isSignup && confirmed && (
           <div

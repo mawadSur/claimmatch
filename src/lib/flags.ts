@@ -359,4 +359,11 @@ export const flags = {
    * Drafts never stamp verified_at and never show on public pages.
    */
   verifyAssist: () => on('VERIFY_ASSIST_ENABLED'),
+  /**
+   * Issue #50: "Continue with Google" on /login and /signup, and Google as a
+   * way to sign in again before e-signing a one-click claim. Web only (Apple,
+   * iOS and Android are on hold). A kill switch: production sets it to 1 once
+   * Google is enabled in Supabase Auth. Off: no Google button anywhere.
+   */
+  oauthSignIn: () => on('OAUTH_SIGN_IN_ENABLED'),
 };

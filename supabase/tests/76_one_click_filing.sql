@@ -243,6 +243,26 @@ begin
     'x', 'Test Member', 'filing_desk', '90000000-0000-4000-8000-0000000000a5', %L, now() - %L::interval,
     null, null, null, 'probe-key-stale')$q$, a_claim, a_user, a_packet, pg_temp.sha(pg_temp.canon(a_claim)),
     pg_temp.canon(a_claim), 'password', '16 minutes'), 'CM015');
+  -- A Google sign-in (GoTrue amr 'oauth', issue #50) older than 15 minutes never signs either.
+  perform pg_temp.expect_error(format($q$select public.filing_sign_packet(%L, %L, %L, %L, %L,
+    '50000000-0000-4000-8000-000000000075', 'I declare under penalty of perjury that the above is true.', 'v',
+    'x', 'Test Member', 'filing_desk', '90000000-0000-4000-8000-0000000000a5', %L, now() - %L::interval,
+    null, null, null, 'probe-key-stale')$q$, a_claim, a_user, a_packet, pg_temp.sha(pg_temp.canon(a_claim)),
+    pg_temp.canon(a_claim), 'oauth', '16 minutes'), 'CM015');
+  -- A fresh one does sign (a Google-only member has no password). The probe is rolled back.
+  begin
+    perform public.filing_sign_packet(a_claim, a_user, a_packet, pg_temp.sha(pg_temp.canon(a_claim)),
+      pg_temp.canon(a_claim), '50000000-0000-4000-8000-000000000075',
+      'I declare under penalty of perjury that the above is true.', 'agent-auth-test',
+      'I authorize Lawsuit AI to submit this one claim for me.', 'Test Member', 'filing_desk',
+      '90000000-0000-4000-8000-0000000000a5', 'oauth', now() - interval '2 minutes', 'session-75',
+      '203.0.113.7', 'probe', 'probe-key-oauth');
+    raise exception 'oauth probe signed' using errcode = 'CMX99';
+  exception when sqlstate 'CMX99' then null;
+  end;
+  if (select status::text from public.claims where id = a_claim) <> 'ready' then
+    raise exception 'the oauth probe must leave the claim ready';
+  end if;
   r := pg_temp.sign(a_claim, a_user, a_packet, 'filing_desk', '90000000-0000-4000-8000-0000000000a5', 'probe-key-a-1');
   sig := (r -> 'signature' ->> 'id')::uuid;
   if not (r ->> 'created')::boolean or (select status::text from public.claims where id = a_claim) <> 'signed'

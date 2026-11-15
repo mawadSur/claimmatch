@@ -30,12 +30,14 @@ const FIELD_IDS: Record<SignField, string> = {
 export function ReviewSignStep({
   view,
   accountEmail,
+  reauthWithGoogle = false,
   busy,
   onView,
   refresh,
 }: {
   view: ClaimFilingView;
   accountEmail: string | null;
+  reauthWithGoogle?: boolean;
   busy: boolean;
   onView: (view: ClaimFilingView, message: string) => void;
   refresh: (message: string) => Promise<void>;
@@ -241,6 +243,7 @@ export function ReviewSignStep({
       {needsReauth && readiness.canSign && (
         <ReauthPrompt
           email={accountEmail}
+          google={reauthWithGoogle}
           onSignedIn={async () => {
             setReauth(false);
             setGeneral(null);
