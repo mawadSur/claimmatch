@@ -20,9 +20,9 @@ That pitch is **not** what the live site says.
 Grounded in current UI copy (`src/lib/copy.ts`, home, pricing, how-it-works),
 with `FEE_DISCLOSURE_ENABLED` and `ASSISTED_FILING_ENABLED` off:
 
-- ClaimMatch is **free during beta**.
+- Lawsuit AI is **free during beta**.
 - You file on the official administrator site yourself. Filing there is free.
-- ClaimMatch does not file claims, does not handle settlement money, and is
+- Lawsuit AI does not file claims, does not handle settlement money, and is
   not a law firm.
 - Listings are unverified until checked against the official notice.
 - Copy-ready profile details exist; you still submit the official form.

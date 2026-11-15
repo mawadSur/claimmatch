@@ -1,4 +1,4 @@
-# Buyer panel: ClaimMatch (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.
+# Buyer panel: Lawsuit AI (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.
 
 **0 buy · 100 pass** (0% buy) out of 100 simulated buyers. Seed 20261106, so the same cards can be dealt again.
 
