@@ -290,6 +290,51 @@ is on, those requests 401 unless a bypass secret is sent.
 3. Playwright sends it as `x-vercel-protection-bypass` (and `x-vercel-set-bypass-cookie: samesitenone`).
 4. If the GitHub secret is **absent**, the smoke job prints a notice and **exits 0** (does not fail the PR).
 
+## One-click filing migrations (0041–0044)
+
+The code is already live (PR #49) with `ONE_CLICK_FILING_ENABLED` unset, and it runs without these tables. Until they exist, `loadStaffRoles` returns no roles (admins keep access) and account deletion logs one "row delete failed" per missing table but still completes. Applying them turns nothing on.
+
+Verified 2026-11-14: `scripts/db-test.sh` applies 0001–0044 on an empty PostgreSQL 16 and passes every SQL test, including `75_one_click_filing.sql`. The `claim-documents` storage bucket part of 0041 is skipped on plain PostgreSQL, so it has only been checked on Supabase by the post-check below.
+
+Do **not** apply these from a PR or from CI. Use a staging project first when one exists. In the Supabase SQL editor:
+
+1. **Pre-check (read only).** Every `has_*` column must be `true`, and `one_click_already_applied` must be `false`. A `false` `has_*` means an earlier migration (0001, 0006, 0015 or 0016) is missing on this project; apply that first.
+
+   ```sql
+   select
+     to_regclass('public.claims')                 is not null as has_0001_claims,
+     to_regprocedure('public.touch_updated_at()') is not null as has_0001_touch_updated_at,
+     to_regclass('public.claim_events')           is not null as has_0006_claim_events,
+     to_regclass('public.claim_authorizations')   is not null as has_0015_claim_authorizations,
+     to_regclass('public.administrators')         is not null as has_0016_administrators,
+     to_regclass('public.claim_packets')          is not null as one_click_already_applied;
+   ```
+
+2. **Apply, one file per run, in this order.** Paste the whole file and run it, then go on to the next file. Each run is one transaction. 0041 adds new `claim_status` values, which can only be used after that transaction commits, so never paste two files into one run.
+   1. `supabase/migrations/0041_one_click_filing.sql`: tables, row security, the private `claim-documents` bucket and its policies.
+   2. `supabase/migrations/0042_one_click_filing_guards.sql`: integrity triggers.
+   3. `supabase/migrations/0043_one_click_filing_functions.sql`: member-side functions.
+   4. `supabase/migrations/0044_one_click_filing_staff.sql`: staff-side functions.
+
+   Every file is safe to re-run. If one fails, fix the cause and re-run that same file before going on.
+
+3. **Post-check (read only).** Expect `tables = 13`, `bucket_private = true`, and the new statuses in `statuses`.
+
+   ```sql
+   select
+     (select count(*) from unnest(array[
+        'claim_documents','claim_filing_jobs','claim_packets','claim_signature_voids','claim_signatures',
+        'esign_consents','filing_audit_log','filing_controls','filing_export_batches','filing_policies',
+        'filing_specs','jev_runs','staff_roles']) t
+      where to_regclass('public.' || t) is not null)                       as tables,
+     (select not public from storage.buckets where id = 'claim-documents') as bucket_private,
+     enum_range(null::public.claim_status)                                 as statuses;
+   ```
+
+4. **Leave `ONE_CLICK_FILING_ENABLED` unset.** It stays off until the law firm's go-live checklist (#52) is signed off.
+
+**Rollback** (only while every new table is still empty; see the header of 0041): drop the functions of 0044, 0043 and 0042, then the 0041 tables in reverse order. The new enum values stay; nothing uses them while the flag is off.
+
 ## One-click test mode (testing one-click filing on production)
 
 Test mode turns one-click filing on for internal testers only, with
