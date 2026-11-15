@@ -12,17 +12,20 @@ export { default as ArrowRight } from 'lucide-react-native/icons/arrow-right';
 export { default as BadgeCheck } from 'lucide-react-native/icons/badge-check';
 export { default as Bell } from 'lucide-react-native/icons/bell';
 export { default as Calendar } from 'lucide-react-native/icons/calendar';
+export { default as Camera } from 'lucide-react-native/icons/camera';
 export { default as CalendarClock } from 'lucide-react-native/icons/calendar-clock';
 export { default as CalendarX2 } from 'lucide-react-native/icons/calendar-x-2';
 export { default as Check } from 'lucide-react-native/icons/check';
 export { default as ChevronDown } from 'lucide-react-native/icons/chevron-down';
 export { default as ChevronRight } from 'lucide-react-native/icons/chevron-right';
 export { default as ChevronUp } from 'lucide-react-native/icons/chevron-up';
+export { default as Circle } from 'lucide-react-native/icons/circle';
 /** The web's AlertCircle. */
 export { default as CircleAlert } from 'lucide-react-native/icons/circle-alert';
 /** The web's CheckCircle2. */
 export { default as CircleCheck } from 'lucide-react-native/icons/circle-check';
 /** Was circle-help (the web's HelpCircle). */
+export { default as CircleDot } from 'lucide-react-native/icons/circle-dot';
 export { default as CircleQuestionMark } from 'lucide-react-native/icons/circle-question-mark';
 export { default as Clock } from 'lucide-react-native/icons/clock';
 export { default as Compass } from 'lucide-react-native/icons/compass';
@@ -32,12 +35,16 @@ export { default as Eye } from 'lucide-react-native/icons/eye';
 export { default as EyeOff } from 'lucide-react-native/icons/eye-off';
 export { default as FileSearch } from 'lucide-react-native/icons/file-search';
 export { default as FileText } from 'lucide-react-native/icons/file-text';
+export { default as FileUp } from 'lucide-react-native/icons/file-up';
+export { default as Image } from 'lucide-react-native/icons/image';
 export { default as Info } from 'lucide-react-native/icons/info';
+export { default as KeyRound } from 'lucide-react-native/icons/key-round';
 export { default as Lock } from 'lucide-react-native/icons/lock';
 export { default as LogIn } from 'lucide-react-native/icons/log-in';
 export { default as LogOut } from 'lucide-react-native/icons/log-out';
 export { default as Mail } from 'lucide-react-native/icons/mail';
 export { default as MailCheck } from 'lucide-react-native/icons/mail-check';
+export { default as PenLine } from 'lucide-react-native/icons/pen-line';
 export { default as Pencil } from 'lucide-react-native/icons/pencil';
 export { default as RefreshCw } from 'lucide-react-native/icons/refresh-cw';
 export { default as Scale } from 'lucide-react-native/icons/scale';

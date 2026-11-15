@@ -31,6 +31,10 @@
     "lib/matching.ts",
     "lib/lawsuit-tags.ts",
     "lib/profile-facts.ts",
-    "components/claims/dashboard-model.ts"
+    "components/claims/dashboard-model.ts",
+    "lib/filing/v2/contract.ts",
+    "lib/filing/v2/contract-base.ts",
+    "lib/filing/v2/contract-spec.ts",
+    "lib/jev/types.ts"
   ]
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
 import type { PacketProfile } from '@/lib/claim-screen';
 import { loadClaimScreen } from '@/lib/claim-screen-server';
 import type { ClaimScreenError, ClaimScreenResponse } from '@/lib/mobile-contract';
@@ -61,6 +62,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (screen.kind === 'not_found') return reply({ code: 'not_found' } satisfies ClaimScreenError, 404);
 
   const { settlement, context } = screen;
+  // One-click filing: null (nothing read) while ONE_CLICK_FILING_ENABLED is
+  // off, so the app shows the self-file steps exactly as before. Only the
+  // web's "Start my claim" decision is sent; the app reads the claim's filing
+  // view from /api/filing/claims/** itself, with its bearer token.
+  const oneClick =
+    screen.kind === 'closed'
+      ? null
+      : await loadOneClickClaimPage({
+          supabase,
+          userId: user.id,
+          accountEmail: user.email ?? null,
+          slug: settlement.slug,
+          lawsuitId: settlement.id,
+          claim: screen.claim,
+          context,
+          now,
+        });
   const facts = { slug: settlement.slug, title: settlement.title, category: settlement.category };
   const body: ClaimScreenResponse =
     screen.kind === 'closed'
@@ -79,6 +97,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           context,
           claim: screen.claim,
           profile: packetProfile(screen.profile),
+          oneClick: oneClick ? { canStart: oneClick.canStart } : null,
         };
   return reply(body);
 }

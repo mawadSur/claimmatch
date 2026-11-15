@@ -118,3 +118,37 @@ describe('mobile copy parity', () => {
     expect(normalize(readFileSync(file, 'utf8'))).toContain(normalize(entry.text));
   });
 });
+
+/**
+ * One-click filing (issue #51): the app's filing copy covers every web
+ * ONE_CLICK_* text that is a whole sentence or label (status labels and
+ * details, timeline events, lane reasons and timing), so a new web status
+ * or reason cannot ship without its app wording.
+ */
+const web = await import('@/lib/copy');
+const filingTexts = new Set(
+  copy.entries.filter(([name]) => name.startsWith('filing.ts:')).map(([, entry]) => normalize(entry.text)),
+);
+const requiredFiling: Array<[string, string]> = [
+  ['ONE_CLICK_AGENT_TITLE', web.ONE_CLICK_AGENT_TITLE],
+  ['ONE_CLICK_SELF_FILE_TITLE', web.ONE_CLICK_SELF_FILE_TITLE],
+  ['ONE_CLICK_AGENT_NOTE', web.ONE_CLICK_AGENT_NOTE],
+  ['ONE_CLICK_SELF_FILE_NOTE', web.ONE_CLICK_SELF_FILE_NOTE],
+  ...Object.entries(web.ONE_CLICK_STATUS).flatMap(([status, s]): Array<[string, string]> => [
+    [`ONE_CLICK_STATUS.${status}.label`, s.label],
+    [`ONE_CLICK_STATUS.${status}.detail`, s.detail],
+  ]),
+  ...Object.entries(web.ONE_CLICK_EVENTS).map(([k, v]): [string, string] => [`ONE_CLICK_EVENTS.${k}`, v]),
+  ...Object.entries(web.ONE_CLICK_LANE_REASONS).map(([k, v]): [string, string] => [`ONE_CLICK_LANE_REASONS.${k}`, v]),
+  ...Object.entries(web.ONE_CLICK_TIMING).map(([k, v]): [string, string] => [`ONE_CLICK_TIMING.${k}`, v]),
+];
+
+describe('mobile one-click filing copy parity', () => {
+  it('has mobile/src/copy/filing.ts', () => {
+    expect(copy.files).toContain('filing.ts');
+  });
+
+  it.each(requiredFiling)('%s has an app entry', (_name, text) => {
+    expect(filingTexts.has(normalize(text))).toBe(true);
+  });
+});
