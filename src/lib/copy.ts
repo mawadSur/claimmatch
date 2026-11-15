@@ -100,7 +100,7 @@ export const SETTLEMENT_FILING_COPY = {
 
 const SOME_SETTLEMENTS = 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.';
 
-/** Site-wide pages (invite, onboarding, scorecard, how it works) when Lawsuit AI may file for this viewer. */
+/** Site-wide pages (invite, onboarding, scorecard) when Lawsuit AI may file for this viewer. */
 export const MAY_FILE_PAGE_COPY = {
   inviteIntro:
     'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. For some settlements it can file the claim for you after you sign it; otherwise you submit on the official site. It is free during beta.',
@@ -113,7 +113,6 @@ export const MAY_FILE_PAGE_COPY = {
     'Lawsuit AI is a free claim assistant. For some settlements it can file the claim for you after you review and sign it. It never handles settlement payments.',
   onboardingStep: `File on the official site yourself, where it’s free. ${SOME_SETTLEMENTS}`,
   scorecard: `${SOME_SETTLEMENTS} Otherwise you file on the official settlement site yourself. Lawsuit AI never handles settlement payments.`,
-  howItWorksStep: `Fill out and send the claim form on the settlement’s official website. ${SOME_SETTLEMENTS}`,
 } as const;
 
 /** Primary match CTA when ASSISTED_FILING_ENABLED=1. */
