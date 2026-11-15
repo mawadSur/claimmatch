@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { KeyRound } from 'lucide-react';
 import { ONE_CLICK_COPY } from '@/lib/copy';
 import { createClient } from '@/lib/supabase/client';
-import { startGoogleSignIn } from '../GoogleSignInButton';
+import { googleReauthRequest, startGoogleSignIn } from '../GoogleSignInButton';
 import { FieldError, FormMessage, describedBy } from './ui';
 
 const COPY = ONE_CLICK_COPY.reauth;
@@ -41,10 +41,7 @@ export function ReauthPrompt({
     setError(null);
     setStatus('google');
     // Back to this claim page; /auth/callback keeps only a same-site path.
-    const failed = await startGoogleSignIn({
-      next: `${window.location.pathname}${window.location.search}`,
-      loginHint: email,
-    });
+    const failed = await startGoogleSignIn(googleReauthRequest(window.location, email));
     if (failed) {
       setStatus('idle');
       setError(COPY.googleFailed);

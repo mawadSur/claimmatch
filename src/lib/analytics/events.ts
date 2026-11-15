@@ -16,7 +16,7 @@ export const ANALYTICS_EVENTS = {
   login_completed: 'login_completed',
   /** "Continue with Google" clicked (provider and form only, no PII). */
   oauth_started: 'oauth_started',
-  /** Google sign-in could not start, or came back with an error (a code only). */
+  /** Google sign-in could not start (a mapped error code only). A canceled return is not captured. */
   oauth_error: 'oauth_error',
   profile_completed: 'profile_completed',
   matches_viewed: 'matches_viewed',

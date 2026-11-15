@@ -15,7 +15,12 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 import { AuthForm } from '@/components/AuthForm';
-import { GoogleSignInButton, startGoogleSignIn } from '@/components/GoogleSignInButton';
+import {
+  GoogleSignInButton,
+  googleReauthRequest,
+  rememberBeforeGoogle,
+  startGoogleSignIn,
+} from '@/components/GoogleSignInButton';
 import { ReauthPrompt } from '@/components/filing/ReauthPrompt';
 import { OneClickFiling } from '@/components/filing/OneClickFiling';
 import { readyView } from './filing-ui-fixtures';
@@ -100,6 +105,51 @@ describe('startGoogleSignIn', () => {
 
     m.signInWithOAuth.mockRejectedValue(new Error('network down'));
     expect((await startGoogleSignIn({ next: null }))?.code).toBe('unknown');
+  });
+});
+
+describe('before leaving for Google', () => {
+  function stubBrowser(protocol: string) {
+    const doc = { cookie: '' };
+    const storage = new Map<string, string>();
+    vi.stubGlobal('document', doc);
+    vi.stubGlobal('window', {
+      location: { origin: `${protocol}//lawsuitai.org`, protocol, pathname: '/signup', search: '' },
+      sessionStorage: {
+        setItem: (k: string, v: string) => storage.set(k, v),
+        removeItem: (k: string) => storage.delete(k),
+        getItem: (k: string) => storage.get(k) ?? null,
+      },
+    });
+    return { doc, storage };
+  }
+
+  it('on /signup, saves the pending-next cookie (Secure on https) and the claim context', () => {
+    const { doc, storage } = stubBrowser('https:');
+    rememberBeforeGoogle('signup', '/claim/real-settlement');
+    expect(doc.cookie).toBe(`cm_next=${encodeURIComponent('/claim/real-settlement')}; Path=/; Max-Age=86400; SameSite=Lax; Secure`);
+    expect([...storage.values()]).toContain('/claim/real-settlement');
+  });
+
+  it('on /signup without a next, clears a stale pending-next cookie', () => {
+    const { doc } = stubBrowser('http:');
+    rememberBeforeGoogle('signup', null);
+    expect(doc.cookie).toBe('cm_next=; Path=/; Max-Age=0; SameSite=Lax');
+  });
+
+  it('on /login, leaves the cookie alone (next travels in redirectTo)', () => {
+    const { doc } = stubBrowser('https:');
+    rememberBeforeGoogle('login', '/claim/real-settlement');
+    expect(doc.cookie).toBe('');
+  });
+
+  it('signing in again with Google comes back to the same claim page, hinted with the account email', async () => {
+    const request = googleReauthRequest({ pathname: '/claim/real-settlement', search: '?step=sign' }, 'ada@example.com');
+    expect(request).toEqual({ next: '/claim/real-settlement?step=sign', loginHint: 'ada@example.com' });
+    expect(await startGoogleSignIn(request)).toBeNull();
+    const call = m.signInWithOAuth.mock.calls[0][0];
+    expect(new URL(call.options.redirectTo).searchParams.get('next')).toBe('/claim/real-settlement?step=sign');
+    expect(call.options.queryParams.login_hint).toBe('ada@example.com');
   });
 });
 

@@ -57,6 +57,27 @@ export async function startGoogleSignIn(args: {
 }
 
 /**
+ * On /signup, keeps ?next the way the email form does before leaving: the
+ * claim context and the pending-next cookie (cleared when there is no next).
+ * /login leaves both alone; its next travels in redirectTo.
+ */
+export function rememberBeforeGoogle(mode: 'login' | 'signup', next: string | null): void {
+  if (mode !== 'signup') return;
+  rememberSignupContext(next);
+  document.cookie = next
+    ? pendingNextCookie(next, window.location.protocol === 'https:')
+    : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+/** The sign-in-again prompt's Google request: back to this same page, for this account. */
+export function googleReauthRequest(
+  location: { pathname: string; search: string },
+  email: string | null,
+): { next: string; loginHint: string | null } {
+  return { next: `${location.pathname}${location.search}`, loginHint: email };
+}
+
+/**
  * "Continue with Google" on /login and /signup (OAUTH_SIGN_IN_ENABLED; the
  * page decides whether to render it). Keeps ?next the way the email form
  * does: the safe path goes to /auth/callback, and on sign-up the pending-next
@@ -77,12 +98,7 @@ export function GoogleSignInButton({ mode, next }: { mode: 'login' | 'signup'; n
     setStatus('loading');
     // Provider and form only: no email, name or other PII.
     posthog?.capture('oauth_started', { provider: OAUTH_PROVIDER, form: mode });
-    if (mode === 'signup') {
-      rememberSignupContext(next);
-      document.cookie = next
-        ? pendingNextCookie(next, window.location.protocol === 'https:')
-        : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
-    }
+    rememberBeforeGoogle(mode, next);
     const failed = await startGoogleSignIn({ next });
     if (failed) {
       posthog?.capture('oauth_error', { provider: OAUTH_PROVIDER, form: mode, code: failed.code });
