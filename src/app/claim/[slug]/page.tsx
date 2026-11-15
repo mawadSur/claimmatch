@@ -9,7 +9,7 @@ import { flags } from '@/lib/flags';
 import { isInternalEmail } from '@/lib/internal-users';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { signedOutClaimHref } from '@/lib/signup-context';
-import { hasGoogleIdentity } from '@/lib/oauth';
+import { hasAppleIdentity, hasGoogleIdentity } from '@/lib/oauth';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
 import { claimFiledByLawsuitAi } from '@/components/filing/filing-model';
@@ -119,6 +119,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     userId: user.id,
     accountEmail: user.email ?? null,
     reauthWithGoogle: flags.oauthSignIn() && hasGoogleIdentity(user),
+    reauthWithApple: flags.appleSignIn() && hasAppleIdentity(user),
     slug: settlement.slug,
     lawsuitId: settlement.id,
     claim,

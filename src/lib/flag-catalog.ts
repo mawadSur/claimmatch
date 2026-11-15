@@ -297,6 +297,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       'Continue with Google on /login and /signup, and Google sign-in again before e-signing a one-click claim (web only). Kill switch: set to 1 in production once Google is enabled in Supabase Auth.',
     read: () => flags.oauthSignIn(),
   },
+  {
+    env: 'APPLE_SIGN_IN_ENABLED',
+    description:
+      'Continue with Apple on /login and /signup, and Apple sign-in again before e-signing a one-click claim (web only). Kill switch: set to 1 in production once Apple is enabled in Supabase Auth.',
+    read: () => flags.appleSignIn(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {
