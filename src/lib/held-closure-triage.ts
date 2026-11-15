@@ -14,7 +14,7 @@ export const HELD_SITE_CHECK_MAX_PER_RUN = 25;
 export const HELD_SITE_CHECK_BUDGET_MS = 40_000;
 export const HELD_SITE_CHECK_STALE_MS = 7 * 24 * 60 * 60 * 1000;
 export const HELD_SITE_CHECK_BODY_LIMIT = 64_000;
-export const HELD_SITE_CHECK_USER_AGENT = 'ClaimMatchHeldCheck/1.0 (+https://lawsuitai.org)';
+export const HELD_SITE_CHECK_USER_AGENT = 'LawsuitAIHeldCheck/1.0 (+https://lawsuitai.org)';
 
 export type HeldClosureSuggestion = 'safe_to_close' | 'likely_close' | 'likely_keep' | 'unknown';
 

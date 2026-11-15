@@ -66,7 +66,7 @@ const COPIED_FOR_MS = 1600;
  * Copy-ready claim details from the profile (src/components/claims/PrefillPacket.tsx),
  * in the official form's order when FORM_FIELD_ORDER_ENABLED is on. Each value
  * copies on its own, or all at once; edits save through POST /api/settings,
- * the address only with consent. Never writes claims: ClaimMatch never files.
+ * the address only with consent. Never writes claims: Lawsuit AI never files.
  */
 export function PrefillPacket({
   profile,

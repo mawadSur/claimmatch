@@ -15,6 +15,25 @@ export function validateNewPassword(password: string, confirm: string): string |
   return null;
 }
 
+/**
+ * What to tell the person when Supabase refuses the new password. Before this,
+ * every error said "request a new reset link", even when the only problem was
+ * reusing the old password, so a working reset looked broken.
+ */
+export function updatePasswordErrorMessage(err: { code?: string; name?: string; status?: number; message?: string }): string {
+  const code = err.code ?? '';
+  if (code === 'same_password') return 'That’s your current password. Choose a different one.';
+  if (code === 'weak_password') {
+    return 'That password is too easy to guess. Use a longer password with a mix of letters, numbers and symbols.';
+  }
+  if (code === 'session_not_found' || code === 'session_expired' || err.name === 'AuthSessionMissingError' || err.status === 401) {
+    return 'Your reset link has expired. Request a new reset link and try again.';
+  }
+  if (code === 'over_request_rate_limit' || err.status === 429) return 'Too many tries. Wait a minute and try again.';
+  // Same text as the app's auth.updatePasswordFailed (tests/mobile-copy-parity.test.ts).
+  return 'We couldn’t update your password. Request a new reset link and try again.';
+}
+
 /** Sets a new password for the session started by the recovery link. */
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -35,7 +54,7 @@ export function ResetPasswordForm() {
     const { error: err } = await createClient().auth.updateUser({ password });
     setLoading(false);
     if (err) {
-      setError('We couldn’t update your password. Request a new reset link and try again.');
+      setError(updatePasswordErrorMessage(err));
       return;
     }
     router.replace('/dashboard?password=updated');

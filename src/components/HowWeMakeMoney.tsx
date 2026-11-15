@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { HandCoins, CheckCircle2 } from 'lucide-react';
-import { feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import { feeEveryClaimCopy, filingFact, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { FeeDisclosure } from './FeeDisclosure';
 
@@ -18,15 +18,17 @@ export function HowWeMakeMoney({
   const points = disclose
     ? [
         'You can still file on the official administrator’s site yourself. Official filing there stays free.',
-        'ClaimMatch lists open settlements and, after you authorize a claim, processes and submits it. Copy-ready details stay available if you want to file yourself.',
+        'Lawsuit AI lists open settlements and, after you authorize a claim, processes and submits it. Copy-ready details stay available if you want to file yourself.',
         feeEveryClaimCopy(),
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',
       ]
     : [
-        'Filing a settlement claim is always free on the official administrator’s site. You never need ClaimMatch to file.',
-        'ClaimMatch lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. ClaimMatch never files for you.',
-        'ClaimMatch is free during beta. We don’t run ads or sell paid plans today.',
+        'Filing a settlement claim is always free on the official administrator’s site. You never need Lawsuit AI to file.',
+        flags.oneClickFiling()
+          ? `Lawsuit AI lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. ${filingFact(true).body}`
+          : 'Lawsuit AI lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. Lawsuit AI never files for you.',
+        'Lawsuit AI is free during beta. We don’t run ads or sell paid plans today.',
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',
         publicBetaFeeCopy(),
@@ -38,7 +40,7 @@ export function HowWeMakeMoney({
         <div className="grid h-11 w-11 place-items-center rounded-xl bg-brand-100 text-brand-700">
           <HandCoins className="h-5 w-5" />
         </div>
-        <Heading className="text-2xl font-bold">How ClaimMatch makes money</Heading>
+        <Heading className="text-2xl font-bold">How Lawsuit AI makes money</Heading>
       </div>
       <ul className="mt-6 space-y-3 text-sm leading-relaxed text-ink-muted">
         {points.map((t) => (

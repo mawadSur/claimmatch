@@ -145,7 +145,7 @@ export function PrefillPacket({
           <h3 className="text-sm font-bold">Copy-ready details from your profile</h3>
           <p className="mt-1 text-sm text-ink-muted">
             Name, email, phone, address and state you saved. Edit anything
-            that&rsquo;s wrong, then copy into the official form. ClaimMatch never
+            that&rsquo;s wrong, then copy into the official form. Lawsuit AI never
             files for you.
           </p>
         </div>

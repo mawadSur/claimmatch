@@ -7,7 +7,7 @@ import { publicPageMetadata } from '@/lib/site-metadata';
 export const metadata: Metadata = publicPageMetadata({
   title: 'Privacy Policy',
   description:
-    'What ClaimMatch collects, why, who helps us process it, the cookies we use, and your choices. Interim policy, pending legal review.',
+    'What Lawsuit AI collects, why, who helps us process it, the cookies we use, and your choices. Interim policy, pending legal review.',
   path: '/privacy',
 });
 
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
           </span>
           <h1 className="mt-4 text-4xl font-extrabold">Privacy Policy</h1>
           <p className="mt-3 text-ink-muted">
-            This policy explains, in plain English, what ClaimMatch collects, why, who
+            This policy explains, in plain English, what Lawsuit AI collects, why, who
             helps us handle it, and the choices you have.
           </p>
           <p className="mt-2 text-sm text-ink-muted">Last updated: {LAST_UPDATED}</p>
@@ -72,10 +72,10 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">1. Who we are</h2>
             <p>
-              ClaimMatch is a free claim assistant that helps people find class-action
+              Lawsuit AI is a free claim assistant that helps people find class-action
               settlements, check the official details, and keep track of the claims they
-              file themselves.{operator ? ` ClaimMatch is run by ${operator}.` : ''} We are
-              not a law firm. This policy covers the ClaimMatch website and services (the
+              file themselves.{operator ? ` Lawsuit AI is run by ${operator}.` : ''} We are
+              not a law firm. This policy covers the Lawsuit AI website and services (the
               “Service”).
             </p>
           </section>
@@ -187,7 +187,7 @@ export default function PrivacyPage() {
             <p>
               We don’t sell your personal information, and we don’t share it for
               advertising. We share it only with the service providers that help us run
-              ClaimMatch, and only as needed to do that:
+              Lawsuit AI, and only as needed to do that:
             </p>
             <ul className="ml-5 list-disc space-y-2">
               {PROVIDERS.map((p) => (
@@ -198,7 +198,7 @@ export default function PrivacyPage() {
             </ul>
             <p>
               We may also share information when the law requires it, or to protect the
-              rights and safety of our users and ClaimMatch. ClaimMatch never sends your
+              rights and safety of our users and Lawsuit AI. Lawsuit AI never sends your
               information to settlement administrators: you give it to them yourself when
               you file.
             </p>
@@ -296,7 +296,7 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">11. Children’s privacy</h2>
             <p>
-              ClaimMatch is for adults. We do not knowingly collect personal information
+              Lawsuit AI is for adults. We do not knowingly collect personal information
               from anyone under 18. If you believe a child has given us information, please
               contact us and we’ll delete it.
             </p>

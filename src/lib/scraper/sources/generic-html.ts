@@ -103,7 +103,7 @@ export function makeHtmlAdapter(config: HtmlAdapterConfig): SourceAdapter {
         const res = await fetch(config.listUrl, {
           headers: {
             // Identify the crawler; real deployments should use a contactable URL.
-            'user-agent': 'ClaimMatchBot/1.0 (+https://claimmatch.example/bot)',
+            'user-agent': 'LawsuitAIBot/1.0 (+https://claimmatch.example/bot)',
             accept: 'text/html,application/xhtml+xml',
           },
           // Bail out rather than hang on a slow source.

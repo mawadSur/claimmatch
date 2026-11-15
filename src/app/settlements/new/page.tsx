@@ -20,7 +20,7 @@ export const dynamic = 'force-static';
 
 const TITLE = 'New settlements';
 const DESCRIPTION =
-  'The newest open class-action settlements in the ClaimMatch catalog. Check who qualifies on the official notice and file there for free.';
+  'The newest open class-action settlements in the Lawsuit AI catalog. Check who qualifies on the official notice and file there for free.';
 
 export const metadata: Metadata = {
   title: TITLE,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Renders the ClaimMatch app icon, Android adaptive icon layers and splash icon
+ * Renders the Lawsuit AI app icon, Android adaptive icon layers and splash icon
  * from the website logo (src/components/SiteLogo.tsx): a navy rounded square,
  * brand-600 #1E3A5F to brand-800 #0F243C top to bottom, with a white lucide
  * "scale" glyph (lucide-react 0.469.0, the version the website renders).

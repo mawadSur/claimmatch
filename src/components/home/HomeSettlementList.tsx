@@ -7,6 +7,7 @@ import { isOpenForClaims } from '@/lib/lawsuits';
 import { flags } from '@/lib/flags';
 import { catalogCardDeadlineLabel, catalogCardPayout } from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
+import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 
 /** "Jan" / "22" for the calendar badge. Deadlines are calendar dates, so read them as UTC. */
 function badgeParts(deadline: string | null): { month: string; day: string } | null {
@@ -57,6 +58,7 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                   <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                     {lawsuit.category}
                   </span>
+                  <VerifiedBadge lawsuit={lawsuit} />
                   <ClosesInChip deadline={lawsuit.deadline} />
                   {!flags.closesInChips() && urgency && (
                     <span className="badge-red gap-1">

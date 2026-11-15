@@ -16,12 +16,12 @@ const BANNED = [
 ];
 
 const TBD_PHRASES = [
-  'ClaimMatch is free during beta',
+  'Lawsuit AI is free during beta',
   'We may introduce a fee later',
   'before it applies',
   'you’ll see the price before you use anything paid',
   'You always file on the official site',
-  'ClaimMatch never files for you',
+  'Lawsuit AI never files for you',
 ];
 
 async function loadSurfaces(disclose?: boolean) {
@@ -81,7 +81,7 @@ describe('fee copy while disclosure is off (beta)', () => {
 });
 
 describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
-  it('FeeDisclosure says ClaimMatch files and charges only if paid', async () => {
+  it('FeeDisclosure says Lawsuit AI files and charges only if paid', async () => {
     const { FeeDisclosure } = await loadSurfaces(true);
     const html = htmlOf(FeeDisclosure);
     expect(html).toContain(feeEveryClaimCopy());
@@ -89,7 +89,7 @@ describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
     expect(html).toContain('files the claim for you');
     expect(html).toContain('only if you get paid');
     expect(html).not.toContain('You always file on the official site');
-    expect(html).not.toContain('ClaimMatch never files for you');
+    expect(html).not.toContain('Lawsuit AI never files for you');
     expect(html).not.toContain('free during beta');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('15%');
@@ -103,7 +103,7 @@ describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
     expect(html).toContain('Copy-ready details');
     expect(html).toContain('processes and submits it');
     expect(html).toContain('href="/pricing"');
-    expect(html).not.toContain('ClaimMatch never files for you');
+    expect(html).not.toContain('Lawsuit AI never files for you');
     expect(html).not.toContain('don’t run ads or sell paid plans today');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('Draft');

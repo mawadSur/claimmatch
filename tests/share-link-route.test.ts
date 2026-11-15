@@ -43,7 +43,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { GET } from '@/app/r/[code]/route';
 
-const ORIGIN = 'https://claimmatch.vercel.app';
+const ORIGIN = 'https://lawsuitai.org';
 
 function hit(path: string) {
   return GET(new Request(`${ORIGIN}${path}`), {

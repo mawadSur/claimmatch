@@ -57,7 +57,7 @@ function lawsuitTitle(r: RecoveryRow): string {
 /**
  * The legacy recovery ledger (shown only when flags.adminRecoveries() is on).
  * Each row can record a gross amount a member reports, advance it, or deny it.
- * The fee column shows the rate stored on the legacy row; ClaimMatch collects
+ * The fee column shows the rate stored on the legacy row; Lawsuit AI collects
  * no fee. Actions PATCH /api/admin/recoveries and fold the returned row back in.
  */
 export function RecoveryAdminTable({ rows: initial }: { rows: RecoveryRow[] }) {

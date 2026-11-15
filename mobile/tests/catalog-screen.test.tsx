@@ -264,7 +264,7 @@ describe('catalog', () => {
     expect(screen.getByTestId('catalog-credit')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'Listings from SettleSignal are adapted from SettleSignal (settlesignal.com) under CC BY 4.0. ClaimMatch may have shortened or reformatted them.',
+        'Listings from SettleSignal are adapted from SettleSignal (settlesignal.com) under CC BY 4.0. Lawsuit AI may have shortened or reformatted them.',
       ),
     ).toBeOnTheScreen();
 

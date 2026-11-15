@@ -61,7 +61,7 @@ export const claim = defineCopy({
   notTrackingYet: { text: 'Not tracking yet', source: FLOW },
   deadline: { text: 'Deadline', source: FLOW },
   statusNote: {
-    text: 'ClaimMatch doesn’t file claims for you. You file on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.',
+    text: 'Lawsuit AI doesn’t file claims for you. You file on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.',
     source: FLOW,
   },
   caveatClosedWithDeadline: {
@@ -73,7 +73,7 @@ export const claim = defineCopy({
     source: FLOW,
   },
   caveatUnlisted: {
-    text: 'This settlement is no longer listed on ClaimMatch while we re-check it. Check the official site before you file.',
+    text: 'This settlement is no longer listed on Lawsuit AI while we re-check it. Check the official site before you file.',
     source: FLOW,
   },
 
@@ -113,8 +113,8 @@ export const claim = defineCopy({
   openClaimForm: { text: 'Open the official claim form', source: FLOW },
   /**
    * The web says "It opens in a new tab. Keep this page open so you can come
-   * back for step 3." Never "inside ClaimMatch": the official form is not
-   * ClaimMatch's, and ClaimMatch never files for you.
+   * back for step 3." Never "inside Lawsuit AI": the official form is not
+   * Lawsuit AI's, and Lawsuit AI never files for you.
    */
   opensInBrowser: {
     text: 'It opens the official site in a browser. When you close it, you’ll come back here for step 3.',
@@ -252,7 +252,7 @@ export const claim = defineCopy({
   // PrefillPacket.tsx -----------------------------------------------------------------------
   packetTitle: { text: 'Copy-ready details from your profile', source: PACKET },
   packetNote: {
-    text: 'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. ClaimMatch never files for you.',
+    text: 'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI never files for you.',
     source: PACKET,
   },
   copyAll: { text: 'Copy all', source: PACKET },

@@ -10,33 +10,33 @@ afterEach(() => {
 
 describe('resendEnvelope', () => {
   it('uses RESEND_FROM when set and omits reply_to until RESEND_REPLY_TO is set', () => {
-    vi.stubEnv('RESEND_FROM', 'LawsuitAI <alerts@lawsuitai.org>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <alerts@lawsuitai.org>');
     vi.stubEnv('RESEND_REPLY_TO', '');
-    expect(resendFrom()).toBe('LawsuitAI <alerts@lawsuitai.org>');
+    expect(resendFrom()).toBe('Lawsuit AI <alerts@lawsuitai.org>');
     expect(resendReplyTo()).toBeUndefined();
-    expect(resendEnvelope()).toEqual({ from: 'LawsuitAI <alerts@lawsuitai.org>' });
+    expect(resendEnvelope()).toEqual({ from: 'Lawsuit AI <alerts@lawsuitai.org>' });
   });
 
   it('adds reply_to when RESEND_REPLY_TO is set', () => {
-    vi.stubEnv('RESEND_FROM', 'LawsuitAI <alerts@lawsuitai.org>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <alerts@lawsuitai.org>');
     vi.stubEnv('RESEND_REPLY_TO', ' hello@lawsuitai.org ');
     expect(resendReplyTo()).toBe('hello@lawsuitai.org');
     expect(resendEnvelope()).toEqual({
-      from: 'LawsuitAI <alerts@lawsuitai.org>',
+      from: 'Lawsuit AI <alerts@lawsuitai.org>',
       reply_to: 'hello@lawsuitai.org',
     });
   });
 
-  it('falls back to a LawsuitAI onboarding sender', () => {
+  it('falls back to a Lawsuit AI onboarding sender', () => {
     vi.stubEnv('RESEND_FROM', '');
     expect(resendFrom()).toBe(`${PUBLIC_BRAND} <onboarding@resend.dev>`);
   });
 });
 
 describe('.env.example', () => {
-  it('documents the LawsuitAI sender and optional RESEND_REPLY_TO', () => {
+  it('documents the Lawsuit AI sender and optional RESEND_REPLY_TO', () => {
     const env = readFileSync(fileURLToPath(new URL('../.env.example', import.meta.url)), 'utf8');
-    expect(env).toContain('RESEND_FROM="LawsuitAI <alerts@lawsuitai.org>"');
+    expect(env).toContain('RESEND_FROM="Lawsuit AI <alerts@lawsuitai.org>"');
     expect(env).toContain('RESEND_REPLY_TO=hello@lawsuitai.org');
     expect(env).toMatch(/reply_to/i);
   });
@@ -45,6 +45,7 @@ describe('.env.example', () => {
 describe('every Resend send uses the shared envelope', () => {
   const senders = [
     '../src/lib/email.ts',
+    '../src/lib/email-transactional.ts',
     '../src/lib/match-alert-email.ts',
     '../src/lib/ingest-alerts.ts',
     '../src/lib/filing/receipt.ts',

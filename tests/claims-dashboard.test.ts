@@ -77,7 +77,7 @@ describe('buildDashboard', () => {
     expect(notices).toEqual([expect.objectContaining({ claimId: corrected.id, kind: 'legacy' })]);
     expect(rows[0]).toMatchObject({
       label: 'Not filed yet',
-      nextStep: 'ClaimMatch did not file this. File on the official site, or tell us if you already did.',
+      nextStep: 'Lawsuit AI did not file this. File on the official site, or tell us if you already did.',
       action: { label: 'Tell us', href: '/claim/real-one' },
     });
     const late = row(corrected, settlement({ deadline: '2026-08-01' }));
@@ -96,7 +96,7 @@ describe('buildDashboard', () => {
     const closed = row(claim({ status: 'submitted' }), settlement({ status: 'closed', deadline: null }));
     expect(closed.notices[0]).toMatchObject({ kind: 'legacy', deadlinePassed: false, filing: 'closed_on_list' });
     expect(closed.rows[0].nextStep).toBe(
-      "ClaimMatch did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.",
+      "Lawsuit AI did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.",
     );
     const unlisted = row(claim({ status: 'processing' }), settlement({ review_status: 'pending_review' }));
     expect(unlisted.notices[0]).toMatchObject({ filing: 'unlisted' });

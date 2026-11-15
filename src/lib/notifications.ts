@@ -77,7 +77,7 @@ export async function notifyWelcome(user: { id: string; email: string | null; fu
     status = 'failed';
     console.error('[notifications] welcome email failed:', err);
   }
-  await record({ user_id: user.id, email: user.email, type: 'welcome', subject: 'Welcome to ClaimMatch', status });
+  await record({ user_id: user.id, email: user.email, type: 'welcome', subject: 'Welcome to Lawsuit AI', status });
 }
 
 /**

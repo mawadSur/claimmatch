@@ -39,7 +39,7 @@ export default function NotFound() {
           href="/how-it-works"
           className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800"
         >
-          See how ClaimMatch works <ArrowRight className="h-4 w-4" aria-hidden />
+          See how Lawsuit AI works <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
     </section>

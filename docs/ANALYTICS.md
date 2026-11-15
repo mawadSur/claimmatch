@@ -1,6 +1,6 @@
-# ClaimMatch product analytics
+# Lawsuit AI product analytics
 
-PostHog project **ClaimMatch** (id `399692`). The project timezone is **UTC**.
+PostHog project **Lawsuit AI** (id `399692`). The project timezone is **UTC**.
 Reporting days in this doc and in operator dashboards are **America/New_York**
 calendar days.
 
@@ -133,7 +133,7 @@ pageviews stay.
 
 ## Parent dashboard 2315315 (do not edit from this PR)
 
-Parent owns [ClaimMatch traction](https://us.posthog.com/project/399692/dashboard/2315315)
+Parent owns [Lawsuit AI traction](https://us.posthog.com/project/399692/dashboard/2315315)
 and the ET daily routine. This PR does not create or rewrite that dashboard.
 Use these property names on existing tiles.
 

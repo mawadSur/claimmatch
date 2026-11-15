@@ -78,7 +78,7 @@ export default function AboutPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               Class-action settlements set money aside for people who were affected.
-              ClaimMatch is a free claim assistant that helps you find settlements that
+              Lawsuit AI is a free claim assistant that helps you find settlements that
               are open, check the official details, and keep track of the claims you file.
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function AboutPage() {
               aren’t sure the settlement is real.
             </p>
             <p className="mt-4 text-ink-muted">
-              ClaimMatch puts open settlements in one place, sends you to the official
+              Lawsuit AI puts open settlements in one place, sends you to the official
               site to file, and helps you remember what you’ve filed.
             </p>
           </div>

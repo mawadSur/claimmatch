@@ -68,7 +68,7 @@ export function BetaFeedbackPrompt({ trigger }: { trigger: BetaFeedbackTrigger }
       setStatus(dismissed ? 'hidden' : 'done');
     } catch {
       setStatus('open');
-      setError('Could not reach ClaimMatch. Check your connection and try again.');
+      setError('Could not reach Lawsuit AI. Check your connection and try again.');
     }
   }
 

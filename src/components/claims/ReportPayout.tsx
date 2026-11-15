@@ -59,7 +59,7 @@ export function ReportPayout({
     <form onSubmit={submit} className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
       <h3 className="text-sm font-bold text-ink">I got paid</h3>
       <p className="mt-1 text-xs leading-relaxed text-ink-muted">
-        Optional. We record the amount the administrator sent you. ClaimMatch
+        Optional. We record the amount the administrator sent you. Lawsuit AI
         does not charge a fee on this.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-3">

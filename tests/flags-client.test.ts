@@ -87,7 +87,7 @@ describe('setFlagOverrides', () => {
 });
 
 describe('clientFlagValues', () => {
-  it('allow-lists exactly the ten flags the native app may see', () => {
+  it('allow-lists exactly the eleven flags the native app may see', () => {
     // Pinned, so a server-only flag cannot join the app's config unreviewed.
     expect(CLIENT_FLAG_NAMES).toEqual([
       'VERIFIED_FIELDS_ENABLED',
@@ -100,6 +100,7 @@ describe('clientFlagValues', () => {
       'MATCH_METRICS_ENABLED',
       'FEE_DISCLOSURE_ENABLED',
       'CATALOG_HIDE_UNKNOWNS_ENABLED',
+      'ONE_CLICK_FILING_ENABLED',
     ]);
   });
 

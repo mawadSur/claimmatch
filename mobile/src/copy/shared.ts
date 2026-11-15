@@ -114,7 +114,7 @@ export const shared = defineCopy({
     source: 'src/app/lawsuits/page.tsx',
   },
   creditListTail: {
-    text: '. ClaimMatch may have shortened or reformatted them.',
+    text: '. Lawsuit AI may have shortened or reformatted them.',
     source: 'src/app/lawsuits/page.tsx',
   },
 
@@ -159,7 +159,7 @@ export const shared = defineCopy({
     source: 'src/app/login/page.tsx',
   },
   newToClaimMatch: {
-    text: 'New to ClaimMatch?',
+    text: 'New to Lawsuit AI?',
     source: 'src/app/login/page.tsx',
   },
   createFreeAccount: {
@@ -169,7 +169,7 @@ export const shared = defineCopy({
 
   // Deadline reminders (local notifications) --------------------------------
   reminderBody: {
-    text: '{title}. Deadline {date}. If you qualify, file on the official site, then tell us in ClaimMatch.',
+    text: '{title}. Deadline {date}. If you qualify, file on the official site, then tell us in Lawsuit AI.',
     source: 'plan 5 (Deadline reminders)',
     mobileOnly: true,
   },

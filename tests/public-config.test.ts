@@ -26,16 +26,16 @@ describe('public config', () => {
     expect(unset.posthog.key).toBeNull();
     expect(unset.posthog.project).toBeNull();
 
-    vi.stubEnv('NEXT_PUBLIC_CONTACT_EMAIL', 'hello@claimmatch.com');
+    vi.stubEnv('NEXT_PUBLIC_CONTACT_EMAIL', 'hello@lawsuitai.org');
     vi.stubEnv('NEXT_PUBLIC_POSTHOG_KEY', 'phc_test');
-    vi.stubEnv('NEXT_PUBLIC_POSTHOG_PROJECT', 'ClaimMatch');
+    vi.stubEnv('NEXT_PUBLIC_POSTHOG_PROJECT', 'Lawsuit AI');
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://claimmatch.example');
     const set = publicConfig({
       NEXT_PUBLIC_POSTHOG_KEY: 'phc_test',
-      NEXT_PUBLIC_POSTHOG_PROJECT: 'ClaimMatch',
+      NEXT_PUBLIC_POSTHOG_PROJECT: 'Lawsuit AI',
       NEXT_PUBLIC_SITE_URL: 'https://claimmatch.example',
     });
-    expect(set.posthog.project).toBe('ClaimMatch');
+    expect(set.posthog.project).toBe('Lawsuit AI');
     expect(set.siteUrl).toBe('https://claimmatch.example');
   });
 

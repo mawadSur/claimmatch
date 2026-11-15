@@ -32,11 +32,11 @@ export const dashboard = defineCopy({
     source: 'src/app/dashboard/page.tsx',
   },
   /**
-   * Replaces the web's "ClaimMatch is free during beta." (src/app/dashboard/page.tsx):
+   * Replaces the web's "Lawsuit AI is free during beta." (src/app/dashboard/page.tsx):
    * App Review rejects beta wording in a store app (Guideline 2.2).
    */
   introFeeOff: {
-    text: 'ClaimMatch is free for now.',
+    text: 'Lawsuit AI is free for now.',
     source: 'src/app/dashboard/page.tsx',
     mobileOnly: true,
   },
@@ -47,7 +47,7 @@ export const dashboard = defineCopy({
 
   // Banners (?denied=admin, ?password=updated) -------------------------------
   deniedAdmin: {
-    text: 'You don’t have access to the admin area. It’s only for ClaimMatch staff.',
+    text: 'You don’t have access to the admin area. It’s only for Lawsuit AI staff.',
     source: 'src/app/dashboard/page.tsx',
   },
   passwordUpdated: {
@@ -61,7 +61,7 @@ export const dashboard = defineCopy({
     source: 'src/app/dashboard/page.tsx',
   },
   welcomeIntro: {
-    text: 'Here’s how ClaimMatch works:',
+    text: 'Here’s how Lawsuit AI works:',
     source: 'src/app/dashboard/page.tsx',
   },
   welcomeStep1: {

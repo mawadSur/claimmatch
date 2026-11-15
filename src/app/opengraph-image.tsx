@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'ClaimMatch — find open class-action settlements';
+export const alt = 'Lawsuit AI — find open class-action settlements';
 
 export default function OpenGraphImage() {
   return new ImageResponse(
@@ -19,7 +19,7 @@ export default function OpenGraphImage() {
           color: 'white',
         }}
       >
-        <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>ClaimMatch</div>
+        <div style={{ fontSize: 28, fontWeight: 600, opacity: 0.9 }}>Lawsuit AI</div>
         <div style={{ fontSize: 64, fontWeight: 800, marginTop: 16, lineHeight: 1.1 }}>
           Find settlements you qualify for
         </div>

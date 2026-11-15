@@ -41,7 +41,7 @@ describe('buildDeadlineIcs', () => {
       title: 'Amazon Return Policy Settlement',
       deadline: '2026-12-01',
       officialUrl: 'https://www.returnsettlement.com/submit-claim',
-      uid: 'claimmatch-deadline-amazon@return',
+      uid: 'lawsuitai-$1-amazon@return',
       dtstamp: new Date('2026-10-27T12:00:00Z'),
     });
     expect(ics).toContain('BEGIN:VCALENDAR');

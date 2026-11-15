@@ -393,10 +393,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   },
                   {
                     title: 'File on the official site yourself',
-                    body: 'Filing is free. ClaimMatch never files for you and never handles settlement payments.',
+                    body: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
                   },
                   {
-                    title: 'Keep track in ClaimMatch',
+                    title: 'Keep track in Lawsuit AI',
                     body: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
                   },
                 ].map((step, i) => (
@@ -452,7 +452,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   >
                     CC BY 4.0
                   </a>
-                  . ClaimMatch may have shortened or reformatted it. SettleSignal is a
+                  . Lawsuit AI may have shortened or reformatted it. SettleSignal is a
                   listing service, not the settlement’s official site.
                   {settleSignalPage && (
                     <>
@@ -539,7 +539,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
                   {[
                     'You file on the official site yourself',
-                    'ClaimMatch never files for you or handles settlement payments',
+                    'Lawsuit AI never files for you or handles settlement payments',
                     'Save your confirmation number in one place',
                   ].map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">

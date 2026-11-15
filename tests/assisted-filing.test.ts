@@ -1,51 +1,102 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-// The queue's reads: one due job, its settlement and its profile.
-const fake = vi.hoisted(() => ({ lawsuit: null as Record<string, unknown> | null }));
-vi.mock('@/lib/supabase/server', () => {
-  const job = { id: 'job-1', claim_id: 'c1', user_id: 'u1', lawsuit_id: 'l1', attempts: 0, max_attempts: 1, status: 'queued' };
-  const single: Record<string, () => unknown> = { filing_jobs: () => job, lawsuits: () => fake.lawsuit, profiles: () => ({}) };
-  function query(table: string) {
-    const q: Record<string, unknown> = {};
-    for (const name of ['select', 'eq', 'lte', 'order', 'limit', 'update', 'or']) q[name] = () => q;
-    q.maybeSingle = async () => ({ data: single[table]?.() ?? null, error: null });
-    q.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
-      Promise.resolve({ data: table === 'filing_jobs' ? [job] : [], error: null }).then(resolve, reject);
-    return q;
-  }
-  return { createServiceClient: () => ({ from: query }) };
-});
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(), createServiceClient: vi.fn() }));
 
+import { POST as authorize } from '@/app/api/filing/authorize/route';
+import { GET as claimsExport } from '@/app/api/admin/claims-export/route';
+import { authorizedClaimsToCsv } from '@/lib/administrators/export';
 import { AUTHORIZATION_TEXT_V1, AUTHORIZATION_VERSION, authorizationText, clientIp } from '@/lib/filing/authorization';
-import { assistedFilingAllowed, filingStatusLabel, processFilingQueue } from '@/lib/filing/queue';
+import { assistedFilingAllowed, filingStatusLabel } from '@/lib/filing/queue';
 import { renderFilingReceiptEmail } from '@/lib/filing/receipt';
-import { MockFilingWorker, PlaywrightFilingWorker, setFilingWorkerFactory } from '@/lib/filing/worker';
-import { getSettlementGuide } from '@/lib/settlement-guides';
 import { makeLawsuit } from './helpers';
+
+// Phase 0 of one-click filing (docs/designs/one-click-filing.md, repoMap
+// section 4): the legacy assisted-filing path is retired and its bugs closed.
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  setFilingWorkerFactory(null);
 });
 
-describe('assisted filing flag', () => {
-  it('stays off unless the flag is exactly 1', () => {
-    const lawsuit = makeLawsuit({}, { assisted_filing_allowed: false });
-    expect(assistedFilingAllowed(lawsuit)).toBe(false);
+const root = process.cwd();
+const source = (path: string) => readFileSync(join(root, path), 'utf8');
+function filesUnder(dir: string): string[] {
+  return readdirSync(join(root, dir), { withFileTypes: true }).flatMap((entry) => {
+    const rel = join(dir, entry.name);
+    return entry.isDirectory() ? filesUnder(rel) : /\.tsx?$/.test(entry.name) ? [rel] : [];
+  });
+}
+
+/** The legacy filing files and the channel code (other areas' files are theirs to check). */
+const LEGACY_AND_CHANNELS = () => [
+  'src/lib/filing/queue.ts',
+  'src/lib/filing/authorization.ts',
+  'src/lib/filing/receipt.ts',
+  'src/lib/filing/v2/jobs.ts',
+  ...filesUnder('src/lib/filing/channels'),
+  ...filesUnder('src/lib/administrators'),
+];
+
+describe('assisted filing flag and the per-settlement marker', () => {
+  it('stays off unless the flag is exactly 1 and the settlement itself allows it', () => {
+    const allowed = makeLawsuit({}, { assisted_filing_allowed: true });
+    const notAllowed = makeLawsuit({}, { assisted_filing_allowed: false });
+    expect(assistedFilingAllowed(allowed)).toBe(false);
     vi.stubEnv('ASSISTED_FILING_ENABLED', 'true');
-    expect(assistedFilingAllowed(lawsuit)).toBe(false);
+    expect(assistedFilingAllowed(allowed)).toBe(false);
     vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
-    expect(assistedFilingAllowed(lawsuit)).toBe(true);
-    expect(assistedFilingAllowed(makeLawsuit({}))).toBe(true);
-    expect(assistedFilingAllowed()).toBe(true);
+    expect(assistedFilingAllowed(allowed)).toBe(true);
+    expect(assistedFilingAllowed(notAllowed)).toBe(false);
+    expect(assistedFilingAllowed(makeLawsuit({}))).toBe(false);
+    expect(assistedFilingAllowed(null)).toBe(false);
+    expect(assistedFilingAllowed(allowed, false)).toBe(false);
+  });
+});
+
+describe('the retired assisted path', () => {
+  it('answers 410 on /api/filing/authorize and stores nothing', async () => {
+    const res = await authorize();
+    expect(res.status).toBe(410);
+    expect(await res.json()).toMatchObject({ code: 'gone' });
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('answers 410 on the old claims export (it trusted forgeable rows and logged nothing)', async () => {
+    const res = await claimsExport();
+    expect(res.status).toBe(410);
+    expect(await res.json()).toMatchObject({ code: 'gone' });
+  });
+
+  it('has no browser worker: the Playwright/Browserbase option and the queue drain are gone', () => {
+    expect(existsSync(join(root, 'src/lib/filing/worker.ts'))).toBe(false);
+    const queue = source('src/lib/filing/queue.ts');
+    expect(queue).not.toMatch(/processFilingQueue|fillAndSubmit|createFilingWorker/);
+    for (const file of LEGACY_AND_CHANNELS()) {
+      expect(source(file), file).not.toMatch(/\b(?:playwright|browserbase|puppeteer)\b/i);
+    }
+  });
+
+  it('never treats a CAPTCHA as something a member is asked to do', () => {
+    // 'captcha' survives only as a known challenge of an official form, which is a hard stop.
+    for (const file of LEGACY_AND_CHANNELS()) {
+      expect(source(file), file).not.toMatch(/['"]captcha['"]/);
+    }
+    expect(source('src/lib/filing/v2/contract-spec.ts')).toMatch(/OFFICIAL_FORM_CHALLENGES = \['captcha'/);
+  });
+
+  it('stops draining the old queue from the daily cron', () => {
+    const daily = source('src/app/api/cron/daily/route.ts');
+    expect(daily).not.toMatch(/processFilingQueue|@\/lib\/filing\/queue/);
+    expect(daily).toMatch(/flags\.oneClickFiling\(\)/);
   });
 });
 
 describe('authorization text', () => {
-  it('stores a versioned full text and never says ClaimMatch files for the user', () => {
+  it('stores a versioned full text and never says Lawsuit AI files for the user', () => {
     expect(AUTHORIZATION_VERSION).toBe('v1');
     expect(authorizationText()).toBe(AUTHORIZATION_TEXT_V1);
-    expect(AUTHORIZATION_TEXT_V1).toMatch(/I authorize ClaimMatch/);
+    expect(AUTHORIZATION_TEXT_V1).toMatch(/I authorize Lawsuit AI/);
     expect(AUTHORIZATION_TEXT_V1.toLowerCase()).not.toMatch(/we file|on your behalf|receipt number/);
   });
 
@@ -57,69 +108,31 @@ describe('authorization text', () => {
   });
 });
 
-describe('filing worker stub', () => {
-  it('never submits an official form', async () => {
-    const worker = new PlaywrightFilingWorker();
-    const result = await worker.fillAndSubmit({
-      jobId: 'job-1',
-      claimId: 'claim-1',
-      lawsuitId: 'lawsuit-1',
-      claimUrl: 'https://admin.example/file',
-      mapping: { fields: [{ profileKey: 'full_name', selector: '#name' }] },
-      profile: { full_name: 'Ada', email: 'ada@example.com' } as never,
-    });
-    expect(result.status).toBe('failed');
-    if (result.status === 'failed') {
-      expect(result.error).toMatch(/stub/i);
-    }
-  });
-
-  it('lets tests inject a mock that still never talks to a network', async () => {
-    const mock = new MockFilingWorker();
-    mock.nextResult = {
-      status: 'submitted',
-      administratorClaimId: 'ADM-99',
-      screenshotUrl: 'stub://screenshot',
-    };
-    setFilingWorkerFactory(() => mock);
-    expect(mock.calls).toHaveLength(0);
-    const result = await mock.fillAndSubmit({
-      jobId: 'j',
-      claimId: 'c',
-      lawsuitId: 'l',
-      claimUrl: 'https://example.test',
-      mapping: {},
-      profile: {} as never,
-    });
-    expect(result).toEqual(mock.nextResult);
-  });
-});
-
-describe('processFilingQueue', () => {
-  it('does nothing while the flag is off', async () => {
-    const mock = new MockFilingWorker();
-    const out = await processFilingQueue({ worker: mock });
-    expect(out).toEqual({ processed: 0, results: [] });
-    expect(mock.calls).toHaveLength(0);
-  });
-
-  it('opens the claim form the claim screen opens: on a guided settlement, the official site’s', async () => {
-    vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
-    const slug = 'seatgeek-ticket-fees-nevada-class-action-settlement';
-    const official = getSettlementGuide(slug)?.officialUrl;
-    const claimUrlFor = async (claim_url: string | null, rowSlug = slug) => {
-      fake.lawsuit = { id: 'l1', title: 'SeatGeek fees', claim_url, administrator_id: null, assisted_filing_allowed: true, slug: rowSlug };
-      const mock = new MockFilingWorker();
-      await processFilingQueue({ worker: mock });
-      return mock.calls.map((call) => call.claimUrl);
-    };
-    // The feed's link to another site gives way to the official one.
-    expect(await claimUrlFor('https://www.topclassactions.example.org/seatgeek')).toEqual([official]);
-    // Its link to the form on the official site stays.
-    expect(await claimUrlFor('https://seatgeekticketfeessettlement.com/submit-claim')).toEqual([
-      'https://seatgeekticketfeessettlement.com/submit-claim',
+describe('legacy export cells', () => {
+  it('keeps a value that starts like a spreadsheet formula as text', () => {
+    const csv = authorizedClaimsToCsv([
+      {
+        claim_id: 'c1',
+        user_id: 'u1',
+        lawsuit_id: 'l1',
+        lawsuit_title: '=HYPERLINK("https://evil.example")',
+        authorization_version: 'v1',
+        authorized_at: '2026-10-28T00:00:00.000Z',
+        full_name: '@SUM(A1)',
+        email: 'ada@example.com',
+        phone: '+1 555 0100',
+        state: 'NY',
+        zip: '10001',
+        address_line1: '-1 Main',
+        address_line2: null,
+        city: 'New York',
+      },
     ]);
-    expect(await claimUrlFor('https://admin.example.org/file', 'plain-settlement')).toEqual(['https://admin.example.org/file']);
+    const row = csv.split('\n')[1];
+    expect(row).toContain(`"'=HYPERLINK(""https://evil.example"")"`);
+    expect(row).toContain("'@SUM(A1)");
+    expect(row).toContain("'+1 555 0100");
+    expect(row).toContain("'-1 Main");
   });
 });
 
@@ -142,7 +155,7 @@ describe('filing copy', () => {
     });
     expect(html).toContain('ADM-42');
     expect(html).toContain('Authorized submission confirmation');
-    expect(html).toContain('LawsuitAI');
+    expect(html).toContain('Lawsuit AI');
     expect(html).not.toContain('ClaimMatch');
     expect(html.toLowerCase()).not.toMatch(/receipt number|we file|on your behalf/);
   });

@@ -27,7 +27,7 @@ const ONBOARDING_FROM = /onboarding@resend\.dev/i;
 
 /**
  * A sender is "verified" only when RESEND_FROM is set to a real domain.
- * The Resend onboarding address is not a ClaimMatch inbox (B2 / B3).
+ * The Resend onboarding address is not a Lawsuit AI inbox (B2 / B3).
  */
 export function isVerifiedSender(from: string | null | undefined): boolean {
   const value = from?.trim();

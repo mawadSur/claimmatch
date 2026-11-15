@@ -5,7 +5,7 @@
  */
 
 import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { categoryHubPath, CLOSING_SOON_PATH, NEW_SETTLEMENTS_PATH, pageUrl } from '@/lib/settlement-seo';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
@@ -69,7 +69,7 @@ export function renderLlmsTxt(input: {
 
 > ${SITE.description}
 
-${publicBrandCopy(SHORT_DISCLAIMER)}
+${publicBrandCopy(shortDisclaimer())}
 
 ${OFFICIAL_FILING_IS_FREE} ${publicBrandCopy(feeLine)}
 

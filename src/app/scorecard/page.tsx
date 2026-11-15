@@ -15,7 +15,7 @@ export const revalidate = 3600;
 
 const TITLE = 'Public scorecard';
 const DESCRIPTION =
-  'Measured counts from ClaimMatch: open settlements, claims people told us they filed, and payouts they reported. No estimates.';
+  'Measured counts from Lawsuit AI: open settlements, claims people told us they filed, and payouts they reported. No estimates.';
 
 export const metadata: Metadata = {
   ...publicPageMetadata({
@@ -75,7 +75,7 @@ export default async function ScorecardPage() {
         </dl>
 
         <p className="mt-6 text-sm leading-relaxed text-ink-muted">
-          Filing is something you do on the official settlement site. ClaimMatch never files
+          Filing is something you do on the official settlement site. Lawsuit AI never files
           for you and never handles settlement payments.
         </p>
 

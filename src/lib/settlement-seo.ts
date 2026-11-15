@@ -184,8 +184,8 @@ export function settlementFaqs(lawsuit: Lawsuit): FaqItem[] {
 
   const officialHow =
     official?.kind === 'official'
-      ? ` File on the official site (${official.host}). ClaimMatch never files for you.`
-      : ' File on the official settlement website. ClaimMatch never files for you.';
+      ? ` File on the official site (${official.host}). Lawsuit AI never files for you.`
+      : ' File on the official settlement website. Lawsuit AI never files for you.';
 
   return [
     {

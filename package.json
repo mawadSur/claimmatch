@@ -2,7 +2,7 @@
   "name": "claimmatch",
   "version": "0.1.0",
   "private": true,
-  "description": "ClaimMatch — find class-action settlements and lawsuits you're eligible for, and get matched automatically.",
+  "description": "Lawsuit AI — find class-action settlements and lawsuits you're eligible for, and get matched automatically.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -31,9 +31,9 @@
     "posthog-js": "^1.430.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "resend": "^4.0.1",
+    "resend": "^6.38.1",
     "tailwind-merge": "^2.6.0",
-    "zod": "^3.24.1"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -50,6 +50,7 @@
   },
   "overrides": {
     "sharp": "^0.35.5",
-    "dompurify": "^3.4.17"
+    "dompurify": "^3.4.17",
+    "postcss": "$postcss"
   }
 }

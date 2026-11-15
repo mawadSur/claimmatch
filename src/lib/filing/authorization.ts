@@ -6,15 +6,15 @@
 
 export const AUTHORIZATION_VERSION = 'v1';
 
-export const AUTHORIZATION_TEXT_V1 = `I am the person named on this ClaimMatch account.
+export const AUTHORIZATION_TEXT_V1 = `I am the person named on this Lawsuit AI account.
 
-I authorize ClaimMatch to act as my agent for this one settlement claim only, and to complete and send the official administrator form using the name, address, email and profile details I have saved.
+I authorize Lawsuit AI to act as my agent for this one settlement claim only, and to complete and send the official administrator form using the name, address, email and profile details I have saved.
 
 I attest that those details are accurate and complete to the best of my knowledge, and that I believe I may be included in the class described on the official notice. I understand the official notice and administrator site are the final word on who is included and what proof is needed.
 
-I understand I can withdraw this authorization in ClaimMatch before the job is sent. After it is sent, I should contact the administrator with any correction.
+I understand I can withdraw this authorization in Lawsuit AI before the job is sent. After it is sent, I should contact the administrator with any correction.
 
-I understand ClaimMatch does not give legal advice, is not a law firm, and does not receive or handle settlement payments.`;
+I understand Lawsuit AI does not give legal advice, is not a law firm, and does not receive or handle settlement payments.`;
 
 export function authorizationText(version = AUTHORIZATION_VERSION): string {
   if (version === AUTHORIZATION_VERSION) return AUTHORIZATION_TEXT_V1;

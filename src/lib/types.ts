@@ -1,9 +1,9 @@
-// ClaimMatch — shared domain types. These mirror the SQL schema in
+// Lawsuit AI — shared domain types. These mirror the SQL schema in
 // supabase/migrations/0001_init.sql and are the single source of truth for
 // data shapes across the app. Keep in sync with the DB.
 
 /**
- * Claim states (supabase/migrations/0006_claim_states.sql). ClaimMatch never
+ * Claim states (supabase/migrations/0006_claim_states.sql). Lawsuit AI never
  * files for anyone: people file on the official site and report it here.
  *
  *   self_file          still needs filing on the official site ("Not filed yet")
@@ -260,7 +260,7 @@ export interface Claim {
   // a database where 0006 has not been applied yet.
   /** The settlement administrator's confirmation number, as the user typed it. */
   confirmation_number?: string | null;
-  /** When the user told ClaimMatch they filed (server time). */
+  /** When the user told Lawsuit AI they filed (server time). */
   reported_filed_at?: string | null;
   /** The day the user says they filed on the official site (YYYY-MM-DD). */
   user_filed_on?: string | null;

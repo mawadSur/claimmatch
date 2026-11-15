@@ -135,7 +135,7 @@ export const auth = defineCopy({
     source: 'src/components/AuthForm.tsx',
   },
   backToApp: {
-    text: 'When you’re done, come back to ClaimMatch and log in.',
+    text: 'When you’re done, come back to Lawsuit AI and log in.',
     source: 'plan 3.3 (Auth: app-only line on the check-email and reset screens)',
     mobileOnly: true,
   },

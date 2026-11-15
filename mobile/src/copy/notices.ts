@@ -16,11 +16,11 @@ import { defineCopy } from './types';
 export const notices = defineCopy({
   // One legacy claim, on the claim screen (CorrectiveNotice) -----------------
   claimTitle: {
-    text: 'ClaimMatch did not file this claim',
+    text: 'Lawsuit AI did not file this claim',
     source: 'src/components/claims/CorrectiveNotice.tsx',
   },
   claimBody: {
-    text: 'Earlier, ClaimMatch showed “Claim filed” for this settlement. That was wrong. We never sent anything to the settlement administrator, and we never file claims for anyone.',
+    text: 'Earlier, Lawsuit AI showed “Claim filed” for this settlement. That was wrong. We never sent anything to the settlement administrator, and we never file claims for anyone.',
     source: 'src/components/claims/CorrectiveNotice.tsx',
   },
   alreadyFiled: {
@@ -63,7 +63,7 @@ export const notices = defineCopy({
   },
   /** unlisted: "**{haventFiledYet}** {unlisted} {checkStillTakes}" then the link {checkOfficialSite}. */
   unlisted: {
-    text: 'This settlement is no longer listed on ClaimMatch while we re-check it.',
+    text: 'This settlement is no longer listed on Lawsuit AI while we re-check it.',
     source: 'src/components/claims/CorrectiveNotice.tsx',
   },
   checkStillTakes: {
@@ -96,7 +96,7 @@ export const notices = defineCopy({
   },
   /** FICTIONAL_TEXT. Claim screen: "“{title}” {fictionalText}"; dashboard row: "{thisSettlement} {fictionalText}". */
   fictionalText: {
-    text: 'was test data that should never have been shown as a real settlement. ClaimMatch did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.',
+    text: 'was test data that should never have been shown as a real settlement. Lawsuit AI did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.',
     source: 'src/components/claims/CorrectiveNotice.tsx',
   },
   thisSettlement: {
@@ -122,16 +122,16 @@ export const notices = defineCopy({
     source: 'src/components/claims/CorrectiveNoticeList.tsx',
   },
   listTitleOne: {
-    text: 'ClaimMatch did not file your claim',
+    text: 'Lawsuit AI did not file your claim',
     source: 'src/components/claims/CorrectiveNoticeList.tsx',
   },
   listTitleMany: {
-    text: 'ClaimMatch did not file your claims',
+    text: 'Lawsuit AI did not file your claims',
     source: 'src/components/claims/CorrectiveNoticeList.tsx',
   },
   /** Body (legacy rows only): "{listBodyLead} {the settlement(s) below}{listBodyMiddle} {where things stand}" */
   listBodyLead: {
-    text: 'Earlier, ClaimMatch showed “Claim filed” for',
+    text: 'Earlier, Lawsuit AI showed “Claim filed” for',
     source: 'src/components/claims/CorrectiveNoticeList.tsx',
   },
   theSettlementBelow: {

@@ -77,7 +77,7 @@ export function ProofFeedback({ lawsuitId }: { lawsuitId: string }) {
       <h2 className="text-lg font-bold">{PROOF_FEEDBACK_PROMPT}</h2>
       <p className="mt-1 text-sm text-ink-muted">
         After you visit the official site, tap what it asked for. This stays
-        between you and ClaimMatch — we do not show it as a fact on the listing.
+        between you and Lawsuit AI — we do not show it as a fact on the listing.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         {OPTIONS.map((opt) => (

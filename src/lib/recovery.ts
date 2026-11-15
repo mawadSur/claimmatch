@@ -1,6 +1,6 @@
 /**
  * Money helpers for the legacy recoveries ledger (admin only, behind
- * flags.adminRecoveries). ClaimMatch never handles settlement money and takes
+ * flags.adminRecoveries). Lawsuit AI never handles settlement money and takes
  * no cut. There is no per-settlement value estimate and no "total" anywhere.
  * Legacy rows carry their own fee_pct; there is no app-wide fee rate.
  */

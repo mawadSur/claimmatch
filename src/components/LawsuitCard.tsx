@@ -24,7 +24,7 @@ import { MissingDetailsBlock } from '@/components/settlement/AnswerBlock';
  * action.
  *
  * `badge` replaces the category label, e.g. a claim status on the dashboard.
- * Labels with a percentage or "Matched" are dropped: ClaimMatch shows no match
+ * Labels with a percentage or "Matched" are dropped: Lawsuit AI shows no match
  * scores (D50). `href` changes where the title links (default: the settlement
  * page).
  */

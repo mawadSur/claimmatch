@@ -5,7 +5,7 @@
  * Not a real Supabase project, not production, not email. Binds 127.0.0.1
  * only. Refuses to start if the listen host is not loopback.
  *
- * The ClaimMatch app talks to this the same way it talks to Supabase:
+ * The Lawsuit AI app talks to this the same way it talks to Supabase:
  * browser signup, cookie session, RSC getUser, catalog reads, profile
  * writes, and the claim RPCs. Catalog rows here are labeled fixtures,
  * never real settlements.

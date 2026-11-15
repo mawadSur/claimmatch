@@ -132,7 +132,7 @@ export function LegacyClaimGuidance({
             <strong>Haven&rsquo;t filed yet?</strong>{' '}
             {filing === 'closed_on_list'
               ? 'Our list shows this settlement as closed, and we’re re-checking it.'
-              : 'This settlement is no longer listed on ClaimMatch while we re-check it.'}{' '}
+              : 'This settlement is no longer listed on Lawsuit AI while we re-check it.'}{' '}
             Check the official site to see if it still takes claims.
             {officialUrl && (
               <>
@@ -179,10 +179,10 @@ export function CorrectiveNotice({
     >
       <h2 id="corrective-notice-title" className="flex items-start gap-2 text-lg font-bold text-amber-950">
         <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-        ClaimMatch did not file this claim
+        Lawsuit AI did not file this claim
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-amber-950">
-        Earlier, ClaimMatch showed &ldquo;Claim filed&rdquo; for this settlement. That
+        Earlier, Lawsuit AI showed &ldquo;Claim filed&rdquo; for this settlement. That
         was wrong. We never sent anything to the settlement administrator, and we
         never file claims for anyone.
       </p>
@@ -195,7 +195,7 @@ export function CorrectiveNotice({
 }
 
 export const FICTIONAL_TEXT =
-  'was test data that should never have been shown as a real settlement. ClaimMatch did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.';
+  'was test data that should never have been shown as a real settlement. Lawsuit AI did not file anything, and there is nothing for you to do. Please ignore any earlier message about it.';
 
 /** "Got it" for a claim on a fictional settlement (closes it out). */
 export function AcknowledgeFictionalButton({ claimId, onDone }: { claimId: string; onDone: Answered }) {
