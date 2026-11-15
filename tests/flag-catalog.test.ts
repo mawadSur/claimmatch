@@ -8,9 +8,9 @@ afterEach(() => {
 });
 
 describe('FLAG_CATALOG', () => {
-  it('lists every env var flags.ts reads with on()', () => {
+  it('lists every env var flags.ts reads with on() or equals()', () => {
     const src = readFileSync(fileURLToPath(new URL('../src/lib/flags.ts', import.meta.url)), 'utf8');
-    const fromFlags = [...src.matchAll(/\bon\('([A-Z0-9_]+)'\)/g)].map((m) => m[1]);
+    const fromFlags = [...src.matchAll(/\b(?:on|equals)\('([A-Z0-9_]+)'/g)].map((m) => m[1]);
     expect(fromFlags.length).toBeGreaterThan(20);
     expect(FLAG_CATALOG.map((f) => f.env).sort()).toEqual([...new Set(fromFlags)].sort());
   });
@@ -34,6 +34,17 @@ describe('FLAG_CATALOG', () => {
     const llms = listFlagStatus().find((row) => row.env === 'LLMS_TXT_ENABLED');
     expect(llms?.enabled).toBe(true);
     expect(JSON.stringify(listFlagStatus())).not.toContain('super-secret-indexnow-key');
+  });
+
+  it('AGENT_AUTH_CURRENT_VERSION reads on only for exactly agent-auth-v2', () => {
+    const row = () => listFlagStatus().find((r) => r.env === 'AGENT_AUTH_CURRENT_VERSION')?.enabled;
+    expect(row()).toBe(false);
+    for (const value of ['1', 'agent-auth-v1', 'AGENT-AUTH-V2', ' agent-auth-v2', 'agent-auth-v3']) {
+      vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', value);
+      expect(row()).toBe(false);
+    }
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    expect(row()).toBe(true);
   });
 });
 

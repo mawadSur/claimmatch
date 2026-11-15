@@ -392,6 +392,11 @@ for the `[TEST]` email, then the claim's status timeline and the TEST job on
 2. Remove `ONE_CLICK_FILING_TEST_MODE` (and `ONE_CLICK_TEST_INBOX` if unused) in Vercel and redeploy. The routes 404 again and the cron stops.
 3. Test rows stay for review (`select * from claim_filing_jobs where is_test`). They never go to an administrator, also after one-click goes live.
 
+### Agent authorization version and withdrawn finality (founder decisions 2026-11-15)
+
+- **0048 (withdrawn is final):** apply `0048_withdrawn_final.sql` in the SQL editor (needs 0006 and 0042; independent of 0037). Additive and idempotent; rollback SQL is in its header. Afterwards no write can move a claim out of `withdrawn` (CM001).
+- **`AGENT_AUTH_CURRENT_VERSION`:** leave it unset (members sign `agent-auth-v1`, the desk stops at every CAPTCHA). Only after the law firm signs off `agent-auth-v2` (`docs/legal/signoff-checklist.md`, item 4b), set it to exactly `agent-auth-v2` in Vercel (Production) and redeploy. From then on new signatures are v2, and a settlement whose desk rule a legal_reviewer set to "Staff may complete a CAPTCHA by hand" lets the desk complete a CAPTCHA by hand for v2-signed claims only. Claims signed under v1 keep stopping. To go back, remove the variable and redeploy; v2 signatures already made keep their meaning.
+
 ## Rollback
 
 - **Before step 4 (0008):** a Vercel instant rollback to the previous deployment works. The old "file" action still errors because of 0006's check.

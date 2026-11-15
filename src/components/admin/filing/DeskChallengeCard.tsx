@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
-import { AGENT_AUTHORIZATION_VERSION, effectiveDeskChallengeMode } from '@/lib/filing/v2/authorization-text';
+import { AGENT_AUTH_V1, AGENT_AUTH_V2, effectiveDeskChallengeMode } from '@/lib/filing/v2/authorization-text';
 import { DeskChallengeRequestSchema } from '@/lib/filing/v2/contract-staff';
 import { AnySuccessSchema, staffJson, staffPaths, type ApiError, type FieldIssue } from './api';
 import { formatDateTime } from './format';
@@ -32,6 +32,8 @@ export function DeskChallengeCard({
   onChanged: () => void;
 }) {
   const mode = view?.desk_challenge_mode ?? 'stop';
+  // From the server (AGENT_AUTH_CURRENT_VERSION); the browser has no env, so never read it here.
+  const signing = view?.current_authorization_version ?? AGENT_AUTH_V1;
   const next = mode === 'stop' ? 'staff_completes_captcha' : 'stop';
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -72,11 +74,17 @@ export function DeskChallengeCard({
       {mode !== 'stop' && view?.desk_challenge_notes ? (
         <p className="whitespace-pre-wrap text-xs text-ink-muted">Law firm notes: {view.desk_challenge_notes}</p>
       ) : null}
-      {mode !== 'stop' && effectiveDeskChallengeMode(mode) === 'stop' ? (
+      {mode !== 'stop' && effectiveDeskChallengeMode(mode, signing) === 'stop' ? (
         <p className="text-xs font-semibold text-ink">
-          Not in effect yet: the authorization members sign ({AGENT_AUTHORIZATION_VERSION}) says the agent stops at any
-          robot check. This rule applies only to claims signed under a new authorization version that says a desk agent
-          may complete a CAPTCHA, once the law firm approves it and it ships.
+          Not in effect yet: the authorization members sign now ({signing}) says the agent stops at any robot check.
+          This rule applies only to claims signed under {AGENT_AUTH_V2}, which says a desk agent may complete a CAPTCHA
+          by hand. Members sign it once the law firm approves it and AGENT_AUTH_CURRENT_VERSION is set to {AGENT_AUTH_V2}.
+        </p>
+      ) : null}
+      {mode !== 'stop' && effectiveDeskChallengeMode(mode, signing) !== 'stop' ? (
+        <p className="text-xs text-ink-muted">
+          In effect for claims signed under {AGENT_AUTH_V2} only. A claim signed under {AGENT_AUTH_V1} still stops at
+          any robot check.
         </p>
       ) : null}
       <p className="text-xs text-ink-muted">

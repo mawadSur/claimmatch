@@ -4,6 +4,7 @@
  */
 import { policyContentOf } from '@/lib/filing/channels/policy';
 import { FilingPolicyContentSchema, FilingSpecContentSchema } from '@/lib/filing/v2/contract-spec';
+import { currentAuthorizationVersion } from '@/lib/filing/v2/authorization-text';
 
 type Row = Record<string, unknown>;
 
@@ -71,6 +72,7 @@ export function controlsView(row: Row) {
     desk_challenge_mode: row.desk_challenge_mode === 'staff_completes_captcha' ? ('staff_completes_captcha' as const) : ('stop' as const),
     desk_challenge_notes: str(row.desk_challenge_notes),
     desk_challenge_changed_at: str(row.desk_challenge_changed_at),
+    current_authorization_version: currentAuthorizationVersion(),
   };
 }
 

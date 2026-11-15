@@ -1,20 +1,41 @@
 /**
- * Lawsuit AI's agent authorization for one-click filing (agent-auth-v1): the
- * text a member accepts with their e-signature, shown and accepted only on an
- * agent lane. claim_signatures stores the server's text for the lane signed,
+ * Lawsuit AI's agent authorization for one-click filing: the text a member
+ * accepts with their e-signature, shown and accepted only on an agent lane.
+ * claim_signatures stores the server's text and version for the lane signed,
  * never the client's copy. The law firm approves the wording, including what
  * Lawsuit AI owes when it cannot submit a queued claim in time (go-live
- * checklist 4). Any change needs a new AGENT_AUTHORIZATION_VERSION.
+ * checklist 4). Any change needs a new version; a published version's text
+ * never changes (tests/filing-auth-versions.test.ts pins each one's SHA-256).
  *
  * Disclosures follow the D.C. ClaimClam order (decision memo section 3): not
  * affiliated with the settlement, filing on the official site is free,
  * payment is not guaranteed, and nothing suggests filing yourself is riskier.
+ *
+ * agent-auth-v1: the desk agent stops at any code, robot check or identity check.
+ * agent-auth-v2 (founder decision 2026-11-15, awaiting law-firm sign-off): the
+ *   same text, except a person at the desk may complete a CAPTCHA by hand on
+ *   the official site. Members sign v2 only once AGENT_AUTH_CURRENT_VERSION
+ *   is set to agent-auth-v2 (flags.agentAuthV2), after counsel approves it.
  */
+import { flags } from '@/lib/flags';
 import type { AgentChannel, DeskChallengeMode } from './contract-spec';
 
-export const AGENT_AUTHORIZATION_VERSION = 'agent-auth-v1';
+export const AGENT_AUTH_V1 = 'agent-auth-v1';
+export const AGENT_AUTH_V2 = 'agent-auth-v2';
+/** Every version this server can show and explain; a signature stores one of these. */
+export const AGENT_AUTHORIZATION_VERSIONS = [AGENT_AUTH_V1, AGENT_AUTH_V2] as const;
+export type AgentAuthorizationVersion = (typeof AGENT_AUTHORIZATION_VERSIONS)[number];
 
-const HOW: Readonly<Record<AgentChannel, string>> = {
+/**
+ * The version new members sign now: agent-auth-v1 unless the founder sets
+ * AGENT_AUTH_CURRENT_VERSION=agent-auth-v2 after the law firm signs off.
+ * Existing signatures keep the version they were signed under.
+ */
+export function currentAuthorizationVersion(): AgentAuthorizationVersion {
+  return flags.agentAuthV2() ? AGENT_AUTH_V2 : AGENT_AUTH_V1;
+}
+
+const HOW_V1: Readonly<Record<AgentChannel, string>> = {
   filing_desk:
     'A Lawsuit AI filing agent will enter this claim on the official claim form in an ordinary web browser, using only what I signed. If the official site asks for a code, a robot check or an identity check, the agent will stop and the claim will come back to me.',
   administrator_email:
@@ -25,12 +46,27 @@ const HOW: Readonly<Record<AgentChannel, string>> = {
     'Lawsuit AI will pass this claim to the settlement administrator through the administrator’s own claims system.',
 };
 
-/** The authorization text for one agent channel (the lane the member signs for). */
-export function agentAuthorizationText(lane: AgentChannel): string {
+const HOW_V2: Readonly<Record<AgentChannel, string>> = {
+  ...HOW_V1,
+  filing_desk:
+    'A Lawsuit AI filing agent will enter this claim on the official claim form in an ordinary web browser, using only what I signed. If the official site shows a CAPTCHA or a similar check that I am not a robot, a person at the Lawsuit AI filing desk may complete it by hand on the official site on my behalf. Lawsuit AI never uses a bot or a solving service for it and never gets around it. If the official site asks for a code or an identity check, the agent will stop and the claim will come back to me.',
+};
+
+const HOW: Readonly<Record<AgentAuthorizationVersion, Readonly<Record<AgentChannel, string>>>> = {
+  [AGENT_AUTH_V1]: HOW_V1,
+  [AGENT_AUTH_V2]: HOW_V2,
+};
+
+function isKnownVersion(version: string): version is AgentAuthorizationVersion {
+  return (AGENT_AUTHORIZATION_VERSIONS as readonly string[]).includes(version);
+}
+
+/** The authorization text for one agent channel (the lane the member signs for), under `version` (default: the current one). */
+export function agentAuthorizationText(lane: AgentChannel, version: AgentAuthorizationVersion = currentAuthorizationVersion()): string {
   return [
     'Authorization for Lawsuit AI to act as my agent for this claim',
     'I authorize Lawsuit AI to submit this one claim to the settlement administrator as my agent, exactly as I reviewed and signed it. This authorization covers this claim only, not any other claim or settlement.',
-    `How it will be submitted: ${HOW[lane]}`,
+    `How it will be submitted: ${HOW[version][lane]}`,
     'I understand that:',
     '- Lawsuit AI gives the settlement administrator my name, contact details and the answers in this claim, so the administrator can contact me directly about it.',
     '- Any payment from the settlement comes to me directly from the settlement administrator, by the payment method I chose. Lawsuit AI never receives, holds or redirects settlement money.',
@@ -43,23 +79,22 @@ export function agentAuthorizationText(lane: AgentChannel): string {
 
 /** The text of a version and lane, or null for a version this server does not offer. */
 export function authorizationTextFor(version: string, lane: AgentChannel): string | null {
-  return version === AGENT_AUTHORIZATION_VERSION ? agentAuthorizationText(lane) : null;
+  return isKnownVersion(version) ? agentAuthorizationText(lane, version) : null;
 }
 
 /**
  * The authorization versions whose desk text tells the member a desk agent
- * may complete a CAPTCHA by hand. agent-auth-v1 says the agent stops at any
- * robot check, so none does yet: a settlement's 'staff_completes_captcha'
- * rule (0045) has no effect until the law firm approves a new version that
- * says so and it is added here. A claim signed under an older version is
- * always filed under 'stop', whatever the settlement's rule says later.
+ * may complete a CAPTCHA by hand: agent-auth-v2 only. agent-auth-v1 says the
+ * agent stops at any robot check, so a claim signed under v1 is always filed
+ * under 'stop', whatever the settlement's rule (0045) says later. Under v2 the
+ * settlement's 'staff_completes_captcha' rule still has to be on.
  */
-export const VERSIONS_COVERING_STAFF_CAPTCHA: ReadonlySet<string> = new Set<string>();
+export const VERSIONS_COVERING_STAFF_CAPTCHA: ReadonlySet<string> = new Set<string>([AGENT_AUTH_V2]);
 
 /** The challenge rule that actually applies to a claim signed (or to be signed) under `authorizationVersion`. */
 export function effectiveDeskChallengeMode(
   mode: DeskChallengeMode | undefined,
-  authorizationVersion: string = AGENT_AUTHORIZATION_VERSION,
+  authorizationVersion: string = currentAuthorizationVersion(),
   covering: ReadonlySet<string> = VERSIONS_COVERING_STAFF_CAPTCHA,
 ): DeskChallengeMode {
   return mode === 'staff_completes_captcha' && covering.has(authorizationVersion) ? 'staff_completes_captcha' : 'stop';

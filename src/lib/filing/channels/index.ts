@@ -70,6 +70,12 @@ export interface LaneInput {
   desk: { openJobs: number } | null;
   /** Resend can send (RESEND_API_KEY and a verified sender). */
   email: { configured: boolean };
+  /**
+   * The agent authorization the claim was signed under; omitted before
+   * signing, which means the version new members sign now. Decides whether a
+   * settlement's staff_completes_captcha rule applies (authorization-text.ts).
+   */
+  authorizationVersion?: string;
 }
 
 export interface LaneDecision {

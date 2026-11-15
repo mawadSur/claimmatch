@@ -12,7 +12,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { requestIpForRecord } from '@/lib/staff-roles';
 import { enqueueFiling } from './jobs';
-import { agentAuthorizationText, AGENT_AUTHORIZATION_VERSION } from './authorization-text';
+import { agentAuthorizationText, currentAuthorizationVersion } from './authorization-text';
 import { currentPacketState, loadClaimContext, type ClaimContext } from './claim-context';
 import { isAgentLane, normalizeTypedName, type SignRequest } from './contract';
 import { openForClaimsNow } from './environment';
@@ -110,7 +110,9 @@ export async function signClaim(args: { caller: FilingCaller; req: Request; clai
   ) {
     return fail('packet_changed');
   }
-  if (body.authorization_text_version !== AGENT_AUTHORIZATION_VERSION) return fail('packet_changed');
+  // The member must have accepted the version new members sign now (AGENT_AUTH_CURRENT_VERSION).
+  const authVersion = currentAuthorizationVersion();
+  if (body.authorization_text_version !== authVersion) return fail('packet_changed');
   if (normalizeTypedName(body.typed_name) !== normalizeTypedName(state.canonical.member.legal_name)) {
     return fail('typed_name_mismatch');
   }
@@ -141,8 +143,8 @@ export async function signClaim(args: { caller: FilingCaller; req: Request; clai
     p_packet_canonical: canonicalJson(state.canonical as unknown as CanonicalJsonValue),
     p_spec_id: spec.id,
     p_statement_text: spec.content.attestation.text,
-    p_authorization_text_version: AGENT_AUTHORIZATION_VERSION,
-    p_authorization_text: agentAuthorizationText(lane),
+    p_authorization_text_version: authVersion,
+    p_authorization_text: agentAuthorizationText(lane, authVersion),
     p_typed_name: body.typed_name.trim(),
     p_lane: lane,
     p_esign_consent_id: consent.id,

@@ -76,8 +76,8 @@ function decide(input: LaneInput): LaneDecision {
       config,
       spec: spec.content,
       needsDocuments: input.needsDocuments,
-      // Only where the authorization the member signs says so (authorization-text.ts).
-      challengeMode: effectiveDeskChallengeMode(policy.desk_challenge_mode),
+      // Only where the authorization the member signed (or signs now) says so (authorization-text.ts).
+      challengeMode: effectiveDeskChallengeMode(policy.desk_challenge_mode, input.authorizationVersion),
     });
     if (!support.ok) {
       reasons.push(support.reason);

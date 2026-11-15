@@ -146,6 +146,8 @@ export const ControlsViewSchema = z.object({
   desk_challenge_mode: z.enum(DESK_CHALLENGE_MODES),
   desk_challenge_notes: z.string().nullable(),
   desk_challenge_changed_at: IsoDateTimeSchema.nullable(),
+  /** The authorization version new members sign now (AGENT_AUTH_CURRENT_VERSION); absent from older servers. */
+  current_authorization_version: z.string().optional(),
 });
 export const ControlsResponseSchema = z.object({ controls: ControlsViewSchema });
 

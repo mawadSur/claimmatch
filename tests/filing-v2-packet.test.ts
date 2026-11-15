@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkAnswerShape, mergeMemberSnapshot, validateAnswer } from '@/lib/filing/v2/answers';
-import { agentAuthorizationText, AGENT_AUTHORIZATION_VERSION, authorizationTextFor } from '@/lib/filing/v2/authorization-text';
+import { agentAuthorizationText, AGENT_AUTH_V1, authorizationTextFor } from '@/lib/filing/v2/authorization-text';
 import { evaluateCondition, questionVisible, type ConditionContext } from '@/lib/filing/v2/conditions';
 import { AGENT_CHANNELS, CanonicalPacketSchema, PacketViewSchema, type PacketDraft } from '@/lib/filing/v2/contract';
 import { FilingSpecContentSchema, type SpecQuestion } from '@/lib/filing/v2/contract-spec';
@@ -376,9 +376,9 @@ describe('versioned texts', () => {
       expect(text).toContain('comes to me directly from the settlement administrator');
       expect(text).toContain('payment is not guaranteed');
       expect(text).toContain('Filing a claim myself on the official settlement site is free');
-      expect(authorizationTextFor(AGENT_AUTHORIZATION_VERSION, lane)).toBe(text);
+      expect(authorizationTextFor(AGENT_AUTH_V1, lane)).toBe(text);
     }
-    expect(new Set(AGENT_CHANNELS.map(agentAuthorizationText)).size).toBe(AGENT_CHANNELS.length);
+    expect(new Set(AGENT_CHANNELS.map((lane) => agentAuthorizationText(lane))).size).toBe(AGENT_CHANNELS.length);
     expect(authorizationTextFor('agent-auth-v0', 'filing_desk')).toBeNull();
   });
 });

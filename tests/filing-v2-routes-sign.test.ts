@@ -63,6 +63,7 @@ import { POST as WITHDRAW } from '@/app/api/filing/claims/[claimId]/withdraw/rou
 import { POST as REOPEN } from '@/app/api/filing/claims/[claimId]/reopen/route';
 import { POST as SELF_FILE } from '@/app/api/filing/claims/[claimId]/self-file/route';
 import { POST as CONFIRM } from '@/app/api/filing/claims/[claimId]/confirmation/route';
+import { GET as VIEW } from '@/app/api/filing/claims/[claimId]/route';
 import { agentAuthorizationText } from '@/lib/filing/v2/authorization-text';
 import { ClaimFilingResponseSchema } from '@/lib/filing/v2/contract';
 import { FakeDb as Db, sha } from './filing-v2-fake';
@@ -268,6 +269,20 @@ describe('the member’s moves', () => {
     expect((await json(await post(WITHDRAW, id, 'withdraw', {}), 200)).filing.claim.status).toBe('withdrawn');
   });
 
+  it('withdrawn is final (founder decision 2026-11-15): no reopen, no self-file, no new start, no signing', async () => {
+    const { id, sign: body } = await queuedClaim();
+    expect((await json(await post(WITHDRAW, id, 'withdraw', {}), 200)).filing.claim.status).toBe('withdrawn');
+    const moves = h.jobs.withdrawn.length;
+    expect(await json(await post(REOPEN, id, 'reopen', {}), 409)).toMatchObject({ code: 'invalid_transition' });
+    expect(await json(await post(SELF_FILE, id, 'self-file', {}), 409)).toMatchObject({ code: 'invalid_transition' });
+    expect(await json(await sign(id, body), 409)).toMatchObject({ code: 'invalid_transition' });
+    expect(await json(await START(jsonRequest('/api/filing/claims', 'POST', { lawsuit_id: LAWSUIT })), 409)).toMatchObject({
+      code: 'invalid_transition',
+    });
+    expect(h.jobs.withdrawn).toHaveLength(moves);
+    expect(claimRow().status).toBe('withdrawn');
+  });
+
   it('reopens a queued claim for changes; unchanged, it reads ready again and can be signed anew', async () => {
     const { id, sign: body } = await queuedClaim();
     const reopened = (await json(await post(REOPEN, id, 'reopen', {}), 200)).filing;
@@ -296,5 +311,35 @@ describe('the member’s moves', () => {
     expect(res.claim).toMatchObject({ status: 'submitted', confirmation_number: 'ABC-123' });
     expect(res.timeline.at(-1)).toMatchObject({ status: 'submitted', actor: 'you', confirmation_number: 'ABC-123' });
     expect((await json(await post(CONFIRM, id, 'confirmation', { confirmation_number: 'ABC-123' }), 200)).filing.claim.status).toBe('submitted');
+  });
+});
+
+describe('authorization version (AGENT_AUTH_CURRENT_VERSION)', () => {
+  it('new members sign agent-auth-v1 by default', async () => {
+    const { id } = await readyClaim();
+    const view = (await json(await VIEW(jsonRequest(`/api/filing/claims/${id}`, 'GET'), params(id)), 200)).filing;
+    expect(view.authorization).toMatchObject({ text_version: 'agent-auth-v1', text: agentAuthorizationText('filing_desk', 'agent-auth-v1') });
+  });
+
+  it('once set to agent-auth-v2, members are shown and sign v2, and a stale v1 acceptance is refused', async () => {
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    const { id, sign: body } = await readyClaim();
+    const view = (await json(await VIEW(jsonRequest(`/api/filing/claims/${id}`, 'GET'), params(id)), 200)).filing;
+    expect(view.authorization).toMatchObject({ text_version: 'agent-auth-v2', text: agentAuthorizationText('filing_desk', 'agent-auth-v2') });
+    expect(await json(await sign(id, body), 409)).toMatchObject({ code: 'packet_changed' });
+    await json(await sign(id, { ...body, authorization_text_version: 'agent-auth-v2' }), 200);
+    expect(h.db.rows('claim_signatures')[0]).toMatchObject({
+      authorization_text_version: 'agent-auth-v2',
+      authorization_text: agentAuthorizationText('filing_desk', 'agent-auth-v2'),
+    });
+  });
+
+  it('a claim signed under v1 keeps showing the v1 text after the switch moves to v2', async () => {
+    const { id, sign: body } = await readyClaim();
+    await json(await sign(id, body), 200);
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    const view = (await json(await VIEW(jsonRequest(`/api/filing/claims/${id}`, 'GET'), params(id)), 200)).filing;
+    expect(view.signature).not.toBeNull();
+    expect(view.authorization).toMatchObject({ text_version: 'agent-auth-v1', text: agentAuthorizationText('filing_desk', 'agent-auth-v1') });
   });
 });

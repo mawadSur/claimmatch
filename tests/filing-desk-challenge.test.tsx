@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { chooseLane, resolveEffectivePolicy, type LaneInput } from '@/lib/filing/channels/index';
@@ -7,7 +7,8 @@ import { blockingChallenges, deskSupports } from '@/lib/filing/channels/support'
 import { toControlsRecord } from '@/lib/filing/v2/records';
 import { DeskChallengeRequestSchema } from '@/lib/filing/v2/contract-staff';
 import {
-  AGENT_AUTHORIZATION_VERSION,
+  AGENT_AUTH_V1,
+  currentAuthorizationVersion,
   VERSIONS_COVERING_STAFF_CAPTCHA,
   effectiveDeskChallengeMode,
 } from '@/lib/filing/v2/authorization-text';
@@ -73,6 +74,10 @@ function input(challenges: string[], settlementControls: FilingControlsRecord | 
   };
 }
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe('blockingChallenges', () => {
   it("'stop' (and anything unknown) blocks on every known check", () => {
     expect(blockingChallenges(['captcha'], 'stop')).toEqual(['captcha']);
@@ -105,7 +110,8 @@ describe('deskSupports and chooseLane', () => {
     expect(decision).toMatchObject({ lane: 'self_file', reasons: ['form_has_challenge'] });
   });
   it('effectiveDeskChallengeMode: only a covering authorization version lets the loosened rule apply', () => {
-    expect(VERSIONS_COVERING_STAFF_CAPTCHA.has(AGENT_AUTHORIZATION_VERSION)).toBe(false);
+    expect(currentAuthorizationVersion()).toBe(AGENT_AUTH_V1);
+    expect(VERSIONS_COVERING_STAFF_CAPTCHA.has(AGENT_AUTH_V1)).toBe(false);
     expect(effectiveDeskChallengeMode('staff_completes_captcha')).toBe('stop');
     const v2 = new Set(['agent-auth-v2']);
     expect(effectiveDeskChallengeMode('staff_completes_captcha', 'agent-auth-v2', v2)).toBe('staff_completes_captcha');
@@ -113,6 +119,25 @@ describe('deskSupports and chooseLane', () => {
     expect(effectiveDeskChallengeMode('staff_completes_captcha', 'agent-auth-v1', v2)).toBe('stop');
     expect(effectiveDeskChallengeMode('stop', 'agent-auth-v2', v2)).toBe('stop');
     expect(effectiveDeskChallengeMode(undefined, 'agent-auth-v2', v2)).toBe('stop');
+  });
+  it('CAPTCHA matrix in chooseLane: v1 stops, v2 + rule on takes the desk, v2 + rule off stops', () => {
+    const on = controls({ desk_challenge_mode: 'staff_completes_captcha' });
+    const withVersion = (c: FilingControlsRecord, version: string) => ({ ...input(['captcha'], c), authorizationVersion: version });
+    expect(chooseLane(withVersion(on, 'agent-auth-v1'))).toMatchObject({ lane: 'self_file', reasons: ['form_has_challenge'] });
+    expect(chooseLane(withVersion(on, 'agent-auth-v2'))).toMatchObject({ lane: 'filing_desk', agent: true });
+    expect(chooseLane(withVersion(controls(), 'agent-auth-v2'))).toMatchObject({ lane: 'self_file', reasons: ['form_has_challenge'] });
+    expect(chooseLane(withVersion(on, 'agent-auth-v0'))).toMatchObject({ lane: 'self_file' });
+  });
+  it('before signing, the lane follows the version members sign now (AGENT_AUTH_CURRENT_VERSION)', () => {
+    const on = controls({ desk_challenge_mode: 'staff_completes_captcha' });
+    expect(chooseLane(input(['captcha'], on)).lane).toBe('self_file');
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    expect(currentAuthorizationVersion()).toBe('agent-auth-v2');
+    expect(chooseLane(input(['captcha'], on)).lane).toBe('filing_desk');
+    // A claim signed under v1 still stops, whatever members sign now.
+    expect(chooseLane({ ...input(['captcha'], on), authorizationVersion: 'agent-auth-v1' }).lane).toBe('self_file');
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v1');
+    expect(chooseLane(input(['captcha'], on)).lane).toBe('self_file');
   });
   it('never for a form that also sends a code or checks identity', () => {
     const loosened = controls({ desk_challenge_mode: 'staff_completes_captcha' });
@@ -180,5 +205,17 @@ describe('the console card', () => {
     expect(html).toContain('Site terms reviewed.');
     expect(html).toContain('Go back to stopping at any check');
     expect(html).toContain('Not in effect yet');
+  });
+  it('once members sign v2 (from the server view), the rule is in effect for v2 claims only', () => {
+    const html = renderToStaticMarkup(
+      createElement(DeskChallengeCard, {
+        permissions: expectedPermissions(['legal_reviewer'], false),
+        lawsuitId: LAWSUIT,
+        view: { ...controlsView({ desk_challenge_mode: 'staff_completes_captcha', desk_challenge_notes: 'Reviewed.' }), current_authorization_version: 'agent-auth-v2' },
+        onChanged: () => {},
+      }),
+    );
+    expect(html).not.toContain('Not in effect yet');
+    expect(html).toContain('In effect for claims signed under agent-auth-v2 only');
   });
 });
