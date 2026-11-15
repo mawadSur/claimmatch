@@ -158,9 +158,9 @@ export const settings = defineCopy({
     source: 'src/components/claims/PrefillPacket.tsx',
   },
 
-  // Share ClaimMatch (src/components/ReferralCard.tsx), without counts -------
+  // Share Lawsuit AI (src/components/ReferralCard.tsx), without counts -------
   shareTitle: {
-    text: 'Share ClaimMatch',
+    text: 'Share Lawsuit AI',
     source: 'src/components/ReferralCard.tsx',
   },
   shareBody: {
@@ -226,7 +226,7 @@ export const settings = defineCopy({
     mobileOnly: true,
   },
   remindersDenied: {
-    text: 'Notifications are turned off for ClaimMatch. To get deadline reminders, turn them on in Settings.',
+    text: 'Notifications are turned off for Lawsuit AI. To get deadline reminders, turn them on in Settings.',
     source: 'plan 3.3 (Settings: reminders permission)',
     mobileOnly: true,
   },

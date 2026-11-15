@@ -1,11 +1,11 @@
-# ClaimMatch
+# Lawsuit AI
 
-ClaimMatch is a free claim assistant for class-action settlements. People find
+Lawsuit AI is a free claim assistant for class-action settlements. People find
 settlements that are open for claims, check whether they qualify on the official
 notice, file on the official administrator's site themselves, and keep track of
-their claims in ClaimMatch.
+their claims in Lawsuit AI.
 
-- ClaimMatch never files or submits a claim for anyone and never handles
+- Lawsuit AI never files or submits a claim for anyone and never handles
   settlement money. Not taking a cut is an internal position under review, not
   a public promise; monetization undecided (D4).
 - A claim reads "Submitted" only with the administrator's confirmation number.
@@ -80,7 +80,7 @@ See [`.env.example`](./.env.example). Summary:
 | `CRON_SECRET` | Protects `/api/cron/*` (Vercel Cron sends it automatically) |
 | `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Product analytics |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | Inbox for privacy and data requests, shown on Privacy, Terms, the footer and Settings. Set it only to an address that receives mail. **Required in Production:** a production build (`VERCEL_ENV=production`) stops without a working address |
-| `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs ClaimMatch |
+| `NEXT_PUBLIC_LEGAL_ENTITY` | Legal name of the business that runs Lawsuit AI |
 | `NEXT_PUBLIC_POSTAL_ADDRESS` | Mailing address for the legal pages and footer (`\n` for line breaks) |
 | `MATCH_EMAILS_ENABLED` / `DIGEST_ENABLED` / `ADMIN_RECOVERIES_ENABLED` / `ENABLE_SAMPLE_SOURCE` / `ASSISTED_FILING_ENABLED` / `DIRECT_FILING_ENABLED` / `MATCH_METRICS_ENABLED` / `ELIGIBILITY_DRAFTS_ENABLED` / `INGEST_ALERT_EMAILS_ENABLED` / `LINK_CHECK_ENABLED` / `PAYOUT_REPORT_ENABLED` / `FEE_DISCLOSURE_ENABLED` / `INGEST_MISSING_CLOSE_QUEUE_ENABLED` / `LAWSUITS_PAGINATION_ENABLED` / `ADMIN_HELD_CLOSURES_ENABLED` / `HELD_CLOSURE_TRIAGE_ENABLED` / `HELD_AUTO_CLOSE_PAST_DEADLINE` / `DEADLINE_REMINDERS_ENABLED` / `ONBOARDING_DRIP_ENABLED` / `PROFILE_COMPLETENESS_ENABLED` / `SOFT_INVITE_LANDING_ENABLED` / `INGEST_HELD_IS_WARNING` / `HOME_WEDGE_ENTRIES_ENABLED` / `HOME_ACCOUNT_FIRST_CTA_ENABLED` / `MATCH_PREVIEW_ENABLED` / `SIGNUP_CONTEXT_ENABLED` / `SETTLEMENT_PAGE_CTA_ENABLED` / `RELATED_SETTLEMENTS_ENABLED` / `INDEXNOW_ENABLED` / `LLMS_TXT_ENABLED` / `AI_REFERRER_ATTRIBUTION_ENABLED` / `PROFILE_V2_ENABLED` / `MATCH_STORE_ENABLED` / `PANEL_TRUST_COPY_ENABLED` / `CATALOG_VALUE_RANK_ENABLED` / `SETTLEMENT_QUIZ_ENABLED` / `BETA_INVITE_CODES_ENABLED` / `BETA_FEEDBACK_ENABLED` / `CATALOG_HIDE_UNKNOWNS_ENABLED` / `MATCH_ALERT_EMAILS_ENABLED` | Switches in `src/lib/flags.ts`; each is on only when set to exactly `1`. Keep them off in production. Live values: `/admin/flags` |
 | `INTERNAL_EMAILS` | Comma-separated tester emails tagged `internal` and excluded from traction |
@@ -167,7 +167,7 @@ tests/                       vitest
 
 ## Legal
 
-ClaimMatch is a free claim assistant, **not a law firm**, and does not give legal
+Lawsuit AI is a free claim assistant, **not a law firm**, and does not give legal
 advice. The Terms and Privacy Policy are interim versions pending legal review.
 See [`/terms`](src/app/terms/page.tsx), [`/privacy`](src/app/privacy/page.tsx) and
 `src/lib/disclaimer.ts`.

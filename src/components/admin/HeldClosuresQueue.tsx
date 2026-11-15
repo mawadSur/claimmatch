@@ -83,7 +83,7 @@ export function HeldClosuresQueue({
       }
       removeSlugs([row.slug]);
     } catch {
-      setMessage('Could not reach ClaimMatch.');
+      setMessage('Could not reach Lawsuit AI.');
     }
     setBusy(null);
   }
@@ -104,7 +104,7 @@ export function HeldClosuresQueue({
       }
       removeSlugs(slugs);
     } catch {
-      setMessage('Could not reach ClaimMatch.');
+      setMessage('Could not reach Lawsuit AI.');
     }
     setBusy(null);
   }
@@ -123,7 +123,7 @@ export function HeldClosuresQueue({
       }
       removeSlugs(slugs);
     } catch {
-      setMessage('Could not reach ClaimMatch.');
+      setMessage('Could not reach Lawsuit AI.');
     }
     setBusy(null);
   }

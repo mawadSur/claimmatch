@@ -2,11 +2,17 @@
 // key — it logs and no-ops so local/preview environments work without email
 // configured. Only server code should import this (it reads server env vars).
 import { PUBLIC_BRAND, publicBrandCopy, SITE, formatDeadline } from '@/lib/utils';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
+import { lawsuitAiMayFile } from '@/lib/copy';
 import { closingSoonEmailGate, commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { legalContact } from '@/lib/legal-contact';
 import { resendEnvelope } from '@/lib/resend-mail';
 import { unsubscribePageUrl } from '@/lib/unsubscribe';
+
+/** "Never files" lines only while Lawsuit AI files nothing for anyone (copy.ts lawsuitAiMayFile). */
+function selfFileOnly(text: string): string {
+  return lawsuitAiMayFile() ? '' : text;
+}
 
 const BRAND = '#7526d1';
 
@@ -74,7 +80,7 @@ function footerNote(reason: string, to?: string): string {
     : ` <a href="${SITE.url.replace(/\/$/, '')}/settings" style="color:#8b859e;text-decoration:underline;">Manage your email preferences</a> to unsubscribe.`;
   return `
         <tr><td style="padding:22px 8px 0 8px;">
-          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(SHORT_DISCLAIMER))}</p>
+          <p style="margin:0 0 12px 0;font-size:11px;color:#8b859e;line-height:1.5;">${esc(publicBrandCopy(shortDisclaimer()))}</p>
           <p style="margin:0 0 8px 0;font-size:11px;color:#a29cb5;line-height:1.5;">${esc(PUBLIC_BRAND)}${postal ? `<br>${esc(postal)}` : ''}</p>
           <p style="margin:0;font-size:11px;color:#a29cb5;line-height:1.5;">This is a commercial email. ${esc(reason)}${unsub}</p>
         </td></tr>`;
@@ -234,7 +240,7 @@ export function renderClosingSoonEmail(opts: ClosingSoonEmailOpts): string {
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(countLabel)}</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} these verified listings have a claim deadline in the next 14 days. Check the official notice and file there yourself if you qualify. ${esc(PUBLIC_BRAND)} never files for you.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} these verified listings have a claim deadline in the next 14 days. Check the official notice and file there yourself if you qualify.${selfFileOnly(` ${esc(PUBLIC_BRAND)} never files for you.`)}</p>
           ${cards}
         </td></tr>
         ${footerNote(`You're receiving this because you opted in to emails from ${PUBLIC_BRAND}.`, opts.to)}
@@ -305,7 +311,7 @@ export function renderDeadlineReminderEmail(opts: DeadlineReminderEmailOpts): st
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(subjectLine)}</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a settlement you are tracking has a listed claim deadline ${esc(when)}. Check the official notice and file there yourself if you qualify. ${esc(PUBLIC_BRAND)} never files for you.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a settlement you are tracking has a listed claim deadline ${esc(when)}. Check the official notice and file there yourself if you qualify.${selfFileOnly(` ${esc(PUBLIC_BRAND)} never files for you.`)}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
             <tr>
               <td style="padding:20px 22px;">
@@ -378,7 +384,7 @@ export function renderIncompleteOnboardingEmail(opts: IncompleteOnboardingEmailO
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Finish your profile</h1>
-          <p style="margin:0 0 18px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} you started a ${esc(PUBLIC_BRAND)} account but have not finished your profile. A few answers help us find open US settlements that may apply to you. You still file on the official site yourself — ${esc(PUBLIC_BRAND)} never files for you.</p>
+          <p style="margin:0 0 18px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} you started a ${esc(PUBLIC_BRAND)} account but have not finished your profile. A few answers help us find open US settlements that may apply to you.${selfFileOnly(` You still file on the official site yourself — ${esc(PUBLIC_BRAND)} never files for you.`)}</p>
           <div>
             <a href="${onboardingUrl()}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 20px;border-radius:8px;">Complete your profile →</a>
           </div>
@@ -414,7 +420,7 @@ export function renderDidYouFileEmail(opts: DidYouFileEmailOpts): string {
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Did you file this claim?</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a few days ago you opened the official claim form for a settlement you are tracking. If you already submitted it on the official site, tell us so we can keep it on your dashboard. If not, you can still file there yourself. ${esc(PUBLIC_BRAND)} never files for you.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} a few days ago you opened the official claim form for a settlement you are tracking. If you already submitted it on the official site, tell us so we can keep it on your dashboard. If not, you can still file there yourself.${selfFileOnly(` ${esc(PUBLIC_BRAND)} never files for you.`)}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
             <tr>
               <td style="padding:20px 22px;">
@@ -529,8 +535,8 @@ export function renderPayoutTrackerEmail(opts: PayoutTrackerEmailOpts): string {
       : 'Payment timing update';
   const intro =
     opts.kind === 'hearing_passed'
-      ? `${greeting} the settlement you reported filing has a listed final approval hearing date that has passed. Check the official site for the latest. ${esc(PUBLIC_BRAND)} does not guess payment dates and never files for you.`
-      : `${greeting} there is a listed update on when payments may go out for a settlement you reported filing. This text comes from the settlement record. ${esc(PUBLIC_BRAND)} does not guess dates and never files for you.`;
+      ? `${greeting} the settlement you reported filing has a listed final approval hearing date that has passed. Check the official site for the latest. ${esc(PUBLIC_BRAND)} does not guess payment dates${selfFileOnly(' and never files for you')}.`
+      : `${greeting} there is a listed update on when payments may go out for a settlement you reported filing. This text comes from the settlement record. ${esc(PUBLIC_BRAND)} does not guess dates${selfFileOnly(' and never files for you')}.`;
 
   return `<!doctype html>
 <html lang="en">

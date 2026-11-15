@@ -158,10 +158,10 @@ describe('planReminders', () => {
 
   it('words the reminder exactly as plan 5 says, with the formatted deadline', () => {
     expect(reminderText('Acme Data Breach', '2026-11-20')).toBe(
-      'Acme Data Breach. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in ClaimMatch.',
+      'Acme Data Breach. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in Lawsuit AI.',
     );
     expect(reminderText('Widgets Inc. ', '2026-11-20')).toBe(
-      'Widgets Inc. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in ClaimMatch.',
+      'Widgets Inc. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in Lawsuit AI.',
     );
   });
 });
@@ -183,7 +183,7 @@ describe('syncReminders', () => {
     const [first] = mockNotifications.scheduled;
     expect(first.identifier).toBe('deadline-c1-7d');
     expect(first.content).toEqual({
-      body: 'Acme Data Breach. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in ClaimMatch.',
+      body: 'Acme Data Breach. Deadline Nov 20, 2026. If you qualify, file on the official site, then tell us in Lawsuit AI.',
       data: { href: '/claim/acme-data-breach' },
       sound: 'default',
     });

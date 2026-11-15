@@ -18,7 +18,7 @@ async function send(url: string, method: 'POST' | 'PATCH', body: unknown): Promi
     return {
       ok: false,
       status: 0,
-      error: "We couldn't reach ClaimMatch. Check your internet connection and try again.",
+      error: "We couldn't reach Lawsuit AI. Check your internet connection and try again.",
     };
   }
   const json = (await res.json().catch(() => null)) as {
@@ -66,7 +66,7 @@ export async function acknowledgeAllFictional(): Promise<AcknowledgeAllResult> {
     return {
       ok: false,
       status: 0,
-      error: "We couldn't reach ClaimMatch. Check your internet connection and try again.",
+      error: "We couldn't reach Lawsuit AI. Check your internet connection and try again.",
       claims: [],
     };
   }

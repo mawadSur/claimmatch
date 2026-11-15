@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { appLegalDisclaimer, appShortDisclaimer } from '@/lib/disclaimer-flags';
 import { clientFlagValues } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { MOBILE_API_VERSION, type ClientConfig } from '@/lib/mobile-contract';
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     serverTime: now.toISOString(),
     todayDeadlineZone: todayInDeadlineZone(now),
     flags: clientFlagValues(),
-    legal: { disclaimer: APP_LEGAL_DISCLAIMER, short: APP_SHORT_DISCLAIMER, contactEmail: legalContact().email },
+    legal: { disclaimer: appLegalDisclaimer(), short: appShortDisclaimer(), contactEmail: legalContact().email },
     minBuild: {
       ios: minBuild(process.env.MOBILE_MIN_BUILD_IOS),
       android: minBuild(process.env.MOBILE_MIN_BUILD_ANDROID),

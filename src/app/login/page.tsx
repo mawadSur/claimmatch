@@ -6,7 +6,7 @@ import { safeNextPath } from '@/lib/safe-next';
 
 export const metadata: Metadata = {
   title: 'Log in',
-  description: 'Log in to ClaimMatch to see and update the settlement claims you are tracking.',
+  description: 'Log in to Lawsuit AI to see and update the settlement claims you are tracking.',
 };
 
 function AuthFormFallback() {
@@ -41,14 +41,14 @@ export default async function LoginPage({
 
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
-              {/* From a claim, "New to ClaimMatch?" comes once, with the button below. */}
+              {/* From a claim, "New to Lawsuit AI?" comes once, with the button below. */}
               <AuthForm mode="login" switchPrompt={!fromClaim} />
             </Suspense>
           </div>
 
           {fromClaim && next && (
             <div className="mt-6 text-center">
-              <p className="text-sm text-ink-muted">New to ClaimMatch?</p>
+              <p className="text-sm text-ink-muted">New to Lawsuit AI?</p>
               <Link
                 href={`/signup?next=${encodeURIComponent(next)}`}
                 className="btn-secondary mt-2 w-full"

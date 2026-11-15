@@ -113,7 +113,7 @@ describe('share-link redirects', () => {
   it('expands a campaign code to the destination with stored UTMs and ref', () => {
     const resolved = resolveShareRedirect({
       code: 'tw1',
-      origin: 'https://claimmatch.vercel.app',
+      origin: 'https://lawsuitai.org',
       incoming: EMPTY_ATTRIBUTION,
       shareLink: {
         code: 'tw1',
@@ -128,14 +128,14 @@ describe('share-link redirects', () => {
     });
     expect(resolved?.logClick).toBe(true);
     expect(resolved?.url).toBe(
-      'https://claimmatch.vercel.app/?utm_source=twitter&utm_medium=social&utm_campaign=launch&utm_content=bio&ref=tw1',
+      'https://lawsuitai.org/?utm_source=twitter&utm_medium=social&utm_campaign=launch&utm_content=bio&ref=tw1',
     );
   });
 
   it('keeps incoming UTMs on a personal referral all the way to /signup', () => {
     const resolved = resolveShareRedirect({
       code: 'user10char',
-      origin: 'https://claimmatch.vercel.app',
+      origin: 'https://lawsuitai.org',
       incoming: parseAttribution({ utm_source: 'newsletter', utm_medium: 'email' }),
       shareLink: null,
       isPersonalReferral: true,
@@ -150,7 +150,7 @@ describe('share-link redirects', () => {
   it('fills personal-referral UTM defaults when the request has none', () => {
     const resolved = resolveShareRedirect({
       code: 'user10char',
-      origin: 'https://claimmatch.vercel.app',
+      origin: 'https://lawsuitai.org',
       incoming: EMPTY_ATTRIBUTION,
       shareLink: null,
       isPersonalReferral: true,
@@ -164,7 +164,7 @@ describe('share-link redirects', () => {
   it('does not drop UTMs for an unknown code', () => {
     const resolved = resolveShareRedirect({
       code: 'unknown1',
-      origin: 'https://claimmatch.vercel.app',
+      origin: 'https://lawsuitai.org',
       incoming: parseAttribution({ utm_source: 'ads', ref: 'ignored' }),
       shareLink: null,
       isPersonalReferral: false,
@@ -180,8 +180,8 @@ describe('share-link redirects', () => {
     expect(sanitizeDestination('//evil.example')).toBe('/');
     expect(sanitizeDestination('/lawsuits?q=1')).toBe('/lawsuits?q=1');
     expect(sanitizeDestination('/invite')).toBe('/invite');
-    expect(trackedCampaignUrl('https://claimmatch.vercel.app', '/', parseAttribution({ ref: 'ab' }))).toBe(
-      'https://claimmatch.vercel.app/?ref=ab',
+    expect(trackedCampaignUrl('https://lawsuitai.org', '/', parseAttribution({ ref: 'ab' }))).toBe(
+      'https://lawsuitai.org/?ref=ab',
     );
     expect(joinOrigin('https://x.test', '/signup', parseAttribution({ ref: 'z' }))).toContain('ref=z');
   });

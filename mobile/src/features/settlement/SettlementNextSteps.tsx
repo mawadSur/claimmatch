@@ -30,7 +30,7 @@ const CHECKLIST = [
 /**
  * The web page's sidebar, shown inline near the end (plan 3.3): while open,
  * "Check if you qualify" with the claim buttons, the official site and what
- * ClaimMatch does and does not do; once closed, "Claims closed" with what
+ * Lawsuit AI does and does not do; once closed, "Claims closed" with what
  * that means and a way back to the open settlements.
  */
 export function SettlementNextSteps({

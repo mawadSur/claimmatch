@@ -27,7 +27,7 @@ export function RevealContact({ userId }: { userId: string }) {
       setStatus('shown');
     } catch {
       setStatus('error');
-      setError('Could not reach ClaimMatch.');
+      setError('Could not reach Lawsuit AI.');
     }
   }
 

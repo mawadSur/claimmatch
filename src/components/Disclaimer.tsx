@@ -1,5 +1,5 @@
 import { Info } from 'lucide-react';
-import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
+import { legalDisclaimer } from '@/lib/disclaimer-flags';
 
 /** Reusable legal disclaimer box. Shown on claim + detail pages and legal pages. */
 export function Disclaimer({ compact = false }: { compact?: boolean }) {
@@ -13,7 +13,7 @@ export function Disclaimer({ compact = false }: { compact?: boolean }) {
           compact ? 'line-clamp-4' : ''
         }`}
       >
-        {LEGAL_DISCLAIMER}
+        {legalDisclaimer()}
       </p>
     </div>
   );

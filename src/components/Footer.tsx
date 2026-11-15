@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
+import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
@@ -41,6 +41,7 @@ export function Footer() {
               )}
               <li><Link href="/settlements/new" className={LINK}>New settlements</Link></li>
               <li><Link href="/how-it-works" className={LINK}>How it works</Link></li>
+              <li><Link href="/faq" className={LINK}>FAQ</Link></li>
               <li><Link href="/pricing" className={LINK}>Pricing</Link></li>
               <li><Link href="/how-we-make-money" className={LINK}>How we make money</Link></li>
               <li><Link href="/signup" className={LINK}>Create a free account</Link></li>
@@ -87,12 +88,12 @@ export function Footer() {
             . We reformat it, and we have not verified each listing. Always check the
             official settlement website.
           </p>
-          <p>{SHORT_DISCLAIMER}</p>
+          <p>{shortDisclaimer()}</p>
           {contact.postalAddress && (
             <address className="whitespace-pre-line not-italic">{contact.postalAddress}</address>
           )}
           <p>
-            © {new Date().getFullYear()} {contact.legalEntity ?? 'ClaimMatch'}
+            © {new Date().getFullYear()} {contact.legalEntity ?? 'Lawsuit AI'}
           </p>
         </div>
       </div>

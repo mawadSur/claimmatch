@@ -29,12 +29,12 @@ describe('public page metadata', () => {
     expect(home).toContain('title: { absolute:');
   });
 
-  it('keeps page titles free of a doubled ClaimMatch suffix', () => {
+  it('keeps page titles free of a doubled Lawsuit AI suffix', () => {
     for (const [file, unexpected] of [
-      ['src/app/how-it-works/page.tsx', 'How ClaimMatch Works'],
-      ['src/app/about/page.tsx', 'About ClaimMatch'],
-      ['src/app/lawsuits/page.tsx', 'Open Class Action Settlements — ClaimMatch'],
-      ['src/app/settlements/closing-soon/page.tsx', 'Settlements closing soon — ClaimMatch'],
+      ['src/app/how-it-works/page.tsx', 'How Lawsuit AI Works'],
+      ['src/app/about/page.tsx', 'About Lawsuit AI'],
+      ['src/app/lawsuits/page.tsx', 'Open Class Action Settlements — Lawsuit AI'],
+      ['src/app/settlements/closing-soon/page.tsx', 'Settlements closing soon — Lawsuit AI'],
     ] as const) {
       expect(read(file), file).not.toContain(unexpected);
     }

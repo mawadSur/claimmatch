@@ -21,14 +21,14 @@ describe('login page', () => {
     expect(html).not.toContain('Welcome back');
   });
 
-  it('asks "New to ClaimMatch?" once, from a claim and otherwise', async () => {
+  it('asks "New to Lawsuit AI?" once, from a claim and otherwise', async () => {
     const fromClaim = await render('/claim/real-settlement');
-    expect(fromClaim.match(/New to ClaimMatch\?/g)).toHaveLength(1);
+    expect(fromClaim.match(/New to Lawsuit AI\?/g)).toHaveLength(1);
     expect(fromClaim).toContain('Create a free account');
     expect(fromClaim).not.toContain('Create an account');
 
     const plain = await render();
-    expect(plain.match(/New to ClaimMatch\?/g)).toHaveLength(1);
+    expect(plain.match(/New to Lawsuit AI\?/g)).toHaveLength(1);
     expect(plain).toContain('Create an account');
     expect(plain).not.toContain('Create a free account');
   });

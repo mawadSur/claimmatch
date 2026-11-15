@@ -15,7 +15,7 @@ const HOW_IT_WORKS = [
 /**
  * The onboarding page header (src/app/onboarding/page.tsx:44-84): the
  * "About 1 minute" badge, the headline, the "never files for you" intro, how
- * ClaimMatch works, and "Email confirmed." after an email link.
+ * Lawsuit AI works, and "Email confirmed." after an email link.
  */
 export function OnboardingIntro({ emailConfirmed }: { emailConfirmed: boolean }) {
   return (

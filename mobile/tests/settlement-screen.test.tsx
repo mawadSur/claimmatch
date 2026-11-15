@@ -272,7 +272,7 @@ describe('settlement detail, open', () => {
     expect(screen.getAllByRole('button', { name: /^(Am I|What is|Do I|How much|Who is|How do I)/ })).toHaveLength(6);
   });
 
-  it('shows the sidebar inline: account note for people signed out, what ClaimMatch does, and the full disclaimer', async () => {
+  it('shows the sidebar inline: account note for people signed out, what Lawsuit AI does, and the full disclaimer', async () => {
     await renderFound(ACME);
     const sidebar = within(screen.getByTestId('settlement-section-next-steps'));
     expect(sidebar.getByText(settlement.sidebarOpenBody.text)).toBeOnTheScreen();
@@ -335,7 +335,7 @@ describe('settlement detail, listing details', () => {
     expect(provenance.getByRole('header', { name: settlement.provenanceTitle.text })).toBeOnTheScreen();
     expect(
       provenance.getByText(
-        'Adapted from SettleSignal (settlesignal.com), used under CC BY 4.0. ClaimMatch may have shortened or reformatted it. SettleSignal is a listing service, not the settlement’s official site.',
+        'Adapted from SettleSignal (settlesignal.com), used under CC BY 4.0. Lawsuit AI may have shortened or reformatted it. SettleSignal is a listing service, not the settlement’s official site.',
       ),
     ).toBeOnTheScreen();
     await user.press(provenance.getByRole('link', { name: settlement.provenanceSite.text }));

@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: Params) {
     title: lawsuit.title,
     deadline: lawsuit.deadline as string,
     officialUrl: official?.href ?? null,
-    uid: `claimmatch-deadline-${lawsuit.slug}@claimmatch`,
+    uid: `lawsuitai-$1-${lawsuit.slug}@claimmatch`,
   });
   if (!ics) {
     return new NextResponse(null, { status: 404 });

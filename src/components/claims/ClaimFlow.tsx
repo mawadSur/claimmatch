@@ -2,24 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, CalendarClock, CheckCircle2, ExternalLink, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, CalendarClock, ExternalLink, ShieldCheck } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import {
-  canReportWithoutClaim,
-  claimActionAvailability,
-  daysUntilDeadline,
-  deadlineCountdown,
-  displayClaimStatus,
-  lateReportLastDay,
-  legacyFilingState,
-  reportByDay,
-  type ClaimDisplay,
-  type ClaimView,
-  type ProofNeed,
-  type SettlementContext,
+  canReportWithoutClaim, claimActionAvailability, daysUntilDeadline, deadlineCountdown, displayClaimStatus,
+  lateReportLastDay, legacyFilingState, reportByDay,
+  type ClaimDisplay, type ClaimTone, type ClaimView, type ProofNeed, type SettlementContext,
 } from '@/lib/claims';
-import { buildClaimTimeline } from '@/lib/claim-timeline';
-import { ANALYTICS_EVENTS, claimTimelineViewedProperties } from '@/lib/analytics/events';
 import { ClaimTimelineCard } from './ClaimTimeline';
 import { formatDeadline } from '@/lib/utils';
 import type { ClaimFlowSettlement, PacketProfile } from '@/lib/claim-screen';
@@ -31,6 +20,10 @@ import { UnverifiedLabel } from './UnverifiedLabel';
 import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { AuthorizeFiling } from './AuthorizeFiling';
 import { ReportPayout } from './ReportPayout';
+import { Announcement, ExternalTextLink } from '@/components/filing/claim-flow-parts';
+import { useAfterFileTimeline, useClaimFlowFocus } from '@/components/filing/use-claim-flow-effects';
+import { useOneClickClaim } from '@/components/filing/use-one-click-claim';
+import type { OneClickClaimProps } from '@/components/filing/types';
 
 // Defined in @/lib/claim-screen so the native app shares it; re-exported for existing imports.
 export type { ClaimFlowSettlement } from '@/lib/claim-screen';
@@ -45,7 +38,9 @@ const PROOF_TEXT: Record<ProofNeed, string> = {
 /**
  * The Part A filing flow on /claim/[slug]: status and deadline at the top,
  * then (1) check you qualify, (2) file on the official site, (3) tell us you
- * filed. ClaimMatch never files: the official form opens in a new tab.
+ * filed. The official form opens in a new tab. With ONE_CLICK_FILING_ENABLED
+ * on, `oneClick` adds one-click filing (src/components/filing); without it
+ * the page is exactly as before.
  */
 export function ClaimFlow({
   settlement,
@@ -53,12 +48,14 @@ export function ClaimFlow({
   initialClaim,
   nowIso,
   profile = null,
+  oneClick = null,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
   initialClaim: ClaimView | null;
   nowIso: string;
   profile?: PacketProfile | null;
+  oneClick?: OneClickClaimProps | null;
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -79,46 +76,14 @@ export function ClaimFlow({
     setClaim(next);
     if (message) setAnnouncement(message);
   }, []);
+  const oc = useOneClickClaim({ oneClick, claim, lawsuitId: settlement.id, setClaim, announce: setAnnouncement });
+  // The retired assisted-filing form never shows while one-click filing is on.
+  const stepsSettlement = oc ? { ...settlement, assistedFilingAllowed: false } : settlement;
 
   const display = claim ? displayClaimStatus(claim, context) : null;
   const reported = claim?.status === 'reported_filed' || display?.kind === 'submitted';
-  const timeline =
-    settlement.claimTimelineEnabled && claim
-      ? buildClaimTimeline({
-          status: claim.status,
-          confirmation_number: claim.confirmation_number,
-          user_filed_on: claim.user_filed_on,
-          reported_filed_at: claim.reported_filed_at,
-          final_approval_hearing_at: settlement.finalApprovalHearingAt ?? null,
-          payment_timing_text: settlement.paymentTimingText ?? null,
-        })
-      : null;
-  const timelineViewed = useRef(false);
-  useEffect(() => {
-    if (timelineViewed.current || !posthog || !timeline) return;
-    timelineViewed.current = true;
-    posthog.capture(ANALYTICS_EVENTS.claim_timeline_viewed, claimTimelineViewedProperties({ source: 'claim' }));
-  }, [posthog, timeline]);
-
-  // When a report succeeds the form is replaced, so move focus to the result.
-  const yourClaimHeading = useRef<HTMLHeadingElement>(null);
-  const wasReported = useRef(reported);
-  useEffect(() => {
-    if (reported && !wasReported.current) yourClaimHeading.current?.focus();
-    wasReported.current = reported;
-  }, [reported]);
-
-  // When a notice is answered without a report ("I haven't filed yet", or
-  // "Got it" on a fictional settlement) its buttons disappear: move focus to
-  // the confirmation so keyboard and screen-reader users aren't left at the
-  // top of the page.
-  const announcementRef = useRef<HTMLParagraphElement>(null);
-  const showNotice = Boolean(display?.showNotice);
-  const hadNotice = useRef(showNotice);
-  useEffect(() => {
-    if (hadNotice.current && !showNotice && !reported) announcementRef.current?.focus();
-    hadNotice.current = showNotice;
-  }, [showNotice, reported]);
+  const timeline = useAfterFileTimeline(settlement, claim);
+  const { yourClaimHeading, announcementRef } = useClaimFlowFocus({ reported, showNotice: Boolean(display?.showNotice) });
 
   // Opening the form tracks nothing: people often open it only to read the
   // rules, and may find they don't qualify. The claim is saved when they tell
@@ -134,24 +99,12 @@ export function ClaimFlow({
 
   let body: React.ReactNode;
   if (context.fictional && claim) {
-    body = (
-      <FictionalNotice
-        claimId={claim.id}
-        title={settlement.title}
-        acknowledged={!display?.showNotice}
-        onAcknowledged={onChange}
-      />
-    );
+    body = <FictionalNotice claimId={claim.id} title={settlement.title} acknowledged={!display?.showNotice} onAcknowledged={onChange} />;
   } else if (claim && display?.legacy && display.showNotice) {
-    body = (
-      <CorrectiveNotice
-        claimId={claim.id}
-        deadline={settlement.deadline}
-        filing={legacyFilingState(context)}
-        officialUrl={settlement.officialUrl}
-        onAnswered={onChange}
-      />
-    );
+    const filing = legacyFilingState(context);
+    body = <CorrectiveNotice claimId={claim.id} deadline={settlement.deadline} filing={filing} officialUrl={settlement.officialUrl} onAnswered={onChange} />;
+  } else if (oc?.active) {
+    body = oc.flow;
   } else if (claim && reported) {
     body = (
       <section aria-labelledby="your-claim" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
@@ -162,12 +115,9 @@ export function ClaimFlow({
           <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
           {timeline ? <ClaimTimelineCard timeline={timeline} /> : null}
           {settlement.payoutReportEnabled ? (
-            <ReportPayout
-              claimId={claim.id}
-              lawsuitId={settlement.id}
-              enabled={settlement.payoutReportEnabled}
-            />
+            <ReportPayout claimId={claim.id} lawsuitId={settlement.id} enabled={settlement.payoutReportEnabled} />
           ) : null}
+          {oc?.history}
         </div>
         {settlement.officialUrl && (
           <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">
@@ -186,13 +136,11 @@ export function ClaimFlow({
     body = (
       <>
         <Caveat context={context} />
+        {oc?.entry}
         <FilingSteps
-          settlement={settlement}
-          context={context}
-          claim={claim}
-          profile={profile}
-          onChange={onChange}
-          onOpenOfficialForm={openedOfficialForm}
+          settlement={stepsSettlement} context={context} claim={claim} profile={profile}
+          onChange={onChange} onOpenOfficialForm={openedOfficialForm}
+          stepTwoTitle={oc?.stepTwoTitle} stepTwoLead={oc?.stepTwoLead} prepared={oc?.prepared}
         />
       </>
     );
@@ -201,23 +149,10 @@ export function ClaimFlow({
   return (
     <div className="space-y-6">
       <StatusPanel
-        display={display}
-        deadline={settlement.deadline}
-        now={now}
-        fictional={context.fictional}
+        display={display} deadline={settlement.deadline} now={now} fictional={context.fictional}
+        badge={oc?.badge} note={oc?.note}
       />
-      <div role="status" aria-live="polite">
-        {announcement && (
-          <p
-            ref={announcementRef}
-            tabIndex={-1}
-            className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {announcement}
-          </p>
-        )}
-      </div>
+      <Announcement message={announcement} focusRef={announcementRef} />
       {body}
     </div>
   );
@@ -228,11 +163,17 @@ function StatusPanel({
   deadline,
   now,
   fictional,
+  badge,
+  note,
 }: {
   display: ClaimDisplay | null;
   deadline: string | null;
   now: Date;
   fictional: boolean;
+  /** One-click claims: the filing status (displayClaimStatus doesn't know it). */
+  badge?: { label: string; tone: ClaimTone } | null;
+  /** One-click filing on: the lane's note replaces the general one. */
+  note?: string;
 }) {
   if (fictional) {
     // No deadline or filing note: there is nothing to file.
@@ -249,14 +190,15 @@ function StatusPanel({
   const days = daysUntilDeadline(deadline, now);
   const countdownClass =
     days === null || days < 0 ? 'badge-gray' : days <= 14 ? 'badge-red' : 'badge-brand';
+  const shown = badge ?? display;
   return (
     <section aria-label="Your claim and its deadline" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
       <dl className="grid gap-5 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-bold uppercase tracking-wide text-ink-muted">Your claim</dt>
           <dd className="mt-2">
-            {display ? (
-              <ClaimStatusBadge label={display.label} tone={display.tone} />
+            {shown ? (
+              <ClaimStatusBadge label={shown.label} tone={shown.tone} />
             ) : (
               <span className="badge-gray">Not tracking yet</span>
             )}
@@ -281,11 +223,15 @@ function StatusPanel({
       </dl>
       <p className="mt-5 flex items-start gap-2 border-t border-gray-100 pt-4 text-sm leading-relaxed text-ink-muted">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
-        <span>
-          ClaimMatch doesn&rsquo;t file claims for you. You file on the official site,
-          then tell us here so we can keep track. Check the official site for the
-          exact deadline time.
-        </span>
+        {note ? (
+          <span>{note}</span>
+        ) : (
+          <span>
+            Lawsuit AI doesn&rsquo;t file claims for you. You file on the official site,
+            then tell us here so we can keep track. Check the official site for the
+            exact deadline time.
+          </span>
+        )}
       </p>
     </section>
   );
@@ -298,7 +244,7 @@ function Caveat({ context }: { context: SettlementContext }) {
       ? "Our list marks this settlement as closed, but its deadline hasn't passed. We're re-checking it. Check the official site before you file."
       : "Our list marks this settlement as closed. We're re-checking it. Check the official site before you file.";
   } else if (context.known && !context.published) {
-    text = 'This settlement is no longer listed on ClaimMatch while we re-check it. Check the official site before you file.';
+    text = 'This settlement is no longer listed on Lawsuit AI while we re-check it. Check the official site before you file.';
   }
   if (!text) return null;
   return (
@@ -306,21 +252,6 @@ function Caveat({ context }: { context: SettlementContext }) {
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
       {text}
     </p>
-  );
-}
-
-function ExternalTextLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-    >
-      {children}
-      <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-      <span className="sr-only">(opens in a new tab)</span>
-    </a>
   );
 }
 
@@ -368,6 +299,9 @@ function FilingSteps({
   profile,
   onChange,
   onOpenOfficialForm,
+  stepTwoTitle,
+  stepTwoLead,
+  prepared,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -375,6 +309,10 @@ function FilingSteps({
   profile: PacketProfile | null;
   onChange: (claim: ClaimView, message: string) => void;
   onOpenOfficialForm: () => void;
+  /** One-click filing on: "Finish on the official site", why Lawsuit AI can't file it, and prepared answers. */
+  stepTwoTitle?: string;
+  stepTwoLead?: React.ReactNode;
+  prepared?: React.ReactNode;
 }) {
   return (
     <ol className="space-y-5" aria-label="How to file">
@@ -412,7 +350,8 @@ function FilingSteps({
         </div>
       </Step>
 
-      <Step n={2} title={settlement.assistedFilingAllowed ? FILE_FOR_YOU_CTA : 'File on the official site'}>
+      <Step n={2} title={settlement.assistedFilingAllowed ? FILE_FOR_YOU_CTA : (stepTwoTitle ?? 'File on the official site')}>
+        {stepTwoLead}
         {settlement.assistedFilingAllowed && (
           <AuthorizeFiling lawsuitId={settlement.id} claimId={claim?.id ?? null} />
         )}
@@ -456,12 +395,8 @@ function FilingSteps({
           Filing is free. If a site asks you to pay to file a claim, stop. That is not
           the official site.
         </p>
-        <PrefillPacket
-          profile={profile}
-          lawsuitId={settlement.id}
-          lawsuitSlug={settlement.slug}
-          formFieldOrder={settlement.formFieldOrder}
-        />
+        {prepared}
+        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} formFieldOrder={settlement.formFieldOrder} />
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">
@@ -473,13 +408,7 @@ function FilingSteps({
           .
         </p>
         <div className="mt-4">
-          <ReportFiled
-            lawsuitId={settlement.id}
-            claim={claim}
-            context={context}
-            allowSave={context.openForClaims}
-            onChange={onChange}
-          />
+          <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={context.openForClaims} onChange={onChange} />
         </div>
       </Step>
     </ol>

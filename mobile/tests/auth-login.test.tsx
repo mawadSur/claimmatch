@@ -154,7 +154,7 @@ describe('LoginScreen', () => {
     await user.press(screen.getByRole('button', { name: shared.createFreeAccount.text }));
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/signup', params: { next: '/claim/acme' } });
 
-    // "New to ClaimMatch?" once: the button above, without the "Create an account" link repeating it.
+    // "New to Lawsuit AI?" once: the button above, without the "Create an account" link repeating it.
     expect(screen.getAllByText(shared.newToClaimMatch.text)).toHaveLength(1);
     expect(screen.queryByRole('link', { name: auth.createAnAccount.text })).toBeNull();
   });

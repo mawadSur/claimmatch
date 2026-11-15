@@ -114,12 +114,12 @@ export function CorrectiveNoticeList({ items }: { items: NoticeItem[] }) {
         {legacyCount === 0
           ? 'A settlement in your list was not real'
           : legacyCount === 1
-            ? 'ClaimMatch did not file your claim'
-            : 'ClaimMatch did not file your claims'}
+            ? 'Lawsuit AI did not file your claim'
+            : 'Lawsuit AI did not file your claims'}
       </h2>
       {legacyCount > 0 && (
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-amber-950">
-          Earlier, ClaimMatch showed &ldquo;Claim filed&rdquo; for{' '}
+          Earlier, Lawsuit AI showed &ldquo;Claim filed&rdquo; for{' '}
           {legacyCount === 1 ? 'the settlement below' : 'the settlements below'}. That
           was wrong. We never sent anything to a settlement administrator, and we
           never file claims for anyone.{' '}

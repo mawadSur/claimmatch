@@ -140,11 +140,11 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   stepFileBody: {
-    text: 'Filing is free. ClaimMatch never files for you and never handles settlement payments.',
+    text: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   stepTrackTitle: {
-    text: 'Keep track in ClaimMatch',
+    text: 'Keep track in Lawsuit AI',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   stepTrackBody: {
@@ -163,7 +163,7 @@ export const settlement = defineCopy({
     text: 'Where this listing comes from',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
-  /** "Adapted from SettleSignal (settlesignal.com), used under CC BY 4.0. ClaimMatch may…" */
+  /** "Adapted from SettleSignal (settlesignal.com), used under CC BY 4.0. Lawsuit AI may…" */
   provenanceAdaptedFrom: {
     text: 'Adapted from',
     source: 'src/app/lawsuits/[slug]/page.tsx',
@@ -181,7 +181,7 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   provenanceTail: {
-    text: '. ClaimMatch may have shortened or reformatted it. SettleSignal is a listing service, not the settlement’s official site.',
+    text: '. Lawsuit AI may have shortened or reformatted it. SettleSignal is a listing service, not the settlement’s official site.',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   seeSettleSignalListing: {
@@ -212,7 +212,7 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   checklistNeverFiles: {
-    text: 'ClaimMatch never files for you or handles settlement payments',
+    text: 'Lawsuit AI never files for you or handles settlement payments',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   checklistSaveNumber: {

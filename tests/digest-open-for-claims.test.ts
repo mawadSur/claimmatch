@@ -143,7 +143,7 @@ describe('closing-soon email', () => {
     today(TODAY);
     vi.stubEnv('CLOSING_SOON_EMAIL_ENABLED', '1');
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St, City, ST 00000');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     vi.stubEnv('RESEND_API_KEY', 're_test');
     m.tables.lawsuits = [
       verified(lawsuit('open-settlement', { deadline: plus(TODAY, 5) })),

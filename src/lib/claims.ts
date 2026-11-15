@@ -3,9 +3,9 @@
  * no Supabase and no network, so it is safe in client and server code and is
  * tested in tests/claims-*.test.ts.
  *
- * ClaimMatch never files or submits a claim for anyone. People check the
+ * Lawsuit AI never files or submits a claim for anyone. People check the
  * official notice, file on the administrator's site themselves and tell
- * ClaimMatch here. States follow the approved plan's state machine (WP:89-134).
+ * Lawsuit AI here. States follow the approved plan's state machine (WP:89-134).
  *
  * Deadline rules live in ./claim-deadlines and input validation in
  * ./claim-input; both are re-exported here, so import from '@/lib/claims'.
@@ -294,13 +294,13 @@ export function legacyFilingState(settlement: SettlementContext): LegacyFilingSt
 export function legacyNextStep(state: LegacyFilingState): string {
   switch (state) {
     case 'deadline_passed':
-      return 'ClaimMatch did not file this. If you filed before the deadline, tell us.';
+      return 'Lawsuit AI did not file this. If you filed before the deadline, tell us.';
     case 'closed_on_list':
-      return "ClaimMatch did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.";
+      return "Lawsuit AI did not file this. Our list shows it as closed and we're re-checking it. Check the official site, or tell us if you already filed.";
     case 'unlisted':
-      return "ClaimMatch did not file this. We're re-checking this settlement. Check the official site, or tell us if you already filed.";
+      return "Lawsuit AI did not file this. We're re-checking this settlement. Check the official site, or tell us if you already filed.";
     case 'open':
-      return 'ClaimMatch did not file this. File on the official site, or tell us if you already did.';
+      return 'Lawsuit AI did not file this. File on the official site, or tell us if you already did.';
   }
 }
 

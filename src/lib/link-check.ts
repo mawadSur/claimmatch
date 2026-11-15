@@ -2,7 +2,7 @@ import { flags } from '@/lib/flags';
 import { notifyAdmins } from '@/lib/ingest-alerts';
 import { createServiceClient } from '@/lib/supabase/server';
 
-export const LINK_CHECK_USER_AGENT = 'ClaimMatchLinkCheck/1.0 (+https://lawsuitai.org)';
+export const LINK_CHECK_USER_AGENT = 'LawsuitAILinkCheck/1.0 (+https://lawsuitai.org)';
 export const LINK_CHECK_TIMEOUT_MS = 10_000;
 export const LINK_CHECK_CONCURRENCY = 5;
 

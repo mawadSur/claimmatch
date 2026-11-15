@@ -5,7 +5,8 @@ import {
   groupDashboardMatches,
   type DashboardMatch,
 } from './dashboard-model';
-import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
+import { FILE_FOR_YOU_CTA, ONE_CLICK_AGENT_TITLE, SELF_FILE_SECONDARY } from '@/lib/copy';
+import type { LaneView } from '@/lib/filing/v2/contract';
 import { matchReasonLine } from '@/lib/match-reason';
 import { MatchFeedback } from './MatchFeedback';
 import { DismissMatchButton } from './DismissMatchButton';
@@ -21,6 +22,7 @@ export function YourMatches({
   needsProfile = false,
   metricsEnabled = false,
   fileForYou = false,
+  oneClickLanes = null,
   canDismiss = false,
   matchReasonEnabled = false,
 }: {
@@ -28,8 +30,14 @@ export function YourMatches({
   failed?: boolean;
   needsProfile?: boolean;
   metricsEnabled?: boolean;
-  /** ASSISTED_FILING_ENABLED: primary CTA authorizes ClaimMatch to file. */
+  /** ASSISTED_FILING_ENABLED (retired): primary CTA authorizes Lawsuit AI to file. Off while one-click filing is on. */
   fileForYou?: boolean;
+  /**
+   * ONE_CLICK_FILING_ENABLED: lanes of strong matches by settlement id. A
+   * strong match on an agent lane gets "Lawsuit AI files this claim for you";
+   * possible matches never do.
+   */
+  oneClickLanes?: Readonly<Record<string, LaneView>> | null;
   canDismiss?: boolean;
   matchReasonEnabled?: boolean;
 }) {
@@ -85,6 +93,7 @@ export function YourMatches({
                 items={grouped.strong}
                 metricsEnabled={metricsEnabled}
                 fileForYou={fileForYou}
+                oneClickLanes={oneClickLanes}
                 canDismiss={canDismiss}
                 matchReasonEnabled={matchReasonEnabled}
               />
@@ -107,6 +116,7 @@ export function YourMatches({
                   items={grouped.possible}
                   metricsEnabled={metricsEnabled}
                   fileForYou={fileForYou}
+                  oneClickLanes={null}
                   canDismiss={canDismiss}
                   matchReasonEnabled={matchReasonEnabled}
                 />
@@ -154,12 +164,14 @@ function MatchList({
   items,
   metricsEnabled,
   fileForYou,
+  oneClickLanes,
   canDismiss,
   matchReasonEnabled,
 }: {
   items: DashboardMatch[];
   metricsEnabled: boolean;
   fileForYou: boolean;
+  oneClickLanes: Readonly<Record<string, LaneView>> | null;
   canDismiss: boolean;
   matchReasonEnabled: boolean;
 }) {
@@ -217,7 +229,15 @@ function MatchList({
               />
             )}
           </div>
-          {fileForYou ? (
+          {item.strength === 'strong' && oneClickLanes?.[item.id]?.agent ? (
+            <Link
+              href={`/claim/${item.slug}#one-click`}
+              className="btn-primary shrink-0 !px-4 !py-2 text-sm"
+              aria-label={`${ONE_CLICK_AGENT_TITLE}: ${item.title}`}
+            >
+              {ONE_CLICK_AGENT_TITLE} <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          ) : fileForYou ? (
             <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
               <Link
                 href={`/claim/${item.slug}#authorize`}

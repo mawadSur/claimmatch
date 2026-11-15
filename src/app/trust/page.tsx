@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { BETA_FEE_COPY, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import {
+  BETA_FEE_COPY, feeEveryClaimCopy, filingFact, lawsuitAiMayFile, publicBetaFeeCopy, whoFilesAnswer,
+} from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { legalContact } from '@/lib/legal-contact';
@@ -15,7 +17,7 @@ import { publicPageMetadata } from '@/lib/site-metadata';
 export const metadata: Metadata = publicPageMetadata({
   title: 'Is this legit?',
   description:
-    'The facts: it is free, it never files claims for you or touches your settlement money, its listings are labeled unverified, and it is not a law firm.',
+    'The facts about Lawsuit AI: who files your claim, what it costs, why it never touches your settlement money, where listings come from, and why it is not a law firm.',
   path: '/trust',
 });
 
@@ -23,7 +25,7 @@ const FACTS = [
   {
     icon: ExternalLink,
     title: 'We don’t file for you',
-    body: 'You file every claim yourself on the official settlement website. ClaimMatch never files or submits a claim for anyone.',
+    body: 'You file every claim yourself on the official settlement website. Lawsuit AI never files or submits a claim for anyone.',
   },
   {
     icon: HandCoins,
@@ -38,7 +40,7 @@ const FACTS = [
   {
     icon: Database,
     title: 'Listings are labeled unverified',
-    body: 'Our listings come from SettleSignal, a public data source. We haven’t checked each one yet, so we label them “Unverified” and point you to the official site.',
+    body: 'Our listings come from SettleSignal, a public data source. We haven’t checked most of them yet. Until we check one, it is labeled “Unverified” and we point you to the official site.',
   },
   {
     icon: Scale,
@@ -67,7 +69,7 @@ const STORED = [
   },
   {
     title: 'Details you add in Settings',
-    body: 'Your name and phone number, if you add them. We don’t send text messages.',
+    body: 'Your name, phone number and street address (address line, city and state), if you add them, so you can copy them into official claim forms. We don’t send text messages.',
   },
   {
     title: 'How the site is used',
@@ -76,7 +78,7 @@ const STORED = [
 ];
 
 const VERIFY_STEPS = [
-  'Open a settlement on ClaimMatch and follow its link to the official settlement site.',
+  'Open a settlement on Lawsuit AI and follow its link to the official settlement site.',
   'Compare the deadline and who qualifies with what we show. If anything is different, the official site is right.',
   'Notice that we never ask you to pay, and never ask for bank or card details.',
 ];
@@ -84,19 +86,19 @@ const VERIFY_STEPS = [
 const FAQ = [
   {
     q: 'Who files my claim?',
-    a: 'You do, on the official settlement website. ClaimMatch never files claims for anyone. It helps you find open settlements and keep track of the claims you file.',
+    a: 'You do, on the official settlement website. Lawsuit AI never files claims for anyone. It helps you find open settlements and keep track of the claims you file.',
   },
   {
-    q: 'What does ClaimMatch cost?',
+    q: 'What does Lawsuit AI cost?',
     a: `${BETA_FEE_COPY} We never handle settlement payments.`,
   },
   {
     q: 'Where does your settlement information come from?',
-    a: 'From SettleSignal, a public settlement data source shared under the CC BY 4.0 license. We haven’t verified each listing yet, so always check the official settlement site before you file.',
+    a: 'From SettleSignal, a public settlement data source shared under the CC BY 4.0 license. We haven’t checked most listings yet, so always check the official settlement site before you file.',
   },
   {
-    q: 'Is ClaimMatch a law firm?',
-    a: 'No. We don’t give legal advice, and using ClaimMatch does not make us your lawyer.',
+    q: 'Is Lawsuit AI a law firm?',
+    a: 'No. We don’t give legal advice, and using Lawsuit AI does not make us your lawyer.',
   },
   {
     q: 'What do you do with my information?',
@@ -107,7 +109,7 @@ const FAQ = [
 export default function TrustPage() {
   const contact = legalContact();
   const disclose = flags.feeDisclosure();
-  const facts = disclose
+  const factsBase = disclose
     ? FACTS.map((f) =>
         f.title === 'It’s free during beta'
           ? {
@@ -124,19 +126,27 @@ export default function TrustPage() {
             : f,
         )
       : FACTS;
-  const faq = disclose
+  const faqBase = disclose
     ? FAQ.map((f) =>
-        f.q === 'What does ClaimMatch cost?'
+        f.q === 'What does Lawsuit AI cost?'
           ? { ...f, a: `${feeEveryClaimCopy()} We never handle settlement payments.` }
           : f,
       )
     : flags.panelTrustCopy()
       ? FAQ.map((f) =>
-          f.q === 'What does ClaimMatch cost?'
+          f.q === 'What does Lawsuit AI cost?'
             ? { ...f, a: `${publicBetaFeeCopy()} We never handle settlement payments.` }
             : f,
         )
       : FAQ;
+  // Who files follows the fee disclosure and one-click filing (copy.ts).
+  const mayFile = lawsuitAiMayFile();
+  const facts = mayFile
+    ? factsBase.map((f) => (f.title === 'We don’t file for you' ? { ...f, ...filingFact(true) } : f))
+    : factsBase;
+  const faq = mayFile
+    ? faqBase.map((f) => (f.q === 'Who files my claim?' ? { ...f, a: whoFilesAnswer(true) } : f))
+    : faqBase;
 
   return (
     <>
@@ -148,12 +158,12 @@ export default function TrustPage() {
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Is this legit?
             </span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              Is ClaimMatch legit?{' '}
+              Is Lawsuit AI legit?{' '}
               <span className="text-brand-600">Here are the facts.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               “Free settlement money” can sound like a scam. So here is exactly what
-              ClaimMatch does, what it doesn’t do, and how to check us yourself.
+              Lawsuit AI does, what it doesn’t do, and how to check us yourself.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
@@ -199,11 +209,11 @@ export default function TrustPage() {
               </div>
               <div>
                 <h2 className="text-xl font-extrabold text-amber-900">
-                  ClaimMatch is not the court or the settlement administrator
+                  Lawsuit AI is not the court or the settlement administrator
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-amber-900">
                   Each settlement is run by a claims administrator the court approves.
-                  The administrator reviews claims and sends payments. ClaimMatch is a
+                  The administrator reviews claims and sends payments. Lawsuit AI is a
                   separate website that helps you find settlements and keep track of
                   your claims. We are not part of any court or administrator.
                 </p>
@@ -241,7 +251,7 @@ export default function TrustPage() {
           <Link href="/privacy" className="font-semibold text-brand-700 underline hover:text-brand-800">
             Privacy Policy
           </Link>{' '}
-          for the full list of what we collect and who helps us run ClaimMatch.
+          for the full list of what we collect and who helps us run Lawsuit AI.
         </p>
       </section>
 
@@ -331,6 +341,11 @@ export default function TrustPage() {
               Create a free account <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
+          <p className="mt-6 text-sm">
+            <Link href="/faq" className="text-link inline-flex min-h-tap items-center gap-1">
+              More questions? Read the FAQ <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </p>
           <div className="mx-auto mt-10 max-w-2xl text-left">
             <Disclaimer />
           </div>

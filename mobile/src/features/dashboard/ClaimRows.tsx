@@ -33,7 +33,7 @@ export function ClaimsFailed({ onRetry, retrying }: { onRetry: () => void; retry
   );
 }
 
-/** No claims yet: what ClaimMatch is for, and the way to the list. */
+/** No claims yet: what Lawsuit AI is for, and the way to the list. */
 export function ClaimsEmpty({ onBrowse }: { onBrowse: () => void }) {
   return (
     <DashedCard testID="dashboard-claims-empty">

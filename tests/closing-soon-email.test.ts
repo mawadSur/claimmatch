@@ -21,8 +21,8 @@ const verified = {
 
 describe('closing-soon email gate', () => {
   it('refuses unless the flag is exactly 1, with a postal address and verified sender', () => {
-    expect(isVerifiedSender('ClaimMatch <onboarding@resend.dev>')).toBe(false);
-    expect(isVerifiedSender('ClaimMatch <hello@claimmatch.com>')).toBe(true);
+    expect(isVerifiedSender('Lawsuit AI <onboarding@resend.dev>')).toBe(false);
+    expect(isVerifiedSender('Lawsuit AI <hello@lawsuitai.org>')).toBe(true);
     expect(closingSoonEmailGate({})).toEqual({ ok: false, reason: 'flag_off' });
     expect(closingSoonEmailGate({ CLOSING_SOON_EMAIL_ENABLED: 'true' })).toEqual({
       ok: false,
@@ -33,14 +33,14 @@ describe('closing-soon email gate', () => {
     expect(
       closingSoonEmailGate({
         CLOSING_SOON_EMAIL_ENABLED: '1',
-        RESEND_FROM: 'ClaimMatch <hello@claimmatch.com>',
+        RESEND_FROM: 'Lawsuit AI <hello@lawsuitai.org>',
       }),
     ).toEqual({ ok: false, reason: 'missing_resend_key' });
 
     expect(
       closingSoonEmailGate({
         CLOSING_SOON_EMAIL_ENABLED: '1',
-        RESEND_FROM: 'ClaimMatch <hello@claimmatch.com>',
+        RESEND_FROM: 'Lawsuit AI <hello@lawsuitai.org>',
         RESEND_API_KEY: 're_test',
       }).ok,
     ).toBe(true);
@@ -75,7 +75,7 @@ describe('closing-soon email send', () => {
     const send = vi.fn();
     vi.doMock('resend', () => ({ Resend: class { emails = { send }; } }));
     vi.stubEnv('RESEND_API_KEY', 're_test');
-    vi.stubEnv('RESEND_FROM', 'ClaimMatch <hello@claimmatch.com>');
+    vi.stubEnv('RESEND_FROM', 'Lawsuit AI <hello@lawsuitai.org>');
     vi.stubEnv('NEXT_PUBLIC_POSTAL_ADDRESS', '1 Main St');
     await sendClosingSoonEmail('jane@example.com', {
       items: [{ title: 'Soon', slug: 'soon', deadline: '2026-11-05' }],
@@ -94,7 +94,7 @@ describe('closing-soon email send', () => {
     expect(html).toContain('Unsubscribe');
     expect(html).toContain('1 Main Street');
     expect(html).not.toMatch(/\bmatch/i);
-    expect(html).toContain('LawsuitAI never files for you');
+    expect(html).toContain('Lawsuit AI never files for you');
     expect(html).not.toContain('ClaimMatch');
   });
 });

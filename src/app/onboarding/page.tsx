@@ -11,7 +11,7 @@ import { factsFromRows } from '@/lib/profile-facts';
 
 export const metadata: Metadata = {
   title: 'Set up your profile',
-  description: 'Add a few details to your free ClaimMatch account.',
+  description: 'Add a few details to your free Lawsuit AI account.',
   robots: { index: false, follow: false },
 };
 
@@ -60,9 +60,9 @@ export default async function OnboardingPage({
             <span className="badge-brand mx-auto gap-1.5">
               <Clock className="h-3.5 w-3.5" aria-hidden /> About 1 minute
             </span>
-            <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">Welcome to ClaimMatch</h1>
+            <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">Welcome to Lawsuit AI</h1>
             <p className="mt-3 leading-relaxed text-ink-muted">
-              ClaimMatch is a free claim assistant. It never files for you and never
+              Lawsuit AI is a free claim assistant. It never files for you and never
               handles settlement payments. Here&rsquo;s how it works:
             </p>
           </div>

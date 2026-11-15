@@ -9,7 +9,7 @@ describe('public site URL leftovers', () => {
     expect(read('src/lib/utils.ts')).toContain("'https://lawsuitai.org'");
     expect(read('src/lib/utils.ts')).not.toContain('claimmatch.vercel.app');
     expect(read('src/lib/scraper/sources/settlesignal.ts')).toContain(
-      'ClaimMatchBot/1.0 (+https://lawsuitai.org)',
+      'LawsuitAIBot/1.0 (+https://lawsuitai.org)',
     );
     expect(read('src/lib/scraper/sources/settlesignal.ts')).not.toContain('claimmatch.vercel.app');
     expect(read('src/components/AuthForm.tsx')).toContain('SITE.url');

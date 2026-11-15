@@ -13,7 +13,7 @@ import {
 } from '@/lib/analytics/events';
 
 describe('traffic kind', () => {
-  it('tags Playwright and ClaimMatch smoke as test, not product', () => {
+  it('tags Playwright and Lawsuit AI smoke as test, not product', () => {
     expect(detectTrafficKind({ userAgent: 'ClaimMatchSmoke/1.0' })).toBe('test');
     expect(detectTrafficKind({ userAgent: 'Mozilla/5.0 Playwright' })).toBe('test');
     expect(detectTrafficKind({ webdriver: true, userAgent: 'Chrome' })).toBe('test');
