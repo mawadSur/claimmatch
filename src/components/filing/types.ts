@@ -27,6 +27,8 @@ export interface OneClickClaimProps {
   accountEmail: string | null;
   /** Offer Google for that sign-in: the account has a Google identity and OAUTH_SIGN_IN_ENABLED is on. */
   reauthWithGoogle?: boolean;
+  /** Offer Apple for that sign-in: the account has an Apple identity and APPLE_SIGN_IN_ENABLED is on. */
+  reauthWithApple?: boolean;
 }
 
 /** The dashboard's one-click data; null when the flag is off. */

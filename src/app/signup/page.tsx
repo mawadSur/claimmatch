@@ -77,6 +77,7 @@ export default function SignupPage() {
                 mode="signup"
                 storeNote={trustCopy ? WHAT_WE_STORE_MINIMAL : undefined}
                 oauth={flags.oauthSignIn()}
+                apple={flags.appleSignIn()}
               />
             </Suspense>
           </div>

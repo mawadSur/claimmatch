@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { createClient } from '@/lib/supabase/client';
-import { GoogleSignInButton } from './GoogleSignInButton';
+import { OAuthSignInButtons } from './OAuthSignIn';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
 import { rememberSignupContext } from '@/lib/signup-context';
 import {
@@ -79,18 +79,21 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
  * calls useSearchParams(). `switchPrompt={false}` leaves out the "New to
  * Lawsuit AI? / Already have an account?" line, for a page that offers the
  * other form itself. `oauth` (OAUTH_SIGN_IN_ENABLED, read by the page) adds
- * "Continue with Google" above the email form.
+ * "Continue with Google" above the email form, and `apple`
+ * (APPLE_SIGN_IN_ENABLED) adds "Continue with Apple".
  */
 export function AuthForm({
   mode,
   switchPrompt = true,
   storeNote,
   oauth = false,
+  apple = false,
 }: {
   mode: Mode;
   switchPrompt?: boolean;
   storeNote?: string;
   oauth?: boolean;
+  apple?: boolean;
 }) {
   const searchParams = useSearchParams();
   const posthog = usePostHog();
@@ -391,9 +394,13 @@ export function AuthForm({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-      {oauth && (
+      {(oauth || apple) && (
         <div className="mb-4">
-          <GoogleSignInButton mode={mode} next={next} />
+          <OAuthSignInButtons
+            mode={mode}
+            next={next}
+            providers={[...(oauth ? (['google'] as const) : []), ...(apple ? (['apple'] as const) : [])]}
+          />
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-busy={loading}>

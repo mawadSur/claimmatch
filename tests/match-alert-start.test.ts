@@ -219,9 +219,12 @@ describe('/api/match-alert/start', () => {
   });
 
   it('POST consumes a valid token and lands on the claim', async () => {
-    // The route reads the real clock: pin it inside the token's 72-hour window.
+    // The route reads the real clock; pin it to the token's issue time so the test does not expire.
     vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date('2026-11-12T12:05:00.000Z'));
+    vi.setSystemTime(new Date('2026-11-12T12:00:00.000Z'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     onTestFinished(() => {
       vi.useRealTimers();
     });
