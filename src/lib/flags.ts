@@ -371,9 +371,17 @@ export const flags = {
   verifyAssist: () => on('VERIFY_ASSIST_ENABLED'),
   /**
    * Issue #50: "Continue with Google" on /login and /signup, and Google as a
-   * way to sign in again before e-signing a one-click claim. Web only (Apple,
-   * iOS and Android are on hold). A kill switch: production sets it to 1 once
+   * way to sign in again before e-signing a one-click claim. Web only (iOS
+   * and Android are on hold). A kill switch: production sets it to 1 once
    * Google is enabled in Supabase Auth. Off: no Google button anywhere.
    */
   oauthSignIn: () => on('OAUTH_SIGN_IN_ENABLED'),
+  /**
+   * "Continue with Apple" on /login and /signup, and Apple as a way to sign in
+   * again before e-signing a one-click claim. Web only (the app is on hold).
+   * Independent of OAUTH_SIGN_IN_ENABLED. Set to 1 only once Apple is enabled
+   * in Supabase Auth (Services ID, key, client secret). Off: no Apple button
+   * anywhere.
+   */
+  appleSignIn: () => on('APPLE_SIGN_IN_ENABLED'),
 };

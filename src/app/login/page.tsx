@@ -43,7 +43,12 @@ export default async function LoginPage({
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
               {/* From a claim, "New to Lawsuit AI?" comes once, with the button below. */}
-              <AuthForm mode="login" switchPrompt={!fromClaim} oauth={flags.oauthSignIn()} />
+              <AuthForm
+                mode="login"
+                switchPrompt={!fromClaim}
+                oauth={flags.oauthSignIn()}
+                apple={flags.appleSignIn()}
+              />
             </Suspense>
           </div>
 
