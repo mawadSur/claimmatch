@@ -395,7 +395,8 @@ export const flags = {
    * Server only (not sent to the app).
    */
   agentAuthV2: () => equals('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2'),
-* "Continue with Apple" on /login and /signup, and Apple as a way to sign in
+  /**
+   * "Continue with Apple" on /login and /signup, and Apple as a way to sign in
    * again before e-signing a one-click claim. Web only (the app is on hold).
    * Independent of OAUTH_SIGN_IN_ENABLED. Set to 1 only once Apple is enabled
    * in Supabase Auth (Services ID, key, client secret). Off: no Apple button
