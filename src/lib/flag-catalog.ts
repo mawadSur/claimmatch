@@ -302,7 +302,9 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     description:
       'Exactly agent-auth-v2: new one-click members sign authorization v2 (a desk agent may complete a CAPTCHA by hand where the settlement rule allows it). Anything else: agent-auth-v1. Set only after the law firm approves v2; existing signatures keep their version.',
     read: () => flags.agentAuthV2(),
-env: 'APPLE_SIGN_IN_ENABLED',
+  },
+  {
+    env: 'APPLE_SIGN_IN_ENABLED',
     description:
       'Continue with Apple on /login and /signup, and Apple sign-in again before e-signing a one-click claim (web only). Kill switch: set to 1 in production once Apple is enabled in Supabase Auth.',
     read: () => flags.appleSignIn(),
