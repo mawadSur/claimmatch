@@ -187,6 +187,7 @@ describe('the worker in test mode', () => {
     claim: { id: ID(1), status: 'filing' },
     signature: { signature_id: ID(5) },
     packet: { documents: [], member: { email: TESTER } },
+    packetRow: { id: ID(4), status: 'signed', health_consent_text_sha256: null, is_test: false },
     spec: { id: ID(3), version: 1, content: { deadline: null } },
     settlement: { lawsuit: { id: ID(2), title: 'TEST', deadline: null }, policy: { channels: [{ type: 'administrator_email', enabled: true }] } },
     documents: [],

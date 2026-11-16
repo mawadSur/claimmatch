@@ -138,6 +138,23 @@ describe('POST /api/admin/filing/desk/next', () => {
     expect(m.claimNextDeskJob.mock.calls[0][0]).toMatchObject({ jobId: ID(20) });
   });
 
+  it('once live, a test job left from test mode is never shown: it goes back to the tester (issue #53)', async () => {
+    m.claimNextDeskJob
+      .mockResolvedValueOnce({ ok: true, job: { ...job(20), is_test: true } })
+      .mockResolvedValueOnce({ ok: true, job: job(21) });
+    m.deskView.mockResolvedValueOnce(view(21, CLEAN));
+    expect((await (await take()).json()).job).toMatchObject({ job: { id: ID(21) } });
+    expect(m.recordFilingResult.mock.calls[0][0]).toMatchObject({
+      jobId: ID(20),
+      outcome: 'hand_back_to_member',
+      reasonCode: 'test_job_after_go_live',
+      actor: 'staff',
+    });
+    // Nothing of the test job was shown or logged as taken.
+    expect(m.deskView).toHaveBeenCalledTimes(1);
+    expect(m.recordStaffAccess.mock.calls.map(([e]) => e.jobId)).toEqual([ID(21)]);
+  });
+
   it('shows the blocked job when it cannot be handed back (the screen refuses "filed")', async () => {
     m.claimNextDeskJob.mockResolvedValueOnce({ ok: true, job: job(20) });
     m.deskView.mockResolvedValueOnce(view(20, KILL_SWITCH));

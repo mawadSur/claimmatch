@@ -6,6 +6,8 @@ import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { Disclaimer } from '@/components/Disclaimer';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { MAY_FILE_PAGE_COPY } from '@/lib/copy';
+import { viewerMayFile } from '@/lib/filing/public-filing';
 import { flags } from '@/lib/flags';
 import { SCORECARD_EMPTY_COPY, type ScorecardStat } from '@/lib/scorecard';
 import { loadScorecardStats } from '@/lib/scorecard-server';
@@ -75,8 +77,15 @@ export default async function ScorecardPage() {
         </dl>
 
         <p className="mt-6 text-sm leading-relaxed text-ink-muted">
-          Filing is something you do on the official settlement site. Lawsuit AI never files
-          for you and never handles settlement payments.
+          {/* Who files (issue #53): a static page, so no viewer. */}
+          {viewerMayFile(null) ? (
+            MAY_FILE_PAGE_COPY.scorecard
+          ) : (
+            <>
+              Filing is something you do on the official settlement site. Lawsuit AI never files
+              for you and never handles settlement payments.
+            </>
+          )}
         </p>
 
         <Link href="/trust" className="btn-secondary mt-8">

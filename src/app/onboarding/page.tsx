@@ -6,7 +6,8 @@ import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
-import { WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
+import { MAY_FILE_PAGE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
+import { viewerMayFile } from '@/lib/filing/public-filing';
 import { factsFromRows } from '@/lib/profile-facts';
 
 export const metadata: Metadata = {
@@ -39,6 +40,11 @@ export default async function OnboardingPage({
   const destination = safeNextOr(next, '/dashboard?welcome=1');
   const emailConfirmed = confirmed === '1' || (Array.isArray(confirmed) && confirmed[0] === '1');
 
+  // Who files (issue #53): per viewer, so a one-click tester sees the one-click text in test mode.
+  const mayFile = viewerMayFile({ kind: 'member', email: user.email });
+  const howItWorks = mayFile
+    ? HOW_IT_WORKS.map((step, i) => (i === 2 ? MAY_FILE_PAGE_COPY.onboardingStep : step))
+    : HOW_IT_WORKS;
   const profileV2 = flags.profileV2();
   const { data: profile } = await supabase
     .from('profiles')
@@ -62,13 +68,19 @@ export default async function OnboardingPage({
             </span>
             <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">Welcome to Lawsuit AI</h1>
             <p className="mt-3 leading-relaxed text-ink-muted">
-              Lawsuit AI is a free claim assistant. It never files for you and never
-              handles settlement payments. Here&rsquo;s how it works:
+              {mayFile ? (
+                <>{MAY_FILE_PAGE_COPY.onboardingIntro} Here&rsquo;s how it works:</>
+              ) : (
+                <>
+                  Lawsuit AI is a free claim assistant. It never files for you and never
+                  handles settlement payments. Here&rsquo;s how it works:
+                </>
+              )}
             </p>
           </div>
 
           <ol className="mt-6 space-y-2 rounded-2xl border border-gray-100 bg-white p-5 text-sm leading-relaxed text-ink shadow-card">
-            {HOW_IT_WORKS.map((step, i) => (
+            {howItWorks.map((step, i) => (
               <li key={step} className="flex items-start gap-3">
                 <span
                   aria-hidden

@@ -240,6 +240,7 @@ describe('/api/match-alert/start', () => {
       }),
     );
     expect(res.status).toBe(303);
+    vi.useRealTimers();
     expect(new URL(res.headers.get('location') ?? '').pathname).toBe('/claim/verified-open');
   });
 });

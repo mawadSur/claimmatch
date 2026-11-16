@@ -25,6 +25,20 @@ export function testInbox(env: NodeJS.ProcessEnv = process.env): string | null {
   return raw && isPlainAddress(raw) ? raw : null;
 }
 
+/**
+ * The job as the sandbox must treat it: a test job (0046), or a job for a
+ * packet made in test mode (claim_packets.is_test, 0047), or one whose packet
+ * mark is unknown, is a test item. A test item never reaches a real
+ * administrator, whatever the mode (the database also refuses a real job for
+ * a test packet).
+ */
+export function testItem(
+  job: Pick<FilingJobRecord, 'is_test'>,
+  packet: { is_test?: boolean | null } | null | undefined,
+): Pick<FilingJobRecord, 'is_test'> {
+  return { is_test: job.is_test === true || packet?.is_test !== false };
+}
+
 export type SandboxDecision =
   | { kind: 'real' }
   | { kind: 'sandboxed'; sandbox: NonNullable<ChannelSubmitInput['sandbox']> }

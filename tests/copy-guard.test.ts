@@ -161,6 +161,10 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'One-click filing (ONE_CLICK_FILING_ENABLED=1): agent-lane wording, shown only for a claim whose settlement has a filing channel the law firm enabled.' },
   { file: 'src/lib/copy.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
     reason: 'One-click filing: the filed_by_claimmatch status, true for that claim; it never reads “Submitted” until the administrator’s number arrives.' },
+  { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI can file your claim with the settlement administrator after you review and sign it',
+    reason: 'Issue #53: the settlement page’s filing step, shown only when one-click is on for the viewer and this settlement has an agent lane the law firm enabled (SETTLEMENT_FILING_COPY.agent).' },
+  { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI can file this claim for you after you review and sign it',
+    reason: 'Issue #53: the settlement page’s sidebar point, same condition as the filing step above (SETTLEMENT_FILING_COPY.agent).' },
   // mobile/src/copy/filing.ts: the app's verbatim copies of the two src/lib/copy.ts entries above (issue #51).
   { file: 'mobile/src/copy/filing.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
     reason: 'App copy of ONE_CLICK_AGENT_TITLE / ONE_CLICK_AGENT_NOTE, shown only for an agent-lane claim while ONE_CLICK_FILING_ENABLED=1.' },

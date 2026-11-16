@@ -1,5 +1,6 @@
 import type { Claim, Match, Profile, ProfileFact } from '@/lib/types';
 import { PRIVACY_POLICY_VERSION } from '@/lib/consent';
+import type { OneClickExport } from '@/lib/account-export-filing';
 
 export interface AccountExportConsent {
   category: string;
@@ -44,7 +45,18 @@ export interface AccountExportPayload {
     lawsuit_title?: string | null;
     status: string;
   }>;
+  /** One-click filing records, member-safe fields only (src/lib/account-export-filing.ts). */
+  one_click_filing: OneClickExport;
 }
+
+const EMPTY_ONE_CLICK: OneClickExport = {
+  packets: [],
+  documents: [],
+  signatures: [],
+  signature_voids: [],
+  esign_consents: [],
+  filing_jobs: [],
+};
 
 export function buildAccountExport(input: {
   now?: Date;
@@ -57,6 +69,7 @@ export function buildAccountExport(input: {
     }
   >;
   claims: Array<Pick<Claim, 'id' | 'status'> & { lawsuit_title?: string | null }>;
+  oneClick?: OneClickExport;
 }): AccountExportPayload {
   const profile = input.profile;
   return {
@@ -96,5 +109,6 @@ export function buildAccountExport(input: {
       lawsuit_title: claim.lawsuit_title ?? null,
       status: claim.status,
     })),
+    one_click_filing: input.oneClick ?? EMPTY_ONE_CLICK,
   };
 }

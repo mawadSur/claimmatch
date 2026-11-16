@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Library } from 'lucide-react';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requireAdmin } from '@/lib/admin';
+import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
 import type { Lawsuit } from '@/lib/types';
 import { CatalogTable } from '@/components/admin/CatalogTable';
 
@@ -42,8 +43,10 @@ export default async function AdminCatalogPage() {
           The 100 newest settlements across every review state. Feature the best
           ones for the homepage; unpublish anything that shouldn&rsquo;t be live.
           Visitors see published settlements that are still open and file their
-          own claims on the official administrator&rsquo;s site. Lawsuit AI
-          never files for anyone.
+          own claims on the official administrator&rsquo;s site
+          {oneClickEnabledFor({ kind: 'staff', isStaff: true })
+            ? ', except where one-click filing is enabled.'
+            : '. Lawsuit AI never files for anyone.'}
         </p>
       </header>
 

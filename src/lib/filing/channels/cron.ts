@@ -33,7 +33,7 @@ import {
 } from './cron-sweeps';
 import { archiveRetentionSweep, pruneJevPartialRuns } from '../retention';
 import { getChannelAdapter } from './index';
-import { sandboxFor } from './test-mode';
+import { sandboxFor, testItem } from './test-mode';
 import type { ChannelSubmitResult, FilingJobRecord } from './types';
 
 export const WORKER_CHANNELS: readonly AgentChannel[] = ['administrator_email', 'administrator_api'];
@@ -117,8 +117,8 @@ async function sendOne(
   const config = ctx.settlement.policy.channels.find((c) => c.type === job.channel);
   const adapter = getChannelAdapter(job.channel);
   if (!config || !adapter.submit) return attention(config ? 'channel_not_automatic' : 'channel_not_enabled');
-  // Test mode and test jobs (./test-mode.ts): the test inbox only, never an administrator.
-  const sandbox = sandboxFor(job, job.channel, () => ctx.packet.member.email);
+  // Test mode and test items (./test-mode.ts): the test inbox only, never an administrator.
+  const sandbox = sandboxFor(testItem(job, ctx.packetRow), job.channel, () => ctx.packet.member.email);
   if (sandbox.kind === 'refused') return finish(job, lockOwner, now, sandbox.result);
   let res: ChannelSubmitResult;
   try {

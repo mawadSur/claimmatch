@@ -8,7 +8,8 @@ import { BetaInviteCapture } from '@/components/invite/BetaInviteCapture';
 import { flags } from '@/lib/flags';
 import { FeeDisclosure } from '@/components/FeeDisclosure';
 import { isInviteLandingEnabled } from '@/lib/soft-invite';
-import { publicBetaFeeCopy } from '@/lib/copy';
+import { MAY_FILE_PAGE_COPY, publicBetaFeeCopy } from '@/lib/copy';
+import { viewerMayFile } from '@/lib/filing/public-filing';
 
 export const metadata: Metadata = {
   title: 'You’re invited',
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
     'Find open US class-action settlements you may qualify for, copy details into the official form, and submit on the official site. Free during beta.',
   robots: { index: false, follow: false },
 };
+
+/** The three steps; step 3 says who files (issue #53: a static page, so no viewer). */
+function steps(mayFile: boolean) {
+  return STEPS.map((step) => (step.n === '3' && mayFile ? { ...step, ...MAY_FILE_PAGE_COPY.inviteStep } : step));
+}
 
 const STEPS = [
   {
@@ -40,6 +46,7 @@ const STEPS = [
 
 export default function InvitePage() {
   if (!isInviteLandingEnabled()) notFound();
+  const mayFile = viewerMayFile(null);
 
   return (
     <section className="bg-gradient-to-b from-brand-50 via-white to-white">
@@ -50,9 +57,15 @@ export default function InvitePage() {
             Find open settlements you may qualify for
           </h1>
           <p className="mt-4 text-lg text-ink-muted">
-            Lawsuit AI helps you find open US class-action settlements, copy a
-            packet for the official form, and keep track of what you file. You
-            submit on the official site. It is free during beta.
+            {mayFile ? (
+              MAY_FILE_PAGE_COPY.inviteIntro
+            ) : (
+              <>
+                Lawsuit AI helps you find open US class-action settlements, copy a
+                packet for the official form, and keep track of what you file. You
+                submit on the official site. It is free during beta.
+              </>
+            )}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Suspense
@@ -71,7 +84,7 @@ export default function InvitePage() {
         </div>
 
         <ol className="mx-auto mt-12 max-w-xl space-y-4">
-          {STEPS.map((step) => (
+          {steps(mayFile).map((step) => (
             <li
               key={step.n}
               className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-card"
@@ -93,7 +106,7 @@ export default function InvitePage() {
           {[
             publicBetaFeeCopy(),
             'Not a law firm. Not legal advice.',
-            'You always file on the official settlement website yourself.',
+            mayFile ? MAY_FILE_PAGE_COPY.inviteBullet : 'You always file on the official settlement website yourself.',
           ].map((line) => (
             <li key={line} className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden />
