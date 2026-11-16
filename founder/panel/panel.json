@@ -2,7 +2,7 @@
  "n": 100,
  "seed": 20261106,
  "customer": {
-  "business": "ClaimMatch (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.",
+  "business": "Lawsuit AI (lawsuitai.org): free-during-beta assistant for finding open US class-action settlements and filing yourself on the official site. Assisted filing and any recovery fee are not live.",
   "target": "Hypothesis, not observed customers: US adults 25-55 who use mainstream banks, retailers, telecoms and apps, and have heard of settlement checks but rarely file",
   "where": "United States, online",
   "age": [
@@ -75,5 +75,5 @@
    "you saw a TikTok about a no-proof settlement"
   ]
  },
- "pitch": "ClaimMatch (lawsuitai.org) is a free-during-beta assistant for open US class-action settlements.\nYou browse listings, read who may qualify, and open the official notice and claim form. You file on the administrator’s site yourself. Filing there is free.\nClaimMatch does not file for you, does not handle settlement money, and is not a law firm. Listings are unverified until checked against the official site.\nOnly file if the official notice describes you. If it requires proof you do not have, do not file.\nCreating an account is free. A paid model may come later; nothing paid is live today. We will tell you before any fee applies."
+ "pitch": "Lawsuit AI (lawsuitai.org) is a free-during-beta assistant for open US class-action settlements.\nYou browse listings, read who may qualify, and open the official notice and claim form. You file on the administrator’s site yourself. Filing there is free.\nLawsuit AI does not file for you, does not handle settlement money, and is not a law firm. Listings are unverified until checked against the official site.\nOnly file if the official notice describes you. If it requires proof you do not have, do not file.\nCreating an account is free. A paid model may come later; nothing paid is live today. We will tell you before any fee applies."
 }

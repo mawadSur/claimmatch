@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { issueMatchAlertToken } from '@/lib/match-alert-token';
 
 const SECRET = 'start-token-secret';
@@ -219,6 +219,12 @@ describe('/api/match-alert/start', () => {
   });
 
   it('POST consumes a valid token and lands on the claim', async () => {
+    // The route reads the real clock; pin it to the token's issue time so the test does not expire.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-12T12:00:00.000Z'));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const { token } = issued();
     const res = await POST(
       new Request('https://claimmatch.test/api/match-alert/start', {

@@ -31,6 +31,7 @@ export function ReviewSignStep({
   view,
   accountEmail,
   reauthWithGoogle = false,
+  reauthWithApple = false,
   busy,
   onView,
   refresh,
@@ -38,6 +39,7 @@ export function ReviewSignStep({
   view: ClaimFilingView;
   accountEmail: string | null;
   reauthWithGoogle?: boolean;
+  reauthWithApple?: boolean;
   busy: boolean;
   onView: (view: ClaimFilingView, message: string) => void;
   refresh: (message: string) => Promise<void>;
@@ -244,6 +246,7 @@ export function ReviewSignStep({
         <ReauthPrompt
           email={accountEmail}
           google={reauthWithGoogle}
+          apple={reauthWithApple}
           onSignedIn={async () => {
             setReauth(false);
             setGeneral(null);

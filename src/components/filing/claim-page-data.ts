@@ -87,6 +87,8 @@ export async function loadOneClickClaimPage(args: {
   accountEmail: string | null;
   /** The account can sign in again with Google (see OneClickClaimProps). */
   reauthWithGoogle?: boolean;
+  /** The account can sign in again with Apple. */
+  reauthWithApple?: boolean;
   slug: string;
   lawsuitId: string;
   claim: ClaimView | null;
@@ -96,7 +98,7 @@ export async function loadOneClickClaimPage(args: {
   // One gate (src/lib/filing/one-click-access.ts): in test mode, INTERNAL_EMAILS testers only.
   if (!oneClickEnabledFor({ kind: 'member', email: args.accountEmail })) return null;
   const { supabase, userId, claim, context, now } = args;
-  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false };
+  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false, reauthWithApple: args.reauthWithApple ?? false };
   // Only a settlement still taking claims can start one-click (the API says so too).
   const startable = context.openForClaims && !context.deadlinePassed && !context.fictional;
 

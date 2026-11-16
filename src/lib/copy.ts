@@ -313,6 +313,12 @@ export const ONE_CLICK_COPY = {
     google: 'Sign in again with Google',
     googleWorking: 'Opening Google…',
     googleFailed: 'We couldn’t open Google sign-in. Try again, or use your password.',
+    appleBody: 'Filing a claim needs a sign-in in the last 15 minutes, with Apple or your password. A sign-in link from an email doesn’t count.',
+    apple: 'Sign in again with Apple',
+    appleWorking: 'Opening Apple…',
+    appleFailed: 'We couldn’t open Apple sign-in. Try again, or use your password.',
+    /** An account linked to both Google and Apple. */
+    bothBody: 'Filing a claim needs a sign-in in the last 15 minutes, with Google, Apple or your password. A sign-in link from an email doesn’t count.',
     orPassword: 'Or use your password',
   },
   actions: {
@@ -373,13 +379,23 @@ export const ONE_CLICK_COPY = {
   ],
 } as const;
 
-/** Issue #50: "Continue with Google" on /login and /signup (OAUTH_SIGN_IN_ENABLED). */
+/**
+ * "Continue with Google" (issue #50, OAUTH_SIGN_IN_ENABLED) and "Continue with
+ * Apple" (APPLE_SIGN_IN_ENABLED) on /login and /signup.
+ */
 export const OAUTH_COPY = {
   google: 'Continue with Google',
   working: 'Opening Google…',
+  /** Apple's own button label (Human Interface Guidelines: "Continue with Apple"). */
+  apple: 'Continue with Apple',
+  appleWorking: 'Opening Apple…',
   divider: 'or use your email',
   /** Shown next to the button on /login, where a new person can also create an account. */
   agreeLead: 'New here? Continuing with Google creates your free account, and you agree to the',
+  agreeLeadApple: 'New here? Continuing with Apple creates your free account, and you agree to the',
+  agreeLeadBoth: 'New here? Continuing with Google or Apple creates your free account, and you agree to the',
+  /** Apple sign-in came back without signing the person in. */
+  appleFailed: 'Apple sign-in didn’t finish. Try again, or use your email and password.',
   terms: 'Terms',
   and: 'and',
   privacy: 'Privacy Policy',
