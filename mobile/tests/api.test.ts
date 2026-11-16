@@ -332,6 +332,39 @@ describe('createApiClient', () => {
     expect(session.refreshAccessToken).not.toHaveBeenCalled();
   });
 
+  it('optional auth: sends the token when signed in, and never refreshes, retries or signs out', async () => {
+    const fetchMock = jest.fn(async () => jsonResponse(401, {}));
+    const session = fakeSession('token-1');
+    const api = createApiClient({ baseUrl: BASE, session, fetch: fetchMock });
+
+    const result = await api.request('/api/mobile/config', { auth: 'optional' });
+
+    expect(result).toMatchObject({ ok: false, status: 401, loggedOut: false });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(authHeader(fetchMock, 0)).toBe('Bearer token-1');
+    expect(session.refreshAccessToken).not.toHaveBeenCalled();
+    expect(session.signOutLocally).not.toHaveBeenCalled();
+  });
+
+  it.each<[string, TokenResult | Error]>([
+    ['signed out', { status: 'none' }],
+    ['a dead session', { status: 'invalid' }],
+    ['Supabase Auth unreachable', { status: 'offline' }],
+    ['a storage error', new Error('keychain')],
+  ])('optional auth: %s still sends the request, without a token', async (_name, token) => {
+    const fetchMock = jest.fn(async () => jsonResponse(200, { ok: true }));
+    const session = fakeSession(null);
+    session.getAccessToken.mockImplementation(async () => {
+      if (token instanceof Error) throw token;
+      return token;
+    });
+    const api = createApiClient({ baseUrl: BASE, session, fetch: fetchMock });
+
+    expect(await api.request('/api/mobile/config', { auth: 'optional' })).toEqual({ ok: true, status: 200, data: { ok: true } });
+    expect(authHeader(fetchMock, 0)).toBeUndefined();
+    expect(session.signOutLocally).not.toHaveBeenCalled();
+  });
+
   it('fails a 2xx response that does not match the expected shape', async () => {
     const fetchMock = jest.fn(async () => jsonResponse(200, { apiVersion: 'one' }));
     const api = createApiClient({ baseUrl: BASE, session: fakeSession(null), fetch: fetchMock });

@@ -138,6 +138,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * The signed-in user's id: null when signed out, undefined while the session
+ * is still being read or outside AuthProvider. For the config, which works
+ * signed out too and is read again when this changes.
+ */
+export function useAuthUserId(): string | null | undefined {
+  const value = useContext(AuthContext);
+  if (!value || value.status === 'loading') return undefined;
+  return value.user?.id ?? null;
+}
+
 export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext);
   if (!value) throw new Error('useAuth must be used inside AuthProvider');

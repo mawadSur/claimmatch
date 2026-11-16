@@ -55,7 +55,7 @@ jest.mock('@/lib/api', () => ({
   }),
 }));
 
-jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => ({ status: 'signedOut' }) }));
+jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => ({ status: 'signedOut' }), useAuthUserId: () => null }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), dismissTo: jest.fn() }) }));
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),

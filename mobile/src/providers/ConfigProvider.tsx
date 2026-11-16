@@ -1,7 +1,7 @@
 import { APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER } from '@shared/lib/disclaimer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Application from 'expo-application';
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { z } from 'zod';
 
@@ -18,10 +18,17 @@ import { recordServerTime } from '@/lib/clock';
 import { applyFlagOverrides, pickClientFlags, type ClientFlagName, type FlagValues } from '@/lib/flags';
 import { queryKeys } from '@/lib/query-client';
 
+import { useAuthUserId } from './AuthProvider';
+
 /**
  * GET /api/mobile/config (plan S5): server flags, server time, legal text,
  * the minimum supported build and the official-notice guides. The endpoint
- * needs no auth. While it has not answered, or when it fails, every flag
+ * needs no auth, but the app sends its bearer token when signed in: in
+ * one-click test mode the server turns ONE_CLICK_FILING_ENABLED on only for
+ * an INTERNAL_EMAILS tester (src/lib/filing/one-click-access.ts), and a
+ * missing or rejected token still gets the public config. The config is read
+ * again on sign-in, sign-out and an account switch. While it has not
+ * answered, or when it fails, every flag
  * stays off, the bundled legal text (src/lib/disclaimer.ts, the app's
  * wording) and the bundled guides are used, and the app stays usable.
  */
@@ -66,7 +73,7 @@ export async function fetchClientConfig(signal?: AbortSignal, onGuidesChanged?: 
   const path = `/api/mobile/config?guides=${encodeURIComponent(guidesInUse().version)}`;
   const response = unwrap(
     await getApi().request(path, {
-      auth: false,
+      auth: 'optional',
       parse: (json) => configResponseSchema.parse(json),
       signal,
     }),
@@ -136,6 +143,21 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     staleTime: 15 * 60_000,
   });
   const { data, status, isFetching, refetch } = query;
+
+  // Who is signed in changes the one-click flag: read the config again (with
+  // the new token, or none) once the session is known and whenever it changes.
+  // The first known session needs no second read: the first request already
+  // waited for the stored session and sent its token.
+  const userId = useAuthUserId();
+  const seenUser = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (userId === undefined) return;
+    const before = seenUser.current;
+    seenUser.current = userId;
+    if (before !== undefined && before !== userId) {
+      void client.invalidateQueries({ queryKey: queryKeys.config, exact: true });
+    }
+  }, [userId, client]);
 
   const value = useMemo<ConfigContextValue>(() => {
     const flags = data?.flags ?? NO_FLAGS;

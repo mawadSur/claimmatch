@@ -23,12 +23,19 @@ function minBuild(value: string | undefined): number {
 /**
  * Who is asking, for the one-click gate. Read only in test mode and only from
  * a bearer token the app chose to send: otherwise the answer is the same for
- * everyone, exactly as before (no sign-in read).
+ * everyone, exactly as before (no sign-in read). A malformed, expired or
+ * rejected token, or Supabase Auth being unreachable, is a signed-out
+ * visitor: the config is public and never answers 401 or 503.
  */
 async function oneClickViewer(req: Request): Promise<OneClickViewer | null> {
-  if (!oneClickTestMode() || !/^bearer\s/i.test(req.headers.get('authorization') ?? '')) return null;
-  const auth = await getRequestUser(req);
-  return auth.user ? { kind: 'member', email: auth.user.email } : null;
+  if (!oneClickTestMode() || !/^bearer\b/i.test(req.headers.get('authorization') ?? '')) return null;
+  try {
+    const auth = await getRequestUser(req);
+    return auth.user ? { kind: 'member', email: auth.user.email } : null;
+  } catch (err) {
+    console.error('[mobile-config] viewer read failed', err instanceof Error ? err.name : typeof err);
+    return null;
+  }
 }
 
 /**
@@ -40,7 +47,9 @@ async function oneClickViewer(req: Request): Promise<OneClickViewer | null> {
  * already has: the list (about 20 KB) is then sent only when it differs.
  * ONE_CLICK_FILING_ENABLED is the one-click gate for the caller
  * (src/lib/filing/one-click-access.ts): in test mode, on only for an
- * INTERNAL_EMAILS tester who sent a bearer token.
+ * INTERNAL_EMAILS tester who sent a bearer token. The app sends its token
+ * whenever it is signed in (mobile/src/providers/ConfigProvider.tsx) and reads
+ * the config again on sign-in and sign-out.
  */
 export async function GET(req: Request) {
   const now = new Date();

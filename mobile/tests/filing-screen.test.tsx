@@ -108,6 +108,18 @@ describe('starting one-click filing', () => {
     expect(screen.queryByTestId('claim-step-2')).toBeNull();
   });
 
+  it('follows the claim screen’s per-account oneClick (test mode: a tester), whatever the config flag says', async () => {
+    // The config's ONE_CLICK_FILING_ENABLED is off in this file (isFlagOn returns false): in test
+    // mode the server decides per account, from the bearer token on the claim screen request.
+    reply('GET', `/api/filing/claims/preview?lawsuit_id=${LAWSUIT_ID}`, [
+      200,
+      { preview: { lawsuit_id: LAWSUIT_ID, lane: filingView().lane, claim_id: null, can_start: true } },
+    ]);
+    await show(flow({ canStart: true }, null));
+    expect(screen.getByTestId('filing-entry')).toBeTruthy();
+    expect(calls('GET', '/api/mobile/claim/widget-settlement')[0].headers.Authorization).toBe('Bearer token-1');
+  });
+
   it('shows why it can’t, on the self-file lane, at the top of Step 2', async () => {
     reply('GET', VIEW_PATH, [200, { filing: filingView({ status: 'self_file', lane: SELF_FILE_LANE }) }]);
     await show(flow({ canStart: false }, claimRow('self_file')));

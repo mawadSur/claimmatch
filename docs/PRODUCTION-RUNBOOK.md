@@ -345,7 +345,7 @@ flags are on, test mode changes nothing (normal live behavior).
 
 What test mode guarantees:
 
-- **Who:** signed-in accounts in `INTERNAL_EMAILS` (web, and the app only when it sends its token to `/api/mobile/config`, which the current app build does not), plus admins and staff with a filing role on `/admin/filing`. The console shows a TEST MODE banner and a TEST badge on test jobs.
+- **Who:** signed-in accounts in `INTERNAL_EMAILS` (web, and the app from the build that sends its token to `/api/mobile/config` when signed in; an older app build still shows no one-click from the config, though its claim screen already follows the per-account gate), plus admins and staff with a filing role on `/admin/filing`. The console shows a TEST MODE banner and a TEST badge on test jobs.
 - **Jobs:** every new job is created by `filing_enqueue_test` (0046) and marked `claim_filing_jobs.is_test`. A test job stays a test job, also after one-click goes live.
 - **Emails:** `administrator_email` goes only to `ONE_CLICK_TEST_INBOX`, with a `[TEST]` subject, no administrator address or CC, and the member's copy only to an internal tester. With no valid `ONE_CLICK_TEST_INBOX`, nothing is sent and the job goes to needs attention (`test_inbox_missing`). Member notices go only to internal testers, subject prefixed `[TEST]`.
 - **No callouts:** `administrator_api` never calls an administrator for a test job (`test_mode_no_api`).

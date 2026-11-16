@@ -225,6 +225,9 @@ describe('/api/match-alert/start', () => {
     onTestFinished(() => {
       vi.useRealTimers();
     });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const { token } = issued();
     const res = await POST(
       new Request('https://claimmatch.test/api/match-alert/start', {

@@ -86,8 +86,14 @@ export interface RequestOptions<T> {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   /** Serialized as JSON. acknowledge-fictional expects `{}`. */
   body?: unknown;
-  /** Send the bearer token (default true). Public endpoints such as /api/mobile/config set false. */
-  auth?: boolean;
+  /**
+   * Send the bearer token (default true). false sends none. 'optional' is for
+   * public endpoints that answer differently for a signed-in user (the
+   * config's one-click gate): the token goes along when there is one, and
+   * otherwise (no session, or it cannot be read) the request goes without
+   * it. It never refreshes, retries or signs out.
+   */
+  auth?: boolean | 'optional';
   /** Validates a 2xx JSON body, for example a zod schema's `parse`. Throwing makes the request fail. */
   parse?: (json: unknown) => T;
   signal?: AbortSignal;
@@ -246,8 +252,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       },
     });
 
-    if (!useAuth) {
-      const sent = await send(url, init(), opts.signal);
+    if (useAuth !== true) {
+      const optional = useAuth === 'optional' ? await readSession(() => session.getAccessToken()) : null;
+      const sent = await send(url, init(optional?.status === 'ok' ? optional.token : undefined), opts.signal);
       if (sent.kind === 'aborted') return abortedFailure();
       if (sent.kind === 'network') return networkFailure();
       return toResult(sent, opts.parse);
