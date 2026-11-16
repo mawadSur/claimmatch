@@ -6,11 +6,12 @@
  */
 import { needsCorrectiveNotice } from '@/lib/claims';
 import { officialSiteUrl } from '@/lib/lawsuit-display';
-import { agentAuthorizationText, AGENT_AUTHORIZATION_VERSION } from './authorization-text';
+import { agentAuthorizationText, authorizationTextFor, currentAuthorizationVersion } from './authorization-text';
 import {
   canMoveClaim,
   FILING_API_VERSION,
   isAgentLane,
+  type AgentChannel,
   type ClaimFilingSummary,
   type ClaimFilingView,
   type LaneView,
@@ -141,6 +142,17 @@ function actionsFor(ctx: ClaimContext, parts: ViewParts, freshSignIn: boolean): 
   };
 }
 
+/**
+ * The authorization shown: for a live signature, the version it was signed
+ * under (it keeps that meaning); otherwise the version new members sign now.
+ */
+function authorizationView(lane: AgentChannel, signature: ClaimContext['signature']): { text_version: string; text: string } {
+  const signed = signature && signature.lane === lane ? authorizationTextFor(signature.authorization_text_version, lane) : null;
+  if (signature && signed !== null) return { text_version: signature.authorization_text_version, text: signed };
+  const version = currentAuthorizationVersion();
+  return { text_version: version, text: agentAuthorizationText(lane, version) };
+}
+
 /** The member's ClaimFilingView of one loaded claim. */
 export function buildClaimFilingView(ctx: ClaimContext, freshSignIn: boolean): ClaimFilingView {
   const parts = viewParts(ctx);
@@ -170,9 +182,7 @@ export function buildClaimFilingView(ctx: ClaimContext, freshSignIn: boolean): C
     timeline: toTimeline(ctx.events, claim.confirmation_number),
     actions: actionsFor(ctx, parts, freshSignIn),
     esign: { text_version: ESIGN_TEXT_VERSION, text: ESIGN_TEXT_V1, consented: hasCurrentEsignConsent(ctx) },
-    authorization: isAgentLane(authorizationLane)
-      ? { text_version: AGENT_AUTHORIZATION_VERSION, text: agentAuthorizationText(authorizationLane) }
-      : null,
+    authorization: isAgentLane(authorizationLane) ? authorizationView(authorizationLane, signature) : null,
     signature: signature
       ? {
           id: signature.id,

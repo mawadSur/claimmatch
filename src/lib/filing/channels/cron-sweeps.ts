@@ -200,6 +200,7 @@ export async function repairSignedWithoutJob(
       // Capacity and email configuration were checked at signing; they do not undo a signature.
       deskOpenJobs: 0,
       emailConfigured: true,
+      authorizationVersion: ctx.signature.authorization_text_version,
     });
     if (decision.agent && decision.lane === ctx.signature.lane) {
       const queued = await enqueueFiling({ signatureId: ctx.signature.signature_id, decision, actor: 'system', now });
@@ -288,14 +289,19 @@ async function handBackPage(
       .in('claim_id', ids),
     svc.from('profiles').select('id, state').in('id', [...new Set(claims.map((c) => c.user_id))]),
     svc.from('claim_documents').select('claim_id').in('claim_id', ids).eq('source', 'member').eq('status', 'stored'),
-    svc.from('claim_signatures').select('id, claim_id, lane, signed_at').in('claim_id', ids).order('signed_at', { ascending: false }),
+    svc.from('claim_signatures').select('id, claim_id, lane, authorization_text_version, signed_at').in('claim_id', ids).order('signed_at', { ascending: false }),
   ]);
   const packetOf = new Map(((packets ?? []) as Array<Record<string, unknown>>).map((p) => [String(p.claim_id), p]));
   const stateOf = new Map(((profiles ?? []) as Array<{ id: string; state: string | null }>).map((p) => [p.id, p.state]));
   const docCount = new Map<string, number>();
   for (const d of (docs ?? []) as Array<{ claim_id: string }>) docCount.set(d.claim_id, (docCount.get(d.claim_id) ?? 0) + 1);
   const laneOf = new Map<string, string>();
-  for (const s of (sigs ?? []) as Array<{ claim_id: string; lane: string }>) if (!laneOf.has(s.claim_id)) laneOf.set(s.claim_id, s.lane);
+  const versionOf = new Map<string, string>();
+  for (const s of (sigs ?? []) as Array<{ claim_id: string; lane: string; authorization_text_version: string }>) {
+    if (laneOf.has(s.claim_id)) continue;
+    laneOf.set(s.claim_id, s.lane);
+    versionOf.set(s.claim_id, s.authorization_text_version);
+  }
 
   for (const claim of claims) {
     if (out.handedBack + out.resign + out.failed >= limit || shouldStop()) break;
@@ -324,6 +330,7 @@ async function handBackPage(
       healthGiven: consented ? true : null,
       deskOpenJobs: 0,
       emailConfigured: true,
+      authorizationVersion: signed ? versionOf.get(claim.id) : undefined,
     });
     const keep = signed ? decision.agent && decision.lane === laneOf.get(claim.id) : decision.agent;
     if (keep) continue;

@@ -419,10 +419,17 @@ begin
     raise exception 'withdrawing must close the packet';
   end if;
   perform pg_temp.expect_error(format($q$select public.filing_move_claim(%L, %L, 'preparing', 'again')$q$, c, u), 'CM001');
-  -- Even back on self_file, a closed packet never returns to the agent lane.
-  update public.claims set status = 'self_file' where id = c;
-  perform pg_temp.expect_error(format($q$update public.claims set status = 'preparing' where id = %L$q$, c), 'CM001');
+  -- Withdrawn is final (0048): not even back to self_file.
+  perform pg_temp.expect_error(format($q$update public.claims set status = 'self_file' where id = %L$q$, c), 'CM001');
 end $$;
+reset role;
+-- Even on self_file, a closed packet never returns to the agent lane. 0048
+-- refuses withdrawn -> self_file, so lift it for this one step (rolled back).
+alter table public.claims disable trigger claims_withdrawn_final;
+update public.claims set status = 'self_file' where id = 'c0000000-0000-4000-8000-0000000000a6';
+alter table public.claims enable trigger claims_withdrawn_final;
+set local role service_role;
+select pg_temp.expect_error($q$update public.claims set status = 'preparing' where id = 'c0000000-0000-4000-8000-0000000000a6'$q$, 'CM001');
 reset role;
 
 \echo '  8 members read only their own one-click rows and never jobs, Jev runs or staff tables'

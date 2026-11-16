@@ -344,4 +344,36 @@ describe('the desk screen', () => {
     expect(view.documents).toEqual([{ id: ID(9), kind: 'receipt', label: 'Proof of purchase', mime: 'application/pdf', size_bytes: PDF.byteLength, sha256: sha(PDF) }]);
     expect(jobSummary({ ...JOB, status: 'queued', lock_owner: null }, { settlementTitle: 'Acme', deadline: null }, staff)).toMatchObject({ locked: false, locked_by_me: false });
   });
+
+  it('CAPTCHA matrix: staff may complete it only under a v2 signature with the settlement rule on', () => {
+    const staff = { id: ID(40), email: null, isAdmin: false, roles: ['filing_agent' as const] };
+    const modeFor = (version: string, rule: 'stop' | 'staff_completes_captcha') =>
+      buildDeskView(
+        {
+          job: { ...JOB, channel: 'filing_desk', lock_owner: null },
+          claim: { id: ID(1), user_id: ID(30), lawsuit_id: ID(2), status: 'queued' },
+          signature: { ...SIGNATURE, authorization_text_version: version, lane: 'filing_desk', statement_sha256: sha(SPEC.attestation.text), voided: false },
+          packet: PACKET,
+          packetRow: { id: ID(4), status: 'signed', health_consent_text_sha256: null },
+          spec: { id: ID(3), lawsuit_id: ID(2), version: 1, status: 'approved', content: SPEC },
+          settlement: {
+            lawsuit: { id: ID(2), slug: 'acme', title: 'Acme', status: 'open', review_status: 'published', deadline: '2026-12-31', claim_url: null, administrator_id: null, third_party_fee_status: 'unknown' },
+            administrator: null,
+            policy: { desk_challenge_mode: rule, channels: [{ type: 'filing_desk', enabled: true, daily_capacity: 10, sla_business_days: 2, min_days_before_deadline: 5, accepts_documents: true, instructions: null }] },
+            approvedSpec: null,
+          },
+          documents: [],
+        } as unknown as JobContext,
+        { outcome: 'pass', issues: [] } as never,
+        staff,
+      ).challenge_mode;
+    expect(modeFor('agent-auth-v1', 'staff_completes_captcha')).toBe('stop');
+    expect(modeFor('agent-auth-v2', 'staff_completes_captcha')).toBe('staff_completes_captcha');
+    expect(modeFor('agent-auth-v2', 'stop')).toBe('stop');
+    expect(modeFor('agent-auth-v1', 'stop')).toBe('stop');
+    // The current-version switch never widens what an older signature covers.
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    expect(modeFor('agent-auth-v1', 'staff_completes_captcha')).toBe('stop');
+    vi.unstubAllEnvs();
+  });
 });

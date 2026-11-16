@@ -7,8 +7,8 @@ live. The live Terms page (`src/app/terms/page.tsx`) is unchanged and must not b
 approves final wording. `ONE_CLICK_FILING_ENABLED` stays off until then.
 
 Where the product already shows members a text, this draft quotes or follows it so the Terms and the
-in-product text agree. The authorization members sign is `agent-auth-v1`
-(`src/lib/filing/v2/authorization-text.ts`); the e-signature consent is `esign-v1`
+in-product text agree. The authorization members sign is `agent-auth-v1` (`agent-auth-v2`, awaiting approval, adds the desk
+CAPTCHA sentence) (`src/lib/filing/v2/authorization-text.ts`); the e-signature consent is `esign-v1`
 (`src/lib/filing/v2/esign.ts`). Any change to either needs a new version in code.
 
 Notes for counsel are in *italics*. Placeholders are in [brackets].
@@ -101,11 +101,14 @@ each settlement's `third_party_fee_status` respected.*
 If the official site shows a code by email or text, an identity check or an account login, we stop and
 return the claim to you. We never use tools to get past any check on an official site.
 
-*Open founder decision (#52): whether a desk staff member may complete a CAPTCHA by hand for a
-settlement the firm approves. The software is built with the default "stop" (see
-`docs/legal/filing-desk-procedures.md`). If the firm allows it for any settlement, this paragraph, the
-desk text in `agent-auth-v1` ("the agent will stop") and design doc section 1 must change first, under a
-new authorization version.*
+*Founder decision (#52, 2026-11-15): a desk staff member may complete a CAPTCHA by hand. The software
+offers it only for claims signed under `agent-auth-v2` (drafted in
+`src/lib/filing/v2/authorization-text.ts`, awaiting the firm's approval; members keep signing
+`agent-auth-v1` until `AGENT_AUTH_CURRENT_VERSION=agent-auth-v2` is set) and only for settlements whose
+desk rule a legal_reviewer has turned on (see `docs/legal/filing-desk-procedures.md` section 4). If the
+firm approves v2, this paragraph should say the same, for example: "If the official site shows a CAPTCHA
+and the settlement allows it, a person at our filing desk may complete it by hand on the official site
+for you. We never use a bot or a solving service for it." Design doc section 1 should be updated too.*
 
 ### X.9 What we are not
 

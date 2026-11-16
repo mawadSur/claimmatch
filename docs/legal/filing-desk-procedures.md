@@ -36,20 +36,26 @@ today. The firm approves the procedure; the founder trains every `filing_agent` 
 check or a login, stop. Do not solve it or ask anyone to. Record "Stopped at a check" and which one; the
 claim goes back to the member to finish on the official site.
 
-Per-settlement switch (open founder decision on #52, built, off everywhere):
+Founder decision 2026-11-15: staff may complete a CAPTCHA by hand. This applies **only when all three
+hold**; otherwise the default above (stop) applies:
 
-- A legal_reviewer may set a settlement's desk rule to "Staff may complete a CAPTCHA by hand" on
-  `/admin/filing/settlements/{id}` (Controls), with notes on what the firm reviewed (the site's terms, the
-  administrator's position). The change is audited (`desk_challenge_rule_set`). Only a legal_reviewer can
-  change it either way; the database also refuses anyone else loosening it (0045).
-- Under that rule the desk agent may complete a CAPTCHA the site shows them, personally, by hand, in their
-  own browser. Never with a tool, extension, solving service or another person. Codes by email or text,
-  identity checks and account logins remain a hard stop.
-- **It has no effect yet.** `agent-auth-v1`, the authorization members sign, says the agent will stop at a
-  robot check. The rule applies only to claims signed under a new authorization version that says
-  otherwise, once the firm approves it and engineering adds it to `VERSIONS_COVERING_STAFF_CAPTCHA`
-  (`src/lib/filing/v2/authorization-text.ts`). A claim signed under an older version is always filed under
-  "stop", and its job screen says so.
+1. **The claim was signed under `agent-auth-v2`.** v2 tells the member that a person at the desk may complete
+   a CAPTCHA or similar robot check by hand on the official site on their behalf, never with a bot or a
+   solving service and never by getting around it. A claim signed under `agent-auth-v1` (which says the
+   agent stops at any robot check) always stops, whatever the settlement's rule says, for as long as that
+   signature stands. Members sign v2 only after the firm approves its text and the founder sets
+   `AGENT_AUTH_CURRENT_VERSION=agent-auth-v2` in Vercel (default: v1).
+2. **The settlement's desk rule is on.** A legal_reviewer sets it to "Staff may complete a CAPTCHA by hand"
+   on `/admin/filing/settlements/{id}` (Controls), with notes on what the firm reviewed (the site's terms,
+   the administrator's position). The change is audited (`desk_challenge_rule_set`). Only a legal_reviewer
+   can change it either way; the database also refuses anyone else loosening it (0045). Default: stop.
+3. **The check is a CAPTCHA.** Codes by email or text, identity checks and account logins remain a hard stop.
+
+The desk job screen shows the rule that applies to that claim (its signed version and the settlement rule
+together), so follow the screen. When it allows a CAPTCHA, the desk agent completes it personally, by hand,
+in their own browser. Never with a tool, extension, solving service or another person, and never by
+getting around the check. Engineering: `effectiveDeskChallengeMode` and `VERSIONS_COVERING_STAFF_CAPTCHA`
+in `src/lib/filing/v2/authorization-text.ts`.
 
 ## 5. Capacity and service level
 
@@ -83,7 +89,8 @@ submit it a second time.** Resolution, by a filing_agent or legal_reviewer, befo
 
 ## 7. What staff may never do
 
-- Never solve, relay, time or hand on a check for software, and never use tools to get past one.
+- Never solve, relay, time or hand on a check for software, and never use tools to get past one. The only
+  exception is completing a CAPTCHA yourself, by hand, where section 4 allows it.
 - Never fill a sworn statement, eligibility line or consent box for a member, or file something the member
   did not sign.
 - Never ask a member for, or enter, a PIN, passcode, one-time code, password, or bank/card details.

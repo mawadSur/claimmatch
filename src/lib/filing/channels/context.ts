@@ -176,6 +176,8 @@ export interface LaneFacts {
   healthGiven: boolean | null;
   deskOpenJobs: number | null;
   emailConfigured: boolean;
+  /** For a signed claim: the authorization version it was signed under. */
+  authorizationVersion?: string;
 }
 
 export function laneFor(settlement: SettlementFiling, facts: LaneFacts): LaneDecision {
@@ -193,6 +195,7 @@ export function laneFor(settlement: SettlementFiling, facts: LaneFacts): LaneDec
     },
     desk: facts.deskOpenJobs === null ? null : { openJobs: facts.deskOpenJobs },
     email: { configured: facts.emailConfigured },
+    authorizationVersion: facts.authorizationVersion,
   });
 }
 

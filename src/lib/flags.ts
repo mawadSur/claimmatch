@@ -48,6 +48,14 @@ function on(name: string): boolean {
   return process.env[name] === '1';
 }
 
+/**
+ * A server-only switch whose env var must be exactly `value` (never a client
+ * override). Anything else, including unset, is off.
+ */
+function equals(name: string, value: string): boolean {
+  return process.env[name] === value;
+}
+
 /** The server's values for the app: env only, never the app's overrides. */
 export function clientFlagValues(): Record<ClientFlagName, boolean> {
   const values = CLIENT_FLAG_NAMES.map((name) => [name, process.env[name] === '1'] as const);
@@ -376,6 +384,17 @@ export const flags = {
    * Google is enabled in Supabase Auth. Off: no Google button anywhere.
    */
   oauthSignIn: () => on('OAUTH_SIGN_IN_ENABLED'),
+  /**
+   * Founder decision 2026-11-15: which agent authorization new one-click
+   * members sign. Exactly "agent-auth-v2": the v2 text, under which a desk
+   * agent may complete a CAPTCHA by hand where the settlement's rule allows
+   * it. Anything else (the default): agent-auth-v1, where the agent stops at
+   * any robot check. Set it only after the law firm approves v2. Existing
+   * signatures keep the version they were signed under. Read it only through
+   * currentAuthorizationVersion() (src/lib/filing/v2/authorization-text.ts).
+   * Server only (not sent to the app).
+   */
+  agentAuthV2: () => equals('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2'),
   /**
    * "Continue with Apple" on /login and /signup, and Apple as a way to sign in
    * again before e-signing a one-click claim. Web only (the app is on hold).
