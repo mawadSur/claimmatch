@@ -9,8 +9,8 @@ the database, migrations 0042 and 0045).
 
 | # | Item | What the firm approves | Where it is approved / takes effect | Software status |
 |---|---|---|---|---|
-| 1 | Terms: agency section | Final wording of the agency section | Draft: `docs/legal/one-click-terms-agency-section.md`. Takes effect when engineering ports it into `src/app/terms/page.tsx` | Draft ready; live page untouched |
-| 2 | Privacy additions | Final wording | Draft: `docs/legal/one-click-privacy-additions.md`. Live: `src/app/privacy/page.tsx` | Draft ready; live page untouched. Data export of one-click records not built |
+| 1 | Terms: agency section | Final wording of the agency section | Draft: `docs/legal/one-click-terms-agency-section.md`. Live: `src/app/terms/page.tsx` | Founder sign-off 2026-11-17; flag-aware agent copy; full section X from draft still to port |
+| 2 | Privacy additions | Final wording | Draft: `docs/legal/one-click-privacy-additions.md`. Live: `src/app/privacy/page.tsx` | Founder sign-off 2026-11-17; draft sections pending live port. Account export includes one-click records |
 | 3 | E-SIGN consent | Text and version `esign-v1` | `src/lib/filing/v2/esign.ts` (`ESIGN_TEXT_V1`). A wording change means a new `ESIGN_TEXT_VERSION` | Built |
 | 4 | Agent authorization | Text `agent-auth-v1`, per channel, incl. what Lawsuit AI owes on a miss | `src/lib/filing/v2/authorization-text.ts`. A wording change means a new version (`AGENT_AUTHORIZATION_VERSIONS`); a published version's text is pinned by SHA-256 in `tests/filing-auth-versions.test.ts` | Built |
 | 4b | Agent authorization v2 (desk CAPTCHA) | Text `agent-auth-v2`: identical to v1 except the desk paragraph, which says a person at the filing desk may complete a CAPTCHA or similar robot check by hand on the official site on the member's behalf, never with a bot or solving service and never by getting around it; codes and identity checks still stop. Fee wording unchanged | `src/lib/filing/v2/authorization-text.ts` (`HOW_V2.filing_desk`). Takes effect only when the founder sets Vercel env `AGENT_AUTH_CURRENT_VERSION=agent-auth-v2` after this sign-off (default v1); claims already signed keep v1 and still stop at CAPTCHAs | Built, not in effect |
@@ -40,11 +40,11 @@ Decided by the founder on 2026-11-15:
 
 | # | Approved by | Date | Version / setting approved | Notes |
 |---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | esign-v1 | |
-| 4 | | | agent-auth-v1 | |
-| 4b | | | agent-auth-v2; then AGENT_AUTH_CURRENT_VERSION = agent-auth-v2 | |
+| 1 | Mohammed Awad | 17-11-2026 | Approved | |
+| 2 | Mohammed Awad | 17-11-2026 | Approved | |
+| 3 |Mohammed Awad | 17-11-2026 | esign-v1 / Approved | |
+| 4 | Mohammed Awad | 17-11-2026 | agent-auth-v1 / Approved | |
+| 4b | Mohammed Awad | 17-11-2026 | agent-auth-v2; then AGENT_AUTH_CURRENT_VERSION = agent-auth-v2 / Approved | |
 | 5 | (per settlement, in the console) | | | |
 | 6 | (per settlement, in the console) | | | |
 | 7 | (per settlement, in the catalog) | | | |

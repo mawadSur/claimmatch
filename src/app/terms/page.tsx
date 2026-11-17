@@ -108,8 +108,9 @@ export default function TermsPage() {
                   : 'Lawsuit AI does not file, submit or sign claims for you. You decide whether to file, and you file directly with the settlement administrator, usually on the official settlement website.'}
               </li>
               <li>
-                Lawsuit AI is not your agent or representative. It does not deal with
-                courts or settlement administrators for you.
+                {mayFile
+                  ? 'Except when you choose one-click filing for a settlement and sign an authorization for that claim, Lawsuit AI is not your agent. One-click filing covers only the claim you reviewed and signed; we do not deal with courts for you.'
+                  : 'Lawsuit AI is not your agent or representative. It does not deal with courts or settlement administrators for you.'}
               </li>
               <li>
                 Lawsuit AI never receives, holds or sends settlement payments, and never
