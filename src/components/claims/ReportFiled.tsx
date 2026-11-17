@@ -15,11 +15,13 @@ import {
   type SettlementContext,
 } from '@/lib/claims';
 import { formatDeadline } from '@/lib/utils';
-import { filingConfirmedProperties } from '@/lib/analytics/events';
-import { localISODate, startTracking, updateClaim } from './claim-api';
+import { ANALYTICS_EVENTS, claimSelfReportedProperties, filingConfirmedProperties } from '@/lib/analytics/events';
+import { localISODate, reportSelfFiled, startTracking, updateClaim } from './claim-api';
 import { AddConfirmationForm } from './AddConfirmationForm';
 import { ClaimError, type ClaimErrorState } from './ClaimError';
 import { ConfirmationNumberField, checkConfirmationNumber } from './ConfirmationNumberField';
+import { SelfFiledScreenshot } from './SelfFiledScreenshot';
+import type { SelfFiledReportView } from '@/lib/self-filed-report';
 
 type OnChange = (claim: ClaimView, message: string) => void;
 
@@ -33,6 +35,8 @@ export function ReportFiled({
   context,
   allowSave,
   onChange,
+  selfFiledEnabled = false,
+  selfFiledReport = null,
 }: {
   lawsuitId: string;
   claim: ClaimView | null;
@@ -40,11 +44,34 @@ export function ReportFiled({
   /** Offer "Save to my claims" (before tracking starts, while the settlement is open). */
   allowSave: boolean;
   onChange: OnChange;
+  /** SELF_FILED_REPORT_ENABLED: “I filed this myself” + optional screenshot. */
+  selfFiledEnabled?: boolean;
+  selfFiledReport?: SelfFiledReportView | null;
 }) {
-  if (claim?.status === 'reported_filed') return <ReportedCard claim={claim} context={context} onChange={onChange} />;
+  if (claim?.status === 'reported_filed') {
+    return (
+      <ReportedCard
+        claim={claim}
+        context={context}
+        onChange={onChange}
+        selfFiledEnabled={selfFiledEnabled}
+        selfFiledReport={selfFiledReport}
+        lawsuitId={lawsuitId}
+      />
+    );
+  }
   const display = claim ? displayClaimStatus(claim, context) : null;
   if (claim && display?.kind === 'submitted') {
-    return <SubmittedCard claim={claim} label={display.label} onChange={onChange} />;
+    return (
+      <SubmittedCard
+        claim={claim}
+        label={display.label}
+        onChange={onChange}
+        selfFiledEnabled={selfFiledEnabled}
+        selfFiledReport={selfFiledReport}
+        lawsuitId={lawsuitId}
+      />
+    );
   }
   // Without a claim, "I filed my claim" starts one: allowed until 30 days after
   // the deadline, also once the settlement no longer takes new claims.
@@ -68,6 +95,7 @@ export function ReportFiled({
       claim={claim}
       allowSave={allowSave && !claim}
       onChange={onChange}
+      selfFiledEnabled={selfFiledEnabled}
     />
   );
 }
@@ -77,11 +105,13 @@ function ReportForm({
   claim,
   allowSave,
   onChange,
+  selfFiledEnabled,
 }: {
   lawsuitId: string;
   claim: ClaimView | null;
   allowSave: boolean;
   onChange: OnChange;
+  selfFiledEnabled: boolean;
 }) {
   const posthog = usePostHog();
   const id = useId();
@@ -128,6 +158,35 @@ function ReportForm({
 
     setError(null);
     setBusy('report');
+    if (selfFiledEnabled) {
+      const saved = await reportSelfFiled({
+        lawsuit_id: lawsuitId,
+        ...(numberCheck.value ? { confirmation_number: numberCheck.value } : {}),
+        ...(dateCheck?.ok ? { filed_on: dateCheck.value } : {}),
+      });
+      setBusy(null);
+      if (!saved.ok) {
+        setError({ message: saved.error, status: saved.status });
+        return;
+      }
+      const filing = filingConfirmedProperties({
+        claimStatus: saved.claim.status,
+        withConfirmationNumber: Boolean(numberCheck.value),
+      });
+      if (filing) {
+        posthog?.capture('claim_reported_filed', filing);
+        posthog?.capture('claim_filed', filing);
+      }
+      const selfReported = claimSelfReportedProperties({ lawsuitId });
+      if (selfReported) posthog?.capture(ANALYTICS_EVENTS.claim_self_reported, selfReported);
+      onChange(
+        saved.claim,
+        numberCheck.value
+          ? 'Saved. Your claim shows as submitted with your confirmation number.'
+          : 'Saved. Your claim shows as Reported filed by you. Add the confirmation number when you get it.',
+      );
+      return;
+    }
     const current = await ensureClaim();
     if (!current) {
       setBusy(null);
@@ -212,6 +271,8 @@ function ReportForm({
             <>
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
             </>
+          ) : selfFiledEnabled ? (
+            'I filed this myself'
           ) : (
             'I filed my claim'
           )}
@@ -231,14 +292,56 @@ function ReportForm({
   );
 }
 
+function SelfFiledFollowUp({
+  lawsuitId,
+  initial,
+}: {
+  lawsuitId: string;
+  initial: SelfFiledReportView | null;
+}) {
+  const [report, setReport] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ClaimErrorState | null>(null);
+
+  async function ensureReport() {
+    if (report) return;
+    setBusy(true);
+    setError(null);
+    const saved = await reportSelfFiled({ lawsuit_id: lawsuitId });
+    setBusy(false);
+    if (!saved.ok) {
+      setError({ message: saved.error, status: saved.status });
+      return;
+    }
+    setReport(saved.report);
+  }
+
+  if (report) return <SelfFiledScreenshot report={report} onChange={setReport} />;
+  return (
+    <div className="space-y-2">
+      <button type="button" className="btn-secondary" onClick={() => void ensureReport()} disabled={busy}>
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+        Add a confirmation screenshot
+      </button>
+      <ClaimError error={error} />
+    </div>
+  );
+}
+
 function ReportedCard({
   claim,
   context,
   onChange,
+  selfFiledEnabled = false,
+  selfFiledReport = null,
+  lawsuitId,
 }: {
   claim: ClaimView;
   context: SettlementContext;
   onChange: OnChange;
+  selfFiledEnabled?: boolean;
+  selfFiledReport?: SelfFiledReportView | null;
+  lawsuitId: string;
 }) {
   const posthog = usePostHog();
   const [busy, setBusy] = useState(false);
@@ -289,6 +392,11 @@ function ReportedCard({
         </div>
       </div>
       <AddConfirmationForm claimId={claim.id} onSaved={onChange} />
+      {selfFiledEnabled ? (
+        <div className="border-t border-gray-100 pt-4">
+          <SelfFiledFollowUp lawsuitId={lawsuitId} initial={selfFiledReport} />
+        </div>
+      ) : null}
       {canUndo && (
         <div className="border-t border-gray-100 pt-4">
           {confirming ? (
@@ -337,7 +445,21 @@ function ReportedCard({
   );
 }
 
-function SubmittedCard({ claim, label, onChange }: { claim: ClaimView; label: string; onChange: OnChange }) {
+function SubmittedCard({
+  claim,
+  label,
+  onChange,
+  selfFiledEnabled = false,
+  selfFiledReport = null,
+  lawsuitId,
+}: {
+  claim: ClaimView;
+  label: string;
+  onChange: OnChange;
+  selfFiledEnabled?: boolean;
+  selfFiledReport?: SelfFiledReportView | null;
+  lawsuitId: string;
+}) {
   const [editing, setEditing] = useState(false);
   return (
     <div className="space-y-4">
@@ -369,6 +491,11 @@ function SubmittedCard({ claim, label, onChange }: { claim: ClaimView; label: st
           <Pencil className="h-4 w-4" aria-hidden /> Correct the number
         </button>
       )}
+      {selfFiledEnabled ? (
+        <div className="border-t border-gray-100 pt-4">
+          <SelfFiledFollowUp lawsuitId={lawsuitId} initial={selfFiledReport} />
+        </div>
+      ) : null}
     </div>
   );
 }

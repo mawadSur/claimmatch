@@ -48,6 +48,7 @@ describe('checkRequiredSchema', () => {
     expect(result.present).toContain('lawsuits.final_approval_hearing_at');
     expect(result.present).toContain('beta_feedback');
     expect(result.present).toContain('verification_drafts');
+    expect(result.present).toContain('self_filed_reports');
     expect(result.present).toContain('persist_first_attribution');
     expect(result.present).toContain('profiles.first_traffic_channel');
   });

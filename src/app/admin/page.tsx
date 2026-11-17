@@ -31,6 +31,7 @@ import { ReferrerChannelCard } from '@/components/admin/ReferrerChannelCard';
 import { VerificationCoverageCard } from '@/components/admin/VerificationCoverageCard';
 import { SoftLaunchCard } from '@/components/admin/SoftLaunchCard';
 import { BetaFeedbackList } from '@/components/admin/BetaFeedbackList';
+import { SelfFiledReportsList, type AdminSelfFiledRow } from '@/components/admin/SelfFiledReportsList';
 import { BrokenLinksList } from '@/components/admin/BrokenLinksList';
 import { flags } from '@/lib/flags';
 import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
@@ -131,6 +132,9 @@ export default async function AdminOverviewPage() {
   const betaFeedback = flags.betaFeedback()
     ? await loadBetaFeedbackRows(svc).catch(() => [])
     : [];
+  const selfFiledReports = flags.selfFiledReport()
+    ? await loadSelfFiledReportRows(svc).catch(() => [])
+    : [];
   const brokenLinks = flags.linkCheck()
     ? await listBrokenOfficialLinks(50).catch(() => [])
     : [];
@@ -180,6 +184,7 @@ export default async function AdminOverviewPage() {
       {flags.aiReferrerAttribution() ? <ReferrerChannelCard rows={referrerChannels} /> : null}
       {verificationCoverage ? <VerificationCoverageCard coverage={verificationCoverage} /> : null}
       {flags.betaFeedback() ? <BetaFeedbackList rows={betaFeedback} /> : null}
+      {flags.selfFiledReport() ? <SelfFiledReportsList rows={selfFiledReports} /> : null}
       {flags.linkCheck() ? <BrokenLinksList rows={brokenLinks} /> : null}
       {flags.missingCloseQueue() ? (
         <section aria-labelledby="missing-feed-title">
@@ -570,6 +575,51 @@ function LastIngestRun({ run }: { run: IngestRun | null }) {
       )}
     </section>
   );
+}
+
+async function loadSelfFiledReportRows(
+  svc: ReturnType<typeof createServiceClient>,
+): Promise<AdminSelfFiledRow[]> {
+  try {
+    const { data, error } = await svc
+      .from('self_filed_reports')
+      .select(
+        'id, user_id, created_at, confirmation_number, confirmation_storage_path, lawsuit:lawsuits(title, slug)',
+      )
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error || !data) return [];
+    const rows = data as Array<{
+      id: string;
+      user_id: string;
+      created_at: string;
+      confirmation_number: string | null;
+      confirmation_storage_path: string | null;
+      lawsuit?: { title?: string | null; slug?: string | null } | { title?: string | null; slug?: string | null }[] | null;
+    }>;
+    const ids = rows.map((r) => r.user_id);
+    const emails = new Map<string, string | null>();
+    if (ids.length > 0) {
+      const { data: profiles } = await svc.from('profiles').select('id, email').in('id', ids);
+      for (const p of (profiles ?? []) as Array<{ id: string; email: string | null }>) {
+        emails.set(p.id, p.email);
+      }
+    }
+    return rows.map((row) => {
+      const lawsuit = Array.isArray(row.lawsuit) ? row.lawsuit[0] ?? null : row.lawsuit ?? null;
+      return {
+        id: row.id,
+        created_at: row.created_at,
+        email: emails.get(row.user_id) ?? null,
+        lawsuit_title: lawsuit?.title ?? null,
+        lawsuit_slug: lawsuit?.slug ?? null,
+        has_confirmation_number: Boolean(row.confirmation_number && row.confirmation_number.trim()),
+        has_screenshot: Boolean(row.confirmation_storage_path && row.confirmation_storage_path.trim()),
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 async function loadBetaFeedbackRows(

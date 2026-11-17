@@ -30,6 +30,11 @@ export const ANALYTICS_EVENTS = {
   claim_reported_filed: 'claim_reported_filed',
   /** Confirmed filing. Same evidence as claim_reported_filed; funnel alias. */
   claim_filed: 'claim_filed',
+  /**
+   * "I filed this myself" saved. Settlement id only — never a confirmation
+   * number, screenshot path, or other PII.
+   */
+  claim_self_reported: 'claim_self_reported',
   match_feedback: 'match_feedback',
   match_alert_sent: 'match_alert_sent',
   match_alert_clicked: 'match_alert_clicked',
@@ -154,4 +159,13 @@ export function claimTimelineViewedProperties(input: {
 /** Match-reason line shown. Count only — never the reason text. */
 export function matchReasonViewedProperties(input: { matchCount: number }): { match_count: number } {
   return { match_count: Math.max(0, Math.floor(input.matchCount)) };
+}
+
+/** Self-filed report saved. Settlement id only — never a confirmation number. */
+export function claimSelfReportedProperties(input: {
+  lawsuitId: string;
+}): { lawsuit_id: string } | null {
+  const id = input.lawsuitId.trim();
+  if (!id) return null;
+  return { lawsuit_id: id };
 }

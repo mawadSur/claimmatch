@@ -47,6 +47,16 @@ export interface AccountExportPayload {
   }>;
   /** One-click filing records, member-safe fields only (src/lib/account-export-filing.ts). */
   one_click_filing: OneClickExport;
+  /** Self-filed reports (0049). Screenshot metadata only — never a storage path. */
+  self_filed_reports: Array<{
+    lawsuit_title: string | null;
+    lawsuit_slug: string | null;
+    confirmation_number: string | null;
+    has_screenshot: boolean;
+    screenshot_mime: string | null;
+    screenshot_bytes: number | null;
+    created_at: string;
+  }>;
 }
 
 const EMPTY_ONE_CLICK: OneClickExport = {
@@ -70,6 +80,15 @@ export function buildAccountExport(input: {
   >;
   claims: Array<Pick<Claim, 'id' | 'status'> & { lawsuit_title?: string | null }>;
   oneClick?: OneClickExport;
+  selfFiledReports?: Array<{
+    lawsuit_title?: string | null;
+    lawsuit_slug?: string | null;
+    confirmation_number?: string | null;
+    confirmation_storage_path?: string | null;
+    confirmation_mime?: string | null;
+    confirmation_bytes?: number | null;
+    created_at: string;
+  }>;
 }): AccountExportPayload {
   const profile = input.profile;
   return {
@@ -110,5 +129,14 @@ export function buildAccountExport(input: {
       status: claim.status,
     })),
     one_click_filing: input.oneClick ?? EMPTY_ONE_CLICK,
+    self_filed_reports: (input.selfFiledReports ?? []).map((row) => ({
+      lawsuit_title: row.lawsuit_title ?? null,
+      lawsuit_slug: row.lawsuit_slug ?? null,
+      confirmation_number: row.confirmation_number ?? null,
+      has_screenshot: Boolean(row.confirmation_storage_path && row.confirmation_storage_path.trim()),
+      screenshot_mime: row.confirmation_mime ?? null,
+      screenshot_bytes: row.confirmation_bytes ?? null,
+      created_at: row.created_at,
+    })),
   };
 }

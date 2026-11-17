@@ -103,6 +103,7 @@ form click is not a filing.
 | `claim_tracking_started` | Claim row created to track | — | Filed |
 | `claim_reported_filed` | User confirmed filing **and** the claim row saved as `reported_filed` or `submitted` | `evidence=user_reported_and_saved`, `claim_status`, `with_confirmation_number`, `is_filing=true` | Official-form click; dashboard “I submitted this” |
 | `claim_filed` | Same moment as `claim_reported_filed` (funnel alias) | Same evidence as `claim_reported_filed` | Official-form click |
+| `claim_self_reported` | “I filed this myself” saved (`SELF_FILED_REPORT_ENABLED=1`) | `lawsuit_id` only | Confirmation number; screenshot path |
 | `match_alert_sent` | Server: a match-alert email was accepted by Resend | `claim_count`, `source=profile\|subscriber` | Dry-run; flag off |
 | `match_alert_clicked` | Server: one-click start token consumed | `created_user` | Scanner GET |
 | `match_alert_signup_completed` | Server: token created a new account (no password) | `evidence=match_alert_token` | Existing-user sign-in |

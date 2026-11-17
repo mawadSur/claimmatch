@@ -15,6 +15,8 @@ const h = vi.hoisted(() => ({
   deleteUserError: null as { message: string } | null,
   /** claim_documents rows (0041) the route reads before deleting rows. */
   documents: [] as Array<{ storage_path: string }>,
+  /** self_filed_reports screenshot paths (0049). */
+  screenshots: [] as Array<{ confirmation_storage_path: string | null }>,
 }));
 
 // The service client records every write the route makes, in order. A delete
@@ -28,7 +30,17 @@ vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: () => ({
     from: (table: string) => ({
       select: () => ({
-        eq: () => ({ limit: async () => ({ data: table === 'claim_documents' ? h.documents : [], error: null }) }),
+        eq: () => ({
+          limit: async () => ({
+            data:
+              table === 'claim_documents'
+                ? h.documents
+                : table === 'self_filed_reports'
+                  ? h.screenshots
+                  : [],
+            error: null,
+          }),
+        }),
       }),
       insert: async (row: unknown) => {
         h.ops.push({ op: 'insert', table, row });
@@ -119,6 +131,7 @@ beforeEach(() => {
   h.ops = [];
   h.deleteUserError = null;
   h.documents = [];
+  h.screenshots = [];
   errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -159,6 +172,23 @@ describe('POST /api/account/delete', () => {
       paths: [`${webId}/claim-1/doc-1.pdf`, `${webId}/claim-1/evidence/shot-1.png`],
     });
     expect(removed).toBeLessThan(h.ops.findIndex((o) => o.op === 'delete' && o.table === 'claim_documents'));
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+
+  it('removes the account’s self-filed confirmation screenshots from Storage before their rows', async () => {
+    h.screenshots = [
+      { confirmation_storage_path: `${webId}/report-1/confirmation.png` },
+      { confirmation_storage_path: 'someone-else/report-9/confirmation.pdf' },
+      { confirmation_storage_path: null },
+    ];
+    expect((await remove()).status).toBe(200);
+    const removed = h.ops.findIndex((o) => o.op === 'removeFiles' && o.bucket === 'self-filed-confirmations');
+    expect(h.ops[removed]).toEqual({
+      op: 'removeFiles',
+      bucket: 'self-filed-confirmations',
+      paths: [`${webId}/report-1/confirmation.png`],
+    });
+    expect(removed).toBeLessThan(h.ops.findIndex((o) => o.op === 'delete' && o.table === 'self_filed_reports'));
     expect(errorLog).not.toHaveBeenCalled();
   });
 

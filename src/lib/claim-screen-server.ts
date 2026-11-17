@@ -28,6 +28,7 @@ import {
 import { assistedFilingAllowed } from '@/lib/filing/queue';
 import { flags } from '@/lib/flags';
 import { officialSiteUrl } from '@/lib/lawsuit-display';
+import { toSelfFiledReportView, type SelfFiledReportView } from '@/lib/self-filed-report';
 
 export type ClaimScreen =
   | { kind: 'load_error'; what: 'this settlement' | 'your claim' }
@@ -46,6 +47,7 @@ export type ClaimScreen =
       claim: ClaimView | null;
       profile: PacketProfile | null;
       flowSettlement: ClaimFlowSettlement;
+      selfFiledReport: SelfFiledReportView | null;
     };
 
 export async function loadClaimScreen(
@@ -87,6 +89,18 @@ export async function loadClaimScreen(
     ),
     payoutReportEnabled: flags.payoutReport(),
     claimTimelineEnabled: flags.claimTimeline(),
+    selfFiledReportEnabled: flags.selfFiledReport(),
   });
-  return { kind: 'flow', settlement, context, claim, profile, flowSettlement };
+  let selfFiledReport: SelfFiledReportView | null = null;
+  if (flags.selfFiledReport()) {
+    const { data: reportRow, error: reportError } = await supabase
+      .from('self_filed_reports')
+      .select('id, lawsuit_id, claim_id, confirmation_storage_path, confirmation_mime, confirmation_bytes')
+      .eq('user_id', userId)
+      .eq('lawsuit_id', settlement.id)
+      .maybeSingle();
+    if (reportError) logClaimsError('self-filed report lookup failed', reportError);
+    else if (reportRow) selfFiledReport = toSelfFiledReportView(reportRow as Parameters<typeof toSelfFiledReportView>[0]);
+  }
+  return { kind: 'flow', settlement, context, claim, profile, flowSettlement, selfFiledReport };
 }

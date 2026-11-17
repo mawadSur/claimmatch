@@ -34,6 +34,8 @@ export interface ClaimFlowSettlement {
   payoutReportEnabled?: boolean;
   /** After-you-file timeline (CLAIM_TIMELINE_ENABLED=1). */
   claimTimelineEnabled?: boolean;
+  /** “I filed this myself” self-report + screenshot (SELF_FILED_REPORT_ENABLED=1). */
+  selfFiledReportEnabled?: boolean;
   /** Listed hearing date from the settlement record. Never guessed. */
   finalApprovalHearingAt?: string | null;
   /** Listed payment-timing sentence from the settlement record. Never guessed. */
@@ -67,6 +69,7 @@ export function toClaimFlowSettlement(
     assistedFilingAllowed: boolean;
     payoutReportEnabled: boolean;
     claimTimelineEnabled?: boolean;
+    selfFiledReportEnabled?: boolean;
   },
 ): ClaimFlowSettlement {
   return {
@@ -83,6 +86,7 @@ export function toClaimFlowSettlement(
     assistedFilingAllowed: opts.assistedFilingAllowed,
     payoutReportEnabled: opts.payoutReportEnabled,
     claimTimelineEnabled: opts.claimTimelineEnabled === true,
+    selfFiledReportEnabled: opts.selfFiledReportEnabled === true,
     finalApprovalHearingAt: row.final_approval_hearing_at ?? null,
     paymentTimingText: row.payment_timing_text ?? null,
   };

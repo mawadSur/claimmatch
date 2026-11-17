@@ -57,6 +57,8 @@ function match(id: string, slug: string, strength: 'strong' | 'possible'): Dashb
     label: strength === 'strong' ? 'Strong match' : 'Possible match',
     officialUrl: null,
     score: 1,
+    payoutMin: null,
+    payoutMax: null,
   };
 }
 

@@ -28,6 +28,7 @@ export async function GET() {
     { data: consentRows },
     { data: matchRows },
     { data: claimRows },
+    { data: selfFiledRows },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
@@ -43,6 +44,12 @@ export async function GET() {
       .select('score, reasons, dismissed, notified_at, lawsuit:lawsuits(title, slug)')
       .eq('user_id', user.id),
     supabase.from('claims').select('id, lawsuit_title, status').eq('user_id', user.id),
+    supabase
+      .from('self_filed_reports')
+      .select(
+        'confirmation_number, confirmation_storage_path, confirmation_mime, confirmation_bytes, created_at, lawsuit:lawsuits(title, slug)',
+      )
+      .eq('user_id', user.id),
   ]);
   const oneClick = await loadOneClickExport({ member: supabase, service: createServiceClient(), userId: user.id });
   if (!oneClick.ok) {
@@ -85,6 +92,25 @@ export async function GET() {
     })),
     claims: (claimRows ?? []) as Array<Pick<Claim, 'id' | 'status'> & { lawsuit_title?: string | null }>,
     oneClick: oneClick.data,
+    selfFiledReports: ((selfFiledRows ?? []) as Array<{
+      confirmation_number?: string | null;
+      confirmation_storage_path?: string | null;
+      confirmation_mime?: string | null;
+      confirmation_bytes?: number | null;
+      created_at: string;
+      lawsuit?: { title?: string | null; slug?: string | null } | { title?: string | null; slug?: string | null }[] | null;
+    }>).map((row) => {
+      const lawsuit = Array.isArray(row.lawsuit) ? row.lawsuit[0] ?? null : row.lawsuit ?? null;
+      return {
+        lawsuit_title: lawsuit?.title ?? null,
+        lawsuit_slug: lawsuit?.slug ?? null,
+        confirmation_number: row.confirmation_number ?? null,
+        confirmation_storage_path: row.confirmation_storage_path ?? null,
+        confirmation_mime: row.confirmation_mime ?? null,
+        confirmation_bytes: row.confirmation_bytes ?? null,
+        created_at: row.created_at,
+      };
+    }),
   });
 
   return new NextResponse(JSON.stringify(payload, null, 2), {

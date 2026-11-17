@@ -11,6 +11,8 @@ import { matchReasonLine } from '@/lib/match-reason';
 import { MatchFeedback } from './MatchFeedback';
 import { DismissMatchButton } from './DismissMatchButton';
 import { MatchReasonLine } from './MatchReasonLine';
+import { OwedEstimateHeader } from './OwedEstimateHeader';
+import { visibleOwedEstimate } from '@/lib/owed-estimate';
 
 /**
  * Ranked matches for the signed-in user. Strong first; Possible is collapsed
@@ -25,6 +27,8 @@ export function YourMatches({
   oneClickLanes = null,
   canDismiss = false,
   matchReasonEnabled = false,
+  owedEstimateEnabled = false,
+  selfFiledReportEnabled = false,
 }: {
   items: DashboardMatch[];
   failed?: boolean;
@@ -40,9 +44,12 @@ export function YourMatches({
   oneClickLanes?: Readonly<Record<string, LaneView>> | null;
   canDismiss?: boolean;
   matchReasonEnabled?: boolean;
+  owedEstimateEnabled?: boolean;
+  selfFiledReportEnabled?: boolean;
 }) {
   const grouped = groupDashboardMatches(items);
   const hasAny = items.length > 0;
+  const owed = owedEstimateEnabled && !failed ? visibleOwedEstimate(items) : null;
 
   return (
     <section aria-labelledby="your-matches-title">
@@ -61,6 +68,8 @@ export function YourMatches({
           Edit profile
         </Link>
       </div>
+
+      {owed ? <OwedEstimateHeader estimate={owed} /> : null}
 
       {failed ? (
         <div
@@ -96,6 +105,7 @@ export function YourMatches({
                 oneClickLanes={oneClickLanes}
                 canDismiss={canDismiss}
                 matchReasonEnabled={matchReasonEnabled}
+                selfFiledReportEnabled={selfFiledReportEnabled}
               />
             )}
           </div>
@@ -119,6 +129,7 @@ export function YourMatches({
                   oneClickLanes={null}
                   canDismiss={canDismiss}
                   matchReasonEnabled={matchReasonEnabled}
+                  selfFiledReportEnabled={selfFiledReportEnabled}
                 />
               </div>
             </details>
@@ -167,6 +178,7 @@ function MatchList({
   oneClickLanes,
   canDismiss,
   matchReasonEnabled,
+  selfFiledReportEnabled,
 }: {
   items: DashboardMatch[];
   metricsEnabled: boolean;
@@ -174,6 +186,7 @@ function MatchList({
   oneClickLanes: Readonly<Record<string, LaneView>> | null;
   canDismiss: boolean;
   matchReasonEnabled: boolean;
+  selfFiledReportEnabled: boolean;
 }) {
   return (
     <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
@@ -230,13 +243,23 @@ function MatchList({
             )}
           </div>
           {item.strength === 'strong' && oneClickLanes?.[item.id]?.agent ? (
-            <Link
-              href={`/claim/${item.slug}#one-click`}
-              className="btn-primary shrink-0 !px-4 !py-2 text-sm"
-              aria-label={`${ONE_CLICK_AGENT_TITLE}: ${item.title}`}
-            >
-              {ONE_CLICK_AGENT_TITLE} <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
+            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+              <Link
+                href={`/claim/${item.slug}#one-click`}
+                className="btn-primary !px-4 !py-2 text-sm"
+                aria-label={`${ONE_CLICK_AGENT_TITLE}: ${item.title}`}
+              >
+                {ONE_CLICK_AGENT_TITLE} <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              {selfFiledReportEnabled ? (
+                <Link
+                  href={`/claim/${item.slug}#self-filed`}
+                  className="text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  I filed this myself
+                </Link>
+              ) : null}
+            </div>
           ) : fileForYou ? (
             <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
               <Link
@@ -252,15 +275,33 @@ function MatchList({
               >
                 {SELF_FILE_SECONDARY}
               </Link>
+              {selfFiledReportEnabled ? (
+                <Link
+                  href={`/claim/${item.slug}#self-filed`}
+                  className="text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  I filed this myself
+                </Link>
+              ) : null}
             </div>
           ) : (
-            <Link
-              href={`/claim/${item.slug}`}
-              className="btn-secondary shrink-0 !px-4 !py-2 text-sm"
-              aria-label={`How to file: ${item.title}`}
-            >
-              How to file <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
+            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+              <Link
+                href={`/claim/${item.slug}`}
+                className="btn-secondary !px-4 !py-2 text-sm"
+                aria-label={`How to file: ${item.title}`}
+              >
+                How to file <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              {selfFiledReportEnabled ? (
+                <Link
+                  href={`/claim/${item.slug}#self-filed`}
+                  className="text-sm font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  I filed this myself
+                </Link>
+              ) : null}
+            </div>
           )}
         </li>
       ))}
