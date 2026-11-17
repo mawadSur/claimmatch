@@ -55,3 +55,13 @@ export function claimLegalDisclaimer(
   if (!filesThisClaim || !oneClickOn) return legalDisclaimer(undefined, free);
   return adapt(LEGAL_DISCLAIMER, SELF_FILE_LEGAL_SENTENCE, CLAIM_AGENT_LEGAL_SENTENCE, true, free);
 }
+
+/** Per-claim disclaimer for the native app (same rule as claimLegalDisclaimer, app wording). */
+export function claimAppLegalDisclaimer(
+  filesThisClaim: boolean,
+  oneClickOn = flags.oneClickFiling(),
+  free = !flags.feeDisclosure(),
+): string {
+  if (!filesThisClaim || !oneClickOn) return appLegalDisclaimer(undefined, free);
+  return adapt(APP_LEGAL_DISCLAIMER, SELF_FILE_LEGAL_SENTENCE, CLAIM_AGENT_LEGAL_SENTENCE, true, free);
+}

@@ -35,11 +35,11 @@ export function LegalDisclaimer({ style, testID }: DisclaimerProps) {
 }
 
 /** The compact box (Disclaimer compact): four lines and "Show all". Claim screen and dashboard footers. */
-export function CompactDisclaimer({ style, testID }: DisclaimerProps) {
+export function CompactDisclaimer({ style, testID, text }: DisclaimerProps & { text?: string }) {
   const { legal } = useConfig();
   const [expanded, setExpanded] = useState(false);
   return (
-    <DisclaimerBox text={legal.disclaimer} numberOfLines={expanded ? undefined : 4} style={style} testID={testID}>
+    <DisclaimerBox text={text ?? legal.disclaimer} numberOfLines={expanded ? undefined : 4} style={style} testID={testID}>
       {expanded ? null : (
         <Button
           label={shared.showAll.text}

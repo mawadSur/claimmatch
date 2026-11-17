@@ -83,7 +83,8 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   },
   {
     env: 'ASSISTED_FILING_ENABLED',
-    description: 'Full-service filing as the primary path (e-sign, queue, worker).',
+    description:
+      'Legacy full-service worker (retired). /api/filing/authorize returns 410. Use ONE_CLICK_FILING_ENABLED for agent filing.',
     read: () => flags.assistedFiling(),
   },
   {

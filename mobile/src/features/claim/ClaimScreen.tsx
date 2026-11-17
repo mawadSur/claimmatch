@@ -107,7 +107,7 @@ function FlowScreen({
           ) : null}
           <ClaimHeader category={data.category} title={data.title} />
           <ClaimFlow data={data} claimAtLoad={claimAtLoad} />
-          <CompactDisclaimer testID="claim-disclaimer" />
+          <CompactDisclaimer testID="claim-disclaimer" text={data.legalDisclaimer} />
           {/* The web's site footer, under every page, credits SettleSignal (src/components/Footer.tsx). */}
           <SettleSignalCredit variant="footer" testID="claim-credit" />
         </FlowTargetsProvider>

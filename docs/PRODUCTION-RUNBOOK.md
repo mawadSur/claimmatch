@@ -1,5 +1,7 @@
 # Production runbook (trust reset + pre-fill)
 
+**Also read:** `docs/STAGING-GO-LIVE.md` (staging project + rehearsal), `scripts/apply-pending-migrations-notes.md` (apply log), `docs/GO-LIVE-ENV.md` (flags 8–10).
+
 Production Supabase currently has only `0001`–`0003` applied. Apply the rest
 in this order. Every file is additive: nothing is deleted.
 

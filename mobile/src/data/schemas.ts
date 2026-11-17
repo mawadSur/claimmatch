@@ -172,6 +172,7 @@ const claimScreenSchema = z.discriminatedUnion('kind', [
     profile: packetProfileSchema.nullable(),
     // Absent from older servers; null while ONE_CLICK_FILING_ENABLED is off.
     oneClick: z.object({ canStart: z.boolean() }).nullable().optional(),
+    legalDisclaimer: z.string().min(1).optional(),
   }),
 ]);
 

@@ -93,6 +93,11 @@ export type ClaimScreenResponse =
        * one-click claim under way yet).
        */
       oneClick?: { canStart: boolean } | null;
+      /**
+       * Claim-page legal box when one-click is on and this settlement is an agent
+       * lane (checklist item 13). Omitted when the app-wide config text applies.
+       */
+      legalDisclaimer?: string;
     };
 
 /** GET /api/mobile/claim/[slug], status 404 (not_found) or 503 (load_error). */
