@@ -26,19 +26,19 @@ import { HubLinks } from '@/components/settlement/HubLinks';
 import { pageUrl } from '@/lib/settlement-seo';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
-29	29
+
 const DESCRIPTION =
   'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by Lawsuit AI, so check the official site before you file. Filing is free.';
-32	32
+
 /** Public catalog: no per-user content. CDN / ISR cache for 15 minutes. */
 export const revalidate = 900;
-35	35
+
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-37	37
+
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
-41	41
+
 function catalogFilters(params: Record<string, string | string[] | undefined>) {
   return {
     q: cleanSearchTerm(firstParam(params.q)),
@@ -48,7 +48,7 @@ function catalogFilters(params: Record<string, string | string[] | undefined>) {
     page: parsePage(firstParam(params.page)),
   };
 }
-51	51
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -90,12 +90,12 @@ export async function generateMetadata({
     },
   };
 }
-93	93
+
 export default async function LawsuitsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const { q, category, hasDeadline, proof, page } = catalogFilters(params);
   const paginationOn = flags.lawsuitsPagination();
-98	98
+
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it.
   const catalog = await lookupLawsuits();
@@ -107,7 +107,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
-110	110
+
   const prevHref =
     paginationOn && paged.page > 1
       ? catalogPath({ q, category, hasDeadline, proof, page: paged.page - 1 })
@@ -116,7 +116,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
     paginationOn && paged.page < paged.totalPages
       ? catalogPath({ q, category, hasDeadline, proof, page: paged.page + 1 })
       : null;
-119	119
+
   return (
     <>
       {prevHref ? <link rel="prev" href={pageUrl(prevHref)} /> : null}
@@ -134,17 +134,17 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
               : ''}
           </p>
-137	137
+
           {flags.matchPreview() && (
             <div className="mt-6 max-w-3xl">
               <AccountMatchBanner />
             </div>
           )}
-143	143
+
           <div className="mt-6">
             <HubLinks categories={categories} current="all" />
           </div>
-147	147
+
           <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
             <div className="text-sm text-amber-950">
@@ -158,7 +158,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           </div>
         </div>
       </section>
-161	161
+
       <section className="container-page py-8 sm:py-10">
         <Suspense
           fallback={
@@ -167,7 +167,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
         >
           <LawsuitFilters categories={categories} />
         </Suspense>
-170	170
+
         <p className="mt-6 text-sm text-ink-muted" role="status" aria-live="polite">
           {catalog.error ? (
             'Settlements didn’t load.'
@@ -201,7 +201,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             </>
           )}
         </p>
-204	204
+
         {catalog.error ? (
           <EmptyState
             icon={<RefreshCw className="h-6 w-6" aria-hidden="true" />}
@@ -251,7 +251,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             )}
           </>
         )}
-254	254
+
         {showsSettleSignal && (
           <p className="mt-10 text-xs text-ink-muted">
             Listings from SettleSignal are adapted from{' '}
@@ -279,7 +279,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
     </>
   );
 }
-282	282
+
 function Pagination({
   page,
   totalPages,
@@ -321,7 +321,7 @@ function Pagination({
     </nav>
   );
 }
-324	324
+
 function EmptyState({
   icon,
   title,
@@ -344,4 +344,3 @@ function EmptyState({
     </div>
   );
 }
-347	347
