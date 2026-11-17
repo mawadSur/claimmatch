@@ -147,6 +147,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           nowIso={now.toISOString()}
           profile={screen.profile}
           oneClick={oneClick}
+          selfFiledReport={screen.selfFiledReport}
         />
       </div>
       <div className="mt-10">

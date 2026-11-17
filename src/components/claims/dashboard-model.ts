@@ -31,6 +31,7 @@ import {
 } from '../../lib/matching';
 import { profileHasMatchSignals } from '../../lib/profile-attributes';
 import { buildClaimTimeline, type ClaimTimelineView } from '../../lib/claim-timeline';
+import { finitePayoutAmount } from '../../lib/owed-estimate';
 import type { Lawsuit, Match, Profile } from '../../lib/types';
 import { formatDeadline } from '../../lib/utils';
 
@@ -239,6 +240,10 @@ export interface DashboardMatch {
   score: number;
   matchId?: string;
   isNew?: boolean;
+  /** Settlement record payout_min. Null when the listing has no low figure. */
+  payoutMin: number | null;
+  /** Settlement record payout_max. Null when the listing has no high figure. */
+  payoutMax: number | null;
 }
 
 /** Possible matches shown after Strong; extras stay hidden behind the cap. */
@@ -302,6 +307,8 @@ export function buildDashboardMatches(
         label: matchStrengthLabel(strength),
         officialUrl: officialSiteUrl(lawsuit.claim_url),
         score: result.score,
+        payoutMin: finitePayoutAmount(lawsuit.payout_min),
+        payoutMax: finitePayoutAmount(lawsuit.payout_max),
       },
     ];
   });
@@ -345,6 +352,8 @@ export function buildDashboardMatchesFromStored(
         score: Number(row.score) || 0,
         matchId: row.id,
         isNew: isNewStoredMatch(row.created_at, now),
+        payoutMin: finitePayoutAmount(lawsuit.payout_min),
+        payoutMax: finitePayoutAmount(lawsuit.payout_max),
       };
     })
     .sort((a, b) => {

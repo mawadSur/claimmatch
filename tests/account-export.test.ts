@@ -64,5 +64,40 @@ describe('account export payload', () => {
     expect(payload.consent[0].category).toBe('purchase');
     expect(payload.matches[0].lawsuit_slug).toBe('example');
     expect(payload.claims[0].id).toBe('claim-1');
+    expect(payload.self_filed_reports).toEqual([]);
+  });
+
+  it('includes self-filed reports without the private storage path', () => {
+    const payload = buildAccountExport({
+      now: new Date('2026-11-17T12:00:00.000Z'),
+      profile,
+      facts: [],
+      consent: [],
+      matches: [],
+      claims: [],
+      selfFiledReports: [
+        {
+          lawsuit_title: 'Example',
+          lawsuit_slug: 'example',
+          confirmation_number: 'ABC-1',
+          confirmation_storage_path: 'user-1/report-1/confirmation.png',
+          confirmation_mime: 'image/png',
+          confirmation_bytes: 2048,
+          created_at: '2026-11-17T12:00:00.000Z',
+        },
+      ],
+    });
+    expect(payload.self_filed_reports).toEqual([
+      {
+        lawsuit_title: 'Example',
+        lawsuit_slug: 'example',
+        confirmation_number: 'ABC-1',
+        has_screenshot: true,
+        screenshot_mime: 'image/png',
+        screenshot_bytes: 2048,
+        created_at: '2026-11-17T12:00:00.000Z',
+      },
+    ]);
+    expect(JSON.stringify(payload)).not.toContain('user-1/report-1');
   });
 });

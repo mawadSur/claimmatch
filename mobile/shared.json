@@ -13,6 +13,7 @@
     "lib/claim-input.ts",
     "lib/claims.ts",
     "lib/claim-timeline.ts",
+    "lib/owed-estimate.ts",
     "lib/verified-fields.ts",
     "lib/closing-soon.ts",
     "lib/eligibility.ts",

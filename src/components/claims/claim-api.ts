@@ -1,4 +1,5 @@
 import type { ClaimView, StartIntent } from '@/lib/claims';
+import type { SelfFiledReportView } from '@/lib/self-filed-report';
 
 /** Browser calls to the claim routes. Every claim change goes through the server. */
 
@@ -47,6 +48,42 @@ export function startTracking(lawsuitId: string, intent: StartIntent = 'track'):
 
 export function updateClaim(claimId: string, body: Record<string, unknown>): Promise<ClaimApiResult> {
   return send(`/api/claims/${encodeURIComponent(claimId)}`, 'PATCH', body);
+}
+
+export type SelfFiledApiResult =
+  | { ok: true; claim: ClaimView; report: SelfFiledReportView }
+  | { ok: false; status: number; error: string };
+
+/** "I filed this myself": starts/updates the claim and records the self-report. */
+export async function reportSelfFiled(body: {
+  lawsuit_id: string;
+  confirmation_number?: string;
+  filed_on?: string;
+}): Promise<SelfFiledApiResult> {
+  let res: Response;
+  try {
+    res = await fetch('/api/self-filed-reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      error: "We couldn't reach Lawsuit AI. Check your internet connection and try again.",
+    };
+  }
+  const json = (await res.json().catch(() => null)) as {
+    claim?: ClaimView;
+    report?: SelfFiledReportView;
+    error?: string;
+  } | null;
+  if (res.ok && json?.claim && json.report) {
+    return { ok: true, claim: json.claim, report: json.report };
+  }
+  if (res.status === 401) return { ok: false, status: 401, error: 'You were logged out.' };
+  return { ok: false, status: res.status, error: json?.error || 'Something went wrong. Please try again.' };
 }
 
 export type AcknowledgeAllResult =

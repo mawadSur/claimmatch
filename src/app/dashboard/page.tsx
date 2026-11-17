@@ -201,6 +201,8 @@ export default async function DashboardPage({
           oneClickLanes={oneClick?.lanes ?? null}
           canDismiss={flags.matchStore()}
           matchReasonEnabled={flags.matchReason()}
+          owedEstimateEnabled={flags.owedEstimateHeader()}
+          selfFiledReportEnabled={flags.selfFiledReport()}
         />
 
         {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}

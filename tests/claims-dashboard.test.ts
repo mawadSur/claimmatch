@@ -249,6 +249,42 @@ describe('buildDashboardMatches', () => {
     expect(items.map((i) => i.strength)).toEqual(['strong', 'possible']);
   });
 
+  it('copies payout_min / payout_max from the settlement record only', () => {
+    const profile = makeProfile({ state: 'CA', attributes: { had_data_breach: true } });
+    const items = buildDashboardMatches(
+      profile,
+      [
+        makeLawsuit(
+          { states: ['CA'], requires: ['had_data_breach'] },
+          {
+            id: uuid(),
+            slug: 'with-range',
+            title: 'With range',
+            deadline: '2026-12-01',
+            payout_min: 25,
+            payout_max: 75,
+          },
+        ),
+        makeLawsuit(
+          { states: ['CA'], requires: ['had_data_breach'] },
+          {
+            id: uuid(),
+            slug: 'typical-only',
+            title: 'Typical only',
+            deadline: '2026-12-01',
+            typical_payout: '$50 typical',
+            payout_min: null,
+            payout_max: null,
+          },
+        ),
+      ],
+      NOW,
+      isFictional,
+    );
+    expect(items.find((i) => i.slug === 'with-range')).toMatchObject({ payoutMin: 25, payoutMax: 75 });
+    expect(items.find((i) => i.slug === 'typical-only')).toMatchObject({ payoutMin: null, payoutMax: null });
+  });
+
   it('puts Strong first, caps Possible around 20, and reports an empty Strong group', () => {
     const strong = {
       id: 's1',
@@ -260,6 +296,8 @@ describe('buildDashboardMatches', () => {
       label: 'Strong match',
       officialUrl: null,
       score: 0.9,
+      payoutMin: null,
+      payoutMax: null,
     };
     const possible = Array.from({ length: 22 }, (_, i) => ({
       id: `p${i}`,
@@ -271,6 +309,8 @@ describe('buildDashboardMatches', () => {
       label: 'Possible match',
       officialUrl: null,
       score: 0.4,
+      payoutMin: null,
+      payoutMax: null,
     }));
     const grouped = groupDashboardMatches([possible[0], strong, ...possible.slice(1)]);
     expect(grouped.strong.map((i) => i.slug)).toEqual(['strong']);

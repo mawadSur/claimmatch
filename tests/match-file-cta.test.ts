@@ -15,6 +15,8 @@ const MATCH: DashboardMatch = {
   label: 'Strong match',
   officialUrl: 'https://admin.example/file',
   score: 1,
+  payoutMin: null,
+  payoutMax: null,
 };
 
 function html(fileForYou = false) {
@@ -40,5 +42,20 @@ describe('match filing CTA', () => {
     expect(out).toContain(SELF_FILE_SECONDARY);
     expect(out).toContain('href="/claim/ny-auto"');
     expect(out).not.toContain('How to file');
+  });
+
+  it('adds “I filed this myself” without changing the existing self-file copy', () => {
+    const out = renderToStaticMarkup(
+      createElement(YourMatches, { items: [MATCH], selfFiledReportEnabled: true }),
+    );
+    expect(out).toContain('How to file');
+    expect(out).toContain('I filed this myself');
+    expect(out).toContain('href="/claim/ny-auto#self-filed"');
+    expect(out).not.toContain(SELF_FILE_SECONDARY);
+    const withFileForYou = renderToStaticMarkup(
+      createElement(YourMatches, { items: [MATCH], fileForYou: true, selfFiledReportEnabled: true }),
+    );
+    expect(withFileForYou).toContain(SELF_FILE_SECONDARY);
+    expect(withFileForYou).toContain('I filed this myself');
   });
 });

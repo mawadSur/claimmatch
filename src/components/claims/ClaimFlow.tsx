@@ -16,6 +16,7 @@ import { ClaimStatusBadge } from './ClaimStatusBadge';
 import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
+import type { SelfFiledReportView } from '@/lib/self-filed-report';
 import { UnverifiedLabel } from './UnverifiedLabel';
 import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { AuthorizeFiling } from './AuthorizeFiling';
@@ -49,6 +50,7 @@ export function ClaimFlow({
   nowIso,
   profile = null,
   oneClick = null,
+  selfFiledReport = null,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -56,6 +58,7 @@ export function ClaimFlow({
   nowIso: string;
   profile?: PacketProfile | null;
   oneClick?: OneClickClaimProps | null;
+  selfFiledReport?: SelfFiledReportView | null;
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -111,8 +114,16 @@ export function ClaimFlow({
         <h2 id="your-claim" ref={yourClaimHeading} tabIndex={-1} className="text-lg font-bold focus:outline-none">
           Your claim
         </h2>
-        <div className="mt-4">
-          <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+        <div id="self-filed" className="mt-4">
+          <ReportFiled
+            lawsuitId={settlement.id}
+            claim={claim}
+            context={context}
+            allowSave={false}
+            onChange={onChange}
+            selfFiledEnabled={settlement.selfFiledReportEnabled === true}
+            selfFiledReport={selfFiledReport}
+          />
           {timeline ? <ClaimTimelineCard timeline={timeline} /> : null}
           {settlement.payoutReportEnabled ? (
             <ReportPayout claimId={claim.id} lawsuitId={settlement.id} enabled={settlement.payoutReportEnabled} />
@@ -131,7 +142,15 @@ export function ClaimFlow({
     // After the deadline; or, with no claim at page load, a listing our list
     // marks closed (D41: still being re-checked). Keyed on the claim at load,
     // so the form stays in place while "I filed my claim" starts the claim.
-    body = <NoLongerOpen settlement={settlement} context={context} claim={claim} onChange={onChange} />;
+    body = (
+      <NoLongerOpen
+        settlement={settlement}
+        context={context}
+        claim={claim}
+        onChange={onChange}
+        selfFiledReport={selfFiledReport}
+      />
+    );
   } else {
     body = (
       <>
@@ -142,6 +161,7 @@ export function ClaimFlow({
           onChange={onChange} onOpenOfficialForm={openedOfficialForm}
           stepTwoTitle={oc?.stepTwoTitle} stepTwoLead={oc?.stepTwoLead} prepared={oc?.prepared}
           agentLane={oc?.filesForMember ?? false}
+          selfFiledReport={selfFiledReport}
         />
       </>
     );
@@ -304,6 +324,7 @@ function FilingSteps({
   stepTwoLead,
   prepared,
   agentLane = false,
+  selfFiledReport = null,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -317,6 +338,7 @@ function FilingSteps({
   prepared?: React.ReactNode;
   /** Lawsuit AI files (or offers to file) this claim: PrefillPacket's lead says so. */
   agentLane?: boolean;
+  selfFiledReport?: SelfFiledReportView | null;
 }) {
   return (
     <ol className="space-y-5" aria-label="How to file">
@@ -411,8 +433,16 @@ function FilingSteps({
           </Link>
           .
         </p>
-        <div className="mt-4">
-          <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={context.openForClaims} onChange={onChange} />
+        <div id="self-filed" className="mt-4">
+          <ReportFiled
+            lawsuitId={settlement.id}
+            claim={claim}
+            context={context}
+            allowSave={context.openForClaims}
+            onChange={onChange}
+            selfFiledEnabled={settlement.selfFiledReportEnabled === true}
+            selfFiledReport={selfFiledReport}
+          />
         </div>
       </Step>
     </ol>
@@ -428,11 +458,13 @@ function NoLongerOpen({
   context,
   claim,
   onChange,
+  selfFiledReport = null,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
   claim: ClaimView | null;
   onChange: (claim: ClaimView, message: string) => void;
+  selfFiledReport?: SelfFiledReportView | null;
 }) {
   const passed = context.deadlinePassed;
   const official = settlement.officialUrl;
@@ -460,8 +492,16 @@ function NoLongerOpen({
           Already filed? Tell us here, and we&rsquo;ll keep your claim and confirmation number in one place.
         </p>
       )}
-      <div className="mt-4">
-        <ReportFiled lawsuitId={settlement.id} claim={claim} context={context} allowSave={false} onChange={onChange} />
+      <div id="self-filed" className="mt-4">
+        <ReportFiled
+          lawsuitId={settlement.id}
+          claim={claim}
+          context={context}
+          allowSave={false}
+          onChange={onChange}
+          selfFiledEnabled={settlement.selfFiledReportEnabled === true}
+          selfFiledReport={selfFiledReport}
+        />
       </div>
       {passed && official && (
         <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-ink-muted">

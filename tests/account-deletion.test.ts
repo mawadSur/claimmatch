@@ -33,6 +33,7 @@ describe('self-serve account deletion coverage', () => {
     expect(USER_OWNED_TABLES).toContain('payout_tracker_sends');
     expect(USER_OWNED_TABLES).toContain('match_alert_sends');
     expect(USER_OWNED_TABLES).toContain('beta_feedback');
+    expect(USER_OWNED_TABLES).toContain('self_filed_reports');
   });
 
   it('removes every user-owned table exactly once: explicitly, or by cascade from the auth user', () => {

@@ -403,4 +403,15 @@ export const flags = {
    * anywhere.
    */
   appleSignIn: () => on('APPLE_SIGN_IN_ENABLED'),
+  /**
+   * Signed-in matches dashboard "You might be owed" header. Sums listed
+   * payout_min / payout_max on each open match's settlement record. Off: hidden.
+   */
+  owedEstimateHeader: () => on('OWED_ESTIMATE_HEADER_ENABLED'),
+  /**
+   * "I filed this myself" self-report: mark a match/claim as filed on the
+   * official site, with optional confirmation number and screenshot. Off: the
+   * existing "I filed my claim" form stays as it is; new routes 404.
+   */
+  selfFiledReport: () => on('SELF_FILED_REPORT_ENABLED'),
 };

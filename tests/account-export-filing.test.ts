@@ -33,6 +33,14 @@ const ROWS: Record<string, Record<string, unknown>> = {
   claim_signature_voids: { id: 'v1', signature_id: 's1', claim_id: 'c1', reason: 'member_edit', actor: 'user' },
   esign_consents: { id: 'e1', text_version: 'esign-v1', full_text: 'I agree.', consented_at: '2026-11-09T00:00:00Z' },
   claim_filing_jobs: { id: 'j1', claim_id: 'c1', channel: 'filing_desk', status: 'needs_attention', confirmation_number: null },
+  self_filed_reports: {
+    confirmation_number: 'ABC-1',
+    confirmation_storage_path: `${USER}/r1/confirmation.png`,
+    confirmation_mime: 'image/png',
+    confirmation_bytes: 2048,
+    created_at: '2026-11-17T00:00:00Z',
+    lawsuit: { title: 'Example', slug: 'example' },
+  },
 };
 
 function fakeClient(client: 'member' | 'service') {
@@ -116,7 +124,13 @@ describe('GET /api/account/export', () => {
       ['documents', 'esign_consents', 'filing_jobs', 'packets', 'signature_voids', 'signatures'].sort(),
     );
     expect(body.one_click_filing.filing_jobs[0]).toMatchObject({ id: 'j1' });
+    expect(body.self_filed_reports[0]).toMatchObject({
+      lawsuit_slug: 'example',
+      confirmation_number: 'ABC-1',
+      has_screenshot: true,
+    });
     expect(JSON.stringify(body)).not.toContain('lock_owner');
+    expect(JSON.stringify(body)).not.toContain(`${USER}/r1/confirmation.png`);
   });
 
   it('answers 503 instead of a silently partial export', async () => {

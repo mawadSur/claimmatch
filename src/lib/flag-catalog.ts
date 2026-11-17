@@ -309,6 +309,18 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       'Continue with Apple on /login and /signup, and Apple sign-in again before e-signing a one-click claim (web only). Kill switch: set to 1 in production once Apple is enabled in Supabase Auth.',
     read: () => flags.appleSignIn(),
   },
+  {
+    env: 'OWED_ESTIMATE_HEADER_ENABLED',
+    description:
+      'Signed-in matches dashboard “You might be owed” header from listed settlement payout ranges. Off: hidden.',
+    read: () => flags.owedEstimateHeader(),
+  },
+  {
+    env: 'SELF_FILED_REPORT_ENABLED',
+    description:
+      '“I filed this myself” self-report on a match/claim, with optional confirmation number and private screenshot. Off: new routes 404.',
+    read: () => flags.selfFiledReport(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

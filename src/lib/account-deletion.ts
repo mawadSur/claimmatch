@@ -27,6 +27,9 @@ export const USER_OWNED_TABLES = [
   'payout_tracker_sends',
   'match_alert_sends',
   'beta_feedback',
+  // Self-filed reports (0049). Deleted with the account; screenshot files in
+  // the private self-filed-confirmations bucket are removed first.
+  'self_filed_reports',
   // One-click filing (0041). Deleted with the account. With
   // LEGAL_RECORDS_ON_ACCOUNT_DELETION set to anonymize_and_retain or retain
   // (src/lib/filing/legal-records.ts), signatures, voids, consents, jobs and
@@ -58,8 +61,9 @@ export const CASCADE_ONLY_TABLES = ['profiles', 'claim_events'] as const;
  * referrals is keyed by referrer_id, every other table by user_id.
  * profile_facts, consent (0027, 0028), claim_reminder_sends (0030),
  * drip_email_sends (0031), payout_tracker_sends (0035), match_alert_sends
- * (0036) and beta_feedback (0033) also cascade from auth.users, but are
- * deleted here too, as every user-owned table except CASCADE_ONLY_TABLES is.
+ * (0036), beta_feedback (0033) and self_filed_reports (0049) also cascade
+ * from auth.users, but are deleted here too, as every user-owned table except
+ * CASCADE_ONLY_TABLES is.
  * The one-click tables (0041) go children first: jobs, voids and signatures
  * before the packets they point at, signatures before esign_consents. The
  * files under claim-documents/{user_id}/ in Storage are not rows: the route
@@ -82,6 +86,7 @@ export const EXPLICIT_DELETE_ORDER = [
   'payout_tracker_sends',
   'match_alert_sends',
   'beta_feedback',
+  'self_filed_reports',
   'claim_filing_jobs',
   'claim_signature_voids',
   'claim_signatures',

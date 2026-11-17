@@ -170,6 +170,19 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'App copy of ONE_CLICK_AGENT_TITLE / ONE_CLICK_AGENT_NOTE, shown only for an agent-lane claim while ONE_CLICK_FILING_ENABLED=1.' },
   { file: 'mobile/src/copy/filing.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
     reason: 'App copy of ONE_CLICK_FILED_LABEL: the filed_by_claimmatch status, true for that claim.' },
+  {
+    file: 'src/components/claims/OwedEstimateHeader.tsx',
+    rule: 'you are owed',
+    text: 'You might be owed',
+    reason:
+      'CEO delight-scan header (OWED_ESTIMATE_HEADER_ENABLED). Always labeled an estimate; sums listed payout_min/payout_max only; hidden unless at least one open match has a stated amount.',
+  },
+  {
+    file: 'src/lib/flag-catalog.ts',
+    rule: 'you are owed',
+    text: 'Signed-in matches dashboard “You might be owed” header from listed settlement payout ranges. Off: hidden.',
+    reason: 'Admin /admin/flags description of OWED_ESTIMATE_HEADER_ENABLED, not a public payout promise.',
+  },
 ];
 
 const NEGATION =

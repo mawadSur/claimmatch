@@ -43,8 +43,11 @@ export interface ClientConfig {
   guides?: SettlementGuide[];
 }
 
-/** A dashboard match without its internal score: scores are never shown. */
-export type AppMatch = Omit<DashboardMatch, 'score'>;
+/**
+ * A dashboard match without its internal score (scores are never shown) or
+ * payout figures (those stay on the web owed-estimate header).
+ */
+export type AppMatch = Omit<DashboardMatch, 'score' | 'payoutMin' | 'payoutMax'>;
 
 /** GET /api/mobile/dashboard. A `failed` section shows the web's error copy for it. */
 export interface DashboardResponse {
