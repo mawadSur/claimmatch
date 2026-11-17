@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { draftFromAttributes } from '@/lib/match-preview';
 import { eligibilitySummary } from '@/lib/claim-input';
 import { flags } from '@/lib/flags';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
@@ -25,6 +27,22 @@ export default async function PreviewPage({
 }: {
   searchParams?: SearchParams;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let accountDraft = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('state, attributes')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile) {
+      accountDraft = draftFromAttributes(profile.state as string | null, profile.attributes as Record<string, unknown> | null);
+    }
+  }
+
   const params = searchParams ? await searchParams : {};
   const slug = parseSettlementScopeSlug(firstParam(params.settlement));
   const scopedCta = Boolean(slug && flags.settlementPageCta());
@@ -72,6 +90,8 @@ export default async function PreviewPage({
               feeNote={<FeeDisclosure compact />}
               scope={scope}
               hideUnknown={flags.catalogHideUnknowns()}
+              accountDraft={accountDraft}
+              signedIn={Boolean(user)}
             />
           </div>
         </div>

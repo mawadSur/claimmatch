@@ -15,6 +15,7 @@ import {
   type MatchPreviewDraft,
   type MatchPreviewResult,
 } from '@/lib/match-preview';
+import { profileHasMatchSignals } from '@/lib/profile-attributes';
 import type { EligibilityCriteria } from '@/lib/types';
 import { claimReturnPath } from '@/lib/signup-context';
 import { formatDeadline, US_STATES } from '@/lib/utils';
@@ -35,11 +36,15 @@ export function MatchPreview({
   feeNote,
   scope,
   hideUnknown = false,
+  accountDraft = null,
+  signedIn = false,
 }: {
   signupContextEnabled: boolean;
   feeNote: ReactNode;
   scope?: MatchPreviewScope | null;
   hideUnknown?: boolean;
+  accountDraft?: MatchPreviewDraft | null;
+  signedIn?: boolean;
 }) {
   const posthog = usePostHog();
   const started = useRef(false);
@@ -58,8 +63,17 @@ export function MatchPreview({
 
   useEffect(() => {
     const stored = readStoredMatchPreview();
-    if (stored) setDraft(stored);
-  }, []);
+    const fromAccount =
+      accountDraft &&
+      profileHasMatchSignals({
+        state: accountDraft.state || null,
+        attributes: accountDraft.attributes,
+      })
+        ? accountDraft
+        : null;
+    const initial = fromAccount ?? stored;
+    if (initial) setDraft(initial);
+  }, [accountDraft]);
 
   useEffect(() => {
     if (started.current || !posthog) return;
@@ -156,8 +170,7 @@ export function MatchPreview({
           <div className="mt-6 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
             <p className="font-semibold text-ink">No matching open settlements from these answers.</p>
             <p className="mt-1 text-sm text-ink-muted">
-              You can still browse the full list. Creating an account lets you
-              save matches later.
+              You can still browse the full list. Signed in? Finish or update your profile, then check your dashboard.
             </p>
             <Link href="/lawsuits" className="btn-secondary mt-5">
               Browse open settlements
