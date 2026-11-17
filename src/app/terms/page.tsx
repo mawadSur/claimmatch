@@ -15,7 +15,7 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/terms',
 });
 
-const LAST_UPDATED = 'October 16, 2026';
+const LAST_UPDATED = 'November 17, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 export default function TermsPage() {
@@ -96,6 +96,9 @@ export default function TermsPage() {
               Lawsuit AI shows class-action settlements that may be open for claims, links
               to official settlement information when our source provides it, and lets you
               keep track of claims you file yourself.
+              {mayFile
+                ? ' For some settlements we also offer one-click filing, where you can sign a claim and we submit it to the settlement administrator as your agent (section 14).'
+                : ''}
             </p>
           </section>
 
@@ -243,9 +246,117 @@ export default function TermsPage() {
             </p>
           </section>
 
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-ink">14. One-click filing: when Lawsuit AI files a claim for you</h2>
+            <p>
+              This section applies when you choose one-click filing for a settlement and sign the
+              authorization shown in the product. It does not apply when you file on the official
+              settlement website yourself.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">What one-click filing is</h3>
+            <p>
+              For some settlements, Lawsuit AI offers to submit a claim to the settlement administrator
+              for you, as your agent. We offer it only where the law firm that advises us has reviewed
+              that settlement and approved the way the claim will be submitted. Everywhere else, you file
+              the claim yourself on the official settlement website, and Lawsuit AI only helps you prepare.
+            </p>
+            <p>
+              You never have to use one-click filing. You can always file on the official settlement
+              website yourself, where filing is free.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Scope of each authorization</h3>
+            <p>
+              Each authorization covers one claim in one settlement, exactly as you reviewed and signed
+              it. It does not cover any other claim, any other settlement, or any change to the claim after
+              you sign. If the claim changes (you edit it, the settlement&apos;s form changes, or the way we
+              would submit it changes), your signature no longer authorizes it and we ask you to review and
+              sign again.
+            </p>
+            <p>We submit the claim only through the channel named in the authorization you signed:</p>
+            <ul className="ml-5 list-disc space-y-2">
+              <li>
+                <span className="font-semibold text-ink">Filing desk:</span> a Lawsuit AI staff member enters
+                your signed answers on the official claim form in an ordinary web browser.
+              </li>
+              <li>
+                <span className="font-semibold text-ink">Administrator email:</span> we email the claim, your
+                uploaded documents and the record of your signature to the administrator&apos;s published claims
+                address, and send you a copy.
+              </li>
+              <li>
+                <span className="font-semibold text-ink">Bulk file:</span> we include your individually signed
+                claim in a file the administrator has agreed to accept from us.
+              </li>
+              <li>
+                <span className="font-semibold text-ink">Administrator system:</span> we pass the claim through a
+                system the administrator provides for that purpose.
+              </li>
+            </ul>
+            <p>
+              We use only channels the law firm approved for that settlement, and a bulk file or administrator
+              system only after a written agreement with the administrator.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Your statements and your signature</h3>
+            <p>
+              The claim form may ask you to confirm facts under penalty of perjury. You read that statement word
+              for word and tick it yourself; we never tick, fill in or type it for you. You then sign by typing
+              your full legal name. Your typed name is your electronic signature for that claim and has the same
+              effect as your handwritten signature (see the e-signature consent you gave first in the product).
+            </p>
+            <p>
+              You are responsible for the truth of what you sign. Only sign if the settlement&apos;s class definition
+              describes you and your answers are true. We do not decide whether you qualify; the settlement
+              administrator does.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Changing your mind</h3>
+            <p>
+              You can withdraw your authorization in Lawsuit AI at any time before filing starts. Once filing has
+              started, contact the settlement administrator about any change; we will tell you how. If you
+              withdraw before filing starts, that claim is closed for one-click in Lawsuit AI and you cannot start
+              the same claim again here after withdrawal.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">If we cannot submit your claim in time</h3>
+            <p>
+              If we cannot submit a claim you authorized before our last day for it (we stop taking a claim a few
+              days before the settlement&apos;s deadline, so there is still time), we will tell you by email and in
+              Lawsuit AI, and return the claim to you with your answers ready so you can file it yourself on the
+              official site.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Identity</h3>
+            <p>
+              We do not verify your identity with a third-party service. Settlements whose administrator requires
+              an identity check are not offered for one-click filing. You agree to file only your own claim, in your
+              own name, and never one for another person.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Fees and payments</h3>
+            <p>
+              Lawsuit AI does not charge you a fee when you use one-click filing for a claim. Any payment from the
+              settlement goes to you directly from the settlement administrator, by the payment method you choose. We
+              never receive, hold or redirect settlement money, and we never ask for bank or card account numbers.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">Checks on the official site</h3>
+            <p>
+              If the official site shows a code by email or text, an identity check or an account login, we stop and
+              return the claim to you. We never use tools to get past any check on an official site.
+            </p>
+            <p>
+              If the official site shows a CAPTCHA and the settlement allows it, a person at our filing desk may
+              complete it by hand on the official site for you. We never use a bot or a solving service for it. This
+              applies only where the authorization you signed includes that permission and the settlement&apos;s desk
+              rule allows it.
+            </p>
+            <h3 className="text-lg font-semibold text-ink">What we are not</h3>
+            <p>
+              Lawsuit AI is not a law firm, does not give legal advice, and is not affiliated with any settlement,
+              court, party or settlement administrator. Acting as your agent to submit a claim does not create an
+              attorney-client relationship.
+            </p>
+          </section>
+
           {hasContact && (
             <section className="space-y-3">
-              <h2 className="text-xl font-bold text-ink">13. Contact us</h2>
+              <h2 className="text-xl font-bold text-ink">15. Contact us</h2>
               {contact.email && (
                 <p>
                   Questions about these terms? Email us at{' '}

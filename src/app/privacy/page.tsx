@@ -11,7 +11,7 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/privacy',
 });
 
-const LAST_UPDATED = 'November 4, 2026';
+const LAST_UPDATED = 'November 17, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 /** Service providers that process personal information for us (or, for SettleSignal, none). */
@@ -30,7 +30,7 @@ const PROVIDERS = [
   },
   {
     name: 'Resend',
-    role: 'Sends our emails. It receives your email address and the content of the email.',
+    role: 'Sends our emails. It receives your email address and the content of the email, including claims we email to a settlement administrator for you when you use one-click filing.',
   },
   {
     name: 'SettleSignal',
@@ -124,6 +124,19 @@ export default function PrivacyPage() {
                 filed by you”) and any confirmation numbers you add.
               </li>
               <li>
+                <span className="font-semibold text-ink">Mailing address:</span> when you save
+                an address to your profile or enter it for a claim (self-file or one-click).
+              </li>
+              <li>
+                <span className="font-semibold text-ink">One-click filing:</span> only when you
+                choose it for a settlement — your answers in the official form&apos;s wording, benefit
+                and payout method names (never account numbers), notice or claim IDs you type (never
+                PINs or passcodes), photos and documents you upload, your e-signature record and
+                e-signature consent, health answers only after you tick settlement-specific consent,
+                automatic check results (Jev), filing records (how and when submitted, confirmation
+                numbers, staff confirmation screenshots), and staff access logs.
+              </li>
+              <li>
                 <span className="font-semibold text-ink">Earlier claim forms:</span> if you
                 used the claim forms we offered before October 2026, we kept what you
                 entered (such as your name, email and mailing address), the name you typed
@@ -154,11 +167,16 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">3. Health information</h2>
             <p>
-              We don’t ask about your health. We used to ask whether you had taken
+              We don’t ask about your health in onboarding. We used to ask whether you had taken
               prescription medication or used a medical device. That question is no longer
               asked, and we no longer collect answers to it. If you answered it before, your
               answer is still stored for now. We plan to delete those answers, and you can
               ask us to delete yours sooner.
+            </p>
+            <p>
+              For one-click filing, a health-sensitive settlement may show consent text the law firm
+              approved. We collect health answers or documents for that claim only after you tick that
+              consent for that claim.
             </p>
           </section>
 
@@ -198,9 +216,18 @@ export default function PrivacyPage() {
             </ul>
             <p>
               We may also share information when the law requires it, or to protect the
-              rights and safety of our users and Lawsuit AI. Lawsuit AI never sends your
-              information to settlement administrators: you give it to them yourself when
-              you file.
+              rights and safety of our users and Lawsuit AI.
+            </p>
+            <p>
+              When you file on the official settlement website yourself, you give your information
+              to the settlement administrator directly — Lawsuit AI does not send it for you. When you
+              use one-click filing and sign an authorization, we send the claim, documents and
+              signature record to the settlement administrator on your behalf through the channel named
+              in what you signed. The administrator handles that information under its own privacy policy.
+            </p>
+            <p>
+              Only Lawsuit AI staff with a filing role can see your signed one-click claim and uploads.
+              Every staff view is logged.
             </p>
           </section>
 
@@ -259,6 +286,13 @@ export default function PrivacyPage() {
               your account, we will delete your personal information, except anything we
               must keep to meet legal obligations.
             </p>
+            <p>
+              For one-click filing: uploaded proof documents are deleted about 90 days after your claim
+              is finished or after the settlement&apos;s deadline window. Signature, consent and filing
+              records follow your account-deletion setting (by default they are deleted with your account).
+              Staff access logs may keep your member ID without your name after deletion. See our retention
+              schedule in product documentation for staff.
+            </p>
           </section>
 
           <section className="space-y-3">
@@ -266,8 +300,9 @@ export default function PrivacyPage() {
             <p>
               You can update your name, state and phone number, edit profile facts,
               and turn alert emails on or off (and choose instant or weekly), in
-              Settings. You can download a JSON copy of your data from Settings. You can request a copy
-              of the personal information we have about you, including
+              Settings. You can download a JSON copy of your data from Settings, including one-click
+              packets, signatures, consents and related filing records when you have used one-click filing.
+              You can request a copy of the personal information we have about you, including
               any answers you gave to our earlier questions, and you can ask us to
               correct it or to delete your account and data.
               Depending on where you live, you may have other rights under state law.

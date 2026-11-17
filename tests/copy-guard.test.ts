@@ -183,6 +183,31 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     text: 'Signed-in matches dashboard “You might be owed” header from listed settlement payout ranges. Off: hidden.',
     reason: 'Admin /admin/flags description of OWED_ESTIMATE_HEADER_ENABLED, not a public payout promise.',
   },
+  {
+    file: 'src/app/terms/page.tsx',
+    rule: 'we submit',
+    text: 'we submit it to the settlement administrator as your agent',
+    reason: 'Issue #52: live Terms §14 one-click agency (founder-approved 2026-11-17).',
+  },
+  {
+    file: 'src/app/terms/page.tsx',
+    rule: 'we submit',
+    text: 'when Lawsuit AI files a claim for you',
+    reason: 'Issue #52: §14 heading.',
+  },
+  {
+    file: 'src/app/terms/page.tsx',
+    rule: 'we submit',
+    text: 'We submit the claim only through the channel',
+    reason: 'Issue #52: §14 authorization scope.',
+  },
+  {
+    file: 'src/app/privacy/page.tsx',
+    rule: 'we send your claim',
+    text:
+      'we send the claim, documents and signature record to the settlement administrator on your behalf',
+    reason: 'Issue #52: privacy policy one-click administrator sharing (founder-approved 2026-11-17).',
+  },
 ];
 
 const NEGATION =

@@ -63,11 +63,19 @@ describe('Terms and Privacy', () => {
     expect(privacy).toMatch(/new accounts start opted out/i);
   });
 
-  it('terms have no filing, fee or e-signature terms', () => {
-    expect(terms).not.toMatch(/\be-?sign|\bsignature|\bauthoriz/i);
+  it('terms describe self-file default and one-click agency section', () => {
     expect(terms).not.toMatch(/\bour fee\b|\bfee of\b|percent of/i);
     expect(terms).toMatch(/does not file, submit or sign claims for you/);
     expect(terms).toMatch(/not a law firm/);
+    expect(terms).toMatch(/14\. One-click filing/);
+    expect(terms).toMatch(/withdraw before filing starts/);
+  });
+
+  it('privacy covers one-click collection, sharing and export', () => {
+    expect(privacy).toMatch(/One-click filing:/);
+    expect(privacy).toMatch(/send the claim, documents and/);
+    expect(privacy).toMatch(/one-click filing/);
+    expect(privacy).toMatch(/including one-click/);
   });
 });
 
