@@ -105,6 +105,9 @@ const HOW_STEPS: HowStep[] = [
   },
 ];
 
+/** Public marketing home; catalog reads use the cookie-free client. */
+export const revalidate = 900;
+
 const homeMeta = publicPageMetadata({
   title: `${SITE.name} — ${SITE.tagline}`,
   description: SITE.description,

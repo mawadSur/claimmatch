@@ -3,8 +3,19 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { signedOutClaimHref } from '@/lib/signup-context';
 
 /**
- * Refreshes the Supabase auth session on every request and guards
- * authenticated routes. Wired up from src/middleware.ts.
+ * Supabase SSR session cookies look like `sb-<ref>-auth-token` (and `.0`
+ * chunks). Anonymous traffic has none — skip getUser() for those requests so
+ * middleware does not burn Fluid Active CPU on every public hit.
+ */
+export function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith('sb-') && c.name.includes('auth-token'));
+}
+
+/**
+ * Refreshes the Supabase auth session when a session cookie is present and
+ * guards authenticated routes. Wired up from src/middleware.ts.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -29,6 +40,14 @@ export async function updateSession(request: NextRequest) {
     if (isProtected) return toAuth();
     return supabaseResponse;
   }
+
+  const hasSessionCookie = hasSupabaseAuthCookie(request);
+
+  // Protected + no cookie: redirect without a Supabase round-trip.
+  if (isProtected && !hasSessionCookie) return toAuth();
+
+  // Public + no cookie: pass through. No session to refresh.
+  if (!hasSessionCookie) return supabaseResponse;
 
   const supabase = createServerClient(url, key, {
     cookies: {

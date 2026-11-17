@@ -3,6 +3,8 @@ import { ImageResponse } from 'next/og';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const alt = 'Lawsuit AI — find open class-action settlements';
+/** Static share card; cache so crawlers do not regenerate every hit. */
+export const revalidate = 3600;
 
 export default function OpenGraphImage() {
   return new ImageResponse(

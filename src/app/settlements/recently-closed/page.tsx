@@ -14,7 +14,8 @@ import { JsonLd } from '@/components/settlement/JsonLd';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { formatDeadline } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
+/** Public archive; flag flips only apply on the next deploy. Hourly ISR. */
+export const revalidate = 3600;
 
 const TITLE = 'Recently closed settlements';
 const DESCRIPTION =

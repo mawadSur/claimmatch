@@ -44,12 +44,14 @@ export const config = {
      * - /ingest/* (PostHog proxy rewrite; no session needed);
      * - /lawsuits/<slug>/* and /settlements/<hub>/* (public SEO pages, mostly
      *   force-static, so a session cookie cannot change what they render);
+     * - scorecard and OG image routes (public ISR / generated assets);
      * - robots.txt, sitemap.xml, llms.txt (crawler files).
      * Each skipped request saves a middleware run plus a Supabase getUser
      * call. These paths were about half of the requests that reached
      * middleware in a recent 11 hour sample, so this cuts Vercel Active CPU
-     * on the Hobby team. /lawsuits (the index) still runs middleware.
+     * on the Hobby team. /lawsuits (the index) still runs middleware, but
+     * updateSession short-circuits when no auth cookie is present.
      */
-    '/((?!_next/static|_next/image|favicon.ico|ingest/|lawsuits/|settlements/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|ingest/|lawsuits/|settlements/|scorecard(?:/|$)|.*opengraph-image$|.*twitter-image$|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -161,6 +161,7 @@ describe('ISR revalidate exports', () => {
       '../src/app/settlements/category/[slug]/page.tsx',
       '../src/app/settlements/closing-soon/page.tsx',
       '../src/app/settlements/new/page.tsx',
+      '../src/app/settlements/recently-closed/page.tsx',
       '../src/app/llms.txt/route.ts',
       '../src/app/sitemap.ts',
     ];

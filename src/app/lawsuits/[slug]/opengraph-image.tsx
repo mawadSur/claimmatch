@@ -6,6 +6,8 @@ import { SETTLEMENT_OG_TAGLINE, settlementOgCopy } from '@/lib/settlement-og';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const alt = 'Class-action settlement on Lawsuit AI';
+/** Match settlement page ISR so share-card regenerations stay rare. */
+export const revalidate = 3600;
 
 type Params = { params: Promise<{ slug: string }> };
 
