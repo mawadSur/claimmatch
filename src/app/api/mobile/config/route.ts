@@ -44,7 +44,7 @@ async function oneClickViewer(req: Request): Promise<OneClickViewer | null> {
  * allow-listed ones from here, with the server clock, the legal text (the
  * app's wording of the website's disclaimers) and the official-notice guides
  * its catalog overlays. No sign-in. ?guides=<version> names the guides the app
- * already has: the list (about 20 KB) is then sent only when it differs.
+ * already has: the list (about 40 KB) is then sent only when it differs.
  * ONE_CLICK_FILING_ENABLED is the one-click gate for the caller
  * (src/lib/filing/one-click-access.ts): in test mode, on only for an
  * INTERNAL_EMAILS tester who sent a bearer token. The app sends its token

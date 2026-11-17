@@ -363,6 +363,166 @@ const HARVARD_MORGUE: SettlementGuide = {
     'MacTaggart et al. v. President & Fellows of Harvard College is a proposed $53 million settlement ($52.5 million for donors whose remains left the morgue from January 1, 2018 through March 31, 2023, and $500,000 for 2003–2017). Relatives, designees and certain notice recipients may file. Harvard denies the allegations. Each net fund is split by donor, then among people who filed for that donor. Claims are due December 9, 2026. Simpluris administers the official site. The court still has to approve the settlement.',
 };
 
+const ZUMBA_VPPA: SettlementGuide = {
+  slugs: ['zumba-fitness-data-privacy-class-action-settlement'],
+  officialUrl: 'https://zumbavppasettlement.com/',
+  sourceChecked: '2026-11-17',
+  eligibilityText:
+    'U.S. residents who bought the ZB1 OD Version on Zumba.com from October 22, 2022 through October 22, 2024 and whose names appeared on order-confirmation URLs held by Meta, Pinterest and/or MNTN. The official FAQ lists 4,543 class members. A mailed or emailed notice means Zumba’s records indicate class membership.',
+  typicalPayout:
+    'A $2,700,000 fund, split by subclass shares (Meta, Pinterest, MNTN). The official FAQ says each share is at least $229.33 if nobody opts out. No claim form; payments are automatic if the court approves.',
+  deadline: '2026-12-14',
+  proof: 'no',
+  proofDetail:
+    'No claim form is required. Class members who do not opt out are paid automatically if the court approves. December 14, 2026 is the opt-out and objection deadline.',
+  summary:
+    'A $2.7 million Zumba VPPA settlement. ZB1 OD Version buyers in the class period are paid automatically if they stay in the class.',
+  description:
+    'Kueppers et al. v. Zumba Fitness, LLC, No. 0:24-cv-61983-WPD (S.D. Fla.). U.S. buyers of the ZB1 OD Version on Zumba.com from October 22, 2022 through October 22, 2024 whose names were on order-confirmation URLs held by Meta, Pinterest and/or MNTN. Zumba denies wrongdoing. $2,700,000 fund; automatic payments; no claim form. Opt-out/object by December 14, 2026.',
+  extraFaqs: [
+    {
+      q: 'Do I need to file a claim in the Zumba VPPA settlement?',
+      a: 'No. The official FAQ says class members who do not opt out are paid automatically if the court grants final approval. The December 14, 2026 deadline is to opt out or object, not to file a claim.',
+    },
+  ],
+};
+
+const KUCOIN_NY: SettlementGuide = {
+  slugs: ['kucoin-22m-new-york-enforcement-action-settlement'],
+  officialUrl: 'https://www.kucoinnyagconsentorder.com/',
+  sourceChecked: '2026-11-17',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'New York Customers who bought or sold cryptocurrency on KuCoin: activity from, within or through New York; a New York address or area code in KuCoin’s records; a New York IP or GPS access (unless KYC showed a non-U.S. national or non-New York ID); or KYC showing New York presence.',
+  typicalPayout:
+    'Return of New York customer balances. KuCoin attested about $16,766,642 as of November 29, 2023. Payments may be in-kind crypto, USDC, or a USD check. A timely claim is required.',
+  deadline: '2029-02-28',
+  proof: 'yes',
+  proofDetail:
+    'A claim form is due online by 11:59 p.m. EST on February 28, 2029, or mailed and postmarked (or, if not U.S. Mail, received) by that date. The official FAQ requires connecting depositing wallets, two IDs, and wallet proof if a wallet cannot be connected.',
+  summary:
+    'A New York Attorney General consent order for KuCoin customers to recover account assets. Claims are due February 28, 2029.',
+  description:
+    'People of the State of New York v. Mek Global Limited and PhoenixFin PTE Ltd d/b/a KuCoin (Supreme Court, New York County). New York Customers who traded on KuCoin may claim account balances (about $16,766,642 as of November 29, 2023). Simpluris administers the site. Claims due February 28, 2029.',
+};
+
+const DENTAL_INTELLIGENCE: SettlementGuide = {
+  slugs: ['dental-intelligence-5-75m-privacy-class-action-settlement'],
+  officialUrl: 'https://disettlement.com/',
+  sourceChecked: '2026-11-17',
+  eligibilityText:
+    'U.S. persons who used the LocalMed Portal to schedule, modify, or re-schedule an appointment between March 2022 and June 2025 and whose information was allegedly sent to Google or another unauthorized third party.',
+  typicalPayout:
+    'A pro rata cash payment. The official homepage and FAQ do not state a per-person amount or a total fund. A timely claim form is the only way to receive cash.',
+  deadline: '2027-01-25',
+  proof: 'no',
+  proofDetail:
+    'A claim form must be submitted online by January 25, 2027, or mailed and postmarked by that date. The official FAQ does not ask for receipts.',
+  summary:
+    'A LocalMed Portal privacy settlement with Dental Intelligence. U.S. users in the class period may file for a pro rata cash payment.',
+  description:
+    'Grivetti et al. v. Dental Intelligence, Inc., No. 1:25-cv-02464 (N.D. Ill.). U.S. LocalMed Portal users from March 2022 through June 2025 whose information was allegedly sent to a third party. Dental Intelligence denies wrongdoing. Valid claims share a pro rata cash payment. Claims due January 25, 2027.',
+};
+
+const CBIZ_BREACH: SettlementGuide = {
+  slugs: ['cbiz-data-breach-class-action-settlement'],
+  officialUrl: 'https://cbizdatabreachsettlement.com/',
+  sourceChecked: '2026-11-17',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'People mailed a notice that personal information may have been compromised in the 2024 CBIZ Data Incident. Opt-outs, the assigned judge and staff, CBIZ officers and directors, and anyone found guilty of causing the incident are excluded.',
+  typicalPayout:
+    'Up to $5,000 in documented losses fairly traceable to the incident, plus a roughly $100 cash payment (the official site’s 10% claims-rate estimate for a 19,990-person class), adjusted pro rata. Defendant’s maximum contribution is $485,000. Both may be claimed together.',
+  deadline: '2026-12-24',
+  proof: 'optional',
+  proofDetail:
+    'A claim form is due December 24, 2026. The cash payment does not require losses. Reimbursement needs receipts or similar records; self-prepared notes alone are not enough. Use the postcard Login ID and PIN.',
+  summary:
+    'A CBIZ 2024 data-incident settlement. People mailed notice may claim documented losses up to $5,000 and an estimated ~$100 cash payment.',
+  description:
+    'In re CBIZ Data Breach Litigation, No. 1:24-cv-01722-DCN (N.D. Ohio). People mailed notice of a 2024 incident. CBIZ denies wrongdoing. Up to $5,000 in documented losses plus a pro rata cash payment the official site estimates at about $100 at a 10% claims rate; $485,000 cap. Claims due December 24, 2026. Simpluris administers the site.',
+};
+
+const CONTAINER_STORE: SettlementGuide = {
+  slugs: ['the-container-store-massachusetts-class-action-settlement'],
+  officialUrl: 'https://www.tcssettlement.com/',
+  sourceChecked: '2026-11-17',
+  administrator: 'CPT Group, Inc.',
+  eligibilityText:
+    'Legally blind people in Massachusetts who, from July 20, 2011 through August 12, 2026, bought at a Massachusetts The Container Store, tried to credit the purchase to a loyalty account, and met a touch-screen POS device without non-visual input.',
+  typicalPayout:
+    'A $780,000 settlement with $230,000 in a Damages Fund. Claimants may receive $75 per qualifying purchase, subject to pro-rata reduction. A claim form is required for cash.',
+  deadline: '2026-12-20',
+  proof: 'yes',
+  proofDetail:
+    'A claim form is due December 20, 2026. The settlement agreement on the official site requires proof of being legally blind and of a qualifying Massachusetts purchase, loyalty-credit attempt, and inaccessible POS device.',
+  summary:
+    'A $780,000 Massachusetts settlement over inaccessible Container Store checkout kiosks. Blind shoppers who file may receive $75 per qualifying purchase.',
+  description:
+    'Cadigan et al. v. The Container Store, Inc., No. 2084CV02119 (Massachusetts Superior Court, Suffolk County). Legally blind Massachusetts shoppers who, from July 20, 2011 through August 12, 2026, tried to credit a purchase to loyalty on an inaccessible POS kiosk. $75 per qualifying purchase from a $230,000 damages fund, subject to pro rata reduction. Claims due December 20, 2026. CPT Group, Inc. administers the site.',
+};
+
+const BAPTIST_HEALTH: SettlementGuide = {
+  slugs: ['baptist-health-data-breach-class-action-settlement'],
+  officialUrl: 'https://bhsettlement.com/',
+  sourceChecked: '2026-11-17',
+  eligibilityText:
+    'People whose private information was potentially impacted in the Data Incident, including everyone who received notice. The incident was unauthorized access to Baptist Health’s network around April–July 2024 and may have involved names, addresses, dates of birth, diagnoses and treatment, and/or provider names.',
+  typicalPayout:
+    'Two years of one-bureau credit monitoring with $1 million identity-theft insurance; up to four hours of lost time at $20/hour (max $80); ordinary documented losses up to $400; and identity-theft or fraud losses up to $4,000. Documented losses must fall between April 22, 2024 and December 8, 2026.',
+  deadline: '2026-12-08',
+  proof: 'optional',
+  proofDetail:
+    'A signed claim form is due online or postmarked by December 8, 2026. Credit monitoring needs a claim. Lost time needs a brief description and attestation. Out-of-pocket and identity-theft claims need receipts; self-prepared notes alone are not enough.',
+  summary:
+    'A Baptist Health data-incident settlement. People who received notice may claim credit monitoring, lost-time pay, and documented expense or fraud reimbursement.',
+  description:
+    'Frazier & Ringo v. Baptist Health, No. 40CV-25-62 (Circuit Court of Lincoln County, Arkansas). People whose private information may have been involved in a roughly April–July 2024 network incident, including those who received notice. Baptist Health denies wrongdoing. Two years of credit monitoring, up to $80 lost time, up to $400 ordinary expenses, up to $4,000 identity-theft losses. Claims due December 8, 2026.',
+};
+
+const BRIGHT_LENDING: SettlementGuide = {
+  slugs: ['bright-lending-15-million-high-interest-loans-settlement'],
+  officialUrl: 'https://www.brightlendingsettlement.com/',
+  sourceChecked: '2026-11-17',
+  eligibilityText:
+    'U.S. residents except Nevada and Utah. Monetary Relief Class: at least one Bright Lending loan from October 1, 2020 through June 4, 2026, with at least one loan fully paid. Debt Relief Class: at least one Bright Lending loan from October 1, 2020 through December 31, 2024 that was not fully paid, and not in the Monetary Relief Class. A notice means defendants’ records indicate membership in one class.',
+  typicalPayout:
+    'A $15,000,000 fund for the Monetary Relief Class, pro rata on alleged usurious interest above principal, $15 minimum, no claim form. Covered unpaid loans originated October 1, 2020–December 31, 2024 are cancelled. Cash is mailed automatically unless an electronic payment is chosen by December 21, 2026.',
+  deadline: '2026-12-21',
+  proof: 'no',
+  proofDetail:
+    'No claim form is required. To take ACH, Venmo, PayPal, or Zelle instead of a check, or to correct a mailing address, tell the administrator by December 21, 2026. That date is also the opt-out and objection deadline.',
+  summary:
+    'A $15 million Bright Lending settlement. Paid-off borrowers get automatic cash (minimum $15); unpaid covered loans are cancelled. No claim form.',
+  description:
+    'Dixon v. Gatzke, No. 1:24-cv-11834 (N.D. Ill.). U.S. Bright Lending borrowers (not Nevada or Utah) in the class periods. Automatic cash from a $15,000,000 fund and/or cancellation of unpaid balances. Defendants deny the claims. No claim form. Electronic-payment, opt-out and objection deadline December 21, 2026.',
+  extraFaqs: [
+    {
+      q: 'Do I need to file a claim in the Bright Lending settlement?',
+      a: 'No. The official FAQ says Monetary Relief Class members are paid automatically from the $15,000,000 fund, and covered unpaid loans are cancelled. December 21, 2026 is the deadline to pick an electronic payment, update an address, opt out, or object.',
+    },
+  ],
+};
+
+const BECTON_FAIR_FUND: SettlementGuide = {
+  slugs: ['becton-dickinson-175m-sec-fair-fund-bdx'],
+  officialUrl: 'https://www.bectonfairfund.com/',
+  sourceChecked: '2026-11-17',
+  administrator: 'JND Legal Administration',
+  eligibilityText:
+    'People or entities who bought Becton, Dickinson and Company common stock (BDX) from February 5, 2019 through February 5, 2020, inclusive, and suffered losses. A Plan Notice from the Fund Administrator means the recipient was identified as someone who may be able to claim.',
+  typicalPayout:
+    'An SEC Fair Fund of $175,000,000 plus interest, distributed under the Commission-approved Plan of Distribution. The official site does not state a per-person amount. A timely claim with trade records is required.',
+  deadline: '2026-12-13',
+  proof: 'yes',
+  proofDetail:
+    'A signed Claim Form with broker confirmations, account statements, or an authorized broker statement is due by 11:59 p.m. EST on December 13, 2026. Filing does not guarantee a payment; eligibility follows the Plan of Distribution.',
+  summary:
+    'A $175 million SEC Fair Fund for purchasers of Becton, Dickinson (BDX) common stock from February 5, 2019 through February 5, 2020 who suffered losses.',
+  description:
+    'In the Matter of Becton, Dickinson and Company, File No. 3-22361. $175,000,000 Fair Fund plus interest. BDX common stock bought from February 5, 2019 through February 5, 2020 with losses. Claims with trade records due December 13, 2026. JND Legal Administration is the Fund Administrator.',
+};
+
 export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   HYUNDAI_KIA_THEFT,
   HYUNDAI_KIA_AIRBAG,
@@ -380,6 +540,14 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   ALLSTATE_AZ,
   CAPITAL_ONE_ARENA,
   HARVARD_MORGUE,
+  ZUMBA_VPPA,
+  KUCOIN_NY,
+  DENTAL_INTELLIGENCE,
+  CBIZ_BREACH,
+  CONTAINER_STORE,
+  BAPTIST_HEALTH,
+  BRIGHT_LENDING,
+  BECTON_FAIR_FUND,
 ];
 
 function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {

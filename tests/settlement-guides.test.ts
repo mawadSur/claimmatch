@@ -51,6 +51,17 @@ const NEW_BATCH_SLUGS = [
   'harvard-morgue-class-action-settlement',
 ] as const;
 
+const WEEKLY_BATCH_SLUGS = [
+  'zumba-fitness-data-privacy-class-action-settlement',
+  'kucoin-22m-new-york-enforcement-action-settlement',
+  'dental-intelligence-5-75m-privacy-class-action-settlement',
+  'cbiz-data-breach-class-action-settlement',
+  'the-container-store-massachusetts-class-action-settlement',
+  'baptist-health-data-breach-class-action-settlement',
+  'bright-lending-15-million-high-interest-loans-settlement',
+  'becton-dickinson-175m-sec-fair-fund-bdx',
+] as const;
+
 describe('settlement guides', () => {
   it('covers the original ten plus the new batch with an official https source', () => {
     const slugs = SETTLEMENT_GUIDES.flatMap((guide) => guide.slugs);
@@ -74,6 +85,16 @@ describe('settlement guides', () => {
       expect(guide?.deadline).toBeDefined();
       expect((guide?.deadline ?? '') >= '2026-11-16').toBe(true);
     }
+    for (const slug of WEEKLY_BATCH_SLUGS) {
+      expect(slugs, slug).toContain(slug);
+      const guide = getSettlementGuide(slug);
+      expect(guide?.officialUrl).toMatch(/^https:\/\//);
+      expect(guide?.eligibilityText.length).toBeGreaterThan(40);
+      expect(guide?.typicalPayout.length).toBeGreaterThan(20);
+      expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(guide?.sourceChecked).toBe('2026-11-17');
+      expect((guide?.deadline ?? '') >= '2026-11-17').toBe(true);
+    }
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
   });
 
@@ -81,6 +102,9 @@ describe('settlement guides', () => {
     expect(hasOfficialNoticeGuide('toyota-airbag-control-unit-zf-trw-settlement')).toBe(true);
     expect(noticeCheckedOnLabel('toyota-airbag-control-unit-zf-trw-settlement')).toBe(
       'Checked against the official notice on Nov 10, 2026',
+    );
+    expect(noticeCheckedOnLabel('cbiz-data-breach-class-action-settlement')).toBe(
+      'Checked against the official notice on Nov 17, 2026',
     );
     expect(noticeCheckedOnLabel('hyundai-kia-vehicle-theft')).toBe(
       'Checked against the official notice on Nov 3, 2026',
@@ -154,6 +178,53 @@ describe('settlement guides', () => {
     const text = settlementFaqs(overlaid).map((f) => `${f.q} ${f.a}`).join('\n');
     expect(text).toMatch(/airbagcontrolunitsettlement\.com/);
     expect(text).not.toMatch(/you(?:['’]re|\s+are)\s+eligible/i);
+  });
+
+  it('overlays the CBIZ official site, documented-loss cap and cash estimate', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'cbiz-data-breach-class-action-settlement',
+        title: 'CBIZ Data Breach Class Action Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        administrator: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$5,000/);
+    expect(overlaid.typical_payout).toMatch(/\$485,000/);
+    expect(overlaid.deadline).toBe('2026-12-24');
+    expect(overlaid.claim_url).toBe('https://cbizdatabreachsettlement.com/');
+    expect(overlaid.administrator).toMatch(/Simpluris/);
+    expect(overlaid.eligibility_text).toMatch(/Data Incident/);
+    expect(overlaid.eligibility.proof).toBe('optional');
+    const text = settlementFaqs(overlaid).map((f) => `${f.q} ${f.a}`).join('\n');
+    expect(text).toMatch(/cbizdatabreachsettlement\.com/);
+    expect(text).not.toMatch(/you(?:['’]re|\s+are)\s+eligible/i);
+  });
+
+  it('overlays Bright Lending automatic cash and notes that no claim form is required', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'bright-lending-15-million-high-interest-loans-settlement',
+        title: 'Bright Lending High-Interest Loans Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$15,000,000/);
+    expect(overlaid.deadline).toBe('2026-12-21');
+    expect(overlaid.claim_url).toBe('https://www.brightlendingsettlement.com/');
+    expect(overlaid.eligibility.proof).toBe('no');
+    expect(settlementProofDetail(overlaid)).toMatch(/No claim form is required/);
+    expect(settlementGuideFaqs(overlaid.slug)[0]?.a).toMatch(/paid automatically/);
   });
 
   it('maps both Hyundai/Kia theft slugs to the same official site', () => {
