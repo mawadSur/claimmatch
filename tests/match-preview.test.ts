@@ -85,7 +85,7 @@ describe('logged-out match preview', () => {
     const strong = results.find((r) => r.slug === 'breach-ny');
     const possible = results.find((r) => r.slug === 'state-only');
     expect(strong?.strengthLabel).toBe('Strong match');
-    expect(possible?.strengthLabel).toBe('Possible match');
+    expect(possible?.strengthLabel).toBe('Strong match');
     expect(strong?.typical_payout).toBe('$40–$80');
     expect(possible?.typical_payout).toBeNull();
     expect(JSON.stringify(results)).not.toMatch(/you qualify|eligib|% match/i);

@@ -24,8 +24,8 @@ import {
 import { pickClosingSoon } from '../../lib/closing-soon';
 import { officialSiteUrl } from '../../lib/lawsuit-display';
 import {
-  classifyMatch,
   matchProfile,
+  matchStrengthFromScore,
   matchStrengthLabel,
   type MatchStrength,
 } from '../../lib/matching';
@@ -274,8 +274,7 @@ export interface ClosingSoonItem {
 
 /**
  * Ranked matches for the signed-in profile. Past-deadline, fictional, and
- * unpublished rows never appear. Strong = rule-verified; Possible =
- * heuristic or state-only.
+ * unpublished rows never appear. Strong = score ≥ 0.75; Possible = eligible below that.
  */
 export function buildDashboardMatches(
   profile: Pick<Profile, 'state' | 'attributes' | 'facts'>,
@@ -290,7 +289,7 @@ export function buildDashboardMatches(
   const scored = matchProfile(profile as Profile, open, 0.4, now).flatMap((result) => {
     const lawsuit = byId.get(result.lawsuit_id);
     if (!lawsuit) return [];
-    const strength = classifyMatch(lawsuit);
+    const strength = matchStrengthFromScore(result.score);
     return [
       {
         id: lawsuit.id,
@@ -332,7 +331,8 @@ export function buildDashboardMatchesFromStored(
     })
     .map((row) => {
       const lawsuit = row.lawsuit as Lawsuit;
-      const strength = classifyMatch(lawsuit);
+      const score = Number(row.score) || 0;
+      const strength = matchStrengthFromScore(score);
       return {
         id: lawsuit.id,
         slug: lawsuit.slug,
@@ -342,7 +342,7 @@ export function buildDashboardMatchesFromStored(
         strength,
         label: matchStrengthLabel(strength),
         officialUrl: officialSiteUrl(lawsuit.claim_url),
-        score: Number(row.score) || 0,
+        score,
         matchId: row.id,
         isNew: isNewStoredMatch(row.created_at, now),
       };

@@ -241,12 +241,12 @@ describe('buildDashboardMatches', () => {
       strength: 'strong',
     });
     expect(items.find((i) => i.slug === 'state-only')).toMatchObject({
-      label: 'Possible match',
-      strength: 'possible',
+      label: 'Strong match',
+      strength: 'strong',
     });
     expect(JSON.stringify(items)).not.toMatch(/%|matched \d/i);
     expect(items[0].strength).toBe('strong');
-    expect(items.map((i) => i.strength)).toEqual(['strong', 'possible']);
+    expect(items.map((i) => i.strength)).toEqual(['strong', 'strong']);
   });
 
   it('puts Strong first, caps Possible around 20, and reports an empty Strong group', () => {

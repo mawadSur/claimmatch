@@ -265,8 +265,8 @@ describe('GET /api/mobile/dashboard: the response', () => {
     expect(data.claims).toEqual({ failed: false, ...buildDashboard(h.claims.items, NOW, isFictionalSettlementSlug) });
 
     expect(data.matches).toMatchObject({ failed: false, possibleHidden: 0 });
-    expect(data.matches.strong.map((m) => m.slug)).toEqual(['breach']);
-    expect(data.matches.possible.map((m) => m.slug)).toEqual(['state-only']);
+    expect(data.matches.strong.map((m) => m.slug).sort()).toEqual(['breach', 'state-only']);
+    expect(data.matches.possible).toEqual([]);
     expect(data.matches.strong[0]).toMatchObject({ label: 'Strong match', strength: 'strong' });
     for (const match of [...data.matches.strong, ...data.matches.possible]) {
       expect(Object.keys(match).sort()).toEqual([

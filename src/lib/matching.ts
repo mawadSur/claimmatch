@@ -21,6 +21,8 @@ const HEALTH_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set(['took_medication']);
 
 /** Floor of a rule-verified eligible score (0.5 + hits/signals * 0.5). */
 export const RULE_VERIFIED_FLOOR = 0.5;
+/** User-facing “Strong match” when the internal score is at or above this (not shown as %). */
+export const STRONG_MATCH_SCORE_THRESHOLD = 0.75;
 /** State-only matches sit above heuristics and below attribute-verified rules. */
 export const STATE_ONLY_SCORE_CAP = 0.55;
 /** No structured rules and no category/keyword overlap. Below matchProfile's 0.4. */
@@ -189,9 +191,14 @@ export function matchStrengthLabel(strength: MatchStrength): string {
   return strength === 'strong' ? 'Strong match' : 'Possible match';
 }
 
+/** Strong vs Possible label from matcher score (dashboard, preview, mobile). */
+export function matchStrengthFromScore(score: number): MatchStrength {
+  return score >= STRONG_MATCH_SCORE_THRESHOLD ? 'strong' : 'possible';
+}
+
 /**
- * Strong = structured requires/anyOf rules (attribute-verified).
- * Possible = state-only or unstructured category/keyword overlap.
+ * Structured rule lane for filing (agent authorization). Not the same as
+ * matchStrengthFromScore, which is what people see on matches.
  */
 export function classifyMatch(lawsuit: Pick<Lawsuit, 'eligibility' | 'tags'>): MatchStrength {
   const criteria: EligibilityCriteria = lawsuit.eligibility || {};

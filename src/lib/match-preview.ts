@@ -1,12 +1,12 @@
 import { ELIGIBILITY_QUESTIONS, RETIRED_QUESTION_KEYS } from './eligibility';
-import { classifyMatch, matchProfile, matchStrengthLabel, type MatchStrength } from './matching';
+import { matchProfile, matchStrengthFromScore, matchStrengthLabel, type MatchStrength } from './matching';
 import { answersFromAttributes, parseAttributeAnswers, type AttributeAnswers } from './profile-attributes';
 import type { EligibilityQuestion, Lawsuit, Profile } from './types';
 import { US_STATES } from './utils';
-
+6
 /** Browser storage for logged-out preview answers until signup/onboarding. */
 export const MATCH_PREVIEW_STORAGE_KEY = 'cm_match_preview';
-
+9
 /**
  * Short preview: state plus the yes/no matcher items that cover products,
  * services, and data-breach notices. No health keys. No vehicle-brand list.
@@ -17,21 +17,21 @@ export const MATCH_PREVIEW_ATTRIBUTE_KEYS = [
   'used_banking',
   'used_streaming',
 ] as const;
-
+20
 export type MatchPreviewAttributeKey = (typeof MATCH_PREVIEW_ATTRIBUTE_KEYS)[number];
-
+22
 const STATE_CODES = new Set(US_STATES.map((s) => s.code));
 const PREVIEW_KEY_SET = new Set<string>(MATCH_PREVIEW_ATTRIBUTE_KEYS);
-
+25
 export const MATCH_PREVIEW_QUESTIONS: EligibilityQuestion[] = ELIGIBILITY_QUESTIONS.filter(
   (q) => q.key === 'state' || PREVIEW_KEY_SET.has(q.key),
 );
-
+29
 export interface MatchPreviewDraft {
   state: string;
   attributes: Partial<Record<MatchPreviewAttributeKey, boolean>>;
 }
-
+34
 export interface MatchPreviewResult {
   slug: string;
   title: string;
@@ -41,17 +41,17 @@ export interface MatchPreviewResult {
   strengthLabel: string;
   reasons: string[];
 }
-
+44
 const PREVIEW_RESULT_CAP = 8;
-
+46
 export function emptyMatchPreviewDraft(): MatchPreviewDraft {
   return { state: '', attributes: {} };
 }
-
+50
 export function isPreviewAttributeKey(key: string): key is MatchPreviewAttributeKey {
   return PREVIEW_KEY_SET.has(key);
 }
-
+54
 export function parseMatchPreviewDraft(raw: unknown): MatchPreviewDraft | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const input = raw as Record<string, unknown>;
@@ -69,7 +69,7 @@ export function parseMatchPreviewDraft(raw: unknown): MatchPreviewDraft | null {
   if (!state && Object.keys(attributes).length === 0) return null;
   return { state, attributes };
 }
-
+72
 export function previewAnswersToAttributes(draft: MatchPreviewDraft): AttributeAnswers {
   const answers: AttributeAnswers = {};
   for (const [key, value] of Object.entries(draft.attributes)) {
@@ -79,7 +79,7 @@ export function previewAnswersToAttributes(draft: MatchPreviewDraft): AttributeA
   }
   return answers;
 }
-
+82
 /** Fill blank onboarding answers from a stored preview. Existing values win. */
 export function mergePreviewIntoAnswers(
   existing: AttributeAnswers,
@@ -93,7 +93,7 @@ export function mergePreviewIntoAnswers(
   }
   return next;
 }
-
+96
 export function draftFromAttributes(
   state: string | null | undefined,
   attributes: Record<string, unknown> | null | undefined,
@@ -108,7 +108,7 @@ export function draftFromAttributes(
   }
   return draft;
 }
-
+111
 export function previewProfileFromDraft(draft: MatchPreviewDraft): Profile {
   const parsed = parseAttributeAnswers(previewAnswersToAttributes(draft));
   const attributes = parsed.ok ? parsed.attributes : {};
@@ -119,7 +119,7 @@ export function previewProfileFromDraft(draft: MatchPreviewDraft): Profile {
     onboarded: false,
   } as Profile;
 }
-
+122
 export function previewMatchesFor(
   lawsuits: Lawsuit[],
   draft: MatchPreviewDraft,
@@ -131,7 +131,7 @@ export function previewMatchesFor(
     .map((result) => {
       const lawsuit = byId.get(result.lawsuit_id);
       if (!lawsuit) return null;
-      const strength = classifyMatch(lawsuit);
+      const strength = matchStrengthFromScore(result.score);
       const payout = lawsuit.typical_payout?.trim() || null;
       return {
         slug: lawsuit.slug,
@@ -146,7 +146,7 @@ export function previewMatchesFor(
     .filter((row): row is MatchPreviewResult => row !== null)
     .slice(0, PREVIEW_RESULT_CAP);
 }
-
+149
 export function readStoredMatchPreview(): MatchPreviewDraft | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -157,7 +157,7 @@ export function readStoredMatchPreview(): MatchPreviewDraft | null {
     return null;
   }
 }
-
+160
 export function writeStoredMatchPreview(draft: MatchPreviewDraft): void {
   if (typeof window === 'undefined') return;
   try {
@@ -166,7 +166,7 @@ export function writeStoredMatchPreview(draft: MatchPreviewDraft): void {
     /* private mode */
   }
 }
-
+169
 export function clearStoredMatchPreview(): void {
   if (typeof window === 'undefined') return;
   try {
@@ -175,9 +175,9 @@ export function clearStoredMatchPreview(): void {
     /* private mode */
   }
 }
-
+178
 const SETTLEMENT_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
-
+180
 /** A catalog slug safe to put on /preview?settlement= and the preview API. */
 export function parseSettlementScopeSlug(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
@@ -185,13 +185,13 @@ export function parseSettlementScopeSlug(raw: unknown): string | null {
   if (!SETTLEMENT_SLUG.test(slug)) return null;
   return slug;
 }
-
+188
 /** Preview URL scoped to one settlement. */
 export function settlementPreviewPath(slug: string): string | null {
   const safe = parseSettlementScopeSlug(slug);
   return safe ? `/preview?settlement=${encodeURIComponent(safe)}` : null;
 }
-
+194
 /**
  * Questions for a settlement-scoped preview. Only onboarding keys the listing
  * actually uses (state / requires / anyOf) and that the short preview already
@@ -218,7 +218,7 @@ export function scopedPreviewQuestions(
   }
   return scoped;
 }
-
+221
 export function previewMatchesForScope(
   lawsuits: Lawsuit[],
   draft: MatchPreviewDraft,
@@ -229,3 +229,4 @@ export function previewMatchesForScope(
   const pool = safe ? lawsuits.filter((row) => row.slug === safe) : lawsuits;
   return previewMatchesFor(pool, draft, now);
 }
+232

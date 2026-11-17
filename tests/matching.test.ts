@@ -5,8 +5,10 @@ import {
   UNSTRUCTURED_CATEGORY_SCORE,
   UNSTRUCTURED_KEYWORD_SCORE,
   UNSTRUCTURED_NONE_SCORE,
+  STRONG_MATCH_SCORE_THRESHOLD,
   classifyMatch,
   matchProfile,
+  matchStrengthFromScore,
   matchStrengthLabel,
   scoreLawsuit,
 } from '@/lib/matching';
@@ -463,7 +465,16 @@ describe('sample profiles — before/after match counts', () => {
   });
 });
 
-describe('classifyMatch — labels people see', () => {
+describe('matchStrengthFromScore — labels people see', () => {
+  it('treats 0.75 and above as Strong match and below as Possible', () => {
+    expect(STRONG_MATCH_SCORE_THRESHOLD).toBe(0.75);
+    expect(matchStrengthFromScore(0.74)).toBe('possible');
+    expect(matchStrengthFromScore(0.75)).toBe('strong');
+    expect(matchStrengthFromScore(1)).toBe('strong');
+  });
+});
+
+describe('classifyMatch — agent filing lane', () => {
   it('calls a requires/anyOf hit a strong match and state-only or unstructured a possible match', () => {
     expect(classifyMatch(makeLawsuit({ requires: ['had_data_breach'] }))).toBe('strong');
     expect(classifyMatch(makeLawsuit({ anyOf: { vehicle_brands: ['Toyota'] } }))).toBe('strong');
