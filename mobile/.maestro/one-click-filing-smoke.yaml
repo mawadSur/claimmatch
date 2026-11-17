@@ -1,0 +1,36 @@
+appId: org.lawsuitai.claimmatch
+env:
+  CLAIM_SLUG: lawsuit-ai-one-click-test-settlement
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: login-email
+- tapOn:
+    id: login-email
+- inputText: ${MAESTRO_TEST_EMAIL}
+- tapOn:
+    id: login-password
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: login-submit
+- extendedWaitUntil:
+    visible:
+      id: dashboard
+    timeout: 30000
+- openLink: claimmatch://claim/${CLAIM_SLUG}
+- extendedWaitUntil:
+    visible:
+      id: filing-entry
+    timeout: 20000
+- tapOn:
+    id: filing-start
+- extendedWaitUntil:
+    visible:
+      id: filing-step-confirm
+    timeout: 20000
+- assertVisible:
+    id: filing-class-definition
+- assertVisible:
+    id: filing-step-need-target
