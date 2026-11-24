@@ -363,6 +363,156 @@ const HARVARD_MORGUE: SettlementGuide = {
     'MacTaggart et al. v. President & Fellows of Harvard College is a proposed $53 million settlement ($52.5 million for donors whose remains left the morgue from January 1, 2018 through March 31, 2023, and $500,000 for 2003–2017). Relatives, designees and certain notice recipients may file. Harvard denies the allegations. Each net fund is split by donor, then among people who filed for that donor. Claims are due December 9, 2026. Simpluris administers the official site. The court still has to approve the settlement.',
 };
 
+const CONTAINER_STORE: SettlementGuide = {
+  slugs: ['the-container-store-massachusetts-class-action-settlement'],
+  officialUrl: 'https://www.tcssettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'CPT Group, Inc.',
+  eligibilityText:
+    'People who made a purchase at a The Container Store location in Massachusetts between July 20, 2011 and August 12, 2026; had a vision-related disability that requires assistive technology to access visual information at the time of the purchase; sought to credit the purchase to a new or existing Container Store loyalty-program account; and encountered a touch-screen point-of-sale kiosk or other device that lacked non-visual methods for that input.',
+  typicalPayout:
+    'A $780,000 settlement, with $230,000 allocated to a Damages Fund. Eligible claimants may receive $75 for each qualifying purchase, subject to a pro-rata reduction of that fund.',
+  deadline: '2026-12-20',
+  proof: 'unknown',
+  proofDetail:
+    'A claim form must be submitted by December 20, 2026. The official homepage does not say what, if anything, to attach.',
+  summary:
+    'A Massachusetts Container Store settlement for shoppers with a vision-related disability who could not use inaccessible POS devices to credit a loyalty purchase. Cash is claimed on the official site.',
+  description:
+    'Cadigan et al. v. The Container Store, Inc. covers Massachusetts in-store purchases from July 20, 2011 through August 12, 2026 by people with a vision-related disability who tried to credit a purchase to a loyalty account on an inaccessible POS device. The settlement is $780,000, with $230,000 in a Damages Fund. Valid claims may pay $75 per qualifying purchase, reduced pro rata if the fund is not enough. Claims are due December 20, 2026. CPT Group, Inc. administers the official site.',
+};
+
+const BAPTIST_HEALTH: SettlementGuide = {
+  slugs: ['baptist-health-data-breach-class-action-settlement'],
+  officialUrl: 'https://www.bhsettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'People who received notice of the Baptist Health data incident, including notice of this settlement. The incident is unauthorized access to Baptist Health Medical Center – Drew County’s network between approximately April and July 2024.',
+  typicalPayout:
+    'A timely claim form is the only way to receive benefits. The official homepage does not state a fixed per-person amount.',
+  deadline: '2026-12-08',
+  proof: 'unknown',
+  proofDetail:
+    'A valid claim form must be submitted or postmarked by December 8, 2026. Check the official form for what to attach.',
+  summary:
+    'A Baptist Health Medical Center – Drew County settlement over a 2024 data incident. Benefits are claimed on the official site.',
+  description:
+    'Frazier v. Baptist Health covers people who received notice of unauthorized access to Baptist Health Medical Center – Drew County’s network between about April and July 2024. Baptist Health denies wrongdoing. A timely claim form is required by December 8, 2026. The official homepage does not state a per-person amount. Simpluris administers the official site. The court still has to approve the settlement.',
+};
+
+const CBIZ_BREACH: SettlementGuide = {
+  slugs: ['cbiz-data-breach-class-action-settlement'],
+  officialUrl: 'https://www.cbizdatabreachsettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'People who were mailed notice that their personal information may have been compromised in the 2024 CBIZ Benefits & Insurance Services, Inc. data incident.',
+  typicalPayout:
+    'Up to $5,000 for documented out-of-pocket losses from the incident, plus a cash payment the official site estimates at roughly $100 if about 10% of the 19,990-person class files, then adjusted pro rata. Both can be combined. A timely claim form is required.',
+  deadline: '2026-12-24',
+  proof: 'optional',
+  proofDetail:
+    'A claim form is required by December 24, 2026. Documented out-of-pocket claims need records of actual losses or expenses. The official homepage does not require those records for the residual cash payment.',
+  summary:
+    'A CBIZ Benefits & Insurance Services settlement over a 2024 data incident. Documented losses and residual cash are claimed on the official site.',
+  description:
+    'In re CBIZ Data Breach Litigation covers people mailed notice that their information may have been compromised in a 2024 CBIZ incident. CBIZ denies wrongdoing. Valid claims may seek up to $5,000 in documented losses plus a residual cash payment the site estimates at about $100 at a 10% claims rate, then adjusted. Claims are due December 24, 2026. Simpluris administers the official site. The court still has to approve the settlement.',
+};
+
+const COAST_DENTAL: SettlementGuide = {
+  slugs: ['coast-dental-services-unwanted-texts-calls-class-action-settlement'],
+  officialUrl: 'https://cdstcpasettlement.com/',
+  sourceChecked: '2026-11-24',
+  eligibilityText:
+    'People in the United States who, within the four years before the case was filed, received more than one text or phone call in any 12-month period reminding or encouraging a Coast Dental appointment, on a cell phone, after they had replied STOP or a similar opt-out to a Coast Dental text.',
+  typicalPayout:
+    'A fund of up to $3,840,664. Valid claimants may choose a pro-rata cash payment of up to $59 or a $99 voucher toward an electronic toothbrush sold by Coast Dental, after fees, costs and any service award.',
+  deadline: '2026-12-24',
+  proof: 'no',
+  proofDetail:
+    'A completed, timely Claim Form with the required affirmations is due by December 24, 2026. The official FAQ does not ask for receipts. One claim per person.',
+  summary:
+    'A Coast Dental TCPA/FTSA settlement over appointment texts and calls sent after a STOP request. Cash or a voucher is claimed on the official site.',
+  description:
+    'Chaviano v. Coast Dental Services, LLC covers U.S. people who, in the four years before filing, received more than one appointment-reminder text or call in 12 months after opting out. Coast Dental denies the claims. The fund is up to $3,840,664. Valid claims may take up to $59 cash or a $99 toothbrush voucher. Claims are due December 24, 2026. The court still has to approve the settlement.',
+};
+
+const DENTAL_INTELLIGENCE: SettlementGuide = {
+  slugs: ['dental-intelligence-5-75m-privacy-class-action-settlement'],
+  officialUrl: 'https://www.disettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'Natural persons in the United States who used the LocalMed Portal to schedule, modify, or re-schedule an appointment between March 2022 and June 2025 and who shared information that was allegedly disclosed or transmitted to a third party.',
+  typicalPayout:
+    'A pro rata cash payment if you submit a timely and valid claim form. The official homepage does not state a fixed per-person amount.',
+  deadline: '2027-01-25',
+  proof: 'unknown',
+  proofDetail:
+    'A timely and valid claim form must be submitted or postmarked by January 25, 2027. The official homepage does not say what, if anything, to attach.',
+  summary:
+    'A Dental Intelligence settlement over alleged LocalMed Portal disclosures. A pro rata cash payment is claimed on the official site.',
+  description:
+    'Grivetti et al. v. Dental Intelligence, Inc. covers U.S. people who used the LocalMed Portal to schedule, modify or re-schedule an appointment between March 2022 and June 2025, where information they shared was allegedly sent to a third party. Dental Intelligence denies the claims. A timely claim form is required by January 25, 2027 for a pro rata cash payment. Simpluris administers the official site. The court still has to approve the settlement.',
+};
+
+const ADAMS_TOYOTA: SettlementGuide = {
+  slugs: ['adams-toyota-enviroguard-class-action-settlement'],
+  officialUrl: 'https://www.adamsautosettlement.com/',
+  sourceChecked: '2026-11-24',
+  eligibilityText:
+    'People who purchased a vehicle from Adams Auto Corp. d/b/a Adams Toyota that included an add-on purchase of the ResistAll/EnviroGuard product.',
+  typicalPayout:
+    'Monetary benefits if you submit a complete and verified claim form with supporting documentation. The official homepage does not state a fixed per-person amount.',
+  deadline: '2027-02-11',
+  proof: 'yes',
+  proofDetail:
+    'A complete and verified claim form with supporting documentation is required by February 11, 2027.',
+  summary:
+    'An Adams Toyota settlement over ResistAll/EnviroGuard add-on sales. Benefits are claimed on the official site with supporting documents.',
+  description:
+    'Foley v. Adams Auto Corp. covers people who bought a vehicle from Adams Toyota with a ResistAll/EnviroGuard add-on. Adams Toyota denies the claims. A complete, verified claim form with supporting documentation is due February 11, 2027. The official homepage does not state a per-person amount. The court still has to approve the settlement.',
+};
+
+const KISCO: SettlementGuide = {
+  slugs: ['kisco-senior-living-data-breach-class-action-settlement'],
+  officialUrl: 'https://www.kiscosettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'CPT Group, Inc.',
+  eligibilityText:
+    'Individual U.S. residents to whom Kisco Senior Living, LLC sent written notification of a data incident on or around June 1–6, 2023.',
+  typicalPayout:
+    'A $1,800,000 fund covering credit monitoring, ordinary and extraordinary out-of-pocket losses, attested time, a $250 California statutory payment for California residents at the time of the incident, and residual cash. Amounts depend on the claim type and remaining fund.',
+  deadline: '2027-01-19',
+  proof: 'optional',
+  proofDetail:
+    'A valid claim form is required by January 19, 2027. Out-of-pocket claims are listed separately from residual cash and the California statutory payment. Check the official form for what to attach.',
+  summary:
+    'A Kisco Senior Living settlement over a June 2023 data incident. Credit monitoring, documented losses, a California statutory payment and residual cash are claimed on the official site.',
+  description:
+    'Gois et al. v. Kisco Senior Living, LLC covers U.S. residents Kisco notified of a June 1–6, 2023 data incident. The fund is $1,800,000. Claims may include credit monitoring, out-of-pocket losses, attested time, $250 for California residents at the time of the incident, and residual cash. A claim form is due January 19, 2027. CPT Group, Inc. administers the official site. The court still has to approve the settlement.',
+};
+
+const LANE_COUNTY: SettlementGuide = {
+  slugs: ['lane-county-1-35m-tax-foreclosure-class-action-settlement'],
+  officialUrl: 'https://www.lanetaxforeclosuresettlement.com/',
+  sourceChecked: '2026-11-24',
+  administrator: 'Kroll Settlement Administration LLC',
+  eligibilityText:
+    'People who held, or are the heir and successor of someone who held, an ownership interest in, or a valid lien on, real property that was tax-foreclosed in Lane County, Oregon, where the statutory redemption period expired between October 12, 2017 and December 30, 2025.',
+  typicalPayout:
+    'A payment of surplus equity or surplus proceeds on an eligible claim. Surplus is the difference between the property’s sale price (or real market value) and unpaid taxes, fees and related costs. The official homepage does not state a fixed per-person amount.',
+  deadline: '2027-02-22',
+  proof: 'unknown',
+  proofDetail:
+    'An eligible claim form must be submitted online by 11:59 p.m. PT on February 22, 2027, or mailed and postmarked by that date. Check the official form for what to attach.',
+  summary:
+    'A Lane County, Oregon tax-foreclosure settlement over surplus equity. An eligible claim is required on the official site.',
+  description:
+    'Martin Lynch et al. v. Multnomah County et al. (Lane County) covers owners and valid lienholders of Lane County tax-foreclosed property whose statutory redemption period expired between October 12, 2017 and December 30, 2025, and their heirs. Lane County denies wrongdoing. Eligible claims may recover surplus equity or surplus proceeds. Claims are due February 22, 2027. Kroll Settlement Administration LLC administers the official site. The court still has to approve the settlement.',
+};
+
 export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   HYUNDAI_KIA_THEFT,
   HYUNDAI_KIA_AIRBAG,
@@ -380,6 +530,14 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   ALLSTATE_AZ,
   CAPITAL_ONE_ARENA,
   HARVARD_MORGUE,
+  CONTAINER_STORE,
+  BAPTIST_HEALTH,
+  CBIZ_BREACH,
+  COAST_DENTAL,
+  DENTAL_INTELLIGENCE,
+  ADAMS_TOYOTA,
+  KISCO,
+  LANE_COUNTY,
 ];
 
 function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {

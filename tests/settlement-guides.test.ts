@@ -51,6 +51,17 @@ const NEW_BATCH_SLUGS = [
   'harvard-morgue-class-action-settlement',
 ] as const;
 
+const WEEKLY_BATCH_SLUGS = [
+  'the-container-store-massachusetts-class-action-settlement',
+  'baptist-health-data-breach-class-action-settlement',
+  'cbiz-data-breach-class-action-settlement',
+  'coast-dental-services-unwanted-texts-calls-class-action-settlement',
+  'dental-intelligence-5-75m-privacy-class-action-settlement',
+  'adams-toyota-enviroguard-class-action-settlement',
+  'kisco-senior-living-data-breach-class-action-settlement',
+  'lane-county-1-35m-tax-foreclosure-class-action-settlement',
+] as const;
+
 describe('settlement guides', () => {
   it('covers the original ten plus the new batch with an official https source', () => {
     const slugs = SETTLEMENT_GUIDES.flatMap((guide) => guide.slugs);
@@ -74,6 +85,16 @@ describe('settlement guides', () => {
       expect(guide?.deadline).toBeDefined();
       expect((guide?.deadline ?? '') >= '2026-11-16').toBe(true);
     }
+    for (const slug of WEEKLY_BATCH_SLUGS) {
+      expect(slugs, slug).toContain(slug);
+      const guide = getSettlementGuide(slug);
+      expect(guide?.officialUrl).toMatch(/^https:\/\//);
+      expect(guide?.eligibilityText.length).toBeGreaterThan(40);
+      expect(guide?.typicalPayout.length).toBeGreaterThan(20);
+      expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(guide?.sourceChecked).toBe('2026-11-24');
+      expect((guide?.deadline ?? '') >= '2026-11-24').toBe(true);
+    }
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
   });
 
@@ -84,6 +105,9 @@ describe('settlement guides', () => {
     );
     expect(noticeCheckedOnLabel('hyundai-kia-vehicle-theft')).toBe(
       'Checked against the official notice on Nov 3, 2026',
+    );
+    expect(noticeCheckedOnLabel('the-container-store-massachusetts-class-action-settlement')).toBe(
+      'Checked against the official notice on Nov 24, 2026',
     );
     expect(hasOfficialNoticeGuide('quiet-settlement')).toBe(false);
     expect(noticeCheckedOnLabel('quiet-settlement')).toBeNull();
@@ -154,6 +178,29 @@ describe('settlement guides', () => {
     const text = settlementFaqs(overlaid).map((f) => `${f.q} ${f.a}`).join('\n');
     expect(text).toMatch(/airbagcontrolunitsettlement\.com/);
     expect(text).not.toMatch(/you(?:['’]re|\s+are)\s+eligible/i);
+  });
+
+  it('overlays the Container Store official site, $75-per-purchase payout and claim deadline', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'the-container-store-massachusetts-class-action-settlement',
+        title: 'The Container Store (Massachusetts) Class Action Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        administrator: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$75/);
+    expect(overlaid.deadline).toBe('2026-12-20');
+    expect(overlaid.claim_url).toBe('https://www.tcssettlement.com/');
+    expect(overlaid.administrator).toMatch(/CPT Group/);
+    expect(overlaid.eligibility_text).toMatch(/Massachusetts/);
+    expect(overlaid.eligibility.proof).toBe('unknown');
+    expect(overlaid.verified_at).toBeUndefined();
   });
 
   it('maps both Hyundai/Kia theft slugs to the same official site', () => {
