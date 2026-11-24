@@ -143,6 +143,33 @@ export const settlement = defineCopy({
     text: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
+  /** SETTLEMENT_FILING_COPY.agent.step — one-click on and this settlement has an agent lane. */
+  stepFileTitleAgent: {
+    text: 'File it yourself, or choose one-click filing',
+    source: 'src/lib/copy.ts',
+  },
+  stepFileBodyAgent: {
+    text: 'For this settlement, Lawsuit AI can file your claim with the settlement administrator after you review and sign it, if you qualify and live in a state it covers. Or file it yourself on the official site, where filing is free. Lawsuit AI never handles settlement payments.',
+    source: 'src/lib/copy.ts',
+  },
+  /** SETTLEMENT_FILING_COPY.self_file.step — one-click on, this settlement has no agent lane. */
+  stepFileTitleSelfFile: {
+    text: 'File on the official site yourself',
+    source: 'src/lib/copy.ts',
+  },
+  stepFileBodySelfFile: {
+    text: 'Filing is free. You file this claim yourself on the official site. Lawsuit AI never handles settlement payments.',
+    source: 'src/lib/copy.ts',
+  },
+  /** Generic may-file (flag on, catalog API has no lane): MAY_FILE_PAGE_COPY.inviteStep. */
+  stepFileTitleMayFile: {
+    text: 'You choose who files',
+    source: 'src/lib/copy.ts',
+  },
+  stepFileBodyMayFileTail: {
+    text: 'Otherwise you file on the settlement’s official website. Lawsuit AI is not a law firm.',
+    source: 'src/lib/copy.ts',
+  },
   stepTrackTitle: {
     text: 'Keep track in Lawsuit AI',
     source: 'src/app/lawsuits/[slug]/page.tsx',
@@ -219,6 +246,31 @@ export const settlement = defineCopy({
     text: 'Save your confirmation number in one place',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
+  checklistAgentCanFile: {
+    text: 'Lawsuit AI can file this claim for you after you review and sign it',
+    source: 'src/lib/copy.ts',
+  },
+  checklistAlwaysOfficial: {
+    text: 'You can always file on the official site yourself instead',
+    source: 'src/lib/copy.ts',
+  },
+  checklistNeverHandlesPayments: {
+    text: 'Lawsuit AI never handles settlement payments',
+    source: 'src/lib/copy.ts',
+  },
+  checklistSelfFileOfficial: {
+    text: 'You file on the official site yourself',
+    source: 'src/lib/copy.ts',
+  },
+  /** SOME_SETTLEMENTS — generic may-file when the catalog API has no lane. */
+  checklistSomeSettlements: {
+    text: 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.',
+    source: 'src/lib/copy.ts',
+  },
+  checklistAlwaysOfficialSite: {
+    text: 'You can always file on the official settlement website yourself.',
+    source: 'src/lib/copy.ts',
+  },
   closedNotTaking: {
     text: 'This settlement isn’t taking claims.',
     source: 'src/app/lawsuits/[slug]/page.tsx',
@@ -255,3 +307,62 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/not-found.tsx',
   },
 });
+
+/**
+ * Who-files mode on the settlement screen (mirrors src/app/lawsuits/[slug]/page.tsx
+ * settlementFilingMode). The catalog API does not send a lane, so `agentLane`
+ * is null unless a caller already has one (tests, or a later payload). Flag
+ * off keeps never_files; flag on without a lane is generic may-file.
+ */
+export type SettlementFilingUiMode = 'never_files' | 'agent' | 'self_file' | 'may_file';
+
+export function settlementFilingUiMode(
+  oneClickOn: boolean,
+  agentLane?: boolean | null,
+): SettlementFilingUiMode {
+  if (!oneClickOn) return 'never_files';
+  if (agentLane === true) return 'agent';
+  if (agentLane === false) return 'self_file';
+  return 'may_file';
+}
+
+export function settlementFileStep(mode: SettlementFilingUiMode): { title: string; body: string } {
+  if (mode === 'agent') return { title: settlement.stepFileTitleAgent.text, body: settlement.stepFileBodyAgent.text };
+  if (mode === 'self_file') return { title: settlement.stepFileTitleSelfFile.text, body: settlement.stepFileBodySelfFile.text };
+  if (mode === 'may_file') {
+    return {
+      title: settlement.stepFileTitleMayFile.text,
+      body: `${settlement.checklistSomeSettlements.text} ${settlement.stepFileBodyMayFileTail.text}`,
+    };
+  }
+  return { title: settlement.stepFileTitle.text, body: settlement.stepFileBody.text };
+}
+
+export function settlementChecklist(mode: SettlementFilingUiMode): readonly string[] {
+  if (mode === 'agent') {
+    return [
+      settlement.checklistAgentCanFile.text,
+      settlement.checklistAlwaysOfficial.text,
+      settlement.checklistNeverHandlesPayments.text,
+    ];
+  }
+  if (mode === 'self_file') {
+    return [
+      settlement.checklistSelfFileOfficial.text,
+      settlement.checklistNeverHandlesPayments.text,
+      settlement.checklistSaveNumber.text,
+    ];
+  }
+  if (mode === 'may_file') {
+    return [
+      settlement.checklistSomeSettlements.text,
+      settlement.checklistAlwaysOfficialSite.text,
+      settlement.checklistNeverHandlesPayments.text,
+    ];
+  }
+  return [
+    settlement.checklistFileYourself.text,
+    settlement.checklistNeverFiles.text,
+    settlement.checklistSaveNumber.text,
+  ];
+}

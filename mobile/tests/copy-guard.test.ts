@@ -11,6 +11,7 @@ import {
   forUpdatesSentence,
   listingSourceSentence,
   loadErrorTitle,
+  packetNoteText,
   recheckingSentence,
   reportedTitle,
   stepHeadingLabel,
@@ -29,8 +30,9 @@ import {
   noticeListTitle,
   showAllNoticesLabel,
 } from '@/copy/notices';
-import { signedInAsText, stepOfTwoText } from '@/copy/onboarding';
-import { store } from '@/copy/store';
+import { onboardingHowStep3Text, onboardingIntroText, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
+import { settlementChecklist, settlementFileStep } from '@/copy/settlement';
+import { store, storeDescriptionText, storeFactsText } from '@/copy/store';
 import { catalogStatusText } from '@/features/catalog/catalog-status';
 
 /**
@@ -317,6 +319,18 @@ const COMPOSED: [string, string][] = [
   composed('mobile/src/copy/onboarding.ts', stepOfTwoText(1)),
   composed('mobile/src/copy/onboarding.ts', stepOfTwoText(2)),
   composed('mobile/src/copy/onboarding.ts', signedInAsText('ana@example.com')),
+  composed('mobile/src/copy/onboarding.ts', onboardingIntroText(false)),
+  composed('mobile/src/copy/onboarding.ts', onboardingIntroText(true)),
+  composed('mobile/src/copy/onboarding.ts', onboardingHowStep3Text(false)),
+  composed('mobile/src/copy/onboarding.ts', onboardingHowStep3Text(true)),
+  ...(['never_files', 'agent', 'self_file', 'may_file'] as const).flatMap((mode) => [
+    composed('mobile/src/copy/settlement.ts', settlementFileStep(mode).body),
+    ...settlementChecklist(mode).map((line) => composed('mobile/src/copy/settlement.ts', line)),
+  ]),
+  composed(CLAIM_COPY, packetNoteText(false)),
+  composed(CLAIM_COPY, packetNoteText(true)),
+  composed('mobile/src/copy/store.ts', storeFactsText()),
+  composed('mobile/src/copy/store.ts', storeDescriptionText()),
   ...[
     { failed: false, count: 1, category: 'Data breach', q: 'overdraft', hasDeadline: true, proofNotRequired: true },
     { failed: false, count: 12 },
@@ -342,6 +356,21 @@ const STORE_LIMITS: Record<keyof typeof store, number> = {
   subtitle: 30,
   shortDescription: 80,
   descriptionLead: 4000,
+  mayFile: 4000,
+  officialFilingFree: 4000,
+  betaFee: 4000,
+  someSettlements: 4000,
+  alwaysFileYourself: 4000,
+  notLawFirm: 4000,
+  noAttorneyClient: 4000,
+  neverHandlesPayments: 4000,
+  administratorPaysYou: 4000,
+  unverifiedCaution: 4000,
+  officialNoticeFinal: 4000,
+  noLegalAdviceQualify: 4000,
+  weDontSell: 4000,
+  settleSignalLlms: 4000,
+  settleSignalSource: 4000,
 };
 
 describe('mobile copy guard', () => {
@@ -409,6 +438,18 @@ describe('mobile copy guard', () => {
 
   it.each(Object.entries(store))('store listing %s fits its store limit', (key, entry) => {
     expect(entry.text.length).toBeLessThanOrEqual(STORE_LIMITS[key as keyof typeof store]);
+  });
+
+  it('the composed store description fits the 4,000-character store limit', () => {
+    expect(storeDescriptionText().length).toBeLessThanOrEqual(4000);
+    expect(storeFactsText().length).toBeLessThanOrEqual(4000);
+  });
+
+  it('the store listing draft does not promise never-files, a fee share, or a dollar price', () => {
+    const listing = `${storeDescriptionText()}\n${storeFactsText()}`;
+    expect(listing).not.toMatch(/never files/i);
+    expect(listing).not.toMatch(/(?<![\d.])15\s?(?:%|percent\b)/i);
+    expect(listing).not.toMatch(/\$\d/);
   });
 });
 

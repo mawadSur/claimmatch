@@ -60,8 +60,14 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-async function showPacket(profile: PacketProfile | null = PROFILE, formFieldOrder: string[] | null = null) {
-  await render(<PrefillPacket profile={profile} formFieldOrder={formFieldOrder} />, { wrapper: Providers });
+async function showPacket(
+  profile: PacketProfile | null = PROFILE,
+  formFieldOrder: string[] | null = null,
+  agentLane = false,
+) {
+  await render(<PrefillPacket profile={profile} formFieldOrder={formFieldOrder} agentLane={agentLane} />, {
+    wrapper: Providers,
+  });
 }
 
 /** The copy buttons in screen order, by the field they copy. */
@@ -93,6 +99,7 @@ describe('PrefillPacket', () => {
     await showPacket();
     expect(screen.getByText(copy.packetTitle.text)).toBeOnTheScreen();
     expect(screen.getByText(copy.packetNote.text)).toBeOnTheScreen();
+    expect(screen.queryByText(copy.packetNoteAgent.text)).toBeNull();
     expect(screen.getByLabelText(copy.fullName.text)).toHaveDisplayValue('Ana Diaz');
     expect(screen.getByTestId('claim-packet-state')).toHaveAccessibilityValue({ text: 'California' });
     expect(fieldOrder()).toEqual(['full_name', 'email', 'phone', 'address_line1', 'address_line2', 'city', 'state']);
@@ -225,5 +232,12 @@ describe('PrefillPacket', () => {
     await user.press(screen.getByTestId('claim-packet-state-sheet-option-none'));
     expect(screen.getByTestId('claim-packet-state')).toHaveAccessibilityValue({ text: copy.selectState.text });
     expect(screen.getByRole('button', { name: copyFieldLabel(copy.state.text) })).toBeDisabled();
+  });
+
+  it('agent lane: PREFILL_AGENT_LANE_NOTE, and no never-files packet note', async () => {
+    await showPacket(PROFILE, null, true);
+    expect(screen.getByText(copy.packetNoteAgent.text)).toBeOnTheScreen();
+    expect(screen.queryByText(copy.packetNote.text)).toBeNull();
+    expect(screen.queryByText(/never files/)).toBeNull();
   });
 });

@@ -5,12 +5,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { app } from '@/copy/app';
 import { common } from '@/copy/common';
-import { settlement } from '@/copy/settlement';
+import { settlement, settlementChecklist, settlementFileStep } from '@/copy/settlement';
 import { shared } from '@/copy/shared';
-import type { CatalogLawsuit } from '@/data/catalog';
+import type { CatalogLawsuit, SettlementRow } from '@/data/catalog';
 import { guidesInUse } from '@/data/guides';
 import { CC_BY_4_URL, SETTLESIGNAL_URL } from '@/features/shared';
 import { SettlementScreen } from '@/features/settlement';
+import { SettlementDetail } from '@/features/settlement/SettlementDetail';
 import { openExternalUrl } from '@/lib/external-link';
 import { applyFlagOverrides } from '@/lib/flags';
 
@@ -126,6 +127,25 @@ async function renderSettlement(slug: string, options: { catalog?: CatalogLawsui
         <SettlementScreen slug={slug} />
       </SafeAreaProvider>
     </QueryClientProvider>,
+  );
+}
+
+function detailRow(lawsuit: CatalogLawsuit): SettlementRow {
+  return { ...lawsuit, guidesVersion: guidesInUse().version, proofNote: '', faqs: [] };
+}
+
+async function renderDetail(lawsuit: CatalogLawsuit, agentLane?: boolean | null) {
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <SettlementDetail
+        lawsuit={detailRow(lawsuit)}
+        now={new Date('2026-11-02T15:00:00Z')}
+        signedIn
+        agentLane={agentLane}
+        onStartClaim={() => undefined}
+        onBrowse={() => undefined}
+      />
+    </SafeAreaProvider>,
   );
 }
 
@@ -281,6 +301,58 @@ describe('settlement detail, open', () => {
     expect(sidebar.getByText(settlement.checklistNeverFiles.text)).toBeOnTheScreen();
     expect(sidebar.getByText(settlement.checklistSaveNumber.text)).toBeOnTheScreen();
     expect(screen.getByText('Full legal disclaimer text.')).toBeOnTheScreen();
+  });
+
+  it('flag off: never_files how-filing step and checklist', async () => {
+    await renderFound(ACME);
+    const never = settlementFileStep('never_files');
+    expect(screen.getByText(never.title)).toBeOnTheScreen();
+    expect(screen.getByText(never.body)).toBeOnTheScreen();
+    for (const line of settlementChecklist('never_files')) {
+      expect(screen.getByText(line)).toBeOnTheScreen();
+    }
+  });
+
+  it('flag on without a lane: generic may-file wording, and no never-files promise', async () => {
+    mockConfig.flags.ONE_CLICK_FILING_ENABLED = true;
+    applyFlagOverrides({ ONE_CLICK_FILING_ENABLED: true });
+    await renderFound(ACME);
+    const may = settlementFileStep('may_file');
+    expect(screen.getByText(may.title)).toBeOnTheScreen();
+    expect(screen.getByText(may.body)).toBeOnTheScreen();
+    for (const line of settlementChecklist('may_file')) {
+      expect(screen.getByText(line)).toBeOnTheScreen();
+    }
+    expect(screen.queryByText(settlement.checklistNeverFiles.text)).toBeNull();
+    expect(screen.queryByText(settlement.stepFileBody.text)).toBeNull();
+  });
+
+  it('flag on with agentLane true: SETTLEMENT_FILING_COPY.agent, and no never-files promise', async () => {
+    mockConfig.flags.ONE_CLICK_FILING_ENABLED = true;
+    applyFlagOverrides({ ONE_CLICK_FILING_ENABLED: true });
+    await renderDetail(ACME, true);
+    const agent = settlementFileStep('agent');
+    expect(screen.getByText(agent.title)).toBeOnTheScreen();
+    expect(screen.getByText(agent.body)).toBeOnTheScreen();
+    for (const line of settlementChecklist('agent')) {
+      expect(screen.getByText(line)).toBeOnTheScreen();
+    }
+    expect(screen.queryByText(settlement.checklistNeverFiles.text)).toBeNull();
+    expect(screen.queryByText(settlement.stepFileBody.text)).toBeNull();
+  });
+
+  it('flag on with agentLane false: SETTLEMENT_FILING_COPY.self_file, and no never-files promise', async () => {
+    mockConfig.flags.ONE_CLICK_FILING_ENABLED = true;
+    applyFlagOverrides({ ONE_CLICK_FILING_ENABLED: true });
+    await renderDetail(ACME, false);
+    const selfFile = settlementFileStep('self_file');
+    expect(screen.getByText(selfFile.title)).toBeOnTheScreen();
+    expect(screen.getByText(selfFile.body)).toBeOnTheScreen();
+    for (const line of settlementChecklist('self_file')) {
+      expect(screen.getByText(line)).toBeOnTheScreen();
+    }
+    expect(screen.queryByText(settlement.checklistNeverFiles.text)).toBeNull();
+    expect(screen.queryByText(/never files/)).toBeNull();
   });
 
   it('drops the account note for someone signed in', async () => {

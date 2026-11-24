@@ -36,7 +36,7 @@ export function lawsuitAiMayFile(
   return f.feeDisclosure() || f.oneClickFiling();
 }
 
-const MAY_FILE_SENTENCE =
+export const MAY_FILE_SENTENCE =
   'For some settlements, Lawsuit AI files this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.';
 
 /**
@@ -98,7 +98,7 @@ export const SETTLEMENT_FILING_COPY = {
   },
 } as const;
 
-const SOME_SETTLEMENTS = 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.';
+export const SOME_SETTLEMENTS = 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.';
 
 /** Site-wide pages (invite, onboarding, scorecard) when Lawsuit AI may file for this viewer. */
 export const MAY_FILE_PAGE_COPY = {

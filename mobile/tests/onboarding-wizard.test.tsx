@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { onboarding, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
+import { onboarding, onboardingHowStep3Text, onboardingIntroText, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
 import { shared } from '@/copy/shared';
 import { OnboardingScreen } from '@/features/onboarding/OnboardingScreen';
 
@@ -19,6 +19,11 @@ const mockAuth: { status: string; user: { id: string; email: string } | null } =
   user: { id: 'user-1', email: 'ana@example.com' },
 };
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => mockAuth }));
+
+const mockFlags: Record<string, boolean> = {};
+jest.mock('@/providers/ConfigProvider', () => ({
+  useConfig: () => ({ isFlagOn: (name: string) => mockFlags[name] === true }),
+}));
 
 const mockProfileRow: { current: Record<string, unknown> | null; offline: boolean } = { current: null, offline: false };
 
@@ -112,6 +117,7 @@ const DATA_BREACH = 'Have you received a data-breach notification in the last 3 
 
 beforeEach(() => {
   jest.clearAllMocks();
+  for (const name of Object.keys(mockFlags)) delete mockFlags[name];
   mockAuth.status = 'signedIn';
   mockAuth.user = { id: 'user-1', email: 'ana@example.com' };
   mockProfileRow.offline = false;
@@ -242,7 +248,26 @@ describe('onboarding', () => {
     await renderOnboarding();
     await user.press(await screen.findByRole('button', { name: onboarding.continue.text }));
     expect(screen.getByRole('header', { name: `${stepOfTwoText(2)}. ${onboarding.questionsTitle.text}` })).toBeOnTheScreen();
-    expect(screen.getByText(onboarding.intro.text)).toBeOnTheScreen();
+    expect(screen.getByText(onboardingIntroText(false))).toBeOnTheScreen();
+  });
+
+  it('flag off: never-files intro and how-it-works step 3', async () => {
+    await renderOnboarding();
+    expect(screen.getByText(`${onboardingIntroText(false)} ${onboarding.howItWorks.text}`)).toBeOnTheScreen();
+    expect(screen.getByText(onboardingHowStep3Text(false))).toBeOnTheScreen();
+    expect(screen.queryByText(onboardingIntroText(true))).toBeNull();
+  });
+
+  it('flag on: may-file intro and how-it-works step 3, and no never-files promise', async () => {
+    mockFlags.ONE_CLICK_FILING_ENABLED = true;
+    await renderOnboarding();
+    expect(screen.getByText(`${onboardingIntroText(true)} ${onboarding.howItWorks.text}`)).toBeOnTheScreen();
+    expect(screen.getByText(onboardingHowStep3Text(true))).toBeOnTheScreen();
+    expect(screen.queryByText(/never files/)).toBeNull();
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: onboarding.continue.text }));
+    expect(screen.getByText(onboardingIntroText(true))).toBeOnTheScreen();
+    expect(screen.queryByText(/never files/)).toBeNull();
   });
 
   it('saves without the answers when none changed, so a health answer saved on the web stays', async () => {

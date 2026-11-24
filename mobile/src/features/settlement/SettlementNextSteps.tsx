@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Card, Divider, ExternalLinkButton, Icon } from '@/components/ui';
 import { ArrowRight, CircleCheck } from '@/components/ui/icons';
 import { app } from '@/copy/app';
-import { settlement } from '@/copy/settlement';
+import { settlement, settlementChecklist, type SettlementFilingUiMode } from '@/copy/settlement';
 import { shared } from '@/copy/shared';
 import { space, typography } from '@/theme/tokens';
 
@@ -16,16 +16,12 @@ export interface SettlementNextStepsProps {
   official: CatalogLink | null;
   /** Signed in: "You’ll sign in or create a free account first." does not apply. */
   signedIn: boolean;
+  /** Who files (issue #53): never_files off; SETTLEMENT_FILING_COPY or generic may-file on. */
+  filingMode?: SettlementFilingUiMode;
   onStartClaim(): void;
   onBrowse(): void;
   testID?: string;
 }
-
-const CHECKLIST = [
-  settlement.checklistFileYourself.text,
-  settlement.checklistNeverFiles.text,
-  settlement.checklistSaveNumber.text,
-] as const;
 
 /**
  * The web page's sidebar, shown inline near the end (plan 3.3): while open,
@@ -39,10 +35,12 @@ export function SettlementNextSteps({
   deadlinePassed,
   official,
   signedIn,
+  filingMode = 'never_files',
   onStartClaim,
   onBrowse,
   testID,
 }: SettlementNextStepsProps) {
+  const checklist = settlementChecklist(filingMode);
   if (!open) {
     const notTaking =
       deadlinePassed && deadline
@@ -102,7 +100,7 @@ export function SettlementNextSteps({
       </View>
       <Divider />
       <View style={styles.checklist}>
-        {CHECKLIST.map((line) => (
+        {checklist.map((line) => (
           <View key={line} style={styles.checkItem}>
             <View style={styles.checkIcon}>
               <Icon icon={CircleCheck} size="sm" color="successIcon" />

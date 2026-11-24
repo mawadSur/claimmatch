@@ -6,11 +6,12 @@ import { AccessibilityInfo, Keyboard, StyleSheet, View, type HostInstance } from
 import { AppText, Button, Card, Notice, Screen, TextField } from '@/components/ui';
 import { ArrowLeft, ArrowRight } from '@/components/ui/icons';
 import { common } from '@/copy/common';
-import { onboarding, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
+import { onboarding, onboardingIntroText, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
 import { userFacingError } from '@/data/errors';
 import { useSaveSettings, type SettingsInput } from '@/data/profile';
 import { MatchingQuestions, sameAnswers } from '@/features/settings/fields';
 import { StatePickerField } from '@/features/shared';
+import { useConfig } from '@/providers/ConfigProvider';
 import { space } from '@/theme/tokens';
 
 import { onboardingDoneHref } from './hrefs';
@@ -42,6 +43,7 @@ export interface OnboardingWizardProps {
  */
 export function OnboardingWizard({ initial, email, next, emailConfirmed }: OnboardingWizardProps) {
   const router = useRouter();
+  const mayFile = useConfig().isFlagOn('ONE_CLICK_FILING_ENABLED');
   const save = useSaveSettings();
   const [step, setStep] = useState<1 | 2>(1);
   const [fullName, setFullName] = useState(initial.fullName);
@@ -92,12 +94,12 @@ export function OnboardingWizard({ initial, email, next, emailConfirmed }: Onboa
   return (
     // A new Screen per step, so each step starts at the top.
     <Screen key={step} hasTextFields testID={`onboarding-step-${step}`}>
-      {/* The web keeps its header above both steps; step 2 keeps its "never files for you" sentence (plan 5). */}
+      {/* The web keeps its header above both steps; step 2 repeats the intro (plan 5). */}
       {step === 1 ? (
         <OnboardingIntro emailConfirmed={emailConfirmed} />
       ) : (
         <AppText variant="body" color="textMuted" testID="onboarding-intro-short">
-          {onboarding.intro.text}
+          {onboardingIntroText(mayFile)}
         </AppText>
       )}
       <Card style={styles.card}>

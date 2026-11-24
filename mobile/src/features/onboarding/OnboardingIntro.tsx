@@ -2,31 +2,33 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText, Badge, Card, Notice } from '@/components/ui';
 import { Clock } from '@/components/ui/icons';
-import { onboarding } from '@/copy/onboarding';
+import { onboarding, onboardingHowStep3Text, onboardingIntroText } from '@/copy/onboarding';
+import { useConfig } from '@/providers/ConfigProvider';
 import { colors, radii, space } from '@/theme/tokens';
-
-const HOW_IT_WORKS = [
-  onboarding.howStep1.text,
-  onboarding.howStep2.text,
-  onboarding.howStep3.text,
-  onboarding.howStep4.text,
-];
 
 /**
  * The onboarding page header (src/app/onboarding/page.tsx:44-84): the
- * "About 1 minute" badge, the headline, the "never files for you" intro, how
- * Lawsuit AI works, and "Email confirmed." after an email link.
+ * "About 1 minute" badge, the headline, the intro (never-files off, may-file
+ * on), how Lawsuit AI works, and "Email confirmed." after an email link.
  */
 export function OnboardingIntro({ emailConfirmed }: { emailConfirmed: boolean }) {
+  const mayFile = useConfig().isFlagOn('ONE_CLICK_FILING_ENABLED');
+  const intro = onboardingIntroText(mayFile);
+  const howItWorks = [
+    onboarding.howStep1.text,
+    onboarding.howStep2.text,
+    onboardingHowStep3Text(mayFile),
+    onboarding.howStep4.text,
+  ];
   return (
     <View style={styles.intro}>
       <Badge label={onboarding.aboutOneMinute.text} tone="brand" icon={Clock} />
       <AppText variant="display">{onboarding.title.text}</AppText>
       <AppText variant="body" color="textMuted">
-        {`${onboarding.intro.text} ${onboarding.howItWorks.text}`}
+        {`${intro} ${onboarding.howItWorks.text}`}
       </AppText>
       <Card padding={5} style={styles.steps}>
-        {HOW_IT_WORKS.map((step, index) => (
+        {howItWorks.map((step, index) => (
           <View key={step} accessible accessibilityLabel={`${index + 1}. ${step}`} style={styles.step}>
             <View style={styles.number}>
               <AppText variant="badge" color="textLink">

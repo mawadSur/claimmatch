@@ -255,6 +255,11 @@ export const claim = defineCopy({
     text: 'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI never files for you.',
     source: PACKET,
   },
+  /** PREFILL_AGENT_LANE_NOTE: only while this claim is an agent lane (web PrefillPacket agentLane). */
+  packetNoteAgent: {
+    text: 'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. Lawsuit AI files this claim for you only after you choose one-click filing and sign it.',
+    source: 'src/lib/copy.ts',
+  },
   copyAll: { text: 'Copy all', source: PACKET },
   copiedAll: { text: 'Copied all', source: PACKET },
   copy: { text: 'Copy', source: PACKET },
@@ -349,4 +354,9 @@ export function submittedNote(filedOn: string | null): string {
 /** "Copy Full name" (a field's Copy button). */
 export function copyFieldLabel(field: string): string {
   return fillCopy(claim.copyField.text, { field });
+}
+
+/** Prefill packet lead: never-files only on the self-file lane, like web PrefillPacket. */
+export function packetNoteText(agentLane: boolean): string {
+  return agentLane ? claim.packetNoteAgent.text : claim.packetNote.text;
 }
