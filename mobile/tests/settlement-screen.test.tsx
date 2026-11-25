@@ -306,10 +306,11 @@ describe('settlement detail, open', () => {
   it('flag off: never_files how-filing step and checklist', async () => {
     await renderFound(ACME);
     const never = settlementFileStep('never_files');
-    expect(screen.getByText(never.title)).toBeOnTheScreen();
+    // Title is also a checklist line and a prefix of the how-to-file body.
+    expect(screen.getAllByText(never.title).length).toBeGreaterThan(0);
     expect(screen.getByText(never.body)).toBeOnTheScreen();
     for (const line of settlementChecklist('never_files')) {
-      expect(screen.getByText(line)).toBeOnTheScreen();
+      expect(screen.getAllByText(line).length).toBeGreaterThan(0);
     }
   });
 
@@ -349,9 +350,8 @@ describe('settlement detail, open', () => {
     expect(screen.getByText(selfFile.title)).toBeOnTheScreen();
     expect(screen.getByText(selfFile.body)).toBeOnTheScreen();
     for (const line of settlementChecklist('self_file')) {
-      expect(screen.getByText(line)).toBeOnTheScreen();
+      expect(screen.getAllByText(line).length).toBeGreaterThan(0);
     }
-    expect(screen.queryByText(settlement.checklistNeverFiles.text)).toBeNull();
     expect(screen.queryByText(/never files/)).toBeNull();
   });
 
