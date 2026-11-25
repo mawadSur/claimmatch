@@ -110,6 +110,7 @@ async function renderOnboarding(params: Record<string, string> = {}) {
       </QueryClientProvider>
     </SafeAreaProvider>,
   );
+  await renderedAfterNotify();
 }
 
 const WELCOME = { pathname: '/dashboard', params: { welcome: '1' } };
@@ -253,7 +254,9 @@ describe('onboarding', () => {
 
   it('flag off: never-files intro and how-it-works step 3', async () => {
     await renderOnboarding();
-    expect(screen.getByText(`${onboardingIntroText(false)} ${onboarding.howItWorks.text}`)).toBeOnTheScreen();
+    expect(
+      await screen.findByText(`${onboardingIntroText(false)} ${onboarding.howItWorks.text}`),
+    ).toBeOnTheScreen();
     expect(screen.getByText(onboardingHowStep3Text(false))).toBeOnTheScreen();
     expect(screen.queryByText(onboardingIntroText(true))).toBeNull();
   });
@@ -261,12 +264,14 @@ describe('onboarding', () => {
   it('flag on: may-file intro and how-it-works step 3, and no never-files promise', async () => {
     mockFlags.ONE_CLICK_FILING_ENABLED = true;
     await renderOnboarding();
-    expect(screen.getByText(`${onboardingIntroText(true)} ${onboarding.howItWorks.text}`)).toBeOnTheScreen();
+    expect(
+      await screen.findByText(`${onboardingIntroText(true)} ${onboarding.howItWorks.text}`),
+    ).toBeOnTheScreen();
     expect(screen.getByText(onboardingHowStep3Text(true))).toBeOnTheScreen();
     expect(screen.queryByText(/never files/)).toBeNull();
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: onboarding.continue.text }));
-    expect(screen.getByText(onboardingIntroText(true))).toBeOnTheScreen();
+    expect(await screen.findByText(onboardingIntroText(true))).toBeOnTheScreen();
     expect(screen.queryByText(/never files/)).toBeNull();
   });
 
