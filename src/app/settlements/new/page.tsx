@@ -36,9 +36,9 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams?: SearchParams;
-} = {}): Promise<Metadata> {
-  const params = searchParams ? await searchParams : {};
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const params = await searchParams;
   const page = parsePage(firstParam(params.page));
   const canonical = paginatedPath(NEW_SETTLEMENTS_PATH, page);
   const title = page > 1 ? `${TITLE} (page ${page})` : TITLE;
@@ -61,9 +61,9 @@ export async function generateMetadata({
 export default async function NewSettlementsHubPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
-} = {}) {
-  const params = searchParams ? await searchParams : {};
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
   const page = parsePage(firstParam(params.page));
   const catalog = await lookupLawsuits();
   if (catalog.error) throw new Error('Settlement catalog lookup failed');
