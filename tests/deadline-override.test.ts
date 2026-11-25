@@ -56,7 +56,6 @@ describe('deadline override', () => {
       proof_required: false,
       deadline: '2026-06-01',
       eligibility: {},
-      eligibility_text: null,
       source_url: 'https://example.com/source',
       claim_url: 'https://example.com/claim',
       status: 'open',

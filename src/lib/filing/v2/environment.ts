@@ -109,7 +109,7 @@ export function emailConfigured(env: Record<string, string | undefined> = proces
   return Boolean(env.RESEND_API_KEY?.trim()) && isVerifiedSender(env.RESEND_FROM);
 }
 
-type Rows = { data: unknown; error: { code?: string } | null; count?: number | null };
+type Rows = { data: unknown; error: { code?: string; message?: string } | null; count?: number | null };
 
 function rowsOf(result: Rows): Record<string, unknown>[] {
   return Array.isArray(result.data) ? (result.data as Record<string, unknown>[]) : [];

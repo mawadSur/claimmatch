@@ -21,7 +21,8 @@ async function handle(req: Request) {
   }
 
   const result = await runOfficialLinkCheck();
-  return NextResponse.json({ ok: true, ...result });
+  const { ok: linksOk, ...rest } = result;
+  return NextResponse.json({ ok: true, linksOk, ...rest });
 }
 
 export async function GET(req: Request) {
