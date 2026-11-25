@@ -1,8 +1,12 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
-import { LIST_HIDDEN_SLUGS } from '@/lib/test-settlements';
+import { LIST_HIDDEN_SLUGS, rejectPublicTestListings } from '@/lib/test-settlements';
 import { factsFromRows } from '@/lib/profile-facts';
-import { catalogDeadlineFilter, openGuidedCatalog } from '@/lib/settlement-guides';
+import {
+  catalogDeadlineFilter,
+  isMissingDeadlineOverrideColumn,
+  openGuidedCatalog,
+} from '@/lib/settlement-guides';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchStoreResult {
@@ -31,18 +35,26 @@ export async function persistStoredMatches(): Promise<MatchStoreResult> {
 
   const supabase = createServiceClient();
   const now = new Date();
-  const { data: lawsuitData, error: lawsuitErr } = await supabase
-    .from('lawsuits')
-    .select('*')
-    .eq('review_status', 'published')
-    .in('status', ['open', 'closing_soon'])
-    // The catalog's read and rule: a guided settlement by its official deadline.
-    .or(catalogDeadlineFilter(now))
-    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
+  const run = (includeOverride: boolean) =>
+    supabase
+      .from('lawsuits')
+      .select('*')
+      .eq('review_status', 'published')
+      .in('status', ['open', 'closing_soon'])
+      // The catalog's read and rule: a guided settlement by its official deadline.
+      .or(catalogDeadlineFilter(now, { includeOverride }))
+      .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
+  let { data: lawsuitData, error: lawsuitErr } = await run(true);
+  if (lawsuitErr && isMissingDeadlineOverrideColumn(lawsuitErr.message)) {
+    ({ data: lawsuitData, error: lawsuitErr } = await run(false));
+  }
   if (lawsuitErr) {
     throw new Error(`[match-store] loading settlements failed: ${lawsuitErr.message}`);
   }
-  const lawsuits = openGuidedCatalog((lawsuitData ?? []) as Lawsuit[], now);
+  const lawsuits = openGuidedCatalog(
+    rejectPublicTestListings((lawsuitData ?? []) as Lawsuit[]),
+    now,
+  );
   if (lawsuits.length === 0) {
     return { users: 0, persisted: 0 };
   }

@@ -132,7 +132,9 @@ describe('persistStoredMatches on a guided settlement', () => {
     expect(official > '2026-11-10').toBe(true);
     m.tables.lawsuits = guided('2026-10-01');
     expect(await persistStoredMatches()).toMatchObject({ persisted: 1 });
-    expect(m.calls.find((c) => c.op === 'or')?.payload).toBe(catalogDeadlineFilter(now));
+    expect(m.calls.find((c) => c.op === 'or')?.payload).toBe(
+      catalogDeadlineFilter(now, { includeOverride: true }),
+    );
     const upsert = m.calls.find((c) => c.op === 'upsert')?.payload as Array<{ lawsuit_id: string }>;
     expect(upsert.map((row) => row.lawsuit_id)).toEqual(['22222222-2222-4222-8222-222222222222']);
   });

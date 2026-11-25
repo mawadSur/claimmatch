@@ -7,7 +7,7 @@ const src = readFileSync(fileURLToPath(new URL('../src/lib/match-sweep.ts', impo
 describe('daily match sweep deadline gate', () => {
   it('loads published open rows as the catalog does (guided ones by their official deadline), then matchProfile', () => {
     // The catalog's read: deadline today or later, or a guided slug (src/lib/settlement-guides.ts).
-    expect(src).toContain('.or(catalogDeadlineFilter(now))');
+    expect(src).toContain('catalogDeadlineFilter(now, { includeOverride })');
     // The guides replace the feed's deadline and payout before the open rule runs again.
     expect(src).toContain('openGuidedCatalog(');
     expect(src).not.toContain('deadline.is.null,deadline.gte.');
