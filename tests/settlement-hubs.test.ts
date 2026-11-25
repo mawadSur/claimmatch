@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Lawsuit } from '@/lib/types';
-import { hubClosingSoon, hubNewest, newestUpdatedAt } from '@/lib/settlement-hubs';
+import { hubClosingSoon, hubClosingThisMonth, hubNewest, hubNoProofRequired, newestUpdatedAt } from '@/lib/settlement-hubs';
 import { makeLawsuit } from './helpers';
 
 const db = vi.hoisted(() => ({
@@ -39,6 +39,8 @@ vi.mock('@/lib/supabase/server', () => {
 });
 
 import ClosingSoonHubPage from '@/app/settlements/closing-soon/page';
+import ClosingThisMonthHubPage from '@/app/settlements/closing-this-month/page';
+import NoProofRequiredHubPage from '@/app/settlements/no-proof-required/page';
 import NewSettlementsHubPage from '@/app/settlements/new/page';
 import CategoryHubPage, { generateMetadata as categoryMeta } from '@/app/settlements/category/[slug]/page';
 import sitemap from '@/app/sitemap';
@@ -83,6 +85,21 @@ describe('hub ordering', () => {
     expect(hubNewest([older, newer]).map((l) => l.slug)).toEqual(['new', 'old']);
   });
 
+  it('lists closing this month from the listed deadline, never inventing a date', () => {
+    const now = new Date('2026-11-15T17:00:00Z');
+    const thisMonth = row({ id: 'm', slug: 'this-month', title: 'This month', deadline: '2026-11-28' });
+    const nextMonth = row({ id: 'n', slug: 'next-month', title: 'Next month', deadline: '2026-12-01' });
+    const past = row({ id: 'p', slug: 'past-month', title: 'Past', deadline: '2026-11-01' });
+    expect(hubClosingThisMonth([thisMonth, nextMonth, past], now).map((l) => l.slug)).toEqual(['this-month']);
+  });
+
+  it('lists no-proof-required only when the catalog marks proof as no', () => {
+    const none = row({ id: 'none', slug: 'none', eligibility: { proof: 'no' } });
+    const optional = row({ id: 'opt', slug: 'opt', eligibility: { proof: 'optional' } });
+    const unknown = row({ id: 'unk', slug: 'unk', eligibility: { proof: 'unknown' } });
+    expect(hubNoProofRequired([none, optional, unknown]).map((l) => l.slug)).toEqual(['none']);
+  });
+
   it('reads lastmod from the newest updated_at', () => {
     const date = newestUpdatedAt([
       row({ updated_at: '2026-10-01T00:00:00Z' }),
@@ -123,6 +140,32 @@ describe('hub pages', () => {
     expect(newest).toContain('New settlements');
     expect(newest).toContain('Amazon Return Policy Settlement');
     expect(newest).toContain('href="/settlements/closing-soon"');
+    expect(newest).toContain('href="/settlements/closing-this-month"');
+    expect(newest).toContain('href="/settlements/no-proof-required"');
+  });
+
+  it('closing-this-month and no-proof hubs render with breadcrumbs and collection JSON-LD', async () => {
+    db.list = {
+      data: [
+        row({
+          id: 'proof',
+          slug: 'no-proof-case',
+          title: 'No Proof Case',
+          eligibility: { proof: 'no' },
+        }),
+      ],
+      error: null,
+    };
+    const monthHtml = renderToStaticMarkup(await ClosingThisMonthHubPage());
+    expect(monthHtml).toContain('Settlements closing this month');
+    expect(monthHtml).toContain('BreadcrumbList');
+    expect(monthHtml).toContain('CollectionPage');
+    expect(monthHtml).toContain('href="/settlements/no-proof-required"');
+
+    const proofHtml = renderToStaticMarkup(await NoProofRequiredHubPage());
+    expect(proofHtml).toContain('no proof required');
+    expect(proofHtml).toContain('No Proof Case');
+    expect(proofHtml).toContain('BreadcrumbList');
   });
 
   it('category hubs 404 unknown slugs and render known ones', async () => {
@@ -162,6 +205,15 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.endsWith('/settlements/category/consumer-products'))).toBe(true);
     const settlement = entries.find((e) => e.url.endsWith('/lawsuits/amazon-return-policy-settlement'));
     expect(settlement?.lastModified).toEqual(new Date('2026-10-10T00:00:00Z'));
+  });
+
+  it('includes the no-proof hub when an open row is marked no proof', async () => {
+    db.list = {
+      data: [row({ eligibility: { proof: 'no' } })],
+      error: null,
+    };
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => u.endsWith('/settlements/no-proof-required'))).toBe(true);
   });
 
   it('omits hubs when there are no open settlements', async () => {

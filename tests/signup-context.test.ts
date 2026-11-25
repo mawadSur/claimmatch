@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { claimReturnPath, isClaimReturnPath, signedOutClaimHref } from '@/lib/signup-context';
+import { claimReturnPath, guideSignupHref, isClaimReturnPath, signedOutClaimHref } from '@/lib/signup-context';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -27,5 +27,10 @@ describe('signup return path', () => {
     );
     expect(signedOutClaimHref('/dashboard')).toBe('/login?next=%2Fdashboard');
     expect(signedOutClaimHref('/\\evil.example')).toBe('/login');
+  });
+
+  it('sends public guide signups to /signup with the claim path', () => {
+    expect(guideSignupHref('real-settlement')).toBe('/signup?next=%2Fclaim%2Freal-settlement');
+    expect(guideSignupHref('../evil')).toBe('/signup');
   });
 });

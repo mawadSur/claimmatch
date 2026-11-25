@@ -17,10 +17,12 @@ describe('legacy /settlements redirects', () => {
   it('does not steal the hub pages that still live under /settlements', () => {
     expect(config).toContain('category');
     expect(config).toContain('closing-soon');
+    expect(config).toContain('closing-this-month');
+    expect(config).toContain('no-proof-required');
     expect(config).toContain('new');
     expect(config).toContain('recently-closed');
     expect(config).toMatch(
-      /:slug\(\(\?!category\|closing-soon\|new\|recently-closed\)\[\^\/\]\+\)/,
+      /:slug\(\(\?!category\|closing-soon\|closing-this-month\|no-proof-required\|new\|recently-closed\)\[\^\/\]\+\)/,
     );
   });
 });

@@ -41,6 +41,8 @@ describe('renderLlmsTxt', () => {
     expect(body).toContain('Matching on Lawsuit AI is free.');
     expect(body).toContain('/lawsuits');
     expect(body).toContain('/settlements/closing-soon');
+    expect(body).toContain('/settlements/closing-this-month');
+    expect(body).toContain('/settlements/no-proof-required');
     expect(body).toContain('/settlements/category/data-breach');
     expect(body).toContain('/how-it-works');
     expect(body).toContain('/trust');

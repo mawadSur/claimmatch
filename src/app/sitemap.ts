@@ -1,12 +1,15 @@
 import type { MetadataRoute } from 'next';
 import { isThinSettlement, LAWSUITS_PAGE_SIZE, paginatedPath } from '@/lib/catalog-page';
 import { categoriesOf, getLawsuits } from '@/lib/lawsuits';
-import { hubClosingSoon, hubNewest, newestUpdatedAt } from '@/lib/settlement-hubs';
+import { hubClosingSoon, hubClosingThisMonth, hubNewest, hubNoProofRequired, newestUpdatedAt } from '@/lib/settlement-hubs';
 import { flags } from '@/lib/flags';
 import {
   categoryHubPath,
   CLOSING_SOON_PATH,
+  CLOSING_THIS_MONTH_PATH,
+  FEATURED_CATEGORY_HUBS,
   NEW_SETTLEMENTS_PATH,
+  NO_PROOF_PATH,
   pageUrl,
 } from '@/lib/settlement-seo';
 
@@ -52,6 +55,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (hubClosingSoon(lawsuits).length > 0) {
       hubs.push({ url: pageUrl(CLOSING_SOON_PATH), lastModified: lastmod });
     }
+    if (hubClosingThisMonth(lawsuits).length > 0) {
+      hubs.push({ url: pageUrl(CLOSING_THIS_MONTH_PATH), lastModified: lastmod });
+    }
+    if (hubNoProofRequired(lawsuits).length > 0) {
+      hubs.push({ url: pageUrl(NO_PROOF_PATH), lastModified: lastmod });
+    }
     hubs.push({ url: pageUrl(NEW_SETTLEMENTS_PATH), lastModified: lastmod });
     const catalogPages = Math.max(1, Math.ceil(lawsuits.length / LAWSUITS_PAGE_SIZE));
     for (let page = 2; page <= catalogPages; page += 1) {
@@ -62,10 +71,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (let page = 2; page <= newPages; page += 1) {
       hubs.push({ url: pageUrl(paginatedPath(NEW_SETTLEMENTS_PATH, page)), lastModified: lastmod });
     }
-    for (const category of categoriesOf(lawsuits)) {
+    const categoryNames = new Set([...FEATURED_CATEGORY_HUBS, ...categoriesOf(lawsuits)]);
+    for (const category of categoryNames) {
+      const inCategory = lawsuits.filter((l) => l.category === category);
+      if (inCategory.length === 0) continue;
       hubs.push({
         url: pageUrl(categoryHubPath(category)),
-        lastModified: newestUpdatedAt(lawsuits.filter((l) => l.category === category)) ?? lastmod,
+        lastModified: newestUpdatedAt(inCategory) ?? lastmod,
       });
     }
   }

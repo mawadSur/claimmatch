@@ -25,9 +25,9 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/settlements', destination: '/lawsuits', statusCode: 308 },
-      // Hub pages stay on /settlements/* (category, closing-soon, new, recently-closed).
+      // Hub pages stay on /settlements/* (category, closing-soon, closing-this-month, no-proof-required, new, recently-closed).
       {
-        source: '/settlements/:slug((?!category|closing-soon|new|recently-closed)[^/]+)',
+        source: '/settlements/:slug((?!category|closing-soon|closing-this-month|no-proof-required|new|recently-closed)[^/]+)',
         destination: '/lawsuits/:slug',
         statusCode: 308,
       },

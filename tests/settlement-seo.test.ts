@@ -14,6 +14,7 @@ import {
   settlementArticleJsonLd,
   settlementFaqs,
   settlementMetaDescription,
+  settlementLegalServiceJsonLd,
   settlementMetaTitle,
   truncateAtWord,
 } from '@/lib/settlement-seo';
@@ -109,6 +110,27 @@ describe('settlement SEO helpers', () => {
     expect(article.url).toMatch(/^https:\/\/lawsuitai\.org\/lawsuits\/widget-settlement$/);
   });
 
+  it('emits LegalService JSON-LD as a claim assistant, not a law firm', () => {
+    const lawsuit = makeLawsuit({}, { title: 'Widget Settlement', slug: 'widget-settlement' });
+    const help = settlementLegalServiceJsonLd(lawsuit, 'self_file');
+    expect(help['@type']).toBe('LegalService');
+    expect(help.description).toMatch(/not a law firm/i);
+    expect(JSON.stringify(help)).toContain('We help you file');
+    expect(JSON.stringify(help)).not.toContain('We file this claim for you');
+
+    const agent = settlementLegalServiceJsonLd(lawsuit, 'agent');
+    expect(JSON.stringify(agent)).toContain('We file this claim for you');
+  });
+
+  it('how-to-file FAQ uses help-you-file unless this settlement is an agent lane', () => {
+    const lawsuit = makeLawsuit({}, { title: 'Acme Settlement' });
+    const help = settlementFaqs(lawsuit, false, false).find((f) => f.q.startsWith('How do I file'));
+    expect(help?.a).toContain('We help you file');
+    expect(help?.a).not.toContain('We file this claim for you');
+    const agent = settlementFaqs(lawsuit, true, true).find((f) => f.q.startsWith('How do I file'));
+    expect(agent?.a).toContain('We file this claim for you');
+  });
+
   it('maps category slugs and keeps unknown slugs unresolved', () => {
     expect(categorySlug('Data Breach')).toBe('data-breach');
     expect(categoryHubPath('Data Breach')).toBe('/settlements/category/data-breach');
@@ -140,6 +162,7 @@ describe('settlement page source uses the safe JSON-LD helper', () => {
     expect(src).toContain('faqJsonLd');
     expect(src).toContain('breadcrumbJsonLd');
     expect(src).toContain('settlementArticleJsonLd');
+    expect(src).toContain('settlementLegalServiceJsonLd');
     expect(src).toContain('<JsonLd');
     expect(src).not.toContain('JSON.stringify');
   });
@@ -160,6 +183,8 @@ describe('ISR revalidate exports', () => {
       '../src/app/lawsuits/[slug]/page.tsx',
       '../src/app/settlements/category/[slug]/page.tsx',
       '../src/app/settlements/closing-soon/page.tsx',
+      '../src/app/settlements/closing-this-month/page.tsx',
+      '../src/app/settlements/no-proof-required/page.tsx',
       '../src/app/settlements/new/page.tsx',
       '../src/app/settlements/recently-closed/page.tsx',
       '../src/app/llms.txt/route.ts',
@@ -181,8 +206,14 @@ describe('HubLinks', () => {
     );
     expect(html).toContain('href="/lawsuits"');
     expect(html).toContain('href="/settlements/closing-soon"');
+    expect(html).toContain('href="/settlements/closing-this-month"');
+    expect(html).toContain('href="/settlements/no-proof-required"');
     expect(html).toContain('href="/settlements/new"');
     expect(html).toContain('href="/settlements/category/data-breach"');
     expect(html).toContain('href="/settlements/category/privacy"');
+    expect(html).toContain('href="/settlements/category/consumer-products"');
+    expect(html).toContain('href="/settlements/category/auto-vehicles"');
+    expect(html).toContain('href="/settlements/category/financial-banking"');
+    expect(html).toContain('href="/settlements/category/employment"');
   });
 });

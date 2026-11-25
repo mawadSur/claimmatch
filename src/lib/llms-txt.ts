@@ -6,8 +6,15 @@
 
 import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
-import { categoryHubPath, CLOSING_SOON_PATH, NEW_SETTLEMENTS_PATH, pageUrl } from '@/lib/settlement-seo';
-import { LAWSUIT_CATEGORIES } from '@/lib/types';
+import {
+  categoryHubPath,
+  CLOSING_SOON_PATH,
+  CLOSING_THIS_MONTH_PATH,
+  FEATURED_CATEGORY_HUBS,
+  NEW_SETTLEMENTS_PATH,
+  NO_PROOF_PATH,
+  pageUrl,
+} from '@/lib/settlement-seo';
 import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
 
 export interface LlmsHubLink {
@@ -15,7 +22,7 @@ export interface LlmsHubLink {
   path: string;
 }
 
-const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = LAWSUIT_CATEGORIES.slice(0, 6).map((name) => ({
+const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = FEATURED_CATEGORY_HUBS.map((name) => ({
   name,
   path: categoryHubPath(name),
 }));
@@ -23,6 +30,8 @@ const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = LAWSUIT_CATEGORIES.slice(0, 6).map
 const STATIC_HUBS: LlmsHubLink[] = [
   { name: 'Open settlements', path: '/lawsuits' },
   { name: 'Settlements closing soon', path: CLOSING_SOON_PATH },
+  { name: 'Settlements closing this month', path: CLOSING_THIS_MONTH_PATH },
+  { name: 'Settlements with no proof required', path: NO_PROOF_PATH },
   { name: 'New settlements', path: NEW_SETTLEMENTS_PATH },
 ];
 

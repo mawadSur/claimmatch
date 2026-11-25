@@ -46,6 +46,19 @@ export const WE_FILE_FOR_YOU_BADGE = 'We file for you';
 export const WE_FILE_SUPPORTED_SENTENCE =
   'We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
 
+/**
+ * Guide-page wording when this settlement has no agent lane. Counsel-cleared:
+ * we help you file; we do not claim to file this claim for you.
+ */
+export const WE_HELP_YOU_FILE = 'We help you file';
+export const WE_HELP_YOU_FILE_SENTENCE =
+  'We help you file. You can always file on the official site yourself, where filing is free.';
+export const WE_HELP_YOU_FILE_BODY =
+  'We help you file. Filing is free on the official site. You can always file this claim yourself. Lawsuit AI never handles settlement payments.';
+export const WE_FILE_THIS_CLAIM_GUIDE =
+  'Free. We file this claim for you on this settlement.';
+export const WE_HELP_YOU_FILE_GUIDE = 'Free. We help you file.';
+
 export const SIGNUP_INTRO_MAY_FILE =
   'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
 export const SIGNUP_INTRO_NEVER_FILES =
@@ -115,12 +128,21 @@ export const SETTLEMENT_FILING_COPY = {
   },
   self_file: {
     step: {
-      title: 'File on the official site yourself',
-      body: 'Filing is free. You file this claim yourself on the official site. Lawsuit AI never handles settlement payments.',
+      title: WE_HELP_YOU_FILE,
+      body: WE_HELP_YOU_FILE_BODY,
     },
-    points: ['You file on the official site yourself', 'Lawsuit AI never handles settlement payments', 'Save your confirmation number in one place'],
+    points: [
+      WE_HELP_YOU_FILE,
+      'You can always file on the official site yourself',
+      'Lawsuit AI never handles settlement payments',
+    ],
   },
 } as const;
+
+/** Guide pages: agent lane vs everyone else (including never_files). */
+export function guideFilingCopy(mode: SettlementFilingMode) {
+  return mode === 'agent' ? SETTLEMENT_FILING_COPY.agent : SETTLEMENT_FILING_COPY.self_file;
+}
 
 export const SOME_SETTLEMENTS =
   'We file claims for you on supported settlements after you review and sign them.';

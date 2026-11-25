@@ -66,8 +66,8 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   freeYouFileYourself: {
-    text: 'Free. You file on the official site yourself.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'Free. We help you file.',
+    source: 'src/lib/copy.ts',
   },
 
   // Deadline and proof facts -------------------------------------------------
@@ -136,12 +136,12 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   stepFileTitle: {
-    text: 'File on the official site yourself',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'We help you file',
+    source: 'src/lib/copy.ts',
   },
   stepFileBody: {
-    text: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'We help you file. Filing is free on the official site. You can always file this claim yourself. Lawsuit AI never handles settlement payments.',
+    source: 'src/lib/copy.ts',
   },
   /** SETTLEMENT_FILING_COPY.agent.step — one-click on and this settlement has an agent lane. */
   stepFileTitleAgent: {
@@ -152,13 +152,13 @@ export const settlement = defineCopy({
     text: 'We file this claim for you after you review and sign it, if you qualify and live in a state it covers. You can always file on the official site yourself instead, where filing is free. Lawsuit AI never handles settlement payments.',
     source: 'src/lib/copy.ts',
   },
-  /** SETTLEMENT_FILING_COPY.self_file.step — one-click on, this settlement has no agent lane. */
+  /** SETTLEMENT_FILING_COPY.self_file.step — guides without an agent lane. */
   stepFileTitleSelfFile: {
-    text: 'File on the official site yourself',
+    text: 'We help you file',
     source: 'src/lib/copy.ts',
   },
   stepFileBodySelfFile: {
-    text: 'Filing is free. You file this claim yourself on the official site. Lawsuit AI never handles settlement payments.',
+    text: 'We help you file. Filing is free on the official site. You can always file this claim yourself. Lawsuit AI never handles settlement payments.',
     source: 'src/lib/copy.ts',
   },
   /** Generic may-file (flag on, catalog API has no lane): MAY_FILE_PAGE_COPY.inviteStep. */
@@ -227,7 +227,7 @@ export const settlement = defineCopy({
 
   // The web sidebar, shown inline ----------------------------------------------
   sidebarOpenBody: {
-    text: 'We’ll guide you to the official site, where you file for free, and help you keep track of your claim.',
+    text: 'We help you file. Filing is free on the official site. You can always file this claim yourself.',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   signInFirst: {
@@ -235,16 +235,17 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   checklistFileYourself: {
-    text: 'You file on the official site yourself',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'We help you file',
+    source: 'src/lib/copy.ts',
   },
   checklistNeverFiles: {
-    text: 'Lawsuit AI never files for you or handles settlement payments',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'You can always file on the official site yourself',
+    source: 'src/lib/copy.ts',
   },
   checklistSaveNumber: {
     text: 'Save your confirmation number in one place',
     source: 'src/app/lawsuits/[slug]/page.tsx',
+    mobileOnly: true,
   },
   checklistAgentCanFile: {
     text: 'We file this claim for you after you review and sign it',
