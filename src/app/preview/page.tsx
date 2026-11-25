@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { draftFromAttributes } from '@/lib/match-preview';
 import { eligibilitySummary } from '@/lib/claim-input';
 import { flags } from '@/lib/flags';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
 import { parseSettlementScopeSlug } from '@/lib/match-preview';
+import { accountGateWhy } from '@/lib/copy';
 import { FeeDisclosure } from '@/components/FeeDisclosure';
 import { MatchPreview, type MatchPreviewScope } from '@/components/match-preview/MatchPreview';
+import { WhyAccountExplainer } from '@/components/WhyAccountExplainer';
 
 export const metadata: Metadata = {
   title: 'See matching settlements',
@@ -45,15 +46,12 @@ export default async function PreviewPage({
 
   const params = searchParams ? await searchParams : {};
   const slug = parseSettlementScopeSlug(firstParam(params.settlement));
-  const scopedCta = Boolean(slug && flags.settlementPageCta());
-  if (!flags.matchPreview() && !scopedCta) notFound();
+  const scopedCta = Boolean(slug);
 
   let scope: MatchPreviewScope | null = null;
   if (scopedCta && slug) {
     const lawsuit = await getLawsuitBySlug(slug);
-    if (!lawsuit) {
-      if (!flags.matchPreview()) notFound();
-    } else {
+    if (lawsuit) {
       scope = {
         slug: lawsuit.slug,
         title: lawsuit.title,
@@ -86,14 +84,16 @@ export default async function PreviewPage({
           )}
           <div className="mt-8">
             <MatchPreview
-              signupContextEnabled={flags.signupContext()}
+              signupContextEnabled
               feeNote={<FeeDisclosure compact />}
               scope={scope}
               hideUnknown={flags.catalogHideUnknowns()}
               accountDraft={accountDraft}
               signedIn={Boolean(user)}
+              whyAccount={accountGateWhy()}
             />
           </div>
+          <WhyAccountExplainer className="mt-6" />
         </div>
       </div>
     </section>

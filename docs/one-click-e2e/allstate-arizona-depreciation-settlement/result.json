@@ -1,0 +1,25 @@
+{
+  "slug": "allstate-arizona-depreciation-settlement",
+  "officialUrl": "https://www.hernandezdepreciationsettlement.com/",
+  "formUrlTried": "https://www.hernandezdepreciationsettlement.com/submit-claim",
+  "finalUrl": "https://www.hernandezdepreciationsettlement.com/submit-claim",
+  "deadline": "2027-01-29",
+  "extraUserFields": [
+    "Allstate / Esurance / Encompass / North Light structural-loss claim details for Arizona property",
+    "Whether nonmaterial depreciation was withheld from an Xactimate ACV payment",
+    "Written proof of legal authority if filing as a representative",
+    "Do not approve this draft while Notice ID + Confirmation Code login is the only path"
+  ],
+  "filled": [],
+  "stoppedAt": "account-login",
+  "captcha": false,
+  "accountLogin": true,
+  "proofUpload": false,
+  "submitVisible": false,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/allstate-arizona-depreciation-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "official form requires a notice login; not fillable from profile"
+  ]
+}

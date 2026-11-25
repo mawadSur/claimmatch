@@ -1,0 +1,26 @@
+{
+  "slug": "kroger-prescription-drug-prices-class-action-settlement",
+  "officialUrl": "https://www.krogersavingsclubsettlement.com/",
+  "formUrlTried": "https://www.krogersavingsclubsettlement.com/submit-claim",
+  "finalUrl": "https://www.krogersavingsclubsettlement.com/submit-claim",
+  "deadline": "2026-12-21",
+  "extraUserFields": [
+    "Whether you paid for one or more insured Kroger prescriptions from Dec 9, 2018 through Aug 23, 2026",
+    "Claimed amount, if stating a dollar figure; supporting documents only if the total is $8,000 or more",
+    "Do not approve this draft while email “Send code” login is the only no-notice path"
+  ],
+  "filled": [],
+  "stoppedAt": "account-login",
+  "captcha": false,
+  "accountLogin": true,
+  "proofUpload": false,
+  "submitVisible": false,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/kroger-prescription-drug-prices-class-action-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "clicked No (no-notice path)",
+    "clicked Continue after No",
+    "official form requires a notice login; not fillable from profile"
+  ]
+}

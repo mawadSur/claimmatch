@@ -4,6 +4,9 @@ import {
   OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, publicBetaFeeCopy, whoFilesAnswer,
 } from '@/lib/copy';
 import { flags } from '@/lib/flags';
+import { IS_LAWSUIT_AI_LEGIT_Q, isLawsuitAiLegitAnswer } from '@/lib/trust-facts';
+import { JsonLd } from '@/components/settlement/JsonLd';
+import { faqJsonLd } from '@/lib/settlement-seo';
 
 /** `mayFile` follows the fee disclosure and one-click filing, so the answers never contradict each other. */
 export function homeFaqItems(
@@ -11,6 +14,10 @@ export function homeFaqItems(
   mayFile = disclose || flags.oneClickFiling(),
 ) {
   return [
+    {
+      q: IS_LAWSUIT_AI_LEGIT_Q,
+      a: isLawsuitAiLegitAnswer(disclose, mayFile),
+    },
     {
       q: 'Is Lawsuit AI free?',
       a: disclose
@@ -74,7 +81,7 @@ export function HomeFaq() {
           ))}
         </div>
       </div>
-      {/* FAQPage JSON-LD lives on /faq only, so the same Q&As are marked up once site-wide. */}
+      <JsonLd data={faqJsonLd(items)} />
     </section>
   );
 }

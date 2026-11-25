@@ -110,8 +110,8 @@ describe('logged-out match preview', () => {
   });
 });
 
-describe('match preview surfaces stay off until the flag is 1', () => {
-  it('404s the API when the flag is off', async () => {
+describe('match preview is available without an account', () => {
+  it('serves the API when the match-preview flag is off', async () => {
     const { POST } = await import('@/app/api/match-preview/route');
     const res = await POST(
       new Request('http://claimmatch.test/api/match-preview', {
@@ -120,26 +120,25 @@ describe('match preview surfaces stay off until the flag is 1', () => {
         body: JSON.stringify({ state: 'NY', attributes: { had_data_breach: true } }),
       }),
     );
-    expect(res.status).toBe(404);
+    expect(res.status).not.toBe(404);
   });
 
-  it('gates the public preview page and entries on the flag', async () => {
+  it('keeps the public preview page and catalog entries ungated', async () => {
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
     const read = (rel: string) =>
       readFileSync(fileURLToPath(new URL(`../${rel}`, import.meta.url)), 'utf8');
-    expect(read('src/app/preview/page.tsx')).toContain('flags.matchPreview()');
-    expect(read('src/app/preview/page.tsx')).toContain('flags.settlementPageCta()');
-    expect(read('src/app/preview/page.tsx')).toContain('notFound()');
-    expect(read('src/app/page.tsx')).toContain('flags.matchPreview()');
-    expect(read('src/app/lawsuits/page.tsx')).toContain('flags.matchPreview()');
-    expect(read('src/app/api/match-preview/route.ts')).toContain('flags.matchPreview()');
-    expect(read('src/app/api/match-preview/route.ts')).toContain('flags.settlementPageCta()');
+    expect(read('src/app/preview/page.tsx')).toContain('See matching settlements');
+    expect(read('src/app/preview/page.tsx')).not.toContain('notFound()');
+    expect(read('src/app/page.tsx')).toContain('MatchPreviewEntry');
+    expect(read('src/app/page.tsx')).not.toContain('flags.matchPreview()');
+    expect(read('src/app/lawsuits/page.tsx')).toContain('AccountMatchBanner');
+    expect(read('src/app/lawsuits/page.tsx')).not.toContain('flags.matchPreview()');
+    expect(read('src/app/api/match-preview/route.ts')).not.toContain('flags.matchPreview()');
   });
 
-  it('allows a settlement-scoped preview API call when only the page CTA flag is on', async () => {
+  it('accepts a settlement-scoped preview API call', async () => {
     vi.resetModules();
-    vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', '1');
     const { POST } = await import('@/app/api/match-preview/route');
     const res = await POST(
       new Request('http://claimmatch.test/api/match-preview', {
@@ -152,7 +151,6 @@ describe('match preview surfaces stay off until the flag is 1', () => {
         }),
       }),
     );
-    // Catalog is empty in this unit test; the route must not 404.
     expect(res.status).not.toBe(404);
   });
 });

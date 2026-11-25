@@ -1,4 +1,3 @@
-import { flags } from './flags';
 import { safeNextPath } from './safe-next';
 
 const CLAIM_PATH = /^\/claim\/[a-z0-9]+(?:-[a-z0-9]+)*$/i;
@@ -25,12 +24,13 @@ export function claimReturnPath(slug: string): string | null {
 
 /**
  * Where a signed-out visitor goes when they hit a protected claim URL.
- * Flag off: /login (today). Flag on: /signup, with the validated claim path.
+ * Filing needs an account, so /claim paths always go to /signup (Why an
+ * account?). Other protected paths still use /login.
  */
 export function signedOutClaimHref(nextPath: string): string {
   const next = safeNextPath(nextPath);
   if (!next) return '/login';
-  const dest = flags.signupContext() && isClaimReturnPath(next) ? '/signup' : '/login';
+  const dest = isClaimReturnPath(next) ? '/signup' : '/login';
   return `${dest}?next=${encodeURIComponent(next)}`;
 }
 

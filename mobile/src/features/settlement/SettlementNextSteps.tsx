@@ -14,7 +14,7 @@ export interface SettlementNextStepsProps {
   deadline: string | null;
   deadlinePassed: boolean;
   official: CatalogLink | null;
-  /** Signed in: "You’ll sign in or create a free account first." does not apply. */
+  /** Signed in: the “why an account” note does not apply. */
   signedIn: boolean;
   /** Who files (issue #53): never_files off; SETTLEMENT_FILING_COPY or generic may-file on. */
   filingMode?: SettlementFilingUiMode;

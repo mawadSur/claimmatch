@@ -142,11 +142,9 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               : ''}
           </p>
 
-          {flags.matchPreview() && (
-            <div className="mt-6 max-w-3xl">
-              <AccountMatchBanner />
-            </div>
-          )}
+          <div className="mt-6 max-w-3xl">
+            <AccountMatchBanner />
+          </div>
 
           <div className="mt-6">
             <HubLinks categories={categories} current="all" />
