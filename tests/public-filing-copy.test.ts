@@ -121,10 +121,11 @@ describe('settlementFilingMode', () => {
 });
 
 describe('the settlement page', () => {
-  const render = async () => {
+  const renderRaw = async () => {
     m.lawsuit = makeLawsuit({}, { id: LAWSUIT_ID, slug: 'acme-settlement', title: 'Acme Settlement', deadline: '2099-12-01', claim_url: 'https://official.example.test/claim' });
-    return text(renderToStaticMarkup(await LawsuitDetailPage({ params: Promise.resolve({ slug: 'acme-settlement' }) })));
+    return renderToStaticMarkup(await LawsuitDetailPage({ params: Promise.resolve({ slug: 'acme-settlement' }) }));
   };
+  const render = async () => text(await renderRaw());
 
   it('flag off: guide pages say we help you file, not that we file this claim', async () => {
     setMode('off');
@@ -154,17 +155,18 @@ describe('the settlement page', () => {
   it('live without an agent lane: self-file text, and no "never files" promise', async () => {
     setMode('live');
     agentLane(false);
-    const html = await render();
+    const raw = await renderRaw();
+    const html = text(raw);
     expect(html).toContain(SETTLEMENT_FILING_COPY.self_file.step.body);
     expect(html).not.toContain('never files');
     expect(html).not.toContain('We file this claim for you');
     expect(html).toContain('We help you file');
     expect(html).toContain('Create a free account');
-    expect(html).toContain('/signup?next=');
+    expect(raw).toContain('/signup?next=');
     expect(html).toContain('Listed payout');
     expect(html).toContain('Proof needed');
     expect(html).toContain('Claim deadline');
-    expect(html).toContain('LegalService');
+    expect(raw).toContain('LegalService');
     expect(html).not.toMatch(/15\s?%/);
   });
 });

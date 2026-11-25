@@ -260,7 +260,7 @@ export const settlement = defineCopy({
     source: 'src/lib/copy.ts',
   },
   checklistSelfFileOfficial: {
-    text: 'You file on the official site yourself',
+    text: 'You can always file on the official site yourself',
     source: 'src/lib/copy.ts',
   },
   /** SOME_SETTLEMENTS — generic may-file when the catalog API has no lane. */

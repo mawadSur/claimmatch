@@ -385,12 +385,15 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 <p className="mt-2 text-sm text-ink-muted">What our listing says:</p>
                 <p className="mt-1 leading-relaxed text-ink">{eligibility}</p>
                 <p className="mt-2 text-sm text-ink-muted">
-                  This is a short summary, not the official rules. Confirm who qualifies
-                  on the official notice before you file.
+                  This is a short summary, not the official rules. The official notice has
+                  the exact rules.
                 </p>
               </>
             ) : (
-              <p className="mt-2 leading-relaxed text-ink-muted">{guideSections.qualifies}</p>
+              <p className="mt-2 leading-relaxed text-ink-muted">
+                We don’t have the rules for who qualifies. Read the official notice before
+                you file.
+              </p>
             )}
             {official?.kind === 'official' && (
               <OfficialFormLink
