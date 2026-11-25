@@ -8,7 +8,8 @@ import {
   claimActionCta,
   isClaimActionType,
 } from '@/lib/claim-actions';
-import { CLAIM_ACTION_CATALOG } from '@/lib/claim-action-catalog';
+import { CLAIM_ACTION_CATALOG, claimActionOwnerApplyRows } from '@/lib/claim-action-catalog';
+import { claimActionTypesSql } from '../scripts/claim-action-types';
 
 describe('claim action types', () => {
   it('covers the six public CTAs', () => {
@@ -52,11 +53,11 @@ describe('claim action catalog', () => {
     const byType = (t: string) => CLAIM_ACTION_CATALOG.filter((r) => r.action_type === t).length;
     const byBucket = (t: string) => CLAIM_ACTION_CATALOG.filter((r) => r.audit_bucket === t).length;
     expect(byType('desk_file')).toBe(2);
-    expect(byType('online_form')).toBe(21);
-    expect(byType('needs_notice_id')).toBe(52);
+    expect(byType('online_form')).toBe(17);
+    expect(byType('needs_notice_id')).toBe(50);
     expect(byType('mail_in')).toBe(6);
-    expect(byType('automatic_payment')).toBe(21);
-    expect(byType('not_open')).toBe(20);
+    expect(byType('automatic_payment')).toBe(22);
+    expect(byType('not_open')).toBe(25);
     expect(byBucket('desk_file') + byBucket('online_form') + byBucket('needs_notice_id') + byBucket('link_out') + byBucket('automatic_payment') + byBucket('past_deadline') + byBucket('dead_or_closing') + byBucket('duplicate') + byBucket('misc') + byBucket('test')).toBe(122);
     expect(CLAIM_ACTION_CATALOG.filter((r) => r.link_out).length).toBe(15);
   });
@@ -67,6 +68,44 @@ describe('claim action catalog', () => {
     expect(bySlug.get('john-deere-repair-services-antitrust-settlement')?.action_type).toBe('desk_file');
     expect(bySlug.get('lawsuit-ai-one-click-test-settlement')?.action_type).toBe('not_open');
     expect(bySlug.get('hyundai-kia-vehicle-theft')?.action_type).toBe('online_form');
-    expect(bySlug.get('moss-krivin-v-penske-media-corporation')?.action_type).toBe('online_form');
+    expect(bySlug.get('rolling-stone-magazine-lifetime-subscription')?.action_type).toBe('online_form');
+    expect(bySlug.get('moss-krivin-v-penske-media-corporation')?.action_type).toBe('not_open');
+    expect(bySlug.get('international-motors-wellness-program-surcharge-settlement')?.action_type).toBe(
+      'automatic_payment',
+    );
+    expect(bySlug.get('naro-v-walgreen-co')?.action_type).toBe('automatic_payment');
+    expect(bySlug.get('sanyo-solar-panels-delamination')?.claim_url).toBe(
+      'https://www.sanyosolarclaims.com/documents',
+    );
+  });
+
+  it('owner-apply SQL skips closed, hidden, and unpublished rows', () => {
+    const apply = claimActionOwnerApplyRows();
+    const skipped = CLAIM_ACTION_CATALOG.filter((r) => r.skip_owner_apply);
+    expect(skipped.map((r) => r.slug).sort()).toEqual(
+      [
+        'acen-data-breach-settlement',
+        'central-valley-meat-co-data-breach',
+        'cook-county-5-68m-race-discrimination-in-hiring-settlement',
+        'kia-hyundai-settlement-offers-cash-and-security-upgrades-to-owners',
+        'lawsuit-ai-one-click-test-settlement',
+        'metlife-auto-insurance-1-2m-class-action-settlement',
+        'moss-krivin-v-penske-media-corporation',
+        'nibco-pex-tubing-settlement',
+        'pope-v-benson-health',
+        'southstate-bank-data-breach',
+      ].sort(),
+    );
+    expect(apply).toHaveLength(112);
+    expect(apply.some((r) => r.slug === 'rolling-stone-magazine-lifetime-subscription')).toBe(true);
+    expect(apply.some((r) => r.slug === 'hyundai-kia-vehicle-theft')).toBe(true);
+    const sql = claimActionTypesSql();
+    expect(sql).toContain("and status = 'open'");
+    expect(sql).toContain("and review_status = 'published'");
+    expect(sql).toContain("where slug = 'rolling-stone-magazine-lifetime-subscription'");
+    expect(sql).not.toContain("where slug = 'moss-krivin-v-penske-media-corporation'");
+    expect(sql).not.toContain("where slug = 'kia-hyundai-settlement-offers-cash-and-security-upgrades-to-owners'");
+    expect(sql).not.toContain("where slug = 'nibco-pex-tubing-settlement'");
+    expect(sql).toContain("https://www.sanyosolarclaims.com/documents");
   });
 });

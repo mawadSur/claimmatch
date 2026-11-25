@@ -8,7 +8,7 @@
     "extraUserFields": [
       "Whether you paid for one or more insured Kroger prescriptions from Dec 9, 2018 through Aug 23, 2026",
       "Claimed amount, if stating a dollar figure; supporting documents only if the total is $8,000 or more",
-      "Do not approve this draft while email “Send code” login is the only no-notice path"
+      "Do not approve this draft while email \u201cSend code\u201d login is the only no-notice path"
     ],
     "filled": [],
     "stoppedAt": "account-login",
@@ -32,7 +32,7 @@
     "finalUrl": "https://www.knottsgreatamericasettlement.com/submit-claim",
     "deadline": "2026-12-22",
     "extraUserFields": [
-      "Whether you were a California resident charged processing fees on covered Knott’s or Great America tickets from June 28, 2020 to July 1, 2024",
+      "Whether you were a California resident charged processing fees on covered Knott\u2019s or Great America tickets from June 28, 2020 to July 1, 2024",
       "Cash or check instead of the $8 site credit",
       "Do not approve this draft while Notice ID + Confirmation Code login is the only path"
     ],
@@ -75,7 +75,7 @@
     ]
   },
   {
-    "slug": "moss-krivin-v-penske-media-corporation",
+    "slug": "rolling-stone-magazine-lifetime-subscription",
     "officialUrl": "https://subscribe.rollingstone.com/krivin-rs",
     "formUrlTried": "https://subscribe.rollingstone.com/krivin-rs",
     "finalUrl": "https://subscribe.rollingstone.com/krivin-rs",
@@ -101,7 +101,7 @@
     "proofUpload": false,
     "submitVisible": true,
     "submitClicked": false,
-    "screenshot": "docs/one-click-e2e/moss-krivin-v-penske-media-corporation/final-step.png",
+    "screenshot": "docs/one-click-e2e/rolling-stone-magazine-lifetime-subscription/final-step.png",
     "notes": [
       "clicked homepage claim link",
       "submit control visible; refusing to click"

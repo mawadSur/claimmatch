@@ -17,7 +17,7 @@ Later candidates: `scripts/one-click-more-settlements.ts` →
 `supabase/owner-apply/one-click-more-settlements.sql`. Claim-profile drafts:
 `scripts/one-click-claim-profile-settlements.ts` →
 `supabase/owner-apply/one-click-claim-profile-settlements.sql` (Rolling Stone
-`moss-krivin-v-penske-media-corporation`, Hyundai/Kia `hyundai-kia-vehicle-theft`).
+`rolling-stone-magazine-lifetime-subscription`, Hyundai/Kia `hyundai-kia-vehicle-theft`).
 Default dry-run walks the additional slugs; `--slug` still works for any listed settlement.
 
 The owner applies that SQL, then a legal_reviewer approves each spec and policy
@@ -55,7 +55,7 @@ Walked Rolling Stone and Hyundai/Kia with fake data. Never submitted.
 
 | Slug | Official form | Deadline | Stopped at |
 | --- | --- | --- | --- |
-| `moss-krivin-v-penske-media-corporation` | https://subscribe.rollingstone.com/krivin-rs | not listed on the form | Submit control visible; refused to click |
+| `rolling-stone-magazine-lifetime-subscription` | https://subscribe.rollingstone.com/krivin-rs | not listed on the form | Submit control visible; refused to click |
 | `hyundai-kia-vehicle-theft` | https://www.hkmultistateimmobilizersettlement.com/submit-claim | 2027-03-31 | Notice login on submit-claim; VIN/theft-docs path not fillable from profile |
 
 Hyundai/Kia stays **draft**. Do not approve until a no-notice VIN path exists. Rolling Stone is a candidate after a legal_reviewer reads the screenshot.

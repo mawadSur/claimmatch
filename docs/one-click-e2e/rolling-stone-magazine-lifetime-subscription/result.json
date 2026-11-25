@@ -1,5 +1,5 @@
 {
-  "slug": "moss-krivin-v-penske-media-corporation",
+  "slug": "rolling-stone-magazine-lifetime-subscription",
   "officialUrl": "https://subscribe.rollingstone.com/krivin-rs",
   "formUrlTried": "https://subscribe.rollingstone.com/krivin-rs",
   "finalUrl": "https://subscribe.rollingstone.com/krivin-rs",
@@ -25,7 +25,7 @@
   "proofUpload": false,
   "submitVisible": true,
   "submitClicked": false,
-  "screenshot": "docs/one-click-e2e/moss-krivin-v-penske-media-corporation/final-step.png",
+  "screenshot": "docs/one-click-e2e/rolling-stone-magazine-lifetime-subscription/final-step.png",
   "notes": [
     "clicked homepage claim link",
     "submit control visible; refusing to click"

@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
 /**
- * Owner-apply drafts for Rolling Stone lifetime subscription (moss-krivin)
- * and Hyundai/Kia anti-theft (VIN + theft docs). Policy disabled by default
+ * Owner-apply drafts for Rolling Stone lifetime subscription
+ * (`rolling-stone-magazine-lifetime-subscription`) and Hyundai/Kia anti-theft
+ * (VIN + theft docs). Policy disabled by default
  * (draft). A legal_reviewer must approve. Dry-run must stop before Submit.
  *
  *   npx tsx scripts/one-click-claim-profile-settlements.ts
@@ -25,7 +26,7 @@ function withDocuments(row: OneClickTarget, instructions: string): OneClickTarge
 }
 
 const rollingStone = target({
-  slug: 'moss-krivin-v-penske-media-corporation',
+  slug: 'rolling-stone-magazine-lifetime-subscription',
   title: 'Rolling Stone lifetime subscription',
   officialUrl: 'https://subscribe.rollingstone.com/krivin-rs',
   formUrl: 'https://subscribe.rollingstone.com/krivin-rs',
