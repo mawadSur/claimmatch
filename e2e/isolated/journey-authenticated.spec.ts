@@ -40,6 +40,9 @@ async function runJourney(page: Page, label: 'desktop' | 'mobile') {
 
   await page.goto('/signup');
   await expect(page.locator('#email')).toBeVisible();
+  await expect(page.locator('#password')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Or create a password' }).click();
+  await expect(page.locator('#password')).toBeVisible();
   await shot(page, `journey-${label}-01-signup.png`);
 
   await page.locator('#full_name').fill('Isolated Journey');
@@ -49,6 +52,11 @@ async function runJourney(page: Page, label: 'desktop' | 'mobile') {
 
   await page.waitForURL(/\/onboarding/, { timeout: 20_000 });
   expect(network.some((row) => row.includes('POST') && row.includes('/auth/v1/signup'))).toBeTruthy();
+  // Soft email gate: session exists, confirmation is optional, onboarding still works.
+  await expect(page.getByText('Confirm your email when you can', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/you can keep tracking claims and finish setup without waiting/i),
+  ).toBeVisible();
   await shot(page, `journey-${label}-02-onboarding.png`);
 
   await page.locator('#onboarding-name').fill('Isolated Journey');
@@ -59,6 +67,7 @@ async function runJourney(page: Page, label: 'desktop' | 'mobile') {
 
   await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
   await expect(page.getByRole('heading', { name: /your matches/i })).toBeVisible();
+  await expect(page.getByText('Confirm your email when you can', { exact: true })).toBeVisible();
   await expect(page.getByText(FIXTURE_TITLE).first()).toBeVisible();
   await expect(page.getByText(/strong match/i).first()).toBeVisible();
   await shot(page, `journey-${label}-03-dashboard-match.png`);
