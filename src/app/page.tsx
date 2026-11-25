@@ -18,7 +18,7 @@ import { HomeFaq } from '@/components/home/HomeFaq';
 import { HomeFinalCta } from '@/components/home/HomeFinalCta';
 import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import type { Screen } from '@/components/home/DeviceFrame';
-import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { CaptureView } from '@/components/analytics/CaptureView';
 import { flags } from '@/lib/flags';
 import { homeWedgeAvailability, homeWedgesEnabled } from '@/lib/home-wedges';
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -171,7 +171,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <CaptureOnce event="landing_viewed" />
+      <CaptureView event="landing_viewed" />
 
       <HomeHero
         primary={primary}

@@ -48,6 +48,7 @@ export function testSettlementRows(inbox: string, today: Date = new Date()) {
     category: 'Consumer',
     status: 'open',
     review_status: 'published',
+    is_test: true,
     deadline,
     claim_url: null,
     proof_required: false,

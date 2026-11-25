@@ -360,7 +360,7 @@ describe('catalog page', () => {
     expect(html).toContain('Clear filters');
   });
 
-  it('renders every open row on one page when pagination is off (default)', async () => {
+  it('paginates 24 per page even when the legacy pagination flag is off', async () => {
     db.list = {
       data: Array.from({ length: 30 }, (_, i) =>
         lawsuit({
@@ -373,13 +373,12 @@ describe('catalog page', () => {
       error: null,
     };
     const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
-    expect(html).toContain('Showing 30 open settlements');
-    expect(html).not.toContain('Page 1 of 2');
-    expect(html).toContain('No deadline listed');
+    expect(html).toContain('Showing 1–24 of 30 open settlements');
+    expect(html).toContain('Page 1 of 2');
+    expect(html).not.toContain('No deadline listed');
   });
 
-  it('paginates 24 per page and keeps filters on page links when the flag is on', async () => {
-    vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
+  it('paginates 24 per page and keeps filters on page links', async () => {
     db.list = {
       data: Array.from({ length: 30 }, (_, i) =>
         lawsuit({
@@ -410,8 +409,7 @@ describe('catalog page', () => {
     expect(dated).not.toContain('No deadline listed');
   });
 
-  it('keeps page 1 indexable and canonicalizes later pages to page 1', async () => {
-    vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
+  it('keeps every page indexable with a self-canonical URL including ?page=N', async () => {
     const page1 = await generateLawsuitsMetadata(searchParams({}));
     expect(page1.robots).toMatchObject({ index: true, follow: true });
     expect(page1.alternates).toMatchObject({
@@ -420,9 +418,8 @@ describe('catalog page', () => {
     const page2 = await generateLawsuitsMetadata(searchParams({ page: '2', q: 'fee' }));
     expect(page2.robots).toMatchObject({ index: true, follow: true });
     expect(page2.alternates).toMatchObject({
-      canonical: expect.stringContaining('/lawsuits?q=fee'),
+      canonical: expect.stringContaining('/lawsuits?q=fee&page=2'),
     });
-    expect(String(page2.alternates?.canonical)).not.toContain('page=2');
     expect(page2.title).toContain('page 2');
   });
 

@@ -24,6 +24,7 @@ Objects can exist on the database without a matching recorded version.
 | 0047 one_click_test_packets | **Yes** — `claim_packets.is_test` | **No** | Present, not recorded |
 | 0048 withdrawn_final | **Yes** — `claims_withdrawn_final` function + trigger | **No** | Present, not recorded |
 | 0049 self_filed_reports | **Yes** — `self_filed_reports` | **No** | Present, not recorded. Before `SELF_FILED_REPORT_ENABLED`. |
+| 0050 catalog_public_guardrails | **No** | **No** | Not applied. Owner applies in the SQL editor after merge. Adds `lawsuits.is_test` and `deadline_override` / `_note` / `_at`. Do not run from this PR. |
 
 ### Counts on production (no PII, 2026-11-25)
 

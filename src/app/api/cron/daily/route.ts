@@ -27,6 +27,7 @@ import {
   deadlineRemindersGate,
   errorMessage,
   heldTriageGate,
+  linkCheckGate,
   matchAlertGate,
   matchStoreGate,
   verifyAssistGate,
@@ -54,6 +55,8 @@ import {
  *      MATCH_STORE_ENABLED=1. Separate from email.
  *   3. matchSweep: email new matches. Paused by D50; runs only when
  *      MATCH_EMAILS_ENABLED=1.
+ *   … linkCheck: batched official-URL probe when LINK_CHECK_ENABLED=1
+ *     (Hobby has no third cron; never unpublishes). Writes its own jobs row.
  * The JSON reports each step as ran, skipped or failed; any failure makes the
  * response a 500.
  *
@@ -189,6 +192,15 @@ async function handle(req: Request) {
         : await runStep('daily/matchAlerts', () => sendMatchAlerts({ dryRun }));
     }
 
+    const linkGate = linkCheckGate(flags.linkCheck());
+    if (!linkGate.run) {
+      steps.linkCheck = linkGate.step;
+    } else {
+      steps.linkCheck = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/linkCheck', () => runOfficialLinkCheck());
+    }
+
     const report = buildReport('daily', steps);
     await finishIngestRun(jobId, 'cron/daily', stepToIngestRun(steps.ingest));
     await maybeAlertCronFailure(report);
@@ -205,10 +217,6 @@ async function handle(req: Request) {
     }
     if (flags.eligibilityDrafts()) {
       await runStep('daily/eligibilityDrafts', () => persistEligibilityDrafts());
-    }
-    // Hobby allows two crons; the weekly checker piggybacks on Monday UTC.
-    if (flags.linkCheck() && new Date().getUTCDay() === 1) {
-      await runOfficialLinkCheck();
     }
     return NextResponse.json({ ...report, dryRun, jobId }, { status: reportHttpStatus(report) });
   } catch (err) {

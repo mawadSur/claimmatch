@@ -12,6 +12,7 @@ import {
   parsePage,
   parseProofFilter,
 } from '@/lib/catalog-page';
+import { CatalogPagination } from '@/components/CatalogPagination';
 import { flags } from '@/lib/flags';
 import {
   categoriesOf,
@@ -56,17 +57,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams;
   const filters = catalogFilters(params);
-  const paginationOn = flags.lawsuitsPagination();
-  // Page 2+ canonicalizes to page 1 with the same filters. Page 1 stays indexable.
   const canonicalPath = catalogPath({
     q: filters.q,
     category: filters.category,
     hasDeadline: filters.hasDeadline,
     proof: filters.proof,
-    page: 1,
+    page: filters.page,
   });
   const title =
-    paginationOn && filters.page > 1
+    filters.page > 1
       ? `Open Class Action Settlements (page ${filters.page})`
       : 'Open Class Action Settlements';
   return {
@@ -94,14 +93,14 @@ export async function generateMetadata({
 export default async function LawsuitsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const { q, category, hasDeadline, proof, page } = catalogFilters(params);
-  const paginationOn = flags.lawsuitsPagination();
 
   // One query for every settlement open for claims; search and category
-  // filters run on that list so the category pills always match it.
+  // filters run on that list so the category pills always match it. HTML is
+  // sliced 24 per page so the catalog stays cacheable.
   const catalog = await lookupLawsuits();
   const categories = categoriesOf(catalog.lawsuits);
   const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline, proof });
-  const paged = paginateCatalog(filteredList, page, paginationOn, LAWSUITS_PAGE_SIZE);
+  const paged = paginateCatalog(filteredList, page, true, LAWSUITS_PAGE_SIZE);
   const count = paged.total;
   const filtered = Boolean(q || category || hasDeadline || proof);
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
@@ -109,18 +108,14 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
 
   const prevHref =
-    paginationOn && paged.page > 1
-      ? catalogPath({ q, category, hasDeadline, proof, page: paged.page - 1 })
-      : null;
+    paged.page > 1 ? catalogPath({ q, category, hasDeadline, proof, page: paged.page - 1 }) : null;
   const nextHref =
-    paginationOn && paged.page < paged.totalPages
+    paged.page < paged.totalPages
       ? catalogPath({ q, category, hasDeadline, proof, page: paged.page + 1 })
       : null;
 
   return (
     <>
-      {prevHref ? <link rel="prev" href={pageUrl(prevHref)} /> : null}
-      {nextHref ? <link rel="next" href={pageUrl(nextHref)} /> : null}
       <section className="border-b border-slate-200/70 bg-white">
         <div className="container-page py-10 sm:py-14">
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
@@ -239,16 +234,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
                 </li>
               ))}
             </ul>
-            {paginationOn && paged.totalPages > 1 && (
-              <Pagination
-                page={paged.page}
-                totalPages={paged.totalPages}
-                q={q}
-                category={category}
-                hasDeadline={hasDeadline}
-                proof={proof}
-              />
-            )}
+            <CatalogPagination
+              page={paged.page}
+              totalPages={paged.totalPages}
+              prevHref={prevHref}
+              nextHref={nextHref}
+            />
           </>
         )}
 
@@ -277,48 +268,6 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
         )}
       </section>
     </>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  q,
-  category,
-  hasDeadline,
-  proof,
-}: {
-  page: number;
-  totalPages: number;
-  q?: string;
-  category?: string;
-  hasDeadline: boolean;
-  proof?: 'no';
-}) {
-  const href = (p: number) => {
-    const qs = catalogQueryString({ q, category, hasDeadline, proof, page: p });
-    return qs ? `/lawsuits?${qs}` : '/lawsuits';
-  };
-  return (
-    <nav className="mt-10 flex flex-wrap items-center justify-center gap-3" aria-label="Pagination">
-      {page > 1 ? (
-        <Link href={href(page - 1)} className="btn-secondary">
-          Previous
-        </Link>
-      ) : (
-        <span className="btn-secondary pointer-events-none opacity-50">Previous</span>
-      )}
-      <p className="text-sm text-ink-muted">
-        Page {page} of {totalPages}
-      </p>
-      {page < totalPages ? (
-        <Link href={href(page + 1)} className="btn-secondary">
-          Next
-        </Link>
-      ) : (
-        <span className="btn-secondary pointer-events-none opacity-50">Next</span>
-      )}
-    </nav>
   );
 }
 

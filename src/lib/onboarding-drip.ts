@@ -6,7 +6,7 @@
 import { commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { sendDidYouFileEmail, sendIncompleteOnboardingEmail } from '@/lib/email';
 import { flags } from '@/lib/flags';
-import { guidedDeadline } from '@/lib/settlement-guides';
+import { guidedDeadline, isMissingDeadlineOverrideColumn } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { isDeadlinePassed } from '@/lib/utils';
 
@@ -183,7 +183,16 @@ export async function sendOnboardingDrips(opts: { now?: Date } = {}): Promise<On
             .select('id, email, full_name, email_opt_in')
             .in('id', claimUserIds)
             .eq('email_opt_in', true),
-          supabase.from('lawsuits').select('id, slug, title, deadline').in('id', lawsuitIds),
+          (async () => {
+            const full = await supabase
+              .from('lawsuits')
+              .select('id, slug, title, deadline, deadline_override')
+              .in('id', lawsuitIds);
+            if (full.error && isMissingDeadlineOverrideColumn(full.error.message)) {
+              return supabase.from('lawsuits').select('id, slug, title, deadline').in('id', lawsuitIds);
+            }
+            return full;
+          })(),
         ]);
   if (claimProfileError) {
     throw new Error(`[onboarding-drip] loading claim profiles failed: ${claimProfileError.message}`);
@@ -203,7 +212,13 @@ export async function sendOnboardingDrips(opts: { now?: Date } = {}): Promise<On
       .map((row) => [row.id, row]),
   );
   const lawsuits = new Map(
-    ((lawsuitData ?? []) as Array<{ id: string; slug: string; title: string; deadline: string | null }>).map(
+    ((lawsuitData ?? []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      deadline: string | null;
+      deadline_override?: string | null;
+    }>).map(
       (row) => [row.id, row],
     ),
   );

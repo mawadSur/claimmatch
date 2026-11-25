@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
-import { isThinSettlement } from '@/lib/catalog-page';
+import { isThinSettlement, LAWSUITS_PAGE_SIZE, paginatedPath } from '@/lib/catalog-page';
 import { categoriesOf, getLawsuits } from '@/lib/lawsuits';
-import { hubClosingSoon, newestUpdatedAt } from '@/lib/settlement-hubs';
+import { hubClosingSoon, hubNewest, newestUpdatedAt } from '@/lib/settlement-hubs';
 import { flags } from '@/lib/flags';
 import {
   categoryHubPath,
@@ -53,6 +53,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       hubs.push({ url: pageUrl(CLOSING_SOON_PATH), lastModified: lastmod });
     }
     hubs.push({ url: pageUrl(NEW_SETTLEMENTS_PATH), lastModified: lastmod });
+    const catalogPages = Math.max(1, Math.ceil(lawsuits.length / LAWSUITS_PAGE_SIZE));
+    for (let page = 2; page <= catalogPages; page += 1) {
+      hubs.push({ url: pageUrl(paginatedPath('/lawsuits', page)), lastModified: lastmod });
+    }
+    const newest = hubNewest(lawsuits);
+    const newPages = Math.max(1, Math.ceil(newest.length / LAWSUITS_PAGE_SIZE));
+    for (let page = 2; page <= newPages; page += 1) {
+      hubs.push({ url: pageUrl(paginatedPath(NEW_SETTLEMENTS_PATH, page)), lastModified: lastmod });
+    }
     for (const category of categoriesOf(lawsuits)) {
       hubs.push({
         url: pageUrl(categoryHubPath(category)),

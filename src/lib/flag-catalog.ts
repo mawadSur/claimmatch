@@ -107,7 +107,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     description: 'Email admins when the nightly ingest fails or updates 0 rows.',
     read: () => flags.ingestAlertEmails(),
   },
-  { env: 'LINK_CHECK_ENABLED', description: 'Weekly official claim-link checker.', read: () => flags.linkCheck() },
+  {
+    env: 'LINK_CHECK_ENABLED',
+    description:
+      'Daily batched official claim-link checker (via /api/cron/daily). Off until set to 1. Writes a jobs row and a checked/broken/remaining summary.',
+    read: () => flags.linkCheck(),
+  },
   {
     env: 'PAYOUT_REPORT_ENABLED',
     description: 'User-reported “I got paid” amount (no fee shown or charged).',
@@ -125,7 +130,8 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   },
   {
     env: 'LAWSUITS_PAGINATION_ENABLED',
-    description: 'Server-side /lawsuits pagination plus rel=next/prev.',
+    description:
+      'Legacy. /lawsuits and /settlements/new always paginate; this flag is not read for rendering.',
     read: () => flags.lawsuitsPagination(),
   },
   {

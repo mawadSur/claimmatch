@@ -44,7 +44,13 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     images: [SITE_OG_IMAGE.url],
   },
-  icons: { icon: '/favicon.svg' },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon', type: 'image/png' },
+    ],
+    apple: '/apple-icon',
+  },
 };
 
 const orgJsonLd = {

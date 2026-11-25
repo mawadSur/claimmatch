@@ -275,6 +275,42 @@ export async function recordIngestRun(
  * Record a failed cron (digest, etc.) as a jobs row so /admin can show it.
  * Never throws: a run record must not break the cron.
  */
+/**
+ * Record a finished official-link check (daily batch). Same jobs table as
+ * ingest so /admin can see checked/broken/remaining. Never throws.
+ */
+export async function recordLinkCheckRun(
+  trigger: string,
+  step:
+    | { status: 'ran'; result: unknown }
+    | { status: 'failed'; error: string; result?: unknown }
+    | { status: 'skipped'; reason?: string },
+): Promise<void> {
+  if (!configured()) return;
+  try {
+    const supabase = createServiceClient();
+    const { error } = await supabase.from('jobs').insert({
+      type: 'pipeline',
+      status: step.status === 'failed' ? 'failed' : 'done',
+      payload: {
+        trigger,
+        phase: step.status === 'ran' ? 'finished' : step.status === 'skipped' ? 'skipped' : 'failed',
+      },
+      attempts: 1,
+      result:
+        step.status === 'ran'
+          ? step.result ?? null
+          : step.status === 'skipped'
+            ? { skipped: true, reason: step.reason ?? 'skipped' }
+            : (step.result ?? null),
+      error: step.status === 'failed' ? step.error : null,
+    });
+    if (error) console.error('[jobs] could not record the link-check run:', error.message);
+  } catch (err) {
+    console.error('[jobs] could not record the link-check run:', err);
+  }
+}
+
 export async function recordCronFailure(trigger: string, error: string): Promise<void> {
   if (!configured()) return;
   try {

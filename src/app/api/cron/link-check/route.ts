@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Weekly official-link checker. Vercel Hobby only allows two crons, so this
- * route is also invoked from /api/cron/daily on Mondays when the flag is on.
- * Never unpublishes a listing.
+ * Official-link checker. Vercel Hobby only allows two crons, so this route is
+ * also invoked from /api/cron/daily (a batch each night) when the flag is on.
+ * Never unpublishes a listing. Off until LINK_CHECK_ENABLED=1.
  */
 async function handle(req: Request) {
   if (!authorizeCron(req)) {

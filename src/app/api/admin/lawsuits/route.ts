@@ -33,6 +33,9 @@ const ALLOWED_KEYS = new Set([
   'third_party_fee_status',
   'final_approval_hearing_at',
   'payment_timing_text',
+  'deadline_override',
+  'deadline_override_note',
+  'is_test',
 ]);
 
 const SingleAction = z.enum([
@@ -136,6 +139,9 @@ export async function PATCH(req: Request) {
         { error: 'No updatable fields provided.' },
         { status: 400 },
       );
+    }
+    if ('deadline_override' in updates || 'deadline_override_note' in updates) {
+      updates.deadline_override_at = now;
     }
   }
 
@@ -264,6 +270,22 @@ function pickAllowedPatch(
       const checked = normalizePaymentTiming(value);
       if (!checked.ok) return { updates: {}, error: checked.error };
       updates[key] = checked.value;
+      continue;
+    }
+    if (key === 'deadline_override') {
+      const checked = normalizeHearingDate(value);
+      if (!checked.ok) return { updates: {}, error: 'Deadline override must be YYYY-MM-DD, or blank to use the feed deadline.' };
+      updates[key] = checked.value;
+      continue;
+    }
+    if (key === 'deadline_override_note') {
+      const checked = normalizePaymentTiming(value);
+      if (!checked.ok) return { updates: {}, error: 'Override note must be 280 characters or fewer.' };
+      updates[key] = checked.value;
+      continue;
+    }
+    if (key === 'is_test') {
+      updates[key] = value === true;
       continue;
     }
     updates[key] = value;

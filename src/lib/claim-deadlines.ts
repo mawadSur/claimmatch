@@ -98,6 +98,8 @@ export interface SettlementFacts {
   /** review_status: draft | pending_review | published | rejected */
   review_status: string;
   deadline: string | null;
+  /** 0050: admin-set public deadline. guidedDeadline prefers this over feed/guide. */
+  deadline_override?: string | null;
 }
 
 export type IsFictional = (slug: string) => boolean;

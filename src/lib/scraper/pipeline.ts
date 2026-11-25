@@ -1,11 +1,13 @@
 import { flags } from '@/lib/flags';
 import { notifyIndexNowBestEffort } from '@/lib/indexnow';
+import { isMissingDeadlineOverrideColumn } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import type { ScrapedLawsuit } from '@/lib/types';
 import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
   applyCloseBreaker,
   EXISTING_ROW_COLUMNS,
+  EXISTING_ROW_COLUMNS_BASE,
   heldChangeFingerprint,
   heldClosureLogLines,
   isOpenForClaimsGuided,
@@ -25,6 +27,7 @@ import {
   planDeadlineCloses,
   planFeedPresence,
   STALE_CANDIDATE_COLUMNS,
+  STALE_CANDIDATE_COLUMNS_BASE,
   wouldCloseFromUpdate,
   type StaleCandidate,
   type WouldCloseRow,
@@ -338,6 +341,7 @@ function existingAsCandidates(rows: ExistingRow[]): StaleCandidate[] {
     slug: row.slug,
     status: row.status,
     deadline: row.deadline,
+    deadline_override: row.deadline_override,
     review_status: row.review_status,
     source_id: null,
     external_id: row.external_id,
@@ -525,18 +529,28 @@ function recordPlannedUpdate(
 }
 
 /** Open or closing-soon rows, or null if they cannot be read. */
+function isMissingOverrideColumn(message: string): boolean {
+  return isMissingDeadlineOverrideColumn(message);
+}
+
 async function loadCloseableRows(
   supabase: Db,
   summary: IngestSummary,
 ): Promise<StaleCandidate[] | null> {
   const rows: StaleCandidate[] = [];
   const page = 500;
+  let columns = STALE_CANDIDATE_COLUMNS;
   for (let from = 0; ; from += page) {
     const { data, error } = await supabase
       .from('lawsuits')
-      .select(STALE_CANDIDATE_COLUMNS)
+      .select(columns)
       .in('status', ['open', 'closing_soon'])
       .range(from, from + page - 1);
+    if (error && columns !== STALE_CANDIDATE_COLUMNS_BASE && isMissingOverrideColumn(error.message)) {
+      columns = STALE_CANDIDATE_COLUMNS_BASE;
+      from = -page;
+      continue;
+    }
     if (error) {
       console.error('[pipeline] reading open rows failed:', error.message);
       recordCatalogWriteFailure(summary, error, { operation: 'read_open' });
@@ -562,11 +576,18 @@ async function loadExisting(
   }
   for (let i = 0; i < chunks.length; i += EXISTING_FETCH_CONCURRENCY) {
     const batch = chunks.slice(i, i + EXISTING_FETCH_CONCURRENCY);
-    const results = await Promise.all(
+    let results = await Promise.all(
       batch.map((chunk) =>
         supabase.from('lawsuits').select(EXISTING_ROW_COLUMNS).in('external_id', chunk),
       ),
     );
+    if (results.some((r) => r.error && isMissingOverrideColumn(r.error.message))) {
+      results = await Promise.all(
+        batch.map((chunk) =>
+          supabase.from('lawsuits').select(EXISTING_ROW_COLUMNS_BASE).in('external_id', chunk),
+        ),
+      );
+    }
     for (const { data, error } of results) {
       if (error) {
         console.error('[pipeline] reading existing rows failed:', error.message);

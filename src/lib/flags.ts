@@ -160,8 +160,9 @@ export const flags = {
    */
   ingestAlertEmails: () => on('INGEST_ALERT_EMAILS_ENABLED'),
   /**
-   * Weekly official claim-link checker. Off: the cron route no-ops and the
-   * daily Monday hook does not probe URLs.
+   * Daily batched official claim-link checker (piggybacked on /api/cron/daily
+   * because Hobby allows only two crons). Off: the cron route no-ops and the
+   * daily job records a skipped step. Turn on with LINK_CHECK_ENABLED=1.
    */
   linkCheck: () => on('LINK_CHECK_ENABLED'),
   /**
@@ -182,8 +183,8 @@ export const flags = {
    */
   missingCloseQueue: () => on('INGEST_MISSING_CLOSE_QUEUE_ENABLED'),
   /**
-   * Server-side /lawsuits pagination (24 per page) plus rel=next/prev.
-   * Off: the catalog still renders every open row on one page.
+   * Legacy switch. /lawsuits and /settlements/new always paginate (24 per
+   * page) with rel=prev/next. This flag is no longer read for rendering.
    */
   lawsuitsPagination: () => on('LAWSUITS_PAGINATION_ENABLED'),
   /**

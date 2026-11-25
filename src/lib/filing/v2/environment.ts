@@ -7,11 +7,16 @@
  * any number of settlements. Any read error fails the whole batch: callers
  * fall back to the self-file path, and writes answer 503. Server only.
  */
-import { claimContext, SETTLEMENT_COLUMNS, serviceRoleConfigured } from '@/lib/claims-server';
+import {
+  claimContext,
+  SETTLEMENT_COLUMNS,
+  SETTLEMENT_COLUMNS_BASE,
+  serviceRoleConfigured,
+} from '@/lib/claims-server';
 import type { SettlementContext } from '@/lib/claims';
 import { isVerifiedSender } from '@/lib/closing-soon-email';
 import { classifyMatch } from '@/lib/matching';
-import { applySettlementGuideFacts } from '@/lib/settlement-guides';
+import { applySettlementGuideFacts, isMissingDeadlineOverrideColumn } from '@/lib/settlement-guides';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { Lawsuit } from '@/lib/types';
 import { calendarDateInZone, DEADLINE_TIME_ZONE } from '@/lib/utils';
@@ -35,6 +40,7 @@ import {
   type SpecRecord,
 } from './records';
 
+export const FILING_SETTLEMENT_COLUMNS_BASE = `${SETTLEMENT_COLUMNS_BASE}, administrator_id, third_party_fee_status, tags`;
 export const FILING_SETTLEMENT_COLUMNS = `${SETTLEMENT_COLUMNS}, administrator_id, third_party_fee_status, tags`;
 
 export interface FilingSettlement {
@@ -77,6 +83,7 @@ function toSettlement(row: Record<string, unknown>): FilingSettlement {
   const guided = applySettlementGuideFacts({
     slug: String(row.slug ?? ''),
     deadline: typeof row.deadline === 'string' ? row.deadline : null,
+    deadline_override: typeof row.deadline_override === 'string' ? row.deadline_override : null,
     claim_url: typeof row.claim_url === 'string' ? row.claim_url : null,
     eligibility_text: typeof row.eligibility_text === 'string' ? row.eligibility_text : null,
     proof_required: typeof row.proof_required === 'boolean' ? row.proof_required : null,
@@ -162,7 +169,10 @@ export async function loadSettlementEnvs(ids: string[], now: Date): Promise<EnvB
   if (!serviceRoleConfigured()) return { ok: false };
   try {
     const db = createServiceClient();
-    const lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS).in('id', unique)) as Rows;
+    let lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS).in('id', unique)) as Rows;
+    if (lawsuits.error && isMissingDeadlineOverrideColumn(lawsuits.error.message)) {
+      lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS_BASE).in('id', unique)) as Rows;
+    }
     if (lawsuits.error) {
       logFilingError('settlement read failed', lawsuits.error);
       return { ok: false };

@@ -414,6 +414,30 @@ Apply `0047_one_click_test_packets.sql` **before** deploying the code that reads
    - Header: set `OWED_ESTIMATE_HEADER_ENABLED=1`. Signed-in matches show “You might be owed” only when at least one open match has a listed `payout_min` / `payout_max` on that settlement’s own record.
    - Self-report: set `SELF_FILED_REPORT_ENABLED=1`. “I filed this myself” records a row, optional confirmation number, optional screenshot, and uses the existing `report_filed` claim transition so the claim timeline and trust scorecard count it. Admin list is on `/admin`. To turn off, unset the flag and redeploy; rows stay.
 
+### Catalog public guardrails (0050)
+
+**Not applied on production. Owner applies this in the SQL editor after merge; do not run it from this PR.**
+
+1. Apply `0050_catalog_public_guardrails.sql`. Additive: `lawsuits.is_test` (default false) and `deadline_override` / `deadline_override_note` / `deadline_override_at`. Nothing is deleted. Public pages already hide `[TEST]` / dummy slug patterns without the column.
+2. Optional: set `is_test = true` on any dummy listing that is still published.
+3. Optional backfill (also owner-only; do not run from a PR):
+
+```sql
+update public.lawsuits
+   set deadline_override = date '2027-01-15',
+       deadline_override_note = 'Official notice',
+       deadline_override_at = now()
+ where id = '9170831c-0878-4521-a01f-52885a400424';
+
+update public.lawsuits
+   set deadline_override = date '2027-02-10',
+       deadline_override_note = 'Official notice',
+       deadline_override_at = now()
+ where id = '9cceac3a-3f76-4b25-ab16-2fcbb976b4e0';
+```
+
+4. `LINK_CHECK_ENABLED` stays off until you set it to exactly `1`. Daily cron then probes a batch of official URLs and writes a jobs row.
+
 ## Rollback
 
 - **Before step 4 (0008):** a Vercel instant rollback to the previous deployment works. The old "file" action still errors because of 0006's check.

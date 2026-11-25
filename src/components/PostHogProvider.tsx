@@ -25,6 +25,37 @@ import { posthogUiHost } from '@/lib/posthog-proxy';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
+function initPostHog() {
+  if (typeof window === 'undefined' || !POSTHOG_KEY) return;
+  if ((posthog as { __loaded?: boolean }).__loaded) return;
+  if (
+    doNotTrackEnabled(
+      navigator,
+      (window as Window & { doNotTrack?: string | null }).doNotTrack,
+    )
+  ) {
+    return;
+  }
+  posthog.init(POSTHOG_KEY, {
+    api_host: '/ingest',
+    ui_host: posthogUiHost(),
+    person_profiles: 'identified_only',
+    capture_pageview: false,
+    capture_pageleave: true,
+    persistence: 'localStorage+cookie',
+    // Bundled posthog-js; skip /ingest/array remote scripts so capture still
+    // flushes when the proxy cannot load PostHog's config.js.
+    disable_external_dependency_loading: true,
+    advanced_disable_flags: true,
+    loaded(ph) {
+      ph.register({ [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
+      (window as Window & { posthog?: typeof ph }).posthog = ph;
+    },
+  });
+}
+
+initPostHog();
+
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -109,33 +140,7 @@ function IdentifySession() {
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    if (!POSTHOG_KEY) return;
-    if (
-      doNotTrackEnabled(
-        navigator,
-        typeof window !== 'undefined'
-          ? (window as Window & { doNotTrack?: string | null }).doNotTrack
-          : null,
-      )
-    ) {
-      return;
-    }
-    posthog.init(POSTHOG_KEY, {
-      api_host: '/ingest',
-      ui_host: posthogUiHost(),
-      person_profiles: 'identified_only',
-      capture_pageview: false,
-      capture_pageleave: true,
-      persistence: 'localStorage+cookie',
-      // Bundled posthog-js; skip /ingest/array remote scripts so capture still
-      // flushes when the proxy cannot load PostHog's config.js.
-      disable_external_dependency_loading: true,
-      advanced_disable_flags: true,
-      loaded(ph) {
-        ph.register({ [TRAFFIC_PROPERTY]: detectTrafficKindFromBrowser() });
-        (window as Window & { posthog?: typeof ph }).posthog = ph;
-      },
-    });
+    initPostHog();
   }, []);
 
   if (!POSTHOG_KEY) {
