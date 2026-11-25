@@ -3,7 +3,7 @@
  * brand purple), not a new React Email package. Never invents fees or payouts.
  */
 import { commercialEmailPrereqs } from '@/lib/closing-soon-email';
-import { lawsuitAiMayFile, OFFICIAL_FILING_IS_FREE } from '@/lib/copy';
+import { lawsuitAiMayFile, OFFICIAL_FILING_IS_FREE, WE_FILE_SUPPORTED } from '@/lib/copy';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { legalContact } from '@/lib/legal-contact';
 import {
@@ -90,7 +90,7 @@ export function renderMatchAlertEmail(opts: MatchAlertEmailOpts): string {
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">A new match to review</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${esc(countLabel)}. Check the official notice and file there yourself if you qualify. ${esc(PUBLIC_BRAND)} ${lawsuitAiMayFile() ? '' : 'never files for you and '}does not promise a payment.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} we found ${esc(countLabel)}. Check the official notice and file there yourself if you qualify. ${esc(PUBLIC_BRAND)} ${lawsuitAiMayFile() ? `${esc(WE_FILE_SUPPORTED.toLowerCase())} and ` : 'never files for you and '}does not promise a payment.</p>
           ${cards}
           <p style="margin:22px 0 0 0;font-size:13px;color:#6b6480;line-height:1.5;">${esc(OFFICIAL_FILING_IS_FREE)} <a href="${esc(money)}" style="color:${BRAND};text-decoration:underline;">How we make money</a>.</p>
         </td></tr>

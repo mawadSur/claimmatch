@@ -15,6 +15,7 @@ export function AnswerBlock({
   qualifyHref,
   qualifySlug,
   qualifyLawsuitId,
+  checkedOn,
 }: {
   facts: AnswerFacts;
   open: boolean;
@@ -25,6 +26,8 @@ export function AnswerBlock({
   qualifyHref?: string;
   qualifySlug?: string;
   qualifyLawsuitId?: string;
+  /** Official-notice check date, shown above the fold when a guide exists. */
+  checkedOn?: string | null;
 }) {
   const formId = lawsuitId ?? qualifyLawsuitId;
   const formSlug = slug ?? qualifySlug;
@@ -40,6 +43,7 @@ export function AnswerBlock({
         {facts.deadline && <Fact label="Claim deadline" value={facts.deadline} />}
         {facts.proof && <Fact label="Proof needed" value={facts.proof} />}
         {facts.administrator && <Fact label="Administrator" value={facts.administrator} />}
+        {checkedOn && <Fact label="Last verified" value={checkedOn} />}
       </dl>
       {facts.missing.length > 0 && (
         <MissingDetailsBlock missing={facts.missing} official={official} />

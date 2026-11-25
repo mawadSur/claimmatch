@@ -6,7 +6,7 @@ import { FlatList, Platform, RefreshControl, StyleSheet, View, type ListRenderIt
 
 import { AppText, Button, EmptyState, ErrorState, Notice, Screen } from '@/components/ui';
 import { RefreshCw, SearchX } from '@/components/ui/icons';
-import { catalog } from '@/copy/catalog';
+import { catalog, catalogIntroText } from '@/copy/catalog';
 import { useCatalog, type CatalogLawsuit } from '@/data/catalog';
 import { userFacingError } from '@/data/errors';
 import {
@@ -55,6 +55,7 @@ export function CatalogScreen() {
   const now = useNow();
   const { isFlagOn } = useConfig();
   const verifiedFieldsOn = isFlagOn('VERIFIED_FIELDS_ENABLED');
+  const mayFile = isFlagOn('ONE_CLICK_FILING_ENABLED');
   const { data: lawsuits, status, error, isFetching, isRefetchError, refetch } = useCatalog();
   const { refreshing, onRefresh } = usePullToRefresh(refetch);
   // The search field: only while this tab is focused, so another screen's keyboard leaves the list alone.
@@ -98,7 +99,7 @@ export function CatalogScreen() {
   const header = (
     <View style={styles.header}>
       <AppText variant="body" color="textMuted">
-        {catalog.intro.text}
+        {catalogIntroText(mayFile)}
       </AppText>
       <UnverifiedNotice variant="catalog" />
       {lawsuits ? (

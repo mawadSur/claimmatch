@@ -32,6 +32,8 @@ describe('isolated journey is not production E2E', () => {
     const spec = read('e2e/isolated/journey-authenticated.spec.ts');
     expect(spec).toContain("test.skip(!process.env.ISOLATED_JOURNEY");
     expect(spec).toContain('Not production E2E');
+    expect(spec).toContain("getByRole('button', { name: 'Or create a password' })");
+    expect(spec).toContain('Confirm your email when you can');
   });
 
   it('CI verify runs the isolated journey and smoke stays read-only', () => {

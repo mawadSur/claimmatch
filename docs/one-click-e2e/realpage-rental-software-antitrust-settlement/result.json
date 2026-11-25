@@ -1,0 +1,42 @@
+{
+  "slug": "realpage-rental-software-antitrust-settlement",
+  "officialUrl": "https://www.realpagerentalsettlement.com/",
+  "formUrlTried": "https://www.realpagerentalsettlement.com/submit-claim",
+  "finalUrl": "https://www.realpagerentalsettlement.com/submit-claim",
+  "deadline": "2027-01-29",
+  "extraUserFields": [
+    "Whether you rented a multifamily apartment in the U.S. from Oct 18, 2018 through Nov 21, 2025",
+    "Whether rent was paid directly for a property on the official Property List",
+    "Optional notice ID if you have one; take the No-notice path if you do not"
+  ],
+  "filled": [
+    "first name",
+    "last name",
+    "legal name",
+    "email",
+    "confirm email",
+    "phone",
+    "address 1",
+    "address 2",
+    "city",
+    "state",
+    "state",
+    "zip",
+    "country",
+    "signature",
+    "signature date"
+  ],
+  "stoppedAt": "final-step-before-submit",
+  "captcha": false,
+  "accountLogin": false,
+  "proofUpload": false,
+  "submitVisible": true,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/realpage-rental-software-antitrust-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "clicked No (no-notice path)",
+    "clicked Continue after No",
+    "submit control visible; refusing to click"
+  ]
+}

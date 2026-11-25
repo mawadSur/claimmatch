@@ -155,7 +155,8 @@ describe('the settlement page', () => {
     const html = await render();
     expect(html).toContain(SETTLEMENT_FILING_COPY.self_file.step.body);
     expect(html).not.toContain('never files');
-    expect(html).not.toContain('can file');
+    expect(html).not.toContain('We file this claim for you');
+    expect(html).toContain('We file claims for you on supported settlements');
   });
 });
 

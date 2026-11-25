@@ -125,9 +125,9 @@ function makeUser({ email, password, fullName }) {
     aud: 'authenticated',
     role: 'authenticated',
     email,
-    email_confirmed_at: ts,
+    email_confirmed_at: null,
     phone: '',
-    confirmed_at: ts,
+    confirmed_at: null,
     last_sign_in_at: ts,
     app_metadata: { provider: 'email', providers: ['email'] },
     user_metadata: { full_name: fullName || '' },
@@ -137,7 +137,7 @@ function makeUser({ email, password, fullName }) {
         user_id: id,
         identity_id: id,
         provider: 'email',
-        identity_data: { email, email_verified: true, full_name: fullName || '' },
+        identity_data: { email, email_verified: false, full_name: fullName || '' },
         last_sign_in_at: ts,
         created_at: ts,
         updated_at: ts,
@@ -519,7 +519,7 @@ async function handleAuth(req, res, url, origin) {
     send(
       res,
       200,
-      { disable_signup: false, mailer_autoconfirm: true, phone_autoconfirm: true, external: {} },
+      { disable_signup: false, mailer_autoconfirm: false, phone_autoconfirm: true, external: {} },
       { origin },
     );
     return true;

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react';
+import { WE_FILE_FOR_YOU_BADGE } from '@/lib/copy';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
@@ -33,11 +34,13 @@ export function LawsuitCard({
   badge,
   reasons,
   href,
+  fileForYou = false,
 }: {
   lawsuit: Lawsuit;
   badge?: { label: string; tone?: 'brand' | 'green' | 'red' | 'gray' };
   reasons?: string[];
   href?: string;
+  fileForYou?: boolean;
 }) {
   const open = isOpenForClaims(lawsuit);
   const urgency = open ? deadlineUrgencyLabel(lawsuit.deadline) : null;
@@ -67,6 +70,11 @@ export function LawsuitCard({
       <div className="flex items-start justify-between gap-3">
         <span className={badgeClass}>{shownBadge?.label ?? lawsuit.category}</span>
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
+          {fileForYou && (
+            <span className="badge-green shrink-0 gap-1">
+              <Sparkles className="h-3 w-3" aria-hidden="true" /> {WE_FILE_FOR_YOU_BADGE}
+            </span>
+          )}
           <VerifiedBadge lawsuit={lawsuit} />
           <ClosesInChip deadline={lawsuit.deadline} />
           {!flags.closesInChips() && urgency && (

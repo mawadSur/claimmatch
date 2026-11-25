@@ -20,7 +20,7 @@ export const store = defineCopy({
   shortDescription: { text: 'Free claim assistant for class-action settlements', source: 'src/lib/utils.ts' },
   /** First paragraph of the full description on both stores (llms.txt tagline). */
   descriptionLead: {
-    text: 'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
+    text: 'Find open class-action settlements, check who qualifies, and we file claims for you on supported settlements. Free.',
     source: 'src/lib/utils.ts',
   },
   /** MAY_FILE_SHORT_SENTENCE — live /llms.txt and shortDisclaimer(true). */
@@ -40,7 +40,7 @@ export const store = defineCopy({
   },
   /** SOME_SETTLEMENTS. */
   someSettlements: {
-    text: 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.',
+    text: 'We file claims for you on supported settlements after you review and sign them.',
     source: 'src/lib/copy.ts',
   },
   alwaysFileYourself: {

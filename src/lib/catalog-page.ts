@@ -13,6 +13,7 @@ export interface CatalogPageQuery {
   category?: string;
   hasDeadline?: boolean;
   page?: number;
+  fileForYou?: boolean;
 }
 
 export interface Paginated<T> {
@@ -40,6 +41,13 @@ export function parseHasDeadline(raw: string | null | undefined): boolean {
 /** C17 home entry: only "no" is a supported proof filter. */
 export function parseProofFilter(raw: string | null | undefined): 'no' | undefined {
   return raw?.trim().toLowerCase() === 'no' ? 'no' : undefined;
+}
+
+/** Catalog “We file for you” filter (`?fileForYou=1`). */
+export function parseFileForYou(raw: string | null | undefined): boolean {
+  if (raw == null) return false;
+  const v = raw.trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
 }
 
 /**
@@ -123,10 +131,20 @@ export function filterCatalog<
     Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text' | 'payout_min' | 'payout_max' | 'typical_payout'>>,
 >(
   lawsuits: T[],
-  opts: { q?: string; category?: string; hasDeadline?: boolean; proof?: 'no' },
+  opts: {
+    q?: string;
+    category?: string;
+    hasDeadline?: boolean;
+    proof?: 'no';
+    fileForYou?: boolean;
+    fileForYouIds?: ReadonlySet<string>;
+  },
 ): T[] {
   let rows = searchCatalog(lawsuits, { q: cleanSearchTerm(opts.q), category: opts.category });
   if (opts.hasDeadline) rows = rows.filter((l) => Boolean(l.deadline));
+  if (opts.fileForYou && opts.fileForYouIds) {
+    rows = rows.filter((l) => 'id' in l && opts.fileForYouIds!.has(String((l as { id: string }).id)));
+  }
   if (opts.proof === 'no') {
     rows = rows.filter((l) => displayProofStatus({
       proof_required: l.proof_required ?? false,
@@ -147,6 +165,7 @@ export function catalogQueryString(opts: {
   category?: string;
   hasDeadline?: boolean;
   proof?: 'no';
+  fileForYou?: boolean;
   page?: number;
 }): string {
   const params = new URLSearchParams();
@@ -154,6 +173,7 @@ export function catalogQueryString(opts: {
   if (opts.category) params.set('category', opts.category);
   if (opts.hasDeadline) params.set('hasDeadline', '1');
   if (opts.proof === 'no') params.set('proof', 'no');
+  if (opts.fileForYou) params.set('fileForYou', '1');
   if (opts.page && opts.page > 1) params.set('page', String(opts.page));
   return params.toString();
 }
@@ -171,6 +191,7 @@ export function catalogPath(opts: {
   category?: string;
   hasDeadline?: boolean;
   proof?: 'no';
+  fileForYou?: boolean;
   page?: number;
 }): string {
   const qs = catalogQueryString(opts);

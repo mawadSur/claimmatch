@@ -17,10 +17,10 @@ const MODEL = 'src/components/filing/filing-model.ts';
 const APP = 'plan 3.3 (Claim: one-click filing in the app, issue #51)';
 
 export const filing = defineCopy({
-  agentTitle: { text: 'Lawsuit AI files this claim for you', source: COPY },
+  agentTitle: { text: 'We file this claim for you', source: COPY },
   selfFileTitle: { text: 'Finish on the official site', source: COPY },
   agentNote: {
-    text: 'Lawsuit AI files this claim for you after you sign it. Any payment comes to you from the settlement administrator, not from Lawsuit AI.',
+    text: 'We file this claim for you after you sign it. Any payment comes to you from the settlement administrator, not from Lawsuit AI.',
     source: COPY,
   },
   selfFileNote: {

@@ -7,7 +7,16 @@ import { pickClosingSoon } from '@/lib/closing-soon';
 import { pickTopPayouts } from '@/lib/top-payouts';
 import { HomeFeatures } from '@/components/home/HomeFeatures';
 import { homeStats } from '@/lib/home-stats';
-import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
+import {
+  ACCOUNT_FOR_SAVE_WHY,
+  BROWSE_NO_ACCOUNT,
+  OFFICIAL_FILING_IS_FREE,
+  WE_FILE_SUPPORTED,
+  WE_FILE_SUPPORTED_SENTENCE,
+  lawsuitAiMayFile,
+  publicBetaFeeCopy,
+  whoFilesBullet,
+} from '@/lib/copy';
 import { HomeHero } from '@/components/home/HomeHero';
 import { HowItWorks, type HowStep } from '@/components/home/HowItWorks';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
@@ -62,48 +71,61 @@ const SCREENS = {
   },
 } satisfies Record<string, Screen>;
 
-const HOW_STEPS: HowStep[] = [
-  {
-    title: 'Find an open settlement',
-    body: 'Browse settlements that are taking claims right now. Every listing shows the payout and the deadline as the source states them.',
-    points: [
-      'Search by company or filter by category',
-      'Upcoming deadlines flagged',
-      'Unverified listings clearly labeled',
-    ],
-    screen: SCREENS.catalog,
-  },
-  {
-    title: 'Check who qualifies',
-    body: 'Each settlement page sums up who qualifies, the payout, the deadline and whether you need proof, then links to the official notice so you can confirm it yourself.',
-    points: [
-      'Who qualifies, in plain words',
-      'Proof needed, as the listing states it',
-      'A link to the official notice when we have it',
-    ],
-    screen: SCREENS.settlement,
-  },
-  {
-    title: 'File on the official site',
-    body: 'Open the official claim form and copy in the details you saved, like your name, address and email. Filing there is always free, and you send it yourself.',
-    points: [
-      'Copy-ready details from your profile',
-      'The official form opens in a new tab',
-      'No fee to file on the official site',
-    ],
-    screen: SCREENS.claim,
-  },
-  {
-    title: 'Keep track of every claim',
-    body: 'Tell us when you have filed and save the confirmation number the official site gives you. Your claims and deadlines stay in one list.',
-    points: [
-      'Confirmation numbers in one place',
-      'Claims grouped by what to do next',
-      'Deadlines at a glance',
-    ],
-    screen: SCREENS.dashboard,
-  },
-];
+function howSteps(mayFile: boolean): HowStep[] {
+  return [
+    {
+      title: 'Find an open settlement',
+      body: 'Browse settlements that are taking claims right now. Every listing shows the payout and the deadline as the source states them.',
+      points: [
+        'Search by company or filter by category',
+        'Upcoming deadlines flagged',
+        'Unverified listings clearly labeled',
+      ],
+      screen: SCREENS.catalog,
+    },
+    {
+      title: 'Check who qualifies',
+      body: 'Each settlement page sums up who qualifies, the payout, the deadline and whether you need proof, then links to the official notice so you can confirm it yourself.',
+      points: [
+        'Who qualifies, in plain words',
+        'Proof needed, as the listing states it',
+        'A link to the official notice when we have it',
+      ],
+      screen: SCREENS.settlement,
+    },
+    mayFile
+      ? {
+          title: WE_FILE_SUPPORTED,
+          body: WE_FILE_SUPPORTED_SENTENCE,
+          points: [
+            'We file claims for you on supported settlements',
+            'You can always file on the official site yourself',
+            'No fee to file on the official site',
+          ],
+          screen: SCREENS.claim,
+        }
+      : {
+          title: 'File on the official site',
+          body: 'Open the official claim form and copy in the details you saved, like your name, address and email. Filing there is always free, and you send it yourself.',
+          points: [
+            'Copy-ready details from your profile',
+            'The official form opens in a new tab',
+            'No fee to file on the official site',
+          ],
+          screen: SCREENS.claim,
+        },
+    {
+      title: 'Keep track of every claim',
+      body: 'Tell us when you have filed and save the confirmation number the official site gives you. Your claims and deadlines stay in one list.',
+      points: [
+        'Confirmation numbers in one place',
+        'Claims grouped by what to do next',
+        'Deadlines at a glance',
+      ],
+      screen: SCREENS.dashboard,
+    },
+  ];
+}
 
 /** Public marketing home; catalog reads use the cookie-free client. */
 export const revalidate = 900;
@@ -144,6 +166,7 @@ export default async function HomePage() {
     : pickTopPayouts(catalog.lawsuits.filter((row) => !closingIds.has(row.id)), 5);
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
+  const mayFile = lawsuitAiMayFile();
   const accountFirst = flags.homeAccountFirstCta();
   const previewOn = flags.matchPreview();
   // Live counts only when the catalog really loaded; never a made-up number.
@@ -177,6 +200,7 @@ export default async function HomePage() {
         primary={primary}
         extra={previewOn ? <MatchPreviewEntry variant="hero" /> : null}
         freeLabel={freeLabel}
+        fileLine={whoFilesBullet(mayFile)}
         browseNote={flags.panelTrustCopy() ? `${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}` : undefined}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
@@ -185,7 +209,7 @@ export default async function HomePage() {
       />
 
       <HowItWorks
-        steps={HOW_STEPS}
+        steps={howSteps(mayFile)}
         caption="Real screens from Lawsuit AI. The settlements shown are real catalog listings; the account details are a sample."
       />
 

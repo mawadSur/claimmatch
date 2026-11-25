@@ -286,11 +286,16 @@ export function OnboardingWizard({
             </>
           )}
         </button>
-        <button type="button" onClick={() => void run('skip')} disabled={busy} className="btn-ghost">
-          {action === 'skip' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          Skip for now
-        </button>
       </div>
+      <button
+        type="button"
+        onClick={() => void run('skip')}
+        disabled={busy}
+        className="text-link mt-3 inline-flex min-h-tap items-center gap-1.5 text-sm"
+      >
+        {action === 'skip' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+        Skip for now — I’ll finish this later
+      </button>
     </form>
   );
 }

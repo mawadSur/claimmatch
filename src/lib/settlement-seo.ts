@@ -81,6 +81,15 @@ export { RECENTLY_CLOSED_PATH } from './recently-closed';
 
 const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
 
+/** Inlined from copy.ts — this file is shared with the app and cannot import it. */
+const WE_FILE_META =
+  'We file claims for you on supported settlements. File free on the official site yourself anytime.';
+const SELF_FILE_META = 'File free on the official site.';
+
+function mayFileLine(): string {
+  return flags.feeDisclosure() || flags.oneClickFiling() ? WE_FILE_META : SELF_FILE_META;
+}
+
 function hasQualifies(
   lawsuit: Pick<Lawsuit, 'eligibility_text'>,
 ): boolean {
@@ -93,12 +102,19 @@ function hasDeadline(lawsuit: Pick<Lawsuit, 'deadline'>): boolean {
 
 /** Title never names Who Qualifies or Deadline unless those fields exist. */
 export function settlementMetaTitle(
-  lawsuit: Pick<Lawsuit, 'title' | 'deadline' | 'eligibility_text'>,
+  lawsuit: Pick<Lawsuit, 'title' | 'deadline' | 'eligibility_text' | 'typical_payout'>,
 ): string {
   const title = lawsuit.title.trim();
+  const payout = lawsuit.typical_payout?.trim();
   if (hasDeadline(lawsuit) && hasQualifies(lawsuit)) {
-    return `${title}: Who Qualifies, Claim Deadline & Payout`;
+    return payout
+      ? `${title}: Who Qualifies, Claim Deadline & Payout`
+      : `${title}: Who Qualifies & Claim Deadline`;
   }
+  if (hasDeadline(lawsuit)) {
+    return payout ? `${title}: Claim Deadline & Payout` : `${title}: Claim Deadline`;
+  }
+  if (payout) return `${title}: Payout & ${FALLBACK_META_SUFFIX}`;
   return `${title}: ${FALLBACK_META_SUFFIX}`;
 }
 
@@ -111,7 +127,7 @@ export function settlementMetaDescription(lawsuit: Lawsuit): string {
       ? ` Listed payout: ${lawsuit.typical_payout.trim()}.`
       : '';
     return truncateAtWord(
-      `${title}: official claim link and what we know.${payout} File free on the official site.`,
+      `${title}: official claim link and what we know.${payout} ${mayFileLine()}`,
       155,
     );
   }
@@ -126,7 +142,7 @@ export function settlementMetaDescription(lawsuit: Lawsuit): string {
     deadline,
     proof,
     payout,
-    'File free on the official site.',
+    mayFileLine(),
   ]
     .filter(Boolean)
     .join(' ');
@@ -180,6 +196,8 @@ export function settlementFaqs(
   lawsuit: Lawsuit,
   // copy.ts lawsuitAiMayFile, inlined: this file is shared with the app (mobile/shared.json) and imports only ./ files.
   mayFile = flags.feeDisclosure() || flags.oneClickFiling(),
+  /** True when this settlement has an agent lane (one-click enabled for it). */
+  agentLane = false,
 ): FaqItem[] {
   const name = lawsuit.title.trim();
   const facts = settlementAnswerFacts(lawsuit);
@@ -188,10 +206,13 @@ export function settlementFaqs(
 
   // "Never files" only while Lawsuit AI files nothing for this page's viewers (issue #53).
   const neverFiles = mayFile ? '' : ' Lawsuit AI never files for you.';
+  const weFile = mayFile
+    ? ' We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.'
+    : '';
   const officialHow =
     official?.kind === 'official'
-      ? ` File on the official site (${official.host}).${neverFiles}`
-      : ` File on the official settlement website.${neverFiles}`;
+      ? ` File on the official site (${official.host}).${weFile}${neverFiles}`
+      : ` File on the official settlement website.${weFile}${neverFiles}`;
 
   return [
     {
@@ -224,7 +245,11 @@ export function settlementFaqs(
     },
     {
       q: `How do I file a claim for the ${name}?`,
-      a: `Check that you qualify on the official notice, then file on the official site yourself. Filing there is free.${officialHow}`,
+      a: agentLane
+        ? `Check that you qualify on the official notice. We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.${officialHow}`
+        : mayFile
+          ? `Check that you qualify on the official notice. We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where filing is free.${officialHow}`
+          : `Check that you qualify on the official notice, then file on the official site yourself. Filing there is free.${officialHow}`,
     },
     ...settlementGuideFaqs(lawsuit.slug),
   ];

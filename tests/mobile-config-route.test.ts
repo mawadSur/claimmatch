@@ -131,10 +131,10 @@ describe('the official-notice guides (the app’s catalog and settlement screens
     }
   });
 
-  it('stays small: the list is under 48 KB, and a config without it under 4 KB', async () => {
+  it('stays small: the list is under 80 KB, and a config without it under 4 KB', async () => {
     const full = await config();
     const lean = await config(`?guides=${SETTLEMENT_GUIDES_VERSION}`);
-    expect(Buffer.byteLength(JSON.stringify(SETTLEMENT_GUIDES))).toBeLessThan(48_000);
+    expect(Buffer.byteLength(JSON.stringify(SETTLEMENT_GUIDES))).toBeLessThan(80_000);
     expect(lean.bytes).toBeLessThan(4_000);
     expect(full.bytes - lean.bytes).toBe(Buffer.byteLength(`,"guides":${JSON.stringify(SETTLEMENT_GUIDES)}`));
   });

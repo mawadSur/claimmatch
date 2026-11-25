@@ -3,7 +3,14 @@ import Link from 'next/link';
 import { ArrowRight, Search, HelpCircle, CheckCircle2, XCircle, BadgeCheck } from 'lucide-react';
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
-import { OFFICIAL_FILING_IS_FREE, feeEveryClaimCopy, filingFact, publicBetaFeeCopy } from '@/lib/copy';
+import {
+  OFFICIAL_FILING_IS_FREE,
+  WE_FILE_SUPPORTED,
+  feeEveryClaimCopy,
+  filingFact,
+  lawsuitAiMayFile,
+  publicBetaFeeCopy,
+} from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -25,17 +32,22 @@ export function generateMetadata(): Metadata {
   });
 }
 
-const FREE = [
-  'Browsing settlements that are open for claims',
-  'Your Lawsuit AI account',
-  'Keeping track of the claims you file',
-];
+function freeItems(mayFile: boolean): string[] {
+  return [
+    'Browsing settlements that are open for claims',
+    'Your Lawsuit AI account',
+    'Keeping track of the claims you file',
+    ...(mayFile ? [WE_FILE_SUPPORTED] : []),
+  ];
+}
 
-const NEVER = [
-  'Handle your settlement money',
-  'File a claim for you',
-  'Charge you to file a claim',
-];
+function neverItems(mayFile: boolean): string[] {
+  return [
+    'Handle your settlement money',
+    ...(mayFile ? [] : ['File a claim for you']),
+    'Charge you to file a claim',
+  ];
+}
 
 function pricingFaq(disclose: boolean) {
   if (disclose) {
@@ -83,7 +95,10 @@ function pricingFaq(disclose: boolean) {
 
 export default function PricingPage() {
   const disclose = flags.feeDisclosure();
+  const mayFile = lawsuitAiMayFile();
   const faq = pricingFaq(disclose);
+  const free = freeItems(mayFile);
+  const never = neverItems(mayFile);
 
   return (
     <>
@@ -128,7 +143,7 @@ export default function PricingPage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h2 className="text-lg font-bold">Free for you</h2>
             <ul className="mt-4 space-y-3">
-              {FREE.map((t) => (
+              {free.map((t) => (
                 <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-600" aria-hidden />
                   {t}
@@ -139,7 +154,7 @@ export default function PricingPage() {
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h2 className="text-lg font-bold">What we never do</h2>
             <ul className="mt-4 space-y-3">
-              {NEVER.map((t) => (
+              {never.map((t) => (
                 <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
                   <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger-700" aria-hidden />
                   {t}

@@ -30,11 +30,7 @@ export type SignupErrorCode =
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function validateSignupFields(input: {
-  fullName: string;
-  email: string;
-  password: string;
-}): SignupFieldErrors {
+function validateNameAndEmail(input: { fullName: string; email: string }): SignupFieldErrors {
   const errors: SignupFieldErrors = {};
   if (!input.fullName.trim()) {
     errors.full_name = 'Enter your name.';
@@ -45,6 +41,23 @@ export function validateSignupFields(input: {
   } else if (!EMAIL_SHAPE.test(email)) {
     errors.email = 'Enter a valid email address.';
   }
+  return errors;
+}
+
+/** Name + email only: magic-link signup has no password. */
+export function validateMagicLinkFields(input: {
+  fullName: string;
+  email: string;
+}): SignupFieldErrors {
+  return validateNameAndEmail(input);
+}
+
+export function validateSignupFields(input: {
+  fullName: string;
+  email: string;
+  password: string;
+}): SignupFieldErrors {
+  const errors = validateNameAndEmail(input);
   if (!input.password) {
     errors.password = 'Enter a password.';
   } else if (input.password.length < MIN_PASSWORD_LENGTH) {

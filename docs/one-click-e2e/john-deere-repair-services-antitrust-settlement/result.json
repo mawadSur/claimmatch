@@ -1,0 +1,39 @@
+{
+  "slug": "john-deere-repair-services-antitrust-settlement",
+  "officialUrl": "https://www.deererepairsettlement.com/",
+  "formUrlTried": "https://www.deererepairsettlement.com/submit-claim",
+  "finalUrl": "https://www.deererepairsettlement.com/submit-claim",
+  "deadline": "2026-12-31",
+  "extraUserFields": [
+    "Equipment identification number from the machine",
+    "Type of equipment and approximate ownership and repair dates",
+    "Optional notice ID; take the No-notice path if you do not have one"
+  ],
+  "filled": [
+    "full name",
+    "email",
+    "confirm email",
+    "phone",
+    "address 1",
+    "address 2",
+    "city",
+    "state",
+    "state",
+    "zip",
+    "signature",
+    "signature date"
+  ],
+  "stoppedAt": "final-step-before-submit",
+  "captcha": false,
+  "accountLogin": false,
+  "proofUpload": true,
+  "submitVisible": true,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/john-deere-repair-services-antitrust-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "clicked No (no-notice path)",
+    "clicked Continue after No",
+    "submit control visible; refusing to click"
+  ]
+}

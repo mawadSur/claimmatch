@@ -124,7 +124,7 @@ export const settlement = defineCopy({
 
   // How filing works ---------------------------------------------------------
   howFilingWorks: {
-    text: 'How filing works',
+    text: 'How to file',
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   stepQualifyTitle: {
@@ -145,11 +145,11 @@ export const settlement = defineCopy({
   },
   /** SETTLEMENT_FILING_COPY.agent.step — one-click on and this settlement has an agent lane. */
   stepFileTitleAgent: {
-    text: 'File it yourself, or choose one-click filing',
+    text: 'We file this claim for you',
     source: 'src/lib/copy.ts',
   },
   stepFileBodyAgent: {
-    text: 'For this settlement, Lawsuit AI can file your claim with the settlement administrator after you review and sign it, if you qualify and live in a state it covers. Or file it yourself on the official site, where filing is free. Lawsuit AI never handles settlement payments.',
+    text: 'We file this claim for you after you review and sign it, if you qualify and live in a state it covers. You can always file on the official site yourself instead, where filing is free. Lawsuit AI never handles settlement payments.',
     source: 'src/lib/copy.ts',
   },
   /** SETTLEMENT_FILING_COPY.self_file.step — one-click on, this settlement has no agent lane. */
@@ -163,7 +163,7 @@ export const settlement = defineCopy({
   },
   /** Generic may-file (flag on, catalog API has no lane): MAY_FILE_PAGE_COPY.inviteStep. */
   stepFileTitleMayFile: {
-    text: 'You choose who files',
+    text: 'We file claims for you on supported settlements',
     source: 'src/lib/copy.ts',
   },
   stepFileBodyMayFileTail: {
@@ -247,7 +247,7 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   checklistAgentCanFile: {
-    text: 'Lawsuit AI can file this claim for you after you review and sign it',
+    text: 'We file this claim for you after you review and sign it',
     source: 'src/lib/copy.ts',
   },
   checklistAlwaysOfficial: {
@@ -264,7 +264,7 @@ export const settlement = defineCopy({
   },
   /** SOME_SETTLEMENTS — generic may-file when the catalog API has no lane. */
   checklistSomeSettlements: {
-    text: 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.',
+    text: 'We file claims for you on supported settlements after you review and sign them.',
     source: 'src/lib/copy.ts',
   },
   checklistAlwaysOfficialSite: {

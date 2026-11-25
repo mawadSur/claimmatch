@@ -167,7 +167,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const facts = overlayVerifiedFacts(settlementAnswerFacts(lawsuit), lawsuit);
   // Who files (issue #53). A static page has no viewer: unchanged until one-click is on for everyone.
   const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
-  const faqs = settlementFaqs(lawsuit, filingMode !== 'never_files');
+  const faqs = settlementFaqs(lawsuit, filingMode !== 'never_files', filingMode === 'agent');
   const claimHref = `/claim/${lawsuit.slug}`;
   const qualifyEnabled = flags.settlementPageCta() && open;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
@@ -223,6 +223,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
             ) : (
               <span className="badge-gray">Claims closed</span>
             )}
+            {filingMode === 'agent' && (
+              <span className="badge-green">{SETTLEMENT_FILING_COPY.agent.step.title}</span>
+            )}
             {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
                 <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
@@ -252,6 +255,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             qualifyHref={qualifyHref ?? undefined}
             qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
             qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
+            checkedOn={checkedLabel}
           />
 
           {open && (
@@ -275,7 +279,11 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 </Link>
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                Free. You file on the official site yourself.
+                {filingMode === 'agent'
+                  ? 'Free. We file this claim for you on this settlement.'
+                  : filingMode === 'self_file'
+                    ? 'Free. We file claims for you on supported settlements. You can file this one on the official site yourself.'
+                    : 'Free. You file on the official site yourself.'}
               </p>
             </div>
           )}
@@ -391,7 +399,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
           {open && (
             <div className="mt-8">
-              <h2 className="text-xl font-bold">How filing works</h2>
+              <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
                 {[
                   {

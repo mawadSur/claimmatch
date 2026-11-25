@@ -16,6 +16,7 @@ export function HomeHero({
   primary,
   extra,
   freeLabel,
+  fileLine = 'You file on the official site',
   browseNote,
   stats,
   desktop,
@@ -25,6 +26,7 @@ export function HomeHero({
   primary: { href: string; label: string };
   extra?: ReactNode;
   freeLabel: string;
+  fileLine?: string;
   browseNote?: string;
   stats: HomeStats | null;
   desktop: Screen;
@@ -72,7 +74,7 @@ export function HomeHero({
               className="mt-6 max-w-lg text-lg leading-relaxed text-ink-muted sm:text-xl"
             >
               Check open class-action settlements, read who qualifies on the official
-              notice, file on the official site, and keep track of every claim here.
+              notice, and keep track of every claim here. {fileLine}.
             </p>
             {browseNote && (
               <p
@@ -103,7 +105,7 @@ export function HomeHero({
               {[
                 { icon: CheckCircle2, text: freeLabel },
                 { icon: HandCoins, text: 'We never handle settlement payments' },
-                { icon: ExternalLink, text: 'You file on the official site' },
+                { icon: ExternalLink, text: fileLine },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="inline-flex items-center gap-2">
                   <Icon className="h-4 w-4 shrink-0 text-success-600" aria-hidden />

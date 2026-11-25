@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
+import { lawsuitAiMayFile, WE_FILE_SUPPORTED } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { RECENTLY_CLOSED_PATH } from '@/lib/recently-closed';
@@ -23,8 +24,8 @@ export function Footer() {
             <SiteLogo size="sm" />
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-ink-muted">
               {flags.feeDisclosure()
-                ? 'A claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Official filing stays free.'
-                : 'A free claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Free during beta.'}
+                ? `A claim assistant. Find open class-action settlements, ${lawsuitAiMayFile() ? `${WE_FILE_SUPPORTED.toLowerCase()},` : 'file on the official site,'} and keep track of your claims. Official filing stays free.`
+                : `A free claim assistant. Find open class-action settlements, ${lawsuitAiMayFile() ? `${WE_FILE_SUPPORTED.toLowerCase()},` : 'file on the official site,'} and keep track of your claims. Free during beta.`}
             </p>
           </div>
 

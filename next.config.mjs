@@ -35,6 +35,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      { source: '/favicon.ico', destination: '/icon' },
       { source: '/ingest/static/:path*', destination: `${POSTHOG_ASSETS}/static/:path*` },
       { source: '/ingest/:path*', destination: `${POSTHOG_API}/:path*` },
     ];

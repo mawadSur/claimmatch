@@ -103,7 +103,8 @@ describe('FAQ', () => {
   it('never says both "Lawsuit AI files" and "never files" in one FAQ', () => {
     for (const [disclose, mayFile] of [[false, false], [false, true], [true, true]] as const) {
       const text = homeFaqItems(disclose, mayFile).map((i) => i.a).join(' ');
-      const saysFiles = /Lawsuit AI files (?:the|this) claim for you/.test(text);
+      const saysFiles =
+        /Lawsuit AI files (?:the|this) claim for you|We file claims for you on supported settlements/.test(text);
       const saysNever = /never files/.test(text);
       expect(saysFiles && saysNever, `disclose=${disclose} mayFile=${mayFile}`).toBe(false);
       expect(saysFiles).toBe(mayFile);
@@ -127,7 +128,9 @@ describe('FAQ', () => {
         const html = renderToStaticMarkup(el);
         expect(html).not.toMatch(/never files|You always file|You file on the official site/);
       }
-      expect(renderToStaticMarkup(createElement(HowWeMakeMoney))).toContain('Lawsuit AI files this claim for you');
+      expect(renderToStaticMarkup(createElement(HowWeMakeMoney))).toContain(
+        'We file claims for you on supported settlements',
+      );
     } finally {
       vi.unstubAllEnvs();
     }

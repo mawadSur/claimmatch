@@ -7,16 +7,26 @@ import {
 } from 'lucide-react';
 import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
-import { feeEveryClaimCopy, filingFact, lawsuitAiMayFile, publicBetaFeeCopy } from '@/lib/copy';
+import {
+  feeEveryClaimCopy,
+  filingFact,
+  lawsuitAiMayFile,
+  publicBetaFeeCopy,
+  WE_FILE_SUPPORTED,
+  WE_FILE_SUPPORTED_SENTENCE,
+} from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = publicPageMetadata({
-  title: 'How it works',
-  description:
-    'Find a settlement that is open for claims, check who qualifies on the official notice, file through the official settlement site, and keep track of your claim.',
-  path: '/how-it-works',
-});
+export function generateMetadata(): Metadata {
+  return publicPageMetadata({
+    title: 'How it works',
+    description: lawsuitAiMayFile()
+      ? `Find a settlement that is open for claims, check who qualifies, and we file claims for you on supported settlements. Keep track of every claim in one place.`
+      : 'Find a settlement that is open for claims, check who qualifies on the official notice, file through the official settlement site, and keep track of your claim.',
+    path: '/how-it-works',
+  });
+}
 
 const STEPS = [
   {
@@ -122,7 +132,15 @@ export default function HowItWorksPage() {
   const steps = mayFile
     ? STEPS.map((s) =>
         s.n === '3'
-          ? { ...s, title: 'File through the official site', body: filingFact(true).body }
+          ? {
+              ...s,
+              title: WE_FILE_SUPPORTED,
+              body: filingFact(true).body,
+              points: [
+                WE_FILE_SUPPORTED_SENTENCE.split('. ')[0],
+                'You can always file on the official site yourself',
+              ],
+            }
           : s,
       )
     : STEPS;
@@ -136,13 +154,22 @@ export default function HowItWorksPage() {
           <div className="mx-auto max-w-3xl text-center">
             <span className="badge-brand mx-auto">How it works</span>
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
-              {mayFile ? 'Find it. Claim it.' : 'You file.'}{' '}
-              <span className="text-brand-600">We help you stay on top of it.</span>
+              {mayFile ? (
+                <>
+                  We file claims for you.{' '}
+                  <span className="text-brand-600">On supported settlements.</span>
+                </>
+              ) : (
+                <>
+                  You file.{' '}
+                  <span className="text-brand-600">We help you stay on top of it.</span>
+                </>
+              )}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               {assistant} We help you find settlements that are open, point you to the official
               notice and claim site, and keep track of your claims.
-              {mayFile ? '' : ' You always file on the official site yourself.'}
+              {mayFile ? ` ${WE_FILE_SUPPORTED_SENTENCE}` : ' You always file on the official site yourself.'}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
