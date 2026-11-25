@@ -76,7 +76,7 @@ vi.mock('@/lib/supabase/server', () => {
 vi.mock('@/lib/scraper/sources', () => ({
   getSourceAdapters: () => [{ slug: 'fake-feed', name: 'Fake feed', fetch: async () => db.feed }],
 }));
-vi.mock('@/lib/held-closures', () => ({ recordHeldClosureDecision: async () => ({ ok: true }) }));
+vi.mock('@/lib/held-closures', () => ({ loadHeldClosureDecisions: async () => new Map(), recordHeldClosureDecision: async () => ({ ok: true }) }));
 
 import { addCalendarDays } from '@/lib/claim-deadlines';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';

@@ -4,7 +4,9 @@ import { getSettlementGuide } from '@/lib/settlement-guides';
 import {
   applyCloseBreaker,
   DEFAULT_MAX_CLOSE_SHARE,
+  heldChangeFingerprint,
   heldClosureLogLines,
+  omitDismissedClosingUpdates,
   isLocked,
   isOpenForClaimsGuided,
   maxCloseShareFromEnv,
@@ -258,6 +260,86 @@ describe('circuit breaker', () => {
     expect(maxCloseShareFromEnv('2')).toBe(DEFAULT_MAX_CLOSE_SHARE);
     expect(maxCloseShareFromEnv('-1')).toBe(DEFAULT_MAX_CLOSE_SHARE);
     expect(maxCloseShareFromEnv('lots')).toBe(DEFAULT_MAX_CLOSE_SHARE);
+  });
+});
+
+describe('dismissed held closures', () => {
+  const missing = 'missing from 3 consecutive successful feeds';
+  const close = (slug: string, changes: string[], extras: { closes?: boolean } = {}) => ({
+    id: slug,
+    slug,
+    patch: { status: 'closed' as const },
+    changes,
+    closes: extras.closes ?? true,
+    reopens: false,
+    deadlineChange: null,
+    closeReason: 'missing_from_feed' as const,
+  });
+
+  it('skips a close a person already dismissed, when the fingerprint still matches', () => {
+    const hyundai = close('hyundai-kia-vehicle-theft', [missing]);
+    const other = close('some-other-settlement', [missing]);
+    const decisions = new Map([
+      [
+        'hyundai-kia-vehicle-theft',
+        { decision: 'dismissed', change_fingerprint: heldChangeFingerprint([missing]) },
+      ],
+    ]);
+    const { remaining, skipped } = omitDismissedClosingUpdates([hyundai, other], decisions);
+    expect(skipped.map((u) => u.slug)).toEqual(['hyundai-kia-vehicle-theft']);
+    expect(remaining.map((u) => u.slug)).toEqual(['some-other-settlement']);
+  });
+
+  it('lets the same slug close again when the planned change is different', () => {
+    const update = close('hyundai-kia-vehicle-theft', ['status open -> closed', 'deadline none -> 2027-01-01']);
+    const decisions = new Map([
+      [
+        'hyundai-kia-vehicle-theft',
+        { decision: 'dismissed', change_fingerprint: heldChangeFingerprint([missing]) },
+      ],
+    ]);
+    const { remaining, skipped } = omitDismissedClosingUpdates([update], decisions);
+    expect(skipped).toHaveLength(0);
+    expect(remaining).toEqual([update]);
+  });
+
+  it('does not treat an approved close as a skip, and leaves non-closing updates alone', () => {
+    const approved = close('already-approved', [missing]);
+    const increment = {
+      id: 'hyundai-kia-vehicle-theft',
+      slug: 'hyundai-kia-vehicle-theft',
+      patch: { missed_feed_count: 1 },
+      changes: ['missed_feed_count 0 -> 1'],
+      closes: false,
+      reopens: false,
+      deadlineChange: null,
+    };
+    const decisions = new Map([
+      ['already-approved', { decision: 'approved', change_fingerprint: heldChangeFingerprint([missing]) }],
+      [
+        'hyundai-kia-vehicle-theft',
+        { decision: 'dismissed', change_fingerprint: heldChangeFingerprint([missing]) },
+      ],
+    ]);
+    const { remaining, skipped } = omitDismissedClosingUpdates([approved, increment], decisions);
+    expect(skipped).toHaveLength(0);
+    expect(remaining).toEqual([approved, increment]);
+  });
+
+  it('removes dismissed closes before the circuit breaker so they do not hold the rest', () => {
+    const dismissed = Array.from({ length: 40 }, (_, i) => close(`kept-open-${i}`, [missing]));
+    const fresh = Array.from({ length: 3 }, (_, i) => close(`fresh-${i}`, [missing]));
+    const decisions = new Map(
+      dismissed.map((u) => [u.slug, { decision: 'dismissed', change_fingerprint: heldChangeFingerprint(u.changes) }]),
+    );
+    const { remaining, skipped } = omitDismissedClosingUpdates([...dismissed, ...fresh], decisions);
+    expect(skipped).toHaveLength(40);
+    const { plan, held } = applyCloseBreaker({ inserts: [], updates: remaining, flagged: [], skipped: 0 }, {
+      openCount: 100,
+      maxShare: 0.2,
+    });
+    expect(held).toHaveLength(0);
+    expect(plan.updates.filter((u) => u.closes)).toHaveLength(3);
   });
 });
 

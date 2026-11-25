@@ -54,6 +54,7 @@ vi.mock('@/lib/supabase/server', () => {
 // No feed: deadline closes do not wait for one.
 vi.mock('@/lib/scraper/sources', () => ({ getSourceAdapters: () => [] }));
 vi.mock('@/lib/held-closures', () => ({
+  loadHeldClosureDecisions: async () => new Map(),
   recordHeldClosureDecision: async (input: { slug: string }) => {
     db.decisions.push(input.slug);
     return { ok: true };

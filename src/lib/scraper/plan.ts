@@ -400,6 +400,39 @@ export function applyCloseBreaker(
   };
 }
 
+export type HeldClosureDecisionRef = {
+  decision: string;
+  change_fingerprint: string;
+};
+
+/**
+ * Drop closing updates a person already dismissed, when the planned change
+ * still matches that decision. A later, different close (new fingerprint)
+ * is left in the plan so it can be applied or held for review. Non-closing
+ * updates are never dropped.
+ */
+export function omitDismissedClosingUpdates<T extends Pick<PlannedUpdate, 'slug' | 'changes' | 'closes'>>(
+  updates: T[],
+  decisions: ReadonlyMap<string, HeldClosureDecisionRef>,
+): { remaining: T[]; skipped: T[] } {
+  const remaining: T[] = [];
+  const skipped: T[] = [];
+  for (const update of updates) {
+    if (update.closes) {
+      const decision = decisions.get(update.slug);
+      if (
+        decision?.decision === 'dismissed' &&
+        decision.change_fingerprint === heldChangeFingerprint(update.changes)
+      ) {
+        skipped.push(update);
+        continue;
+      }
+    }
+    remaining.push(update);
+  }
+  return { remaining, skipped };
+}
+
 export interface HeldClosure {
   source: string;
   slug: string;
