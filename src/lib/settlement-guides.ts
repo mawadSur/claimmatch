@@ -1,4 +1,5 @@
 import { filterOpenForClaims, type OpenRuleFields } from './open-for-claims';
+import { NOV25_SETTLEMENT_GUIDES } from './settlement-guides-nov25';
 import { proofDetail } from './proof';
 import type { Lawsuit, ProofRequired } from './types';
 import { fingerprint, formatDeadline, todayInDeadlineZone } from './utils';
@@ -793,6 +794,7 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   INDEGENE_FAX,
   STEEL_WAREHOUSE,
   BRIGHT_LENDING,
+  ...NOV25_SETTLEMENT_GUIDES,
 ];
 
 function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {

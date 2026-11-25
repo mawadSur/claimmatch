@@ -1,4 +1,5 @@
 import { isOpenForClaims } from '@/lib/open-for-claims';
+import { hasOfficialNoticeGuide } from '@/lib/settlement-guides';
 import { settlementPath } from '@/lib/settlement-seo';
 import type { Lawsuit } from '@/lib/types';
 
@@ -34,7 +35,7 @@ function toRelated(row: Lawsuit): RelatedSettlement {
 
 /**
  * Other open, published settlements for internal links: same category first,
- * then the nearest listed deadlines. Never invents a title, payout or count.
+ * then official-notice guides, then the nearest listed deadlines. Never invents a title, payout or count.
  */
 export function relatedSettlements(
   current: Pick<Lawsuit, 'slug' | 'category'>,
@@ -59,8 +60,10 @@ export function relatedSettlements(
   }
   if (out.length >= cap) return out;
 
-  const byDeadline = open.filter((row) => !picked.has(row.slug)).sort(deadlineSort);
-  for (const row of byDeadline) {
+  const rest = open.filter((row) => !picked.has(row.slug));
+  const guided = rest.filter((row) => hasOfficialNoticeGuide(row.slug)).sort(deadlineSort);
+  const other = rest.filter((row) => !hasOfficialNoticeGuide(row.slug)).sort(deadlineSort);
+  for (const row of [...guided, ...other]) {
     if (out.length >= cap) break;
     out.push(toRelated(row));
   }

@@ -73,6 +73,33 @@ const SEARCH_BATCH_SLUGS = [
   'indegene-unwanted-faxes-class-action-settlement',
   'steel-warehouse-company-data-breach-settlement',
   'bright-lending-15-million-high-interest-loans-settlement',
+
+] as const;
+
+const NOV25_BATCH_SLUGS = [
+  'adapthealth-14-3m-north-carolina-debt-collection-settlement',
+  'educational-computer-systems-data-breach-class-action-settlement',
+  'electronics-for-imaging-data-breach-class-action-settlement',
+  'holt-group-data-breach-class-action-settlement',
+  'pillsbury-law-firm-data-breach-settlement',
+  'usc-arcadia-hospital-data-privacy-class-action-settlement',
+  'riverside-resort-casino-data-breach-settlement',
+  'benworth-capital-data-breach-settlement',
+  'arizona-labor-force-data-breach-class-action-settlement',
+  'blue-ridge-rural-water-company-data-breach-class-action-settlement',
+  'pulsz-social-casino-games-class-action-settlement',
+  'ncaa-tennis-prize-money-class-action-settlement',
+  'camc-hernia-surgery-settlement',
+  'equity-residential-1m-mill-creek-apartments-settlement',
+  'frontier-communications-14m-401-k-class-action-settlement',
+  'kucoin-22m-new-york-enforcement-action-settlement',
+  'texas-retina-data-breach-settlement',
+  'wayne-memorial-hospital-data-breach-class-action-settlement',
+  'vida-y-salud-health-systems-data-breach-class-action-settlement',
+  'jackson-county-missouri-property-tax-reassessment-settlement',
+  'mclean-mortgage-corporation-data-breach-class-action-settlement',
+  'becton-dickinson-175m-sec-fair-fund-bdx',
+  'guadalupe-credit-union-new-mexico-class-action-settlement',
 ] as const;
 
 describe('settlement guides', () => {
@@ -119,6 +146,18 @@ describe('settlement guides', () => {
       expect((guide?.deadline ?? '') >= '2026-11-25').toBe(true);
       expect(guide?.proofDetail).toMatch(/https:\/\//);
     }
+    for (const slug of NOV25_BATCH_SLUGS) {
+      expect(slugs, slug).toContain(slug);
+      const guide = getSettlementGuide(slug);
+      expect(guide?.officialUrl).toMatch(/^https:\/\//);
+      expect(guide?.eligibilityText.length).toBeGreaterThan(40);
+      expect(guide?.typicalPayout.length).toBeGreaterThan(20);
+      expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(guide?.sourceChecked).toBe('2026-11-25');
+      expect((guide?.deadline ?? '') >= '2026-11-25').toBe(true);
+      expect(guide?.proofDetail).toMatch(/https:\/\//);
+    }
+    expect(NOV25_BATCH_SLUGS).toHaveLength(23);
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
   });
 
@@ -271,6 +310,52 @@ describe('settlement guides', () => {
     );
     const extras = settlementGuideFaqs(lawsuit.slug);
     expect(settlementFaqs(lawsuit).slice(-extras.length)).toEqual(extras);
+  });
+
+
+  it('overlays the AdaptHealth official site, class payouts and December 8, 2026 deadline', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'adapthealth-14-3m-north-carolina-debt-collection-settlement',
+        title: 'AdaptHealth $14.3M North Carolina Debt Collection Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        administrator: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$14,311,500/);
+    expect(overlaid.typical_payout).toMatch(/\$3,500/);
+    expect(overlaid.deadline).toBe('2026-12-08');
+    expect(overlaid.claim_url).toBe('https://www.ncadapthealthsettlement.com/');
+    expect(overlaid.administrator).toMatch(/JND/);
+    expect(overlaid.eligibility_text).toMatch(/North Carolina/);
+    expect(overlaid.verified_at).toBeUndefined();
+  });
+
+  it('overlays the NCAA tennis official site, \$2 million fund and claim deadline', () => {
+    const lawsuit = makeLawsuit(
+      { proof: 'unknown' },
+      {
+        slug: 'ncaa-tennis-prize-money-class-action-settlement',
+        title: 'NCAA Tennis Prize Money Class Action Settlement',
+        typical_payout: 'Varies',
+        eligibility_text: null,
+        administrator: null,
+        deadline: '2026-01-01',
+        claim_url: 'https://settlesignal.com/example',
+      },
+    );
+    const overlaid = applySettlementGuide(lawsuit);
+    expect(overlaid.typical_payout).toMatch(/\$2 million/);
+    expect(overlaid.deadline).toBe('2027-02-08');
+    expect(overlaid.claim_url).toBe('https://www.ncaatennisprizemoneyclassaction.com/');
+    expect(overlaid.administrator).toMatch(/RG\/2/);
+    expect(overlaid.eligibility_text).toMatch(/Division I/);
+    expect(overlaid.eligibility.proof).toBe('yes');
   });
 
   it('never writes a verified stamp or user counts', () => {

@@ -140,6 +140,7 @@ describe('settlement page source uses the safe JSON-LD helper', () => {
     expect(src).toContain('faqJsonLd');
     expect(src).toContain('breadcrumbJsonLd');
     expect(src).toContain('settlementArticleJsonLd');
+    expect(src).toContain('settlementHowToJsonLd');
     expect(src).toContain('<JsonLd');
     expect(src).not.toContain('JSON.stringify');
   });

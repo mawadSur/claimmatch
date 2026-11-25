@@ -1,6 +1,6 @@
 import { flags } from '@/lib/flags';
 import { getLawsuits } from '@/lib/lawsuits';
-import { catalogHubLinks, fallbackLlmsTxt, renderLlmsTxt } from '@/lib/llms-txt';
+import { catalogHubLinks, fallbackLlmsTxt, officialGuideLinks, renderLlmsTxt } from '@/lib/llms-txt';
 
 export const revalidate = 3600;
 
@@ -23,7 +23,10 @@ export async function GET() {
   let body = fallbackLlmsTxt();
   try {
     const lawsuits = await getLawsuits();
-    body = renderLlmsTxt({ categoryHubs: catalogHubLinks(lawsuits) });
+    body = renderLlmsTxt({
+      categoryHubs: catalogHubLinks(lawsuits),
+      officialGuides: officialGuideLinks(lawsuits),
+    });
   } catch (err) {
     console.warn('[llms.txt] catalog read failed; using fallback hubs', err);
   }
