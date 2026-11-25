@@ -4,6 +4,7 @@
  */
 
 import { flags } from '@/lib/flags';
+import { SITE } from '@/lib/utils';
 
 /** Official-administrator filing has no filing charge. Not a Lawsuit AI price. */
 export const OFFICIAL_FILING_IS_FREE = 'Filing on the official site is always free.';
@@ -181,8 +182,50 @@ export const BROWSE_NO_ACCOUNT =
 export const ACCOUNT_FOR_SAVE_WHY =
   'Create an account only to save matches or get deadline alerts.';
 
+/** Why an account exists, including filing when Lawsuit AI may file. */
+export function accountGateWhy(mayFile = lawsuitAiMayFile()): string {
+  return mayFile
+    ? 'Create an account only to save matches, get deadline alerts, or have us file on supported settlements.'
+    : ACCOUNT_FOR_SAVE_WHY;
+}
+
+/**
+ * Anyone can file on the administrator site with no Lawsuit AI account.
+ * Not a Lawsuit AI price.
+ */
+export const FILE_FREE_DIRECTLY =
+  'Anyone can file for free on the official settlement website. You never need a Lawsuit AI account to file.';
+
+/** What Lawsuit AI adds besides the free official form. Flag-aware for who files. */
+export function lawsuitAiValueLine(mayFile = lawsuitAiMayFile()): string {
+  return mayFile
+    ? 'Lawsuit AI helps you find settlements that may apply to you, reminds you of deadlines, and files claims for you on supported settlements after you review and sign.'
+    : 'Lawsuit AI helps you find settlements that may apply to you and reminds you of deadlines. You file every claim yourself on the official site.';
+}
+
 export const WHAT_WE_STORE_MINIMAL =
   'We store your name and email so you can sign in. After onboarding we store the state and answers you give so we can match settlements. No phone. Street address only if a claim form needs it.';
+
+/** Matching never asks for SSN or bank details. Checkable against eligibility.ts and Jev. */
+export const NO_SSN_OR_BANK_TO_MATCH =
+  'We never ask for your Social Security number or bank account details to match you with settlements.';
+
+export const NEVER_CHARGE_UPFRONT =
+  'We never charge you upfront to browse, match, or open an official claim form.';
+
+export const OPERATOR_LEGAL_NAME = 'Lawsuit AI LLC';
+export const OPERATOR_JURISDICTION = 'Wyoming';
+export const PUBLIC_CONTACT_EMAIL = 'hello@lawsuitai.org';
+
+/** ISO date these public operator facts were last checked against the live product. Never invent a later date. */
+export const TRUST_FACTS_CHECKED_ON = '2026-11-25';
+
+export function operatorLine(
+  legalEntity: string | null = OPERATOR_LEGAL_NAME,
+): string {
+  const name = legalEntity?.trim() || OPERATOR_LEGAL_NAME;
+  return `${SITE.name} is operated by ${name}, a ${OPERATOR_JURISDICTION} limited liability company.`;
+}
 
 /** Public cost line. Beta wording until counsel flips FEE_DISCLOSURE_ENABLED. */
 export function publicCostNote(disclose: boolean): string {

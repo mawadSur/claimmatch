@@ -5,6 +5,8 @@ import { CheckCircle2 } from 'lucide-react';
 import { AuthForm } from '@/components/AuthForm';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { BetaInviteCapture } from '@/components/invite/BetaInviteCapture';
+import { PublicTrustBlock } from '@/components/PublicTrustBlock';
+import { WhyAccountExplainer } from '@/components/WhyAccountExplainer';
 import { flags } from '@/lib/flags';
 import {
   lawsuitAiMayFile,
@@ -35,7 +37,7 @@ const BETA_BULLETS = [
 
 const TRUST_BULLETS = [
   NEUTRAL_BETA_FEE_COPY,
-  'Browse settlements that are open for claims — no account needed.',
+  'Browse settlements that are open for claims.',
   'Keep track of the claims you file on official sites.',
 ];
 
@@ -87,15 +89,21 @@ export default function SignupPage() {
             ))}
           </ul>
 
+          <WhyAccountExplainer className="mt-6" />
+
           <div className="mt-8">
             <Suspense fallback={<AuthFormFallback />}>
               <AuthForm
                 mode="signup"
-                storeNote={trustCopy ? WHAT_WE_STORE_MINIMAL : undefined}
+                storeNote={WHAT_WE_STORE_MINIMAL}
                 oauth={flags.oauthSignIn()}
                 apple={flags.appleSignIn()}
               />
             </Suspense>
+          </div>
+
+          <div className="mt-8">
+            <PublicTrustBlock compact />
           </div>
 
           <p className="mt-4 text-center text-sm text-ink-muted">

@@ -17,6 +17,7 @@ import {
 } from '@/lib/match-preview';
 import { profileHasMatchSignals } from '@/lib/profile-attributes';
 import type { EligibilityCriteria } from '@/lib/types';
+import { ACCOUNT_FOR_SAVE_WHY } from '@/lib/copy';
 import { claimReturnPath } from '@/lib/signup-context';
 import { formatDeadline, US_STATES } from '@/lib/utils';
 
@@ -38,6 +39,7 @@ export function MatchPreview({
   hideUnknown = false,
   accountDraft = null,
   signedIn = false,
+  whyAccount = ACCOUNT_FOR_SAVE_WHY,
 }: {
   signupContextEnabled: boolean;
   feeNote: ReactNode;
@@ -45,6 +47,7 @@ export function MatchPreview({
   hideUnknown?: boolean;
   accountDraft?: MatchPreviewDraft | null;
   signedIn?: boolean;
+  whyAccount?: string;
 }) {
   const posthog = usePostHog();
   const started = useRef(false);
@@ -251,11 +254,8 @@ export function MatchPreview({
         )}
 
         <div className="mt-8 border-t border-slate-200 pt-6">
-          <p className="text-sm font-semibold text-ink">Create a free account</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            Save these matches so you don&rsquo;t answer again, and keep track of
-            the claims you file on official settlement websites.
-          </p>
+          <p className="text-sm font-semibold text-ink">Why an account?</p>
+          <p className="mt-1 text-sm text-ink-muted">{whyAccount}</p>
           <Link href={signupHref()} className="btn-primary mt-4">
             Create a free account <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>

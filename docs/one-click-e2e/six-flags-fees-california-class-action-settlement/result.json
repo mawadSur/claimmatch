@@ -1,0 +1,24 @@
+{
+  "slug": "six-flags-fees-california-class-action-settlement",
+  "officialUrl": "https://www.knottsgreatamericasettlement.com/",
+  "formUrlTried": "https://www.knottsgreatamericasettlement.com/submit-claim",
+  "finalUrl": "https://www.knottsgreatamericasettlement.com/submit-claim",
+  "deadline": "2026-12-22",
+  "extraUserFields": [
+    "Whether you were a California resident charged processing fees on covered Knott’s or Great America tickets from June 28, 2020 to July 1, 2024",
+    "Cash or check instead of the $8 site credit",
+    "Do not approve this draft while Notice ID + Confirmation Code login is the only path"
+  ],
+  "filled": [],
+  "stoppedAt": "account-login",
+  "captcha": false,
+  "accountLogin": true,
+  "proofUpload": false,
+  "submitVisible": false,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/six-flags-fees-california-class-action-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "official form requires a notice login; not fillable from profile"
+  ]
+}

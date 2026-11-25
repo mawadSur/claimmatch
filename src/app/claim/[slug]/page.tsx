@@ -137,7 +137,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <section className="container-narrow py-10 sm:py-12">
-      {flags.signupContext() ? <SignupContextReturned claimPath={`/claim/${settlement.slug}`} /> : null}
+      <SignupContextReturned claimPath={`/claim/${settlement.slug}`} />
       {header}
       <div className="mt-6">
         <ClaimFlow

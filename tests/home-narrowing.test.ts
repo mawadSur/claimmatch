@@ -45,7 +45,7 @@ describe('C17 home narrowing', () => {
     expect(on).toContain('Start with a type of settlement');
     expect(on).toContain('No proof required');
     expect(on).toContain('Data breach');
-    expect(on).not.toMatch(/\bmatch(?:ed|es|ing)?\b/i);
+    expect(on).toContain('See matching settlements');
   });
 
   it('only offers filters the catalog can honestly fill', () => {

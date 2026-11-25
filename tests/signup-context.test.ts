@@ -17,9 +17,9 @@ describe('signup return path', () => {
     expect(claimReturnPath('../claim/x')).toBeNull();
   });
 
-  it('sends signed-out claim visits to signup only when the flag is exactly 1', () => {
+  it('sends signed-out claim visits to signup so filing can wait for an account', () => {
     expect(signedOutClaimHref('/claim/real-settlement')).toBe(
-      '/login?next=%2Fclaim%2Freal-settlement',
+      '/signup?next=%2Fclaim%2Freal-settlement',
     );
     vi.stubEnv('SIGNUP_CONTEXT_ENABLED', '1');
     expect(signedOutClaimHref('/claim/real-settlement')).toBe(

@@ -231,8 +231,8 @@ export const settlement = defineCopy({
     source: 'src/app/lawsuits/[slug]/page.tsx',
   },
   signInFirst: {
-    text: 'You’ll sign in or create a free account first.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    text: 'Create an account only to save matches or get deadline alerts.',
+    source: 'src/lib/copy.ts',
   },
   checklistFileYourself: {
     text: 'We help you file',

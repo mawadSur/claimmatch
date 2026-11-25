@@ -80,6 +80,8 @@ import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { CaptureView } from '@/components/analytics/CaptureView';
+import { FileFreeDirectly } from '@/components/FileFreeDirectly';
+import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Lawsuit } from '@/lib/types';
 
 export const revalidate = 3600;
@@ -189,10 +191,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
     ...catalogGuideFaqs(lawsuit),
   ];
   const claimHref = `/claim/${lawsuit.slug}`;
-  const qualifyEnabled = flags.settlementPageCta() && open;
+  const qualifyEnabled = open;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
-  const trustCopy = flags.panelTrustCopy();
-  const quizPrompts = flags.settlementQuiz() ? eligibilityQuizPrompts(eligibility) : [];
+  const quizPrompts = eligibilityQuizPrompts(eligibility);
   const related = flags.relatedSettlements()
     ? relatedSettlements(lawsuit, await getLawsuits())
     : [];
@@ -264,11 +265,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
             {lawsuit.title}
           </h1>
           {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
-          {trustCopy && (
-            <p className="mt-3 max-w-2xl text-sm text-ink-muted">
-              {BROWSE_NO_ACCOUNT} {ACCOUNT_FOR_SAVE_WHY}
-            </p>
-          )}
+          <p className="mt-3 max-w-2xl text-sm text-ink-muted">
+            {BROWSE_NO_ACCOUNT} {ACCOUNT_FOR_SAVE_WHY}
+          </p>
 
           <AnswerBlock
             facts={facts}
@@ -436,6 +435,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
           {open && (
             <div className="mt-8">
+              <FileFreeDirectly official={official} lawsuitId={lawsuit.id} slug={lawsuit.slug} />
+            </div>
+          )}
+
+          {open && (
+            <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
                 {settlementHowToSteps(filingMode).map((step, i) => (
@@ -458,6 +463,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
           )}
 
           {flags.proofFeedback() && <ProofFeedback lawsuitId={lawsuit.id} />}
+
+          <div className="mt-8">
+            <PublicTrustBlock compact />
+          </div>
 
           <SettlementFaq items={faqs} />
 
@@ -561,9 +570,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
-                <p className="mt-2 text-center text-xs text-ink-muted">
-                  {trustCopy ? ACCOUNT_FOR_SAVE_WHY : 'You’ll sign in or create a free account first.'}
-                </p>
+                <p className="mt-2 text-center text-xs text-ink-muted">{ACCOUNT_FOR_SAVE_WHY}</p>
                 {official?.kind === 'official' && (
                   <OfficialFormLink
                     href={official.href}
@@ -575,7 +582,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                     <span className="sr-only"> (opens in a new tab)</span>
                   </OfficialFormLink>
                 )}
-                {trustCopy && official?.kind === 'official' && (
+                {official?.kind === 'official' && (
                   <p className="mt-2 text-center text-xs text-ink-muted">{BROWSE_NO_ACCOUNT}</p>
                 )}
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">

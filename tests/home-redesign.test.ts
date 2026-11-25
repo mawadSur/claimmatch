@@ -78,16 +78,14 @@ describe('home page redesign', () => {
     expect(await render()).not.toContain('Live from the catalog');
   });
 
-  it('uses no match language with the default flags', async () => {
+  it('lets visitors see matching settlements before an account', async () => {
     catalog.lawsuits = [makeLawsuit({}, { deadline: '2099-01-10' })];
-    expect(await render()).not.toMatch(/\bmatch(?:ed|es|ing)?\b/i);
-  });
-
-  it('adds the logged-out preview entry only when MATCH_PREVIEW_ENABLED=1', async () => {
-    expect(await render()).not.toContain('See matching settlements');
-    vi.stubEnv('MATCH_PREVIEW_ENABLED', '1');
-    expect(await render()).toContain('See matching settlements');
-    expect(await render()).toContain('href="/preview"');
+    const html = await render();
+    expect(html).toContain('See matching settlements');
+    expect(html).toContain('href="/preview"');
+    expect(html).toContain('Is Lawsuit AI legit?');
+    expect(html).toContain('hello@lawsuitai.org');
+    expect(html).not.toMatch(/15\s*%/);
   });
 
   it('every screenshot it references exists, at the size the page declares', () => {

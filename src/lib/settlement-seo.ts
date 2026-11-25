@@ -261,6 +261,10 @@ export function settlementFaqs(
         : `This listing does not name an administrator. The official notice says who runs the claims process.`,
     },
     {
+      q: `Can I file a ${name} claim for free without Lawsuit AI?`,
+      a: `Yes. Anyone can file for free on the official settlement website. You never need a Lawsuit AI account to file.${officialHow}`,
+    },
+    {
       q: `How do I file a claim for the ${name}?`,
       a: agentLane
         ? `Check that you qualify on the official notice. We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.${officialHow}`

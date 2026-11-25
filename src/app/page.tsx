@@ -26,6 +26,7 @@ import { Testimonials } from '@/components/home/Testimonials';
 import { HomeFaq } from '@/components/home/HomeFaq';
 import { HomeFinalCta } from '@/components/home/HomeFinalCta';
 import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
+import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Screen } from '@/components/home/DeviceFrame';
 import { CaptureView } from '@/components/analytics/CaptureView';
 import { flags } from '@/lib/flags';
@@ -168,7 +169,6 @@ export default async function HomePage() {
   const disclose = flags.feeDisclosure();
   const mayFile = lawsuitAiMayFile();
   const accountFirst = flags.homeAccountFirstCta();
-  const previewOn = flags.matchPreview();
   // Live counts only when the catalog really loaded; never a made-up number.
   const stats = !catalog.failed && catalog.lawsuits.length > 0 ? homeStats(catalog.lawsuits) : null;
 
@@ -198,10 +198,10 @@ export default async function HomePage() {
 
       <HomeHero
         primary={primary}
-        extra={previewOn ? <MatchPreviewEntry variant="hero" /> : null}
+        extra={<MatchPreviewEntry variant="hero" />}
         freeLabel={freeLabel}
         fileLine={whoFilesBullet(mayFile)}
-        browseNote={flags.panelTrustCopy() ? `${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}` : undefined}
+        browseNote={`${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}`}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
         phone={SCREENS.dashboard}
@@ -306,6 +306,12 @@ export default async function HomePage() {
       )}
 
       <HomeFeatures />
+
+      <section className="section-y bg-white" aria-labelledby="public-trust-heading">
+        <div className="container-page">
+          <PublicTrustBlock />
+        </div>
+      </section>
 
       <HomeTrust />
 

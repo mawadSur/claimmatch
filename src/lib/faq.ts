@@ -1,5 +1,5 @@
 import { homeFaqItems } from '@/components/home/HomeFaq';
-import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, OFFICIAL_FILING_IS_FREE } from './copy';
+import { BROWSE_NO_ACCOUNT, OFFICIAL_FILING_IS_FREE, accountGateWhy } from './copy';
 import { flags } from './flags';
 
 export interface FaqItem {
@@ -60,7 +60,7 @@ export function faqGroups(disclose = flags.feeDisclosure()): FaqGroup[] {
       items: [
         {
           q: 'Do I need an account?',
-          a: `${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}`,
+          a: `${BROWSE_NO_ACCOUNT} You can see matched settlements first. ${accountGateWhy()}`,
         },
         {
           q: 'Will you email me?',

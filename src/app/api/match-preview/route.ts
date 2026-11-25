@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { flags } from '@/lib/flags';
 import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
 import {
   parseMatchPreviewDraft,
@@ -13,8 +12,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/match-preview — logged-out match results from preview answers.
- * Flagged off (404). Does not store answers. Returns match count-safe fields
- * only (no scores as percentages, no "you qualify").
+ * Does not store answers. Returns match count-safe fields only (no scores as
+ * percentages, no "you qualify").
  */
 export async function POST(req: Request) {
   const limited = rateLimit(`match-preview:${ipKey(req)}`, { limit: 20, windowMs: 60_000 });
@@ -37,9 +36,6 @@ export async function POST(req: Request) {
     body && typeof body === 'object' && !Array.isArray(body)
       ? parseSettlementScopeSlug((body as { settlement?: unknown }).settlement)
       : null;
-  if (!flags.matchPreview() && !(flags.settlementPageCta() && settlement)) {
-    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
-  }
   if (!draft) {
     return NextResponse.json({ error: 'Answer the questions and try again.' }, { status: 400 });
   }

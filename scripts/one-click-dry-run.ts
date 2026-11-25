@@ -13,6 +13,9 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Locator, type Page } from '@playwright/test';
 import { FIVE_ONE_CLICK_SETTLEMENTS } from './one-click-five-settlements';
+import { MORE_ONE_CLICK_SETTLEMENTS } from './one-click-more-settlements';
+
+const ALL_ONE_CLICK_SETTLEMENTS = [...FIVE_ONE_CLICK_SETTLEMENTS, ...MORE_ONE_CLICK_SETTLEMENTS];
 
 const FAKE = {
   first: 'Testonly',
@@ -37,7 +40,7 @@ const SUBMIT_RE =
   /^(submit|submit claim|submit my claim|submit this claim|file (this |my |the )?claim|complete (my )?claim|confirm and submit|i agree and submit|send claim|finish and submit|submit form)$/i;
 const COOKIE_RE = /^(accept|accept all|agree|got it|ok|i understand)$/i;
 const LOGIN_RE =
-  /claim form login|login with your notice|loginid|unique id and pin|claim number and pin|confirmation code/i;
+  /claim form login|login with your notice|loginid|unique id and pin|claim number and pin|confirmation code|send code|back to login/i;
 
 const CLAIM_PATHS = ['/file-a-claim', '/submit-a-claim', '/submit-claim', '/claim-form', '/file-claim', '/claim'];
 
@@ -115,12 +118,17 @@ async function pageHasCaptcha(page: Page): Promise<boolean> {
 }
 
 async function pageHasAccountLogin(page: Page): Promise<boolean> {
+  const sendCode = page.getByRole('button', { name: /send code/i });
+  if ((await sendCode.count()) > 0 && (await sendCode.first().isVisible().catch(() => false))) {
+    return true;
+  }
   const text = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
   if (!LOGIN_RE.test(text)) return false;
   const secret = page.locator(
     'input[type="password"], input[name*="confirmation" i], input[name*="skauth"], input[name*="pin" i], input[name*="passcode" i]',
   );
-  return (await secret.count()) > 0;
+  if ((await secret.count()) > 0) return true;
+  return /login with your notice id|confirmation code/i.test(text);
 }
 
 async function fillByHints(page: Page, hints: string[], value: string, filled: string[]): Promise<void> {
@@ -283,7 +291,7 @@ export async function dryRunSlug(
   slug: string,
   outDir: string,
 ): Promise<DryRunResult> {
-  const target = FIVE_ONE_CLICK_SETTLEMENTS.find((row) => row.slug === slug);
+  const target = ALL_ONE_CLICK_SETTLEMENTS.find((row) => row.slug === slug);
   if (!target) throw new Error(`unknown slug ${slug}`);
   const dir = join(outDir, slug);
   mkdirSync(dir, { recursive: true });
@@ -390,8 +398,8 @@ async function main() {
   }
   const only = arg('--slug');
   const targets = only
-    ? FIVE_ONE_CLICK_SETTLEMENTS.filter((row) => row.slug === only)
-    : FIVE_ONE_CLICK_SETTLEMENTS;
+    ? ALL_ONE_CLICK_SETTLEMENTS.filter((row) => row.slug === only)
+    : MORE_ONE_CLICK_SETTLEMENTS;
   if (targets.length === 0) {
     console.error('No matching slug.');
     process.exit(1);

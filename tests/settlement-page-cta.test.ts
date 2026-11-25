@@ -102,14 +102,15 @@ async function renderDetail(row: Lawsuit) {
 }
 
 describe('settlement page CTA flag', () => {
-  it('keeps today’s /claim CTAs when the flag is off', async () => {
+  it('lets visitors check matches before an account, and keeps /claim as a next step', async () => {
     const html = await renderDetail(lawsuit());
     expect(html).toContain('href="/claim/amazon-return-policy-settlement"');
     expect(html).toContain('Check if you qualify');
     expect(html).toContain('Start your claim');
-    expect(html).not.toContain('/preview?settlement=');
+    expect(html).toContain('/preview?settlement=amazon-return-policy-settlement');
+    expect(html).toContain('Anyone can file for free on the official settlement website');
+    expect(html).toContain('Is Lawsuit AI legit?');
     expect(html).not.toContain('Related open settlements');
-    expect(html).not.toContain('settlement_cta_viewed');
   });
 
   it('points the existing qualify CTA at a scoped preview when the flag is on', async () => {
