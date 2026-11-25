@@ -16,6 +16,7 @@ import type { DocumentRecord } from './documents';
 import { dbErrorCode, logFilingError } from './http';
 import { buildJevInput } from './lanes';
 import { PACKET_COLUMNS, toPacketRecord, type PacketRecord, type SpecRecord } from './records';
+import { packetSeedFromClaimProfile } from '@/lib/claim-profile-server';
 
 export type SaveFailure = { ok: false; code: FilingErrorCode; issues?: JevIssueView[] };
 
@@ -141,11 +142,18 @@ export async function syncClaimStatus(ctx: ClaimContext, from: string, to: strin
 /** Creates the claim's packet on the approved spec (or none). A concurrent create returns the existing row. */
 export async function createPacket(ctx: ClaimContext): Promise<{ ok: true; packet: PacketRecord } | SaveFailure> {
   const spec = ctx.env.approvedSpec;
+  const seed = ctx.claimProfile
+    ? packetSeedFromClaimProfile(
+        ctx.claimProfile,
+        spec?.content.questions.map((q) => q.key) ?? [],
+        spec?.content.payout_options.map((o) => o.value) ?? [],
+      )
+    : { answers: {}, payout_method: null };
   const content: PacketContent = {
-    answers: {},
+    answers: seed.answers,
     member_snapshot: {},
     benefit_tier: null,
-    payout_method: null,
+    payout_method: seed.payout_method,
     class_definition_confirmed_at: null,
     health_consent_at: null,
     health_consent_text_sha256: null,
@@ -165,8 +173,9 @@ export async function createPacket(ctx: ClaimContext): Promise<{ ok: true; packe
       revision: 1,
       // 0047: a packet made in test mode never becomes a real filing, also after go-live.
       is_test: oneClickTestMode(),
-      answers: {},
+      answers: seed.answers,
       member_snapshot: {},
+      payout_method: seed.payout_method,
       packet_hash: state.hash,
       jev_outcome: result?.outcome ?? null,
       jev_result: result ? storedJev(result) : null,

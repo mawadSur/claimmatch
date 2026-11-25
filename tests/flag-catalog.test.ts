@@ -10,19 +10,20 @@ afterEach(() => {
 describe('FLAG_CATALOG', () => {
   it('lists every env var flags.ts reads with on() or equals()', () => {
     const src = readFileSync(fileURLToPath(new URL('../src/lib/flags.ts', import.meta.url)), 'utf8');
-    const fromFlags = [...src.matchAll(/\b(?:on|equals)\('([A-Z0-9_]+)'/g)].map((m) => m[1]);
+    const fromFlags = [...src.matchAll(/\b(?:on|equals|onUnlessOff)\('([A-Z0-9_]+)'/g)].map((m) => m[1]);
     expect(fromFlags.length).toBeGreaterThan(20);
     expect(FLAG_CATALOG.map((f) => f.env).sort()).toEqual([...new Set(fromFlags)].sort());
   });
 
-  it('reports booleans only, and defaults off', () => {
+  it('reports booleans only, and defaults off except the claim-profile CTAs', () => {
     const status = listFlagStatus();
     expect(status.some((row) => row.env === 'LLMS_TXT_ENABLED')).toBe(true);
     expect(status.some((row) => row.env === 'INDEXNOW_ENABLED')).toBe(true);
     expect(status.some((row) => row.env === 'AI_REFERRER_ATTRIBUTION_ENABLED')).toBe(true);
+    const defaultOn = new Set(['CLAIM_PROFILE_ENABLED', 'CLAIM_ACTION_CTAS_ENABLED']);
     for (const row of status) {
       expect(typeof row.enabled).toBe('boolean');
-      expect(row.enabled).toBe(false);
+      expect(row.enabled).toBe(defaultOn.has(row.env));
       expect(row.env).not.toMatch(/KEY|SECRET|TOKEN/i);
       expect(JSON.stringify(row)).not.toMatch(/sk-|re_|eyJ/);
     }

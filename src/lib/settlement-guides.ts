@@ -850,6 +850,15 @@ export function isMissingDeadlineOverrideColumn(message: string | null | undefin
   return msg.includes('deadline_override') && (msg.includes('does not exist') || msg.includes('could not find'));
 }
 
+/** True when PostgREST/Postgres cannot see lawsuits.claim_action_type / claim_action yet (0051). */
+export function isMissingClaimActionColumn(message: string | null | undefined): boolean {
+  const msg = (message ?? '').toLowerCase();
+  return (
+    (msg.includes('claim_action_type') || /\bclaim_action\b/.test(msg)) &&
+    (msg.includes('does not exist') || msg.includes('could not find'))
+  );
+}
+
 export function guidedDeadline(row: {
   slug: string;
   deadline: string | null;

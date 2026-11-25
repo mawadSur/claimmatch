@@ -37,6 +37,8 @@ test('signed-out onboarding and dashboard land on login; claim asks for signup',
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login/);
+  await page.goto('/settings/claim-profile');
+  await expect(page).toHaveURL(/\/login/);
   await page.goto('/claim/example-settlement');
   await expect(page).toHaveURL(/\/signup/);
   await expect(page.locator('body')).toContainText(/why an account/i);

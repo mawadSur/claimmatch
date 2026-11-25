@@ -84,6 +84,19 @@ export default async function SettingsPage() {
       </p>
 
       <div className="mt-8 space-y-6">
+        {flags.claimProfile() && (
+          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
+            <h2 className="text-lg font-bold">Claim profile</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Name, addresses, payment-method preference, VIN and account emails
+              official claim forms commonly ask for. We never store a Social
+              Security number or full bank account number.
+            </p>
+            <Link href="/settings/claim-profile" className="btn-primary mt-4">
+              Build your claim profile
+            </Link>
+          </section>
+        )}
         {flags.profileV2() && (
           <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h2 className="text-lg font-bold">My profile</h2>

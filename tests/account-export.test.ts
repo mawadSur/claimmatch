@@ -65,6 +65,7 @@ describe('account export payload', () => {
     expect(payload.matches[0].lawsuit_slug).toBe('example');
     expect(payload.claims[0].id).toBe('claim-1');
     expect(payload.self_filed_reports).toEqual([]);
+    expect(payload.claim_profile).toBeNull();
   });
 
   it('includes self-filed reports without the private storage path', () => {

@@ -155,6 +155,25 @@ export interface Lawsuit {
   deadline_override_note?: string | null;
   /** 0050: when deadline_override was last set or cleared. */
   deadline_override_at?: string | null;
+  /** 0051: public claim CTA. Null keeps “Start your claim”. */
+  claim_action_type?:
+    | 'desk_file'
+    | 'online_form'
+    | 'needs_notice_id'
+    | 'mail_in'
+    | 'automatic_payment'
+    | 'not_open'
+    | null;
+  /** 0051: optional CTA extras (mail-to, form URL). Never a payout amount. */
+  claim_action?: {
+    form_url?: string | null;
+    mail_to?: string | null;
+    postmark?: boolean;
+    received_by?: boolean;
+    proof?: string | null;
+    address_update_url?: string | null;
+    notes?: string | null;
+  } | null;
 }
 
 export type ProfileFactType =

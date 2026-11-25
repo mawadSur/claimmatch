@@ -30,6 +30,9 @@ export const USER_OWNED_TABLES = [
   // Self-filed reports (0049). Deleted with the account; screenshot files in
   // the private self-filed-confirmations bucket are removed first.
   'self_filed_reports',
+  // Shared claim profile extras (0051). Owner-only; deleted with the account.
+  'claim_profile_addresses',
+  'claim_profiles',
   // One-click filing (0041). Deleted with the account. With
   // LEGAL_RECORDS_ON_ACCOUNT_DELETION set to anonymize_and_retain or retain
   // (src/lib/filing/legal-records.ts), signatures, voids, consents, jobs and
@@ -87,6 +90,8 @@ export const EXPLICIT_DELETE_ORDER = [
   'match_alert_sends',
   'beta_feedback',
   'self_filed_reports',
+  'claim_profile_addresses',
+  'claim_profiles',
   'claim_filing_jobs',
   'claim_signature_voids',
   'claim_signatures',

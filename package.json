@@ -18,7 +18,9 @@
     "test:e2e": "playwright test",
     "one-click:sql": "tsx scripts/one-click-five-settlements.ts",
     "one-click:sql:more": "tsx scripts/one-click-more-settlements.ts",
+    "one-click:sql:claim-profile": "tsx scripts/one-click-claim-profile-settlements.ts",
     "one-click:dry-run": "tsx scripts/one-click-dry-run.ts",
+    "claim-action:sql": "tsx scripts/claim-action-types.ts",
     "test:e2e:isolated": "bash scripts/run-isolated-journey.sh",
     "db:test": "scripts/db-test.sh"
   },

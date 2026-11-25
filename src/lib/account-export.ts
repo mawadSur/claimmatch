@@ -47,6 +47,28 @@ export interface AccountExportPayload {
   }>;
   /** One-click filing records, member-safe fields only (src/lib/account-export-filing.ts). */
   one_click_filing: OneClickExport;
+  /** Shared claim profile extras (0051). Never SSN, bank numbers, or PINs. */
+  claim_profile: {
+    legal_name: string | null;
+    aliases: string | null;
+    email: string | null;
+    phone: string | null;
+    date_of_birth: string | null;
+    payout_preference: string | null;
+    vehicle_vin: string | null;
+    account_emails: string[];
+    addresses: Array<{
+      kind: string;
+      line1: string;
+      line2: string | null;
+      city: string;
+      state: string;
+      zip: string;
+      lived_from: string | null;
+      lived_to: string | null;
+    }>;
+    consent_at: string | null;
+  } | null;
   /** Self-filed reports (0049). Screenshot metadata only — never a storage path. */
   self_filed_reports: Array<{
     lawsuit_title: string | null;
@@ -80,6 +102,7 @@ export function buildAccountExport(input: {
   >;
   claims: Array<Pick<Claim, 'id' | 'status'> & { lawsuit_title?: string | null }>;
   oneClick?: OneClickExport;
+  claimProfile?: AccountExportPayload['claim_profile'];
   selfFiledReports?: Array<{
     lawsuit_title?: string | null;
     lawsuit_slug?: string | null;
@@ -129,6 +152,7 @@ export function buildAccountExport(input: {
       status: claim.status,
     })),
     one_click_filing: input.oneClick ?? EMPTY_ONE_CLICK,
+    claim_profile: input.claimProfile ?? null,
     self_filed_reports: (input.selfFiledReports ?? []).map((row) => ({
       lawsuit_title: row.lawsuit_title ?? null,
       lawsuit_slug: row.lawsuit_slug ?? null,

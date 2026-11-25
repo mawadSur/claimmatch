@@ -301,3 +301,17 @@ describe('brief 3 feature flags', () => {
     expect(flags.selfFiledReport()).toBe(true);
   });
 });
+
+describe('claim profile and action CTAs (default on)', () => {
+  it('are on unless set to exactly 0; PIN collection stays off', () => {
+    expect(flags.claimProfile()).toBe(true);
+    expect(flags.claimActionCtas()).toBe(true);
+    expect(flags.collectAdminPin()).toBe(false);
+    vi.stubEnv('CLAIM_PROFILE_ENABLED', '0');
+    vi.stubEnv('CLAIM_ACTION_CTAS_ENABLED', '0');
+    vi.stubEnv('COLLECT_ADMIN_PIN_ENABLED', '1');
+    expect(flags.claimProfile()).toBe(false);
+    expect(flags.claimActionCtas()).toBe(false);
+    expect(flags.collectAdminPin()).toBe(true);
+  });
+});

@@ -40,6 +40,17 @@ export interface ClaimFlowSettlement {
   finalApprovalHearingAt?: string | null;
   /** Listed payment-timing sentence from the settlement record. Never guessed. */
   paymentTimingText?: string | null;
+  /** 0051: public claim CTA. Null keeps Start your claim. */
+  claimActionType?: string | null;
+  claimAction?: {
+    form_url?: string | null;
+    mail_to?: string | null;
+    postmark?: boolean;
+    received_by?: boolean;
+    proof?: string | null;
+    address_update_url?: string | null;
+    notes?: string | null;
+  } | null;
 }
 
 /** The settlement columns the claim flow reads (a claims-server SettlementRecord). */
@@ -56,6 +67,8 @@ interface ClaimFlowSettlementRow {
   form_field_order?: string[] | null;
   final_approval_hearing_at?: string | null;
   payment_timing_text?: string | null;
+  claim_action_type?: string | null;
+  claim_action?: ClaimFlowSettlement['claimAction'];
 }
 
 /**
@@ -89,6 +102,8 @@ export function toClaimFlowSettlement(
     selfFiledReportEnabled: opts.selfFiledReportEnabled === true,
     finalApprovalHearingAt: row.final_approval_hearing_at ?? null,
     paymentTimingText: row.payment_timing_text ?? null,
+    claimActionType: row.claim_action_type ?? null,
+    claimAction: row.claim_action ?? null,
   };
 }
 

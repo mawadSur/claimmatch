@@ -51,6 +51,7 @@ function fakeClient(client: 'member' | 'service') {
       const chain: Record<string, unknown> = {};
       chain.select = (columns: string) => ((asked.columns = columns), chain);
       chain.eq = (column: string, value: unknown) => (asked.filters.push([column, value]), chain);
+      chain.order = () => chain;
       chain.maybeSingle = async () => ({ data: null, error: null });
       chain.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
         Promise.resolve(
