@@ -232,7 +232,7 @@ export const SITE = {
   name: 'Lawsuit AI',
   tagline: 'Free claim assistant for class-action settlements',
   description:
-    'Find open class-action settlements, check who qualifies on the official notice, file on the official site, and keep track of your claims. Free.',
+    'Find open class-action settlements, check who qualifies, and we file claims for you on supported settlements. Free.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://lawsuitai.org',
 };
 

@@ -36,8 +36,22 @@ export function lawsuitAiMayFile(
   return f.feeDisclosure() || f.oneClickFiling();
 }
 
-export const MAY_FILE_SENTENCE =
-  'For some settlements, Lawsuit AI files this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.';
+/**
+ * Site-wide core message while Lawsuit AI may file. Counsel: may file for
+ * some settlements — never imply every settlement.
+ */
+export const WE_FILE_SUPPORTED = 'We file claims for you on supported settlements';
+export const WE_FILE_THIS_CLAIM = 'We file this claim for you';
+export const WE_FILE_FOR_YOU_BADGE = 'We file for you';
+export const WE_FILE_SUPPORTED_SENTENCE =
+  'We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
+
+/** Catalog / trust bullet: supported settlements vs self-file. */
+export function whoFilesBullet(mayFile = lawsuitAiMayFile()): string {
+  return mayFile ? WE_FILE_SUPPORTED : 'You file on the official site';
+}
+
+export const MAY_FILE_SENTENCE = WE_FILE_SUPPORTED_SENTENCE;
 
 /**
  * Disclaimer sentences used instead of "does not file … for anyone" while
@@ -52,14 +66,14 @@ export const MAY_FILE_SHORT_SENTENCE =
 /** Answer to "Do you file claims for me?" / "Who files my claim?". */
 export function whoFilesAnswer(mayFile = lawsuitAiMayFile()): string {
   return mayFile
-    ? `It depends on the settlement. ${MAY_FILE_SENTENCE} Any payment comes to you from the settlement administrator.`
+    ? `Yes, on supported settlements. ${WE_FILE_SUPPORTED_SENTENCE} Any payment comes to you from the settlement administrator.`
     : 'No. You file every claim yourself on the official settlement website. Lawsuit AI never files for you.';
 }
 
 /** The "who files" trust fact on home and /trust. */
 export function filingFact(mayFile = lawsuitAiMayFile()): { title: string; body: string } {
   return mayFile
-    ? { title: 'Every claim goes to the official administrator', body: MAY_FILE_SENTENCE }
+    ? { title: WE_FILE_SUPPORTED, body: WE_FILE_SUPPORTED_SENTENCE }
     : {
         title: 'You file on the official site',
         body: 'You file every claim on the settlement’s own website, where filing is always free. Lawsuit AI never files for you.',
@@ -80,11 +94,11 @@ export type SettlementFilingMode = 'never_files' | 'agent' | 'self_file';
 export const SETTLEMENT_FILING_COPY = {
   agent: {
     step: {
-      title: 'File it yourself, or choose one-click filing',
-      body: 'For this settlement, Lawsuit AI can file your claim with the settlement administrator after you review and sign it, if you qualify and live in a state it covers. Or file it yourself on the official site, where filing is free. Lawsuit AI never handles settlement payments.',
+      title: WE_FILE_THIS_CLAIM,
+      body: 'We file this claim for you after you review and sign it, if you qualify and live in a state it covers. You can always file on the official site yourself instead, where filing is free. Lawsuit AI never handles settlement payments.',
     },
     points: [
-      'Lawsuit AI can file this claim for you after you review and sign it',
+      'We file this claim for you after you review and sign it',
       'You can always file on the official site yourself instead',
       'Lawsuit AI never handles settlement payments',
     ],
@@ -98,20 +112,21 @@ export const SETTLEMENT_FILING_COPY = {
   },
 } as const;
 
-export const SOME_SETTLEMENTS = 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.';
+export const SOME_SETTLEMENTS =
+  'We file claims for you on supported settlements after you review and sign them.';
 
 /** Site-wide pages (invite, onboarding, scorecard) when Lawsuit AI may file for this viewer. */
 export const MAY_FILE_PAGE_COPY = {
   inviteIntro:
-    'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. For some settlements it can file the claim for you after you sign it; otherwise you submit on the official site. It is free during beta.',
+    'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. We file claims for you on supported settlements after you sign them; otherwise you submit on the official site. It is free during beta.',
   inviteStep: {
-    title: 'You choose who files',
+    title: 'We file claims for you on supported settlements',
     body: `${SOME_SETTLEMENTS} Otherwise you file on the settlement’s official website. Lawsuit AI is not a law firm.`,
   },
   inviteBullet: 'You can always file on the official settlement website yourself.',
   onboardingIntro:
-    'Lawsuit AI is a free claim assistant. For some settlements it can file the claim for you after you review and sign it. It never handles settlement payments.',
-  onboardingStep: `File on the official site yourself, where it’s free. ${SOME_SETTLEMENTS}`,
+    'Lawsuit AI is a free claim assistant. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
+  onboardingStep: `We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.`,
   scorecard: `${SOME_SETTLEMENTS} Otherwise you file on the official settlement site yourself. Lawsuit AI never handles settlement payments.`,
 } as const;
 
@@ -155,7 +170,7 @@ export function publicBetaFeeCopy(neutral = flags.panelTrustCopy()): string {
  * Agent lanes only: shown for a claim whose settlement has a filing channel
  * the law firm enabled. Copy guard: exact-text allowlist entry.
  */
-export const ONE_CLICK_AGENT_TITLE = 'Lawsuit AI files this claim for you';
+export const ONE_CLICK_AGENT_TITLE = WE_FILE_THIS_CLAIM;
 
 /** The self-file lane: no channel is enabled, so the member finishes on the official site. */
 export const ONE_CLICK_SELF_FILE_TITLE = 'Finish on the official site';
@@ -165,7 +180,7 @@ export const ONE_CLICK_FILED_LABEL = 'Filed by Lawsuit AI · waiting for the con
 
 /** The claim page's status note on an agent lane. */
 export const ONE_CLICK_AGENT_NOTE =
-  'Lawsuit AI files this claim for you after you sign it. Any payment comes to you from the settlement administrator, not from Lawsuit AI.';
+  'We file this claim for you after you sign it. Any payment comes to you from the settlement administrator, not from Lawsuit AI.';
 
 /**
  * Per-claim disclaimer sentence (go-live checklist item 13): replaces the
@@ -178,7 +193,7 @@ export const CLAIM_AGENT_LEGAL_SENTENCE =
 
 /** PrefillPacket's lead on a claim Lawsuit AI may file: the details are for filing it yourself instead. */
 export const PREFILL_AGENT_LANE_NOTE =
-  'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. Lawsuit AI files this claim for you only after you choose one-click filing and sign it.';
+  'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose one-click filing and sign it.';
 
 /** The claim page's status note on the self-file lane while one-click filing is on. */
 export const ONE_CLICK_SELF_FILE_NOTE =
@@ -419,11 +434,11 @@ export const ONE_CLICK_COPY = {
     open: 'Open',
     failed: 'We couldn’t load your filing status right now. Please refresh the page in a minute.',
   },
-  dashboardIntro: 'Track your claims and what happens next. Lawsuit AI never handles settlement payments.',
+  dashboardIntro: `Track your claims and what happens next. ${WE_FILE_SUPPORTED}. Lawsuit AI never handles settlement payments.`,
   welcomeSteps: [
     'Find an open settlement in our list.',
     'Read the official notice to see if you qualify.',
-    'Follow the steps on the claim page to file.',
+    'We file claims for you on supported settlements, or you file on the official site.',
     'Check each claim’s status and confirmation number here.',
   ],
 } as const;
@@ -439,6 +454,15 @@ export const OAUTH_COPY = {
   apple: 'Continue with Apple',
   appleWorking: 'Opening Apple…',
   divider: 'or use your email',
+  magicLink: 'Email me a sign-in link',
+  magicLinkWorking: 'Sending the link…',
+  magicLinkSent: 'Check your email for a sign-in link. It works even if you have not confirmed a password yet.',
+  magicLinkHint: 'No password. We email you a link to sign in or create your account.',
+  passwordOption: 'Or create a password',
+  passwordOptionHide: 'Use a sign-in link instead',
+  confirmReminder:
+    'Confirm your email when you can. You can keep tracking claims and finish setup without waiting.',
+  continueUnconfirmed: 'Keep going — I’ll confirm later',
   /** Shown next to the button on /login, where a new person can also create an account. */
   agreeLead: 'New here? Continuing with Google creates your free account, and you agree to the',
   agreeLeadApple: 'New here? Continuing with Apple creates your free account, and you agree to the',

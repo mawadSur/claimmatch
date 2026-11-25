@@ -6,13 +6,24 @@ import { AuthForm } from '@/components/AuthForm';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { BetaInviteCapture } from '@/components/invite/BetaInviteCapture';
 import { flags } from '@/lib/flags';
-import { NEUTRAL_BETA_FEE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
+import {
+  lawsuitAiMayFile,
+  NEUTRAL_BETA_FEE_COPY,
+  WE_FILE_SUPPORTED,
+  WE_FILE_SUPPORTED_SENTENCE,
+  WHAT_WE_STORE_MINIMAL,
+} from '@/lib/copy';
+import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = {
-  title: 'Create your free account',
-  description:
-    'Create a free Lawsuit AI account to keep track of the settlement claims you file on official settlement websites.',
-};
+export function generateMetadata(): Metadata {
+  return publicPageMetadata({
+    title: 'Create your free account',
+    description: lawsuitAiMayFile()
+      ? `Create a free Lawsuit AI account. ${WE_FILE_SUPPORTED_SENTENCE}`
+      : 'Create a free Lawsuit AI account to keep track of the settlement claims you file on official settlement websites.',
+    path: '/signup',
+  });
+}
 
 const BETA_BULLETS = [
   'Free during beta. We may introduce a fee later.',
@@ -40,7 +51,11 @@ function AuthFormFallback() {
 
 export default function SignupPage() {
   const trustCopy = flags.panelTrustCopy();
-  const bullets = flags.feeDisclosure() ? DISCLOSED_BULLETS : trustCopy ? TRUST_BULLETS : BETA_BULLETS;
+  const mayFile = lawsuitAiMayFile();
+  const bullets = [
+    ...(flags.feeDisclosure() ? DISCLOSED_BULLETS : trustCopy ? TRUST_BULLETS : BETA_BULLETS),
+    ...(mayFile ? [WE_FILE_SUPPORTED] : []),
+  ];
 
   return (
     <section className="bg-brand-50">
@@ -57,8 +72,9 @@ export default function SignupPage() {
               Create your free account
             </h1>
             <p className="mt-3 text-ink-muted">
-              Keep track of the settlement claims you file, all in one place. You
-              always file on the official settlement website yourself.
+              {mayFile
+                ? `Keep track of your settlement claims in one place. ${WE_FILE_SUPPORTED_SENTENCE}`
+                : 'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.'}
             </p>
           </div>
 

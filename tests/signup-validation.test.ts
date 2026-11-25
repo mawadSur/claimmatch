@@ -10,6 +10,7 @@ import {
   signupPasswordHint,
   signupResendWaitSeconds,
   signupResendWaitText,
+  validateMagicLinkFields,
   validateSignupFields,
   type SignupErrorCode,
 } from '@/lib/signup-validation';
@@ -30,6 +31,14 @@ describe('signup field validation', () => {
     expect(
       validateSignupFields({ fullName: 'Ada Lovelace', email: 'ada@example.com', password: 'longenough1' }),
     ).toEqual({});
+  });
+
+  it('lets magic-link signup skip the password', () => {
+    expect(validateMagicLinkFields({ fullName: '', email: '' })).toEqual({
+      full_name: 'Enter your name.',
+      email: 'Enter your email address.',
+    });
+    expect(validateMagicLinkFields({ fullName: 'Ada', email: 'ada@example.com' })).toEqual({});
   });
 
   it('maps field and provider messages to codes without keeping the message', () => {

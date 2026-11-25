@@ -13,7 +13,8 @@ import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { FilingSummaryList } from '@/components/filing/FilingSummaryList';
 import { loadOneClickDashboard } from '@/components/filing/dashboard-data';
 import { isOneClickStatus } from '@/components/filing/filing-model';
-import { ONE_CLICK_COPY } from '@/lib/copy';
+import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
+import { lawsuitAiMayFile, ONE_CLICK_COPY, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import {
@@ -146,10 +147,15 @@ export default async function DashboardPage({
               {flags.feeDisclosure()
                 ? 'Official filing stays free.'
                 : 'Lawsuit AI is free during beta.'}{' '}
-              It doesn&rsquo;t file for you and never handles settlement payments.
+              {lawsuitAiMayFile()
+                ? WE_FILE_SUPPORTED_SENTENCE
+                : 'It doesn’t file for you and never handles settlement payments.'}
             </p>
           )}
         </header>
+        {!user.email_confirmed_at && (
+          <ConfirmEmailBanner email={user.email ?? null} />
+        )}
 
         {denied === 'admin' && (
           <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">

@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import { OAuthSignInButtons } from './OAuthSignIn';
 import { PENDING_NEXT_COOKIE, onboardingPath, pendingNextCookie, safeNextPath } from '@/lib/safe-next';
 import { rememberSignupContext } from '@/lib/signup-context';
+import { OAUTH_COPY } from '@/lib/copy';
 import {
   MIN_PASSWORD_LENGTH,
   SIGNUP_RESEND_COOLDOWN_MS,
@@ -30,6 +31,7 @@ import {
   signupPasswordHint,
   signupResendWaitSeconds,
   signupResendWaitText,
+  validateMagicLinkFields,
   validateSignupFields,
   type SignupErrorCode,
   type SignupField,
@@ -122,6 +124,9 @@ export function AuthForm({
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [resendNow, setResendNow] = useState(() => Date.now());
   const [alertsOptIn, setAlertsOptIn] = useState(false);
+  // Signup defaults to a magic link so people are not blocked by the 10-character password rule.
+  const [passwordMode, setPasswordMode] = useState(() => mode !== 'signup');
+  const [magicStatus, setMagicStatus] = useState<'idle' | 'sent'>('idle');
 
   const isSignup = mode === 'signup';
   const switchParams = attributionQuery(attr);
@@ -225,13 +230,23 @@ export function AuthForm({
     setFieldErrors({});
 
     if (isSignup) {
-      const nextErrors = validateSignupFields({ fullName, email, password });
+      const nextErrors = passwordMode
+        ? validateSignupFields({ fullName, email, password })
+        : validateMagicLinkFields({ fullName, email });
       const first = firstSignupFieldError(nextErrors);
       if (first) {
         setFieldErrors(nextErrors);
         setError(first.message);
         captureSignupError(signupFieldErrorCode(first.field, first.message));
         document.getElementById(first.field === 'full_name' ? 'full_name' : first.field)?.focus();
+        return;
+      }
+    } else if (!passwordMode) {
+      const trimmed = email.trim();
+      if (!trimmed) {
+        setFieldErrors({ email: 'Enter your email address.' });
+        setError('Enter your email address.');
+        document.getElementById('email')?.focus();
         return;
       }
     }
@@ -245,6 +260,41 @@ export function AuthForm({
     const supabase = createClient();
 
     try {
+      if (!passwordMode) {
+        if (isSignup) {
+          document.cookie = next
+            ? pendingNextCookie(next, window.location.protocol === 'https:')
+            : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+        }
+        const { error: otpError } = await withTimeout(
+          supabase.auth.signInWithOtp({
+            email,
+            options: {
+              shouldCreateUser: true,
+              emailRedirectTo: emailRedirectTo(),
+              data: isSignup
+                ? {
+                    full_name: fullName,
+                    email_opt_in: alertsOptIn,
+                    ...attributionMetadata(attr),
+                  }
+                : undefined,
+            },
+          }),
+          AUTH_TIMEOUT_MS,
+          AUTH_TIMEOUT_MESSAGE,
+        );
+        if (otpError) {
+          if (isSignup) showSignupError(signupErrorCodeFromMessage(otpError.message));
+          else setError(signupErrorMessage(signupErrorCodeFromMessage(otpError.message)));
+          setStatus('idle');
+          return;
+        }
+        setMagicStatus('sent');
+        setStatus('check-email');
+        return;
+      }
+
       if (isSignup) {
         // The confirmation link opens /auth/callback, which then goes to
         // onboarding; this cookie (on this device) brings the person back to
@@ -337,10 +387,15 @@ export function AuthForm({
         </div>
         <h2 className="mt-4 text-xl font-bold">Check your email</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          We sent a confirmation link to{' '}
-          <span className="font-semibold text-ink">{email}</span>. Click it to
-          verify your account and finish setting up your profile.
+          {magicStatus === 'sent' ? OAUTH_COPY.magicLinkSent : (
+            <>
+              We sent a confirmation link to{' '}
+              <span className="font-semibold text-ink">{email}</span>. Click it to
+              verify your account and finish setting up your profile.
+            </>
+          )}
         </p>
+        <p className="mt-2 text-sm text-ink-muted">{OAUTH_COPY.confirmReminder}</p>
         {next && (
           <p className="mt-2 text-sm text-ink-muted">
             Open the link on this device and we&rsquo;ll bring you back to{' '}
@@ -399,7 +454,7 @@ export function AuthForm({
           <OAuthSignInButtons
             mode={mode}
             next={next}
-            providers={[...(oauth ? (['google'] as const) : []), ...(apple ? (['apple'] as const) : [])]}
+            providers={[...(apple ? (['apple'] as const) : []), ...(oauth ? (['google'] as const) : [])]}
           />
         </div>
       )}
@@ -518,6 +573,7 @@ export function AuthForm({
           )}
         </div>
 
+        {passwordMode ? (
         <div>
           <label htmlFor="password" className="field-label">
             Password
@@ -533,8 +589,14 @@ export function AuthForm({
               minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
               value={password}
               onChange={(e) => {
-                setPassword(e.target.value);
-                if (fieldErrors.password) {
+                const next = e.target.value;
+                setPassword(next);
+                if (isSignup && next.length > 0 && next.length < MIN_PASSWORD_LENGTH) {
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    password: `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`,
+                  }));
+                } else if (fieldErrors.password) {
                   setFieldErrors((prev) => ({ ...prev, password: undefined }));
                 }
               }}
@@ -562,6 +624,27 @@ export function AuthForm({
             </p>
           )}
         </div>
+        ) : (
+          <p className="text-sm text-ink-muted">{OAUTH_COPY.magicLinkHint}</p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setPasswordMode((on) => !on);
+            setError('');
+            setFieldErrors((prev) => ({ ...prev, password: undefined }));
+          }}
+          className="text-link text-sm"
+        >
+          {passwordMode
+            ? isSignup
+              ? OAUTH_COPY.passwordOptionHide
+              : OAUTH_COPY.magicLink
+            : isSignup
+              ? OAUTH_COPY.passwordOption
+              : 'Use a password instead'}
+        </button>
 
         {isSignup && (
           <label className="flex items-start gap-2.5 text-sm text-ink-muted">
@@ -592,11 +675,23 @@ export function AuthForm({
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              {isSignup ? 'Creating your account…' : 'Signing in…'}
+              {isSignup
+                ? passwordMode
+                  ? 'Creating your account…'
+                  : OAUTH_COPY.magicLinkWorking
+                : passwordMode
+                  ? 'Signing in…'
+                  : OAUTH_COPY.magicLinkWorking}
             </>
           ) : (
             <>
-              {isSignup ? 'Create my account' : 'Log in'}
+              {isSignup
+                ? passwordMode
+                  ? 'Create my account'
+                  : OAUTH_COPY.magicLink
+                : passwordMode
+                  ? 'Log in'
+                  : OAUTH_COPY.magicLink}
               <ArrowRight className="h-4 w-4" />
             </>
           )}

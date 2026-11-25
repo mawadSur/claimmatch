@@ -6,6 +6,7 @@ import { safeNextOr } from '@/lib/safe-next';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
+import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
 import { MAY_FILE_PAGE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 import { viewerMayFile } from '@/lib/filing/public-filing';
 import { factsFromRows } from '@/lib/profile-facts';
@@ -92,6 +93,12 @@ export default async function OnboardingPage({
               </li>
             ))}
           </ol>
+
+          {!user.email_confirmed_at && !emailConfirmed && (
+            <div className="mt-6">
+              <ConfirmEmailBanner email={user.email ?? null} />
+            </div>
+          )}
 
           {emailConfirmed && (
             <>

@@ -8,6 +8,7 @@ import {
   filterCatalog,
   LAWSUITS_PAGE_SIZE,
   paginateCatalog,
+  parseFileForYou,
   parseHasDeadline,
   parsePage,
   parseProofFilter,
@@ -27,6 +28,8 @@ import { HubLinks } from '@/components/settlement/HubLinks';
 import { pageUrl } from '@/lib/settlement-seo';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
+import { lawsuitAiMayFile, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
+import { oneClickLawsuitIdSet } from '@/lib/one-click-listings';
 
 const DESCRIPTION =
   'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by Lawsuit AI, so check the official site before you file. Filing is free.';
@@ -46,6 +49,7 @@ function catalogFilters(params: Record<string, string | string[] | undefined>) {
     category: firstParam(params.category)?.trim() || undefined,
     hasDeadline: parseHasDeadline(firstParam(params.hasDeadline)),
     proof: parseProofFilter(firstParam(params.proof)),
+    fileForYou: parseFileForYou(firstParam(params.fileForYou)),
     page: parsePage(firstParam(params.page)),
   };
 }
@@ -62,6 +66,7 @@ export async function generateMetadata({
     category: filters.category,
     hasDeadline: filters.hasDeadline,
     proof: filters.proof,
+    fileForYou: filters.fileForYou,
     page: filters.page,
   });
   const title =
@@ -92,26 +97,35 @@ export async function generateMetadata({
 
 export default async function LawsuitsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const { q, category, hasDeadline, proof, page } = catalogFilters(params);
+  const { q, category, hasDeadline, proof, fileForYou, page } = catalogFilters(params);
 
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it. HTML is
   // sliced 24 per page so the catalog stays cacheable.
   const catalog = await lookupLawsuits();
   const categories = categoriesOf(catalog.lawsuits);
-  const filteredList = filterCatalog(catalog.lawsuits, { q, category, hasDeadline, proof });
+  const fileForYouIds = await oneClickLawsuitIdSet();
+  const filteredList = filterCatalog(catalog.lawsuits, {
+    q,
+    category,
+    hasDeadline,
+    proof,
+    fileForYou,
+    fileForYouIds,
+  });
   const paged = paginateCatalog(filteredList, page, true, LAWSUITS_PAGE_SIZE);
   const count = paged.total;
-  const filtered = Boolean(q || category || hasDeadline || proof);
+  const filtered = Boolean(q || category || hasDeadline || proof || fileForYou);
+  const mayFile = lawsuitAiMayFile();
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
 
   const prevHref =
-    paged.page > 1 ? catalogPath({ q, category, hasDeadline, proof, page: paged.page - 1 }) : null;
+    paged.page > 1 ? catalogPath({ q, category, hasDeadline, proof, fileForYou, page: paged.page - 1 }) : null;
   const nextHref =
     paged.page < paged.totalPages
-      ? catalogPath({ q, category, hasDeadline, proof, page: paged.page + 1 })
+      ? catalogPath({ q, category, hasDeadline, proof, fileForYou, page: paged.page + 1 })
       : null;
 
   return (
@@ -123,8 +137,8 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
             Class action settlements that are taking claims now. Check who qualifies on
-            the official site, file there for free, and keep track of your claim in
-            Lawsuit AI.
+            the official site
+            {mayFile ? `. ${WE_FILE_SUPPORTED_SENTENCE}` : ', file there for free, and keep track of your claim in Lawsuit AI.'}
             {flags.catalogValueRank()
               ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
               : ''}
@@ -160,7 +174,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             <div className="h-[7.5rem] rounded-2xl border border-slate-200 bg-white shadow-card" />
           }
         >
-          <LawsuitFilters categories={categories} />
+          <LawsuitFilters categories={categories} fileForYouFilter={mayFile && fileForYouIds.size > 0} />
         </Suspense>
 
         <p className="mt-6 text-sm text-ink-muted" role="status" aria-live="polite">
@@ -193,6 +207,11 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
                   {' '}that list proof as not required
                 </>
               ) : null}
+              {fileForYou ? (
+                <>
+                  {' '}we file for you
+                </>
+              ) : null}
             </>
           )}
         </p>
@@ -203,7 +222,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             title="We couldn’t load settlements right now"
             body="This is on our side. Please try again in a few minutes."
             action={
-              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline, proof })}` : '/lawsuits'} className="btn-secondary mt-6">
+              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline, proof, fileForYou })}` : '/lawsuits'} className="btn-secondary mt-6">
                 Try again
               </Link>
             }
@@ -230,7 +249,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {paged.items.map((l) => (
                 <li key={l.id}>
-                  <LawsuitCard lawsuit={l} />
+                  <LawsuitCard lawsuit={l} fileForYou={fileForYouIds.has(l.id)} />
                 </li>
               ))}
             </ul>

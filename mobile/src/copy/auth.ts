@@ -146,7 +146,7 @@ export const auth = defineCopy({
     source: 'src/app/signup/page.tsx',
   },
   signupIntro: {
-    text: 'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.',
+    text: 'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.',
     source: 'src/app/signup/page.tsx',
   },
   /**

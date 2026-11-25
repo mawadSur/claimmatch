@@ -24,7 +24,7 @@ export const onboarding = defineCopy({
   },
   /** Flag on: MAY_FILE_PAGE_COPY.onboardingIntro. */
   introMayFile: {
-    text: 'Lawsuit AI is a free claim assistant. For some settlements it can file the claim for you after you review and sign it. It never handles settlement payments.',
+    text: 'Lawsuit AI is a free claim assistant. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
     source: 'src/lib/copy.ts',
   },
   howItWorks: {
@@ -45,12 +45,12 @@ export const onboarding = defineCopy({
   },
   /** Flag on: lead of MAY_FILE_PAGE_COPY.onboardingStep. */
   howStep3MayFile: {
-    text: 'File on the official site yourself, where it’s free.',
+    text: 'We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.',
     source: 'src/lib/copy.ts',
   },
   /** SOME_SETTLEMENTS, joined after {howStep3MayFile}. */
   howStep3MayFileSome: {
-    text: 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.',
+    text: 'We file claims for you on supported settlements after you review and sign them.',
     source: 'src/lib/copy.ts',
   },
   howStep4: {

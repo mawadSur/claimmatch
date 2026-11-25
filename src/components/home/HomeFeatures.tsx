@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   ArrowRight, BellRing, ClipboardCopy, FileSearch, ListChecks, MailPlus, Search, TrendingUp,
 } from 'lucide-react';
+import { lawsuitAiMayFile, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 interface Feature {
@@ -31,8 +32,10 @@ export function homeFeatures(f: FeatureFlags = flags): Feature[] {
     },
     {
       icon: ClipboardCopy,
-      title: 'Your details, ready to copy',
-      body: 'Save your name, address and email once. Copy them into each official claim form instead of typing them again.',
+      title: lawsuitAiMayFile() ? 'We file claims for you on supported settlements' : 'Your details, ready to copy',
+      body: lawsuitAiMayFile()
+        ? WE_FILE_SUPPORTED_SENTENCE
+        : 'Save your name, address and email once. Copy them into each official claim form instead of typing them again.',
     },
     {
       icon: ListChecks,

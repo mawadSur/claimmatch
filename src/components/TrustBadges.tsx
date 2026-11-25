@@ -1,6 +1,6 @@
 import { BadgeCheck, HandCoins, ExternalLink, Scale } from 'lucide-react';
 import { flags } from '@/lib/flags';
-import { lawsuitAiMayFile } from '@/lib/copy';
+import { whoFilesBullet } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
 /**
@@ -15,7 +15,7 @@ export function TrustBadges({ className }: { className?: string }) {
     },
     { icon: HandCoins, label: 'We never handle settlement payments' },
     // Who files follows the fee and one-click flags (copy.ts).
-    { icon: ExternalLink, label: lawsuitAiMayFile() ? 'Claims go to the official administrator' : 'You file on the official site' },
+    { icon: ExternalLink, label: whoFilesBullet() },
     { icon: Scale, label: 'Not a law firm' },
   ] as const;
 

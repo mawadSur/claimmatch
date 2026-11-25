@@ -14,7 +14,13 @@ import { cn } from '@/lib/utils';
  * Analytics get only the search length, never the words: people type names,
  * emails and medicines into search boxes.
  */
-export function LawsuitFilters({ categories }: { categories: string[] }) {
+export function LawsuitFilters({
+  categories,
+  fileForYouFilter = false,
+}: {
+  categories: string[];
+  fileForYouFilter?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,11 +30,12 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
   const activeQ = searchParams.get('q') ?? '';
   const activeHasDeadline = searchParams.get('hasDeadline') === '1';
   const activeProofNo = searchParams.get('proof') === 'no';
+  const activeFileForYou = searchParams.get('fileForYou') === '1';
   const [q, setQ] = useState(activeQ);
   const [isPending, startTransition] = useTransition();
 
   const commit = useCallback(
-    (next: { q?: string; category?: string; hasDeadline?: boolean; proofNo?: boolean }) => {
+    (next: { q?: string; category?: string; hasDeadline?: boolean; proofNo?: boolean; fileForYou?: boolean }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (next.q !== undefined) {
         if (next.q.trim()) params.set('q', next.q.trim());
@@ -45,6 +52,10 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
       if (next.proofNo !== undefined) {
         if (next.proofNo) params.set('proof', 'no');
         else params.delete('proof');
+      }
+      if (next.fileForYou !== undefined) {
+        if (next.fileForYou) params.set('fileForYou', '1');
+        else params.delete('fileForYou');
       }
       // Filters apply across pages; start again at page 1.
       params.delete('page');
@@ -75,7 +86,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
     return () => clearTimeout(t);
   }, [q, activeQ, commit, posthog]);
 
-  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline || activeProofNo);
+  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline || activeProofNo || activeFileForYou);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
@@ -139,6 +150,14 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
         >
           No proof required
         </Pill>
+        {fileForYouFilter && (
+          <Pill
+            active={activeFileForYou}
+            onClick={() => commit({ fileForYou: !activeFileForYou })}
+          >
+            We file for you
+          </Pill>
+        )}
       </div>
 
       {hasFilters && (
@@ -146,7 +165,7 @@ export function LawsuitFilters({ categories }: { categories: string[] }) {
           type="button"
           onClick={() => {
             setQ('');
-            commit({ q: '', category: '', hasDeadline: false, proofNo: false });
+            commit({ q: '', category: '', hasDeadline: false, proofNo: false, fileForYou: false });
           }}
           className="text-link mt-3 inline-flex min-h-tap items-center gap-1 text-sm"
         >

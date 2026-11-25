@@ -4,14 +4,18 @@ import { ArrowRight, ChevronDown, Search } from 'lucide-react';
 import { Disclaimer } from '@/components/Disclaimer';
 import { faqGroups } from '@/lib/faq';
 import { jsonLd } from '@/lib/jsonld';
+import { lawsuitAiMayFile, WE_FILE_SUPPORTED } from '@/lib/copy';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = publicPageMetadata({
-  title: 'FAQ',
-  description:
-    'Answers about class action settlements and Lawsuit AI: who qualifies, proof of purchase, payouts, when you get paid, how filing works, and your account.',
-  path: '/faq',
-});
+export function generateMetadata(): Metadata {
+  return publicPageMetadata({
+    title: 'FAQ',
+    description: lawsuitAiMayFile()
+      ? `Answers about class action settlements and Lawsuit AI: who qualifies, payouts, deadlines, and ${WE_FILE_SUPPORTED.toLowerCase()}.`
+      : 'Answers about class action settlements and Lawsuit AI: who qualifies, proof of purchase, payouts, when you get paid, how filing works, and your account.',
+    path: '/faq',
+  });
+}
 
 export default function FaqPage() {
   const groups = faqGroups();

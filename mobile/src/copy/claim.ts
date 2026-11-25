@@ -257,7 +257,7 @@ export const claim = defineCopy({
   },
   /** PREFILL_AGENT_LANE_NOTE: only while this claim is an agent lane (web PrefillPacket agentLane). */
   packetNoteAgent: {
-    text: 'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. Lawsuit AI files this claim for you only after you choose one-click filing and sign it.',
+    text: 'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose one-click filing and sign it.',
     source: 'src/lib/copy.ts',
   },
   copyAll: { text: 'Copy all', source: PACKET },
