@@ -129,11 +129,11 @@ export const settlement = defineCopy({
   },
   stepQualifyTitle: {
     text: 'Check that you qualify',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/settlement-howto.ts',
   },
   stepQualifyBody: {
     text: 'Read the official notice. It has the exact rules and the deadline.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/settlement-howto.ts',
   },
   stepFileTitle: {
     text: 'We help you file',
@@ -172,11 +172,11 @@ export const settlement = defineCopy({
   },
   stepTrackTitle: {
     text: 'Keep track in Lawsuit AI',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/settlement-howto.ts',
   },
   stepTrackBody: {
     text: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/settlement-howto.ts',
   },
 
   // FAQ ----------------------------------------------------------------------

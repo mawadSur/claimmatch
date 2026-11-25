@@ -46,6 +46,7 @@ import {
   settlementMetaTitle,
   settlementPath,
 } from '@/lib/settlement-seo';
+import { settlementHowToJsonLd, settlementHowToSteps } from '@/lib/settlement-howto';
 import { flags } from '@/lib/flags';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { settlementOgImagePath } from '@/lib/site-metadata';
@@ -218,6 +219,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit, filingMode)} />
       <JsonLd data={settlementLegalServiceJsonLd(lawsuit, filingMode)} />
+      <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode)} />
 
       {/* Header ------------------------------------------------------------- */}
       <section className="bg-brand-50">
@@ -436,18 +438,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
-                {[
-                  {
-                    title: 'Check that you qualify',
-                    body: 'Read the official notice. It has the exact rules and the deadline.',
-                  },
-                  filingCopy.step,
-                  {
-                    title: 'Keep track in Lawsuit AI',
-                    body: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
-                  },
-                ].map((step, i) => (
-                  <li key={step.title} className="flex gap-3">
+                {settlementHowToSteps(filingMode).map((step, i) => (
+                  <li key={step.name} className="flex gap-3">
                     <span
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700"
                       aria-hidden="true"
@@ -455,8 +447,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
                       {i + 1}
                     </span>
                     <div>
-                      <p className="font-semibold text-ink">{step.title}</p>
-                      <p className="mt-0.5 text-sm text-ink-muted">{step.body}</p>
+                      <p className="font-semibold text-ink">{step.name}</p>
+                      <p className="mt-0.5 text-sm text-ink-muted">{step.text}</p>
                     </div>
                   </li>
                 ))}

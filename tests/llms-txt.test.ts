@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE } from '@/lib/copy';
-import { catalogHubLinks, renderLlmsTxt } from '@/lib/llms-txt';
+import { catalogHubLinks, officialGuideLinks, renderLlmsTxt } from '@/lib/llms-txt';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -50,6 +50,38 @@ describe('renderLlmsTxt', () => {
     expect(body).toContain('/terms');
     expect(body).toMatch(/we file claims for you on supported settlements/i);
     expect(body).not.toMatch(/you(?:'|’)re owed|15%/i);
+    expect(body).not.toContain('Official-notice settlement guides');
+  });
+
+  it('lists official-notice settlement pages when the catalog has them', () => {
+    const body = renderLlmsTxt({
+      officialGuides: [
+        {
+          name: 'RealPage Rental Software Antitrust Settlement',
+          path: '/lawsuits/realpage-rental-software-antitrust-settlement',
+        },
+      ],
+      feeLine: BETA_FEE_COPY,
+    });
+    expect(body).toContain('## Official-notice settlement guides');
+    expect(body).toContain('/lawsuits/realpage-rental-software-antitrust-settlement');
+    expect(body).toContain('RealPage Rental Software Antitrust Settlement');
+  });
+});
+
+describe('officialGuideLinks', () => {
+  it('keeps only catalog rows that have an official-notice guide', () => {
+    const links = officialGuideLinks([
+      { slug: 'realpage-rental-software-antitrust-settlement', title: 'RealPage Rental Software Antitrust Settlement' },
+      { slug: 'quiet-settlement', title: 'Quiet Settlement' },
+      { slug: 'realpage-rental-software-antitrust-settlement', title: 'Duplicate' },
+    ]);
+    expect(links).toEqual([
+      {
+        name: 'RealPage Rental Software Antitrust Settlement',
+        path: '/lawsuits/realpage-rental-software-antitrust-settlement',
+      },
+    ]);
   });
 });
 
