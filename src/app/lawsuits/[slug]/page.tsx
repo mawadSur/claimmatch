@@ -22,6 +22,7 @@ import {
 import { settlementPreviewPath } from '@/lib/match-preview';
 import { relatedSettlements } from '@/lib/related-settlements';
 import { proofDetail } from '@/lib/proof';
+import { catalogGuideFaqs, catalogGuideSections, catalogGuideSummary } from '@/lib/catalog-guides';
 import {
   hasOfficialNoticeGuide,
   noticeCheckedOnLabel,
@@ -40,10 +41,12 @@ import {
   settlementAnswerFacts,
   settlementArticleJsonLd,
   settlementFaqs,
+  settlementLegalServiceJsonLd,
   settlementMetaDescription,
   settlementMetaTitle,
   settlementPath,
 } from '@/lib/settlement-seo';
+import { settlementHowToJsonLd, settlementHowToSteps } from '@/lib/settlement-howto';
 import { flags } from '@/lib/flags';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { settlementOgImagePath } from '@/lib/site-metadata';
@@ -60,9 +63,18 @@ import { RelatedSettlements } from '@/components/settlement/RelatedSettlements';
 import { SettlementFaq } from '@/components/settlement/SettlementFaq';
 import { OfficialFormLink } from '@/components/settlement/OfficialFormLink';
 import { SettlementEligibilityQuiz } from '@/components/settlement/SettlementEligibilityQuiz';
+import { GuideSignupCta } from '@/components/settlement/GuideSignupCta';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
-import { ACCOUNT_FOR_SAVE_WHY, BROWSE_NO_ACCOUNT, SETTLEMENT_FILING_COPY } from '@/lib/copy';
+import {
+  ACCOUNT_FOR_SAVE_WHY,
+  BROWSE_NO_ACCOUNT,
+  guideFilingCopy,
+  WE_FILE_THIS_CLAIM,
+  WE_HELP_YOU_FILE,
+  WE_FILE_THIS_CLAIM_GUIDE,
+  WE_HELP_YOU_FILE_GUIDE,
+} from '@/lib/copy';
 import { settlementFilingMode } from '@/lib/filing/public-filing';
 import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
@@ -96,10 +108,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const lawsuit = result.lawsuit;
   const open = isOpenForClaims(lawsuit);
+  const filingMode = open
+    ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null })
+    : 'never_files';
   const url = pageUrl(settlementPath(lawsuit.slug));
   const title = settlementMetaTitle(lawsuit);
   const description = open
-    ? settlementMetaDescription(lawsuit)
+    ? settlementMetaDescription(lawsuit, filingMode)
     : `${lawsuit.title} is not taking claims.`;
   // Closed, past-deadline, and thin listings (no deadline, eligibility,
   // administrator, or payout) stay out of the index.
@@ -153,7 +168,11 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const fromSettleSignal = isSettleSignalRecord(lawsuit);
   const settleSignalPage = settleSignalPageFor(lawsuit);
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
-  const summary = displaySummary(lawsuit);
+  // Who files. Agent lane: we file this claim; every other guide: we help you file.
+  const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
+  const summary = displaySummary(lawsuit) || catalogGuideSummary({ ...lawsuit, summary: null });
+  const guideSections = catalogGuideSections(lawsuit, filingMode === 'agent');
+  const filingCopy = guideFilingCopy(filingMode);
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
   const eligibility = displayEligibilityText(lawsuit);
   const verified = showVerifiedBadge(lawsuit);
@@ -165,9 +184,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
     lawsuit.description.trim() !== payout &&
     lawsuit.description.trim() !== summary;
   const facts = overlayVerifiedFacts(settlementAnswerFacts(lawsuit), lawsuit);
-  // Who files (issue #53). A static page has no viewer: unchanged until one-click is on for everyone.
-  const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
-  const faqs = settlementFaqs(lawsuit, filingMode !== 'never_files', filingMode === 'agent');
+  const faqs = [
+    ...settlementFaqs(lawsuit, filingMode !== 'never_files', filingMode === 'agent'),
+    ...catalogGuideFaqs(lawsuit),
+  ];
   const claimHref = `/claim/${lawsuit.slug}`;
   const qualifyEnabled = flags.settlementPageCta() && open;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
@@ -197,7 +217,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
       )}
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <JsonLd data={faqJsonLd(faqs)} />
-      <JsonLd data={settlementArticleJsonLd(lawsuit)} />
+      <JsonLd data={settlementArticleJsonLd(lawsuit, filingMode)} />
+      <JsonLd data={settlementLegalServiceJsonLd(lawsuit, filingMode)} />
+      <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode)} />
 
       {/* Header ------------------------------------------------------------- */}
       <section className="bg-brand-50">
@@ -223,9 +245,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
             ) : (
               <span className="badge-gray">Claims closed</span>
             )}
-            {filingMode === 'agent' && (
-              <span className="badge-green">{SETTLEMENT_FILING_COPY.agent.step.title}</span>
-            )}
+            {open &&
+              (filingMode === 'agent' ? (
+                <span className="badge-green">{WE_FILE_THIS_CLAIM}</span>
+              ) : (
+                <span className="badge-brand rounded-full">{WE_HELP_YOU_FILE}</span>
+              ))}
             {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
                 <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
@@ -279,12 +304,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 </Link>
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                {filingMode === 'agent'
-                  ? 'Free. We file this claim for you on this settlement.'
-                  : filingMode === 'self_file'
-                    ? 'Free. We file claims for you on supported settlements. You can file this one on the official site yourself.'
-                    : 'Free. You file on the official site yourself.'}
+                {filingMode === 'agent' ? WE_FILE_THIS_CLAIM_GUIDE : WE_HELP_YOU_FILE_GUIDE}
               </p>
+              <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
             </div>
           )}
         </div>
@@ -397,27 +419,27 @@ export default async function LawsuitDetailPage({ params }: Params) {
             />
           )}
 
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-bold">Listed payout</h2>
+            <p className="mt-2 leading-relaxed text-ink">{guideSections.payout}</p>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-bold">Proof needed</h2>
+            <p className="mt-2 leading-relaxed text-ink">{guideSections.proof}</p>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-bold">Claim deadline</h2>
+            <p className="mt-2 leading-relaxed text-ink">{guideSections.deadline}</p>
+          </div>
+
           {open && (
             <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
-                {[
-                  {
-                    title: 'Check that you qualify',
-                    body: 'Read the official notice. It has the exact rules and the deadline.',
-                  },
-                  filingMode === 'never_files'
-                    ? {
-                        title: 'File on the official site yourself',
-                        body: 'Filing is free. Lawsuit AI never files for you and never handles settlement payments.',
-                      }
-                    : SETTLEMENT_FILING_COPY[filingMode].step,
-                  {
-                    title: 'Keep track in Lawsuit AI',
-                    body: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
-                  },
-                ].map((step, i) => (
-                  <li key={step.title} className="flex gap-3">
+                {settlementHowToSteps(filingMode).map((step, i) => (
+                  <li key={step.name} className="flex gap-3">
                     <span
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700"
                       aria-hidden="true"
@@ -425,12 +447,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
                       {i + 1}
                     </span>
                     <div>
-                      <p className="font-semibold text-ink">{step.title}</p>
-                      <p className="mt-0.5 text-sm text-ink-muted">{step.body}</p>
+                      <p className="font-semibold text-ink">{step.name}</p>
+                      <p className="mt-0.5 text-sm text-ink-muted">{step.text}</p>
                     </div>
                   </li>
                 ))}
               </ol>
+              <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-6" />
             </div>
           )}
 
@@ -510,8 +533,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
               <>
                 <h2 className="text-lg font-bold">Check if you qualify</h2>
                 <p className="mt-2 text-sm text-ink-muted">
-                  We’ll guide you to the official site, where you file for free, and help
-                  you keep track of your claim.
+                  {filingMode === 'agent'
+                    ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
+                    : 'We help you file. Filing is free on the official site. You can always file this claim yourself.'}
                 </p>
                 {qualifyHref ? (
                   <SettlementQualifyCta
@@ -536,6 +560,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 >
                   Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
+                <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
                 <p className="mt-2 text-center text-xs text-ink-muted">
                   {trustCopy ? ACCOUNT_FOR_SAVE_WHY : 'You’ll sign in or create a free account first.'}
                 </p>
@@ -554,14 +579,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   <p className="mt-2 text-center text-xs text-ink-muted">{BROWSE_NO_ACCOUNT}</p>
                 )}
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
-                  {(filingMode === 'never_files'
-                    ? [
-                        'You file on the official site yourself',
-                        'Lawsuit AI never files for you or handles settlement payments',
-                        'Save your confirmation number in one place',
-                      ]
-                    : SETTLEMENT_FILING_COPY[filingMode].points
-                  ).map((t) => (
+                  {filingCopy.points.map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-600" aria-hidden="true" />
                       {t}

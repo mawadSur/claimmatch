@@ -1,5 +1,12 @@
 import { flags } from '@/lib/flags';
-import { CLOSING_SOON_PATH, NEW_SETTLEMENTS_PATH, pageUrl, settlementPath } from '@/lib/settlement-seo';
+import {
+  CLOSING_SOON_PATH,
+  CLOSING_THIS_MONTH_PATH,
+  NEW_SETTLEMENTS_PATH,
+  NO_PROOF_PATH,
+  pageUrl,
+  settlementPath,
+} from '@/lib/settlement-seo';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
 import { SITE } from '@/lib/utils';
 
@@ -64,6 +71,8 @@ export function indexNowUrlsForSlugs(slugs: readonly string[]): string[] {
   if (urls.size > 0) {
     urls.add(pageUrl('/lawsuits'));
     urls.add(pageUrl(CLOSING_SOON_PATH));
+    urls.add(pageUrl(CLOSING_THIS_MONTH_PATH));
+    urls.add(pageUrl(NO_PROOF_PATH));
     urls.add(pageUrl(NEW_SETTLEMENTS_PATH));
   }
   return Array.from(urls);

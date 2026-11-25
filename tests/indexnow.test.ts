@@ -35,6 +35,8 @@ describe('IndexNow', () => {
     expect(urls.some((u) => u.endsWith('/lawsuits/amazon-return-policy-settlement'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/lawsuits'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/settlements/closing-soon'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/closing-this-month'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/no-proof-required'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
     expect(urls.some((u) => u.includes('robocall'))).toBe(false);
   });

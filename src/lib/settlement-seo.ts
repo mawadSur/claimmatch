@@ -1,11 +1,13 @@
 import { hideUnknownSettlementFacts } from './catalog-unknowns';
 import { eligibilitySummary } from './claim-input';
-import { flags } from './flags';
 import { officialLinkFor } from './lawsuit-display';
 import { proofLabel, proofStatus } from './proof';
 import { settlementGuideFaqs, settlementProofDetail } from './settlement-guides';
 import { LAWSUIT_CATEGORIES, type Lawsuit } from './types';
 import { formatDeadline, SITE, slugify } from './utils';
+
+/** Inlined: this file is shared with the app and cannot import copy.ts. */
+export type SettlementSeoFilingMode = 'never_files' | 'agent' | 'self_file';
 
 /** Hourly ISR. Page files must export `revalidate = 3600` as a literal. */
 
@@ -76,18 +78,31 @@ export function categoryHubPath(category: string): string {
 }
 
 export const CLOSING_SOON_PATH = '/settlements/closing-soon';
+export const CLOSING_THIS_MONTH_PATH = '/settlements/closing-this-month';
+export const NO_PROOF_PATH = '/settlements/no-proof-required';
 export const NEW_SETTLEMENTS_PATH = '/settlements/new';
 export { RECENTLY_CLOSED_PATH } from './recently-closed';
+
+/** Category hubs we always internally link, even when the live catalog is empty. */
+export const FEATURED_CATEGORY_HUBS = [
+  'Data Breach',
+  'Consumer Products',
+  'Auto & Vehicles',
+  'Financial & Banking',
+  'Privacy',
+  'Employment',
+] as const;
 
 const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
 
 /** Inlined from copy.ts — this file is shared with the app and cannot import it. */
-const WE_FILE_META =
-  'We file claims for you on supported settlements. File free on the official site yourself anytime.';
-const SELF_FILE_META = 'File free on the official site.';
+const WE_FILE_THIS_CLAIM_META =
+  'We file this claim for you. File free on the official site yourself anytime.';
+const HELP_FILE_META = 'We help you file. File free on the official site yourself anytime.';
 
-function mayFileLine(): string {
-  return flags.feeDisclosure() || flags.oneClickFiling() ? WE_FILE_META : SELF_FILE_META;
+function mayFileLine(filingMode: SettlementSeoFilingMode | null = null): string {
+  if (filingMode === 'agent') return WE_FILE_THIS_CLAIM_META;
+  return HELP_FILE_META;
 }
 
 function hasQualifies(
@@ -118,16 +133,20 @@ export function settlementMetaTitle(
   return `${title}: ${FALLBACK_META_SUFFIX}`;
 }
 
-export function settlementMetaDescription(lawsuit: Lawsuit): string {
+export function settlementMetaDescription(
+  lawsuit: Lawsuit,
+  filingMode: SettlementSeoFilingMode | null = null,
+): string {
   const title = lawsuit.title.trim();
   const qualifies = hasQualifies(lawsuit);
   const dated = hasDeadline(lawsuit);
+  const fileLine = mayFileLine(filingMode);
   if (!qualifies || !dated) {
     const payout = lawsuit.typical_payout?.trim()
       ? ` Listed payout: ${lawsuit.typical_payout.trim()}.`
       : '';
     return truncateAtWord(
-      `${title}: official claim link and what we know.${payout} ${mayFileLine()}`,
+      `${title}: official claim link and what we know.${payout} ${fileLine}`,
       155,
     );
   }
@@ -142,7 +161,7 @@ export function settlementMetaDescription(lawsuit: Lawsuit): string {
     deadline,
     proof,
     payout,
-    mayFileLine(),
+    fileLine,
   ]
     .filter(Boolean)
     .join(' ');
@@ -194,8 +213,8 @@ export function settlementAnswerFacts(
  */
 export function settlementFaqs(
   lawsuit: Lawsuit,
-  // copy.ts lawsuitAiMayFile, inlined: this file is shared with the app (mobile/shared.json) and imports only ./ files.
-  mayFile = flags.feeDisclosure() || flags.oneClickFiling(),
+  // Kept for callers; guide FAQs no longer branch on the site-wide may-file flag.
+  _mayFile = false,
   /** True when this settlement has an agent lane (one-click enabled for it). */
   agentLane = false,
 ): FaqItem[] {
@@ -204,15 +223,13 @@ export function settlementFaqs(
   const eligibility = eligibilitySummary(lawsuit.eligibility_text);
   const official = officialLinkFor(lawsuit);
 
-  // "Never files" only while Lawsuit AI files nothing for this page's viewers (issue #53).
-  const neverFiles = mayFile ? '' : ' Lawsuit AI never files for you.';
-  const weFile = mayFile
-    ? ' We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.'
-    : '';
+  const filingLine = agentLane
+    ? ' We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
+    : ' We help you file. You can always file on the official site yourself, where filing is free.';
   const officialHow =
     official?.kind === 'official'
-      ? ` File on the official site (${official.host}).${weFile}${neverFiles}`
-      : ` File on the official settlement website.${weFile}${neverFiles}`;
+      ? ` File on the official site (${official.host}).${filingLine}`
+      : ` File on the official settlement website.${filingLine}`;
 
   return [
     {
@@ -247,9 +264,7 @@ export function settlementFaqs(
       q: `How do I file a claim for the ${name}?`,
       a: agentLane
         ? `Check that you qualify on the official notice. We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.${officialHow}`
-        : mayFile
-          ? `Check that you qualify on the official notice. We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where filing is free.${officialHow}`
-          : `Check that you qualify on the official notice, then file on the official site yourself. Filing there is free.${officialHow}`,
+        : `Check that you qualify on the official notice. We help you file. You can always file on the official site yourself, where filing is free.${officialHow}`,
     },
     ...settlementGuideFaqs(lawsuit.slug),
   ];
@@ -280,8 +295,11 @@ export function breadcrumbJsonLd(items: Array<{ name: string; path: string }>) {
   };
 }
 
-/** Informational Article about one settlement (no LegalService — we are not a law firm). */
-export function settlementArticleJsonLd(lawsuit: Lawsuit) {
+/** Informational Article about one settlement. */
+export function settlementArticleJsonLd(
+  lawsuit: Lawsuit,
+  filingMode: SettlementSeoFilingMode | null = null,
+) {
   const url = pageUrl(settlementPath(lawsuit.slug));
   const official = officialLinkFor(lawsuit);
   const facts = settlementAnswerFacts(lawsuit);
@@ -290,7 +308,7 @@ export function settlementArticleJsonLd(lawsuit: Lawsuit) {
     '@type': 'Article',
     headline: settlementMetaTitle(lawsuit),
     name: lawsuit.title,
-    description: settlementMetaDescription(lawsuit),
+    description: settlementMetaDescription(lawsuit, filingMode),
     url,
     mainEntityOfPage: url,
     image: pageUrl(`/lawsuits/${lawsuit.slug}/opengraph-image`),
@@ -313,6 +331,48 @@ export function settlementArticleJsonLd(lawsuit: Lawsuit) {
       ...(official ? { url: official.href } : {}),
     },
     ...(official ? { isBasedOn: official.href } : {}),
+  };
+}
+
+/**
+ * Claim-assistant LegalService node. Lawsuit AI is not a law firm; the
+ * description says so. Agent-lane pages name “We file this claim for you”;
+ * every other guide says “We help you file”.
+ */
+export function settlementLegalServiceJsonLd(
+  lawsuit: Lawsuit,
+  filingMode: SettlementSeoFilingMode | null = null,
+) {
+  const url = pageUrl(settlementPath(lawsuit.slug));
+  const agent = filingMode === 'agent';
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'LegalService',
+    name: SITE.name,
+    url: pageUrl('/'),
+    description:
+      'Lawsuit AI is a claim assistant, not a law firm. It helps people find open US class-action settlements and file claims on the official settlement website.',
+    areaServed: { '@type': 'Country', name: 'United States' },
+    serviceType: 'Class action claim assistant',
+    provider: { '@type': 'Organization', name: SITE.name, url: pageUrl('/') },
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: lawsuit.title,
+      itemListElement: [
+        {
+          '@type': 'Offer',
+          url,
+          itemOffered: {
+            '@type': 'Service',
+            name: agent ? 'We file this claim for you' : 'We help you file',
+            description: agent
+              ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
+              : 'We help you file. You can always file on the official site yourself, where filing is free.',
+            url,
+          },
+        },
+      ],
+    },
   };
 }
 

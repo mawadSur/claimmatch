@@ -22,7 +22,7 @@ export function HubChrome({
 }: {
   title: string;
   lede: string;
-  current: 'all' | 'closing-soon' | 'new' | string;
+  current: 'all' | 'closing-soon' | 'closing-this-month' | 'no-proof' | 'new' | string;
   categories: string[];
   lawsuits: Lawsuit[];
   emptyTitle: string;

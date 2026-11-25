@@ -37,6 +37,8 @@ export function Footer() {
                 <li><Link href="/check" className={LINK}>Check a notice</Link></li>
               )}
               <li><Link href="/settlements/closing-soon" className={LINK}>Closing soon</Link></li>
+              <li><Link href="/settlements/closing-this-month" className={LINK}>Closing this month</Link></li>
+              <li><Link href="/settlements/no-proof-required" className={LINK}>No proof required</Link></li>
               {flags.closedArchive() && (
                 <li><Link href={RECENTLY_CLOSED_PATH} className={LINK}>Recently closed</Link></li>
               )}

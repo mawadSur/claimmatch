@@ -57,7 +57,6 @@ import { makeLawsuit } from './helpers';
 
 const TESTER = 'tester@lawsuitai.example';
 const LAWSUIT_ID = '00000000-0000-4000-8000-000000000001';
-const NEVER = 'Lawsuit AI never files for you';
 const ENV = { policy: { allowed_states: ['CA'] } };
 
 function setMode(mode: 'off' | 'test' | 'live') {
@@ -122,22 +121,26 @@ describe('settlementFilingMode', () => {
 });
 
 describe('the settlement page', () => {
-  const render = async () => {
+  const renderRaw = async () => {
     m.lawsuit = makeLawsuit({}, { id: LAWSUIT_ID, slug: 'acme-settlement', title: 'Acme Settlement', deadline: '2099-12-01', claim_url: 'https://official.example.test/claim' });
-    return text(renderToStaticMarkup(await LawsuitDetailPage({ params: Promise.resolve({ slug: 'acme-settlement' }) })));
+    return renderToStaticMarkup(await LawsuitDetailPage({ params: Promise.resolve({ slug: 'acme-settlement' }) }));
   };
+  const render = async () => text(await renderRaw());
 
-  it('flag off: unchanged "never files" text in both places', async () => {
+  it('flag off: guide pages say we help you file, not that we file this claim', async () => {
     setMode('off');
     const html = await render();
-    expect(html).toContain('Filing is free. Lawsuit AI never files for you and never handles settlement payments.');
-    expect(html).toContain('Lawsuit AI never files for you or handles settlement payments');
+    expect(html).toContain(SETTLEMENT_FILING_COPY.self_file.step.body);
+    expect(html).toContain('We help you file');
+    expect(html).not.toContain('We file this claim for you');
   });
 
-  it('test mode (a static page has no viewer): unchanged for everyone', async () => {
+  it('test mode (a static page has no viewer): help-you-file, not the agent claim', async () => {
     setMode('test');
     agentLane(true);
-    expect(await render()).toContain(NEVER);
+    const html = await render();
+    expect(html).toContain('We help you file');
+    expect(html).not.toContain('We file this claim for you');
   });
 
   it('live with an agent lane: the per-settlement one-click text, and no "never files" anywhere', async () => {
@@ -152,11 +155,19 @@ describe('the settlement page', () => {
   it('live without an agent lane: self-file text, and no "never files" promise', async () => {
     setMode('live');
     agentLane(false);
-    const html = await render();
+    const raw = await renderRaw();
+    const html = text(raw);
     expect(html).toContain(SETTLEMENT_FILING_COPY.self_file.step.body);
     expect(html).not.toContain('never files');
     expect(html).not.toContain('We file this claim for you');
-    expect(html).toContain('We file claims for you on supported settlements');
+    expect(html).toContain('We help you file');
+    expect(html).toContain('Create a free account');
+    expect(raw).toContain('/signup?next=');
+    expect(html).toContain('Listed payout');
+    expect(html).toContain('Proof needed');
+    expect(html).toContain('Claim deadline');
+    expect(raw).toContain('LegalService');
+    expect(html).not.toMatch(/15\s?%/);
   });
 });
 

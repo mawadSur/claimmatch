@@ -34,6 +34,13 @@ export function signedOutClaimHref(nextPath: string): string {
   return `${dest}?next=${encodeURIComponent(next)}`;
 }
 
+/** Public guide CTA: always signup, then the claim for this slug. */
+export function guideSignupHref(slug: string): string {
+  const next = claimReturnPath(slug);
+  if (!next) return '/signup';
+  return `/signup?next=${encodeURIComponent(next)}`;
+}
+
 export function rememberSignupContext(next: string | null): void {
   if (typeof window === 'undefined') return;
   if (!isClaimReturnPath(next) || !next) {

@@ -6,8 +6,17 @@
 
 import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
-import { categoryHubPath, CLOSING_SOON_PATH, NEW_SETTLEMENTS_PATH, pageUrl } from '@/lib/settlement-seo';
-import { LAWSUIT_CATEGORIES } from '@/lib/types';
+import { hasOfficialNoticeGuide } from '@/lib/settlement-guides';
+import {
+  categoryHubPath,
+  CLOSING_SOON_PATH,
+  CLOSING_THIS_MONTH_PATH,
+  FEATURED_CATEGORY_HUBS,
+  NEW_SETTLEMENTS_PATH,
+  NO_PROOF_PATH,
+  pageUrl,
+  settlementPath,
+} from '@/lib/settlement-seo';
 import { PUBLIC_BRAND, publicBrandCopy, SITE } from '@/lib/utils';
 
 export interface LlmsHubLink {
@@ -15,7 +24,7 @@ export interface LlmsHubLink {
   path: string;
 }
 
-const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = LAWSUIT_CATEGORIES.slice(0, 6).map((name) => ({
+const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = FEATURED_CATEGORY_HUBS.map((name) => ({
   name,
   path: categoryHubPath(name),
 }));
@@ -23,6 +32,8 @@ const FALLBACK_CATEGORY_HUBS: LlmsHubLink[] = LAWSUIT_CATEGORIES.slice(0, 6).map
 const STATIC_HUBS: LlmsHubLink[] = [
   { name: 'Open settlements', path: '/lawsuits' },
   { name: 'Settlements closing soon', path: CLOSING_SOON_PATH },
+  { name: 'Settlements closing this month', path: CLOSING_THIS_MONTH_PATH },
+  { name: 'Settlements with no proof required', path: NO_PROOF_PATH },
   { name: 'New settlements', path: NEW_SETTLEMENTS_PATH },
 ];
 
@@ -51,6 +62,21 @@ export function catalogHubLinks(
   return ranked.length > 0 ? ranked : FALLBACK_CATEGORY_HUBS;
 }
 
+/** Open catalog rows that have an official-notice guide, for /llms.txt internal links. */
+export function officialGuideLinks(
+  lawsuits: readonly { slug?: string | null; title?: string | null }[],
+): LlmsHubLink[] {
+  const out: LlmsHubLink[] = [];
+  const seen = new Set<string>();
+  for (const row of lawsuits) {
+    const slug = row.slug?.trim();
+    if (!slug || seen.has(slug) || !hasOfficialNoticeGuide(slug)) continue;
+    seen.add(slug);
+    out.push({ name: row.title?.trim() || slug, path: settlementPath(slug) });
+  }
+  return out;
+}
+
 function markdownList(links: readonly LlmsHubLink[]): string {
   return links.map((link) => `- [${link.name}](${pageUrl(link.path)})`).join('\n');
 }
@@ -61,10 +87,16 @@ function markdownList(links: readonly LlmsHubLink[]): string {
  */
 export function renderLlmsTxt(input: {
   categoryHubs?: readonly LlmsHubLink[];
+  officialGuides?: readonly LlmsHubLink[];
   feeLine?: string;
 } = {}): string {
   const categoryHubs = input.categoryHubs ?? FALLBACK_CATEGORY_HUBS;
+  const officialGuides = input.officialGuides ?? [];
   const feeLine = input.feeLine ?? publicBetaFeeCopy();
+  const guidesSection =
+    officialGuides.length > 0
+      ? `\n## Official-notice settlement guides\n\n${markdownList(officialGuides)}\n`
+      : '';
   return `# ${PUBLIC_BRAND}
 
 > ${SITE.description}
@@ -79,7 +111,7 @@ Matching on ${PUBLIC_BRAND} is free.
 
 ${markdownList(STATIC_HUBS)}
 ${markdownList(categoryHubs)}
-
+${guidesSection}
 ## About
 
 ${markdownList(ABOUT_LINKS)}
