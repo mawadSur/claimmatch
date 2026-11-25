@@ -66,6 +66,7 @@ import { SettlementEligibilityQuiz } from '@/components/settlement/SettlementEli
 import { GuideSignupCta } from '@/components/settlement/GuideSignupCta';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
+import { ClaimActionCta, EasySubmitBadge } from '@/components/claims/ClaimActionCta';
 import {
   ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
@@ -252,6 +253,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
               ) : (
                 <span className="badge-brand rounded-full">{WE_HELP_YOU_FILE}</span>
               ))}
+            <EasySubmitBadge type={lawsuit.claim_action_type} />
             {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
                 <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
@@ -285,7 +287,15 @@ export default async function LawsuitDetailPage({ params }: Params) {
           {open && (
             // On phones the sidebar comes last, so offer the next step up here too.
             <div className="mt-6 lg:hidden">
-              {qualifyHref ? (
+              {flags.claimActionCtas() && lawsuit.claim_action_type ? (
+                <ClaimActionCta
+                  slug={lawsuit.slug}
+                  claimActionType={lawsuit.claim_action_type}
+                  claimAction={lawsuit.claim_action}
+                  officialHref={official?.kind === 'official' ? official.href : null}
+                  deskEligible={filingMode === 'agent'}
+                />
+              ) : qualifyHref ? (
                 <SettlementQualifyCta
                   href={qualifyHref}
                   slug={lawsuit.slug}
@@ -546,6 +556,18 @@ export default async function LawsuitDetailPage({ params }: Params) {
                     ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
                     : 'We help you file. Filing is free on the official site. You can always file this claim yourself.'}
                 </p>
+                {flags.claimActionCtas() && lawsuit.claim_action_type ? (
+                  <div className="mt-5">
+                    <ClaimActionCta
+                      slug={lawsuit.slug}
+                      claimActionType={lawsuit.claim_action_type}
+                      claimAction={lawsuit.claim_action}
+                      officialHref={official?.kind === 'official' ? official.href : null}
+                      deskEligible={filingMode === 'agent'}
+                    />
+                  </div>
+                ) : (
+                  <>
                 {qualifyHref ? (
                   <SettlementQualifyCta
                     href={qualifyHref}
@@ -569,6 +591,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 >
                   Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
+                  </>
+                )}
                 <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
                 <p className="mt-2 text-center text-xs text-ink-muted">{ACCOUNT_FOR_SAVE_WHY}</p>
                 {official?.kind === 'official' && (

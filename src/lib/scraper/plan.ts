@@ -219,6 +219,9 @@ function stripOverrideWrites(patch: Record<string, unknown>): Record<string, unk
   delete next.deadline_override;
   delete next.deadline_override_note;
   delete next.deadline_override_at;
+  // 0051: curated CTAs. Ingest must never overwrite owner-applied action types.
+  delete next.claim_action_type;
+  delete next.claim_action;
   return next;
 }
 

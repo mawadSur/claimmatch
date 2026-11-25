@@ -15,6 +15,8 @@ import {
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 import { MissingDetailsBlock } from '@/components/settlement/AnswerBlock';
+import { EasySubmitBadge, shouldHideFileButton } from '@/components/claims/ClaimActionCta';
+import { ADD_NOTICE_ID_CTA, NO_CLAIM_NEEDED_HEADING, PRINT_AND_MAIL_CTA, START_CLAIM_CTA, SUBMIT_CLAIM_CTA } from '@/lib/claim-actions';
 
 /**
  * The settlement card (server component; brand top border from the original
@@ -75,6 +77,7 @@ export function LawsuitCard({
               <Sparkles className="h-3 w-3" aria-hidden="true" /> {WE_FILE_FOR_YOU_BADGE}
             </span>
           )}
+          <EasySubmitBadge type={lawsuit.claim_action_type} />
           <VerifiedBadge lawsuit={lawsuit} />
           <ClosesInChip deadline={lawsuit.deadline} />
           {!flags.closesInChips() && urgency && (
@@ -151,15 +154,32 @@ export function LawsuitCard({
 
       <div className="mt-auto pt-4">
         {open ? (
+          shouldHideFileButton(lawsuit.claim_action_type) ? (
+            <div className="space-y-2">
+              {lawsuit.claim_action_type === 'automatic_payment' ? (
+                <p className="rounded-xl bg-brand-50 px-3 py-2.5 text-sm font-semibold text-ink">
+                  {NO_CLAIM_NEEDED_HEADING}
+                </p>
+              ) : (
+                <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-950">
+                  This settlement is not open for claims on Lawsuit AI.
+                </p>
+              )}
+              <Link href={detailsHref} className="btn-secondary w-full justify-center px-3">
+                Details<span className="sr-only"> about {lawsuit.title}</span>
+              </Link>
+            </div>
+          ) : (
           <div className="flex flex-wrap gap-2">
-            <Link href={`/claim/${lawsuit.slug}`} className="btn-primary grow basis-40 px-3">
-              Start your claim <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <Link href={`/claim/${lawsuit.slug}${lawsuit.claim_action_type === 'mail_in' ? '#mail-in' : lawsuit.claim_action_type === 'needs_notice_id' ? '#missing-info' : ''}`} className="btn-primary grow basis-40 px-3">
+              {cardCtaLabel(lawsuit.claim_action_type)} <ArrowRight className="h-4 w-4" aria-hidden="true" />
               <span className="sr-only"> for {lawsuit.title}</span>
             </Link>
             <Link href={detailsHref} className="btn-secondary grow basis-20 px-3">
               Details<span className="sr-only"> about {lawsuit.title}</span>
             </Link>
           </div>
+          )
         ) : (
           <p className="rounded-xl bg-brand-50 px-3 py-2.5 text-center text-sm font-semibold text-ink-muted">
             Claims closed
@@ -168,6 +188,15 @@ export function LawsuitCard({
       </div>
     </article>
   );
+}
+
+function cardCtaLabel(type: Lawsuit['claim_action_type']): string {
+  if (!flags.claimActionCtas() || !type) return START_CLAIM_CTA;
+  if (type === 'desk_file') return SUBMIT_CLAIM_CTA;
+  if (type === 'needs_notice_id') return ADD_NOTICE_ID_CTA;
+  if (type === 'mail_in') return PRINT_AND_MAIL_CTA;
+  if (type === 'online_form') return START_CLAIM_CTA;
+  return START_CLAIM_CTA;
 }
 
 /** No match scores or "Matched" labels on cards (D50; no percentage scores anywhere). */

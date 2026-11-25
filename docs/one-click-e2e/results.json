@@ -73,5 +73,61 @@
       "clicked homepage claim link",
       "official form requires a notice login; not fillable from profile"
     ]
+  },
+  {
+    "slug": "moss-krivin-v-penske-media-corporation",
+    "officialUrl": "https://subscribe.rollingstone.com/krivin-rs",
+    "formUrlTried": "https://subscribe.rollingstone.com/krivin-rs",
+    "finalUrl": "https://subscribe.rollingstone.com/krivin-rs",
+    "deadline": "",
+    "extraUserFields": [
+      "Email used on the Rolling Stone lifetime subscription",
+      "Whether you bought a lifetime Rolling Stone print subscription"
+    ],
+    "filled": [
+      "first name",
+      "last name",
+      "email",
+      "street",
+      "city",
+      "state",
+      "state",
+      "zip",
+      "country"
+    ],
+    "stoppedAt": "final-step-before-submit",
+    "captcha": false,
+    "accountLogin": false,
+    "proofUpload": false,
+    "submitVisible": true,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/moss-krivin-v-penske-media-corporation/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "submit control visible; refusing to click"
+    ]
+  },
+  {
+    "slug": "hyundai-kia-vehicle-theft",
+    "officialUrl": "https://www.hkmultistateimmobilizersettlement.com/",
+    "formUrlTried": "https://www.hkmultistateimmobilizersettlement.com/submit-claim",
+    "finalUrl": "https://www.hkmultistateimmobilizersettlement.com/submit-claim",
+    "deadline": "2027-03-31",
+    "extraUserFields": [
+      "Vehicle VIN",
+      "Proof of a qualifying theft or theft attempt and of the software upgrade or scheduled appointment"
+    ],
+    "filled": [],
+    "stoppedAt": "account-login",
+    "captcha": false,
+    "accountLogin": true,
+    "proofUpload": false,
+    "submitVisible": false,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/hyundai-kia-vehicle-theft/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "official form requires a notice login; not fillable from profile"
+    ]
   }
 ]

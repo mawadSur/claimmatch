@@ -328,6 +328,24 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       '“I filed this myself” self-report on a match/claim, with optional confirmation number and private screenshot. Off: new routes 404.',
     read: () => flags.selfFiledReport(),
   },
+  {
+    env: 'CLAIM_PROFILE_ENABLED',
+    description:
+      'Build-your-claim-profile flow and prefill from those extras. Default on; set to 0 to hide.',
+    read: () => flags.claimProfile(),
+  },
+  {
+    env: 'CLAIM_ACTION_CTAS_ENABLED',
+    description:
+      'Accurate per-settlement claim CTAs (Easy submit, automatic payment, mail-in, notice ID). Default on; set to 0 for the old Start your claim path.',
+    read: () => flags.claimActionCtas(),
+  },
+  {
+    env: 'COLLECT_ADMIN_PIN_ENABLED',
+    description:
+      'Collect an official-site login PIN or password. Off until counsel and security approve. Specs still must not list PIN fields.',
+    read: () => flags.collectAdminPin(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

@@ -10,6 +10,10 @@ import {
   type ClaimDisplay, type ClaimTone, type ClaimView, type ProofNeed, type SettlementContext,
 } from '@/lib/claims';
 import { ClaimTimelineCard } from './ClaimTimeline';
+import { ClaimActionCta } from './ClaimActionCta';
+import { MailInInstructions } from './MailInInstructions';
+import { flags } from '@/lib/flags';
+import { mergeClaimProfile } from '@/lib/claim-profile';
 import { formatDeadline } from '@/lib/utils';
 import type { ClaimFlowSettlement, PacketProfile } from '@/lib/claim-screen';
 import { ClaimStatusBadge } from './ClaimStatusBadge';
@@ -167,8 +171,40 @@ export function ClaimFlow({
     );
   }
 
+  const actionType = settlement.claimActionType ?? null;
+  const actionDetails = settlement.claimAction ?? {};
+  const claimProfile = mergeClaimProfile(null, profile);
+
   return (
     <div className="space-y-6">
+      {flags.claimActionCtas() && actionType && (
+        <ClaimActionCta
+          slug={settlement.slug}
+          claimActionType={actionType}
+          claimAction={actionDetails}
+          officialHref={settlement.officialUrl}
+          deskEligible={Boolean(oc?.filesForMember)}
+        />
+      )}
+      {flags.claimActionCtas() && actionType === 'mail_in' && (
+        <MailInInstructions
+          title={settlement.title}
+          details={actionDetails}
+          deadline={settlement.deadline}
+          profile={claimProfile}
+        />
+      )}
+      {flags.claimActionCtas() && actionType === 'needs_notice_id' && !oc?.active && (
+        <section id="missing-info" className="scroll-mt-24 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-lg font-bold">You need the ID from your notice</h2>
+          <p className="mt-2 text-sm text-amber-950">
+            This administrator asks for a notice ID or claim ID from the letter they mailed you.
+            Lawsuit AI does not collect the official site’s login PIN or password. Use those only
+            on the administrator’s site. Add the notice ID when you start a desk filing, or type
+            it on the official form.
+          </p>
+        </section>
+      )}
       <StatusPanel
         display={display} deadline={settlement.deadline} now={now} fictional={context.fictional}
         badge={oc?.badge} note={oc?.note}

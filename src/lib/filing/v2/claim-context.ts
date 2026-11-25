@@ -31,6 +31,9 @@ import {
   type SpecRecord,
 } from './records';
 import type { LaneView } from './contract';
+import { flags } from '@/lib/flags';
+import type { ClaimProfile } from '@/lib/claim-profile';
+import { loadClaimProfile } from '@/lib/claim-profile-server';
 
 export const PROFILE_COLUMNS = 'full_name, email, phone, address_line1, address_line2, city, state, zip, prefill_consent_at';
 
@@ -72,6 +75,7 @@ export interface ClaimContext extends ClaimBundle {
   profile: ProfileRecord | null;
   consents: ConsentRecord[];
   events: Record<string, unknown>[];
+  claimProfile?: ClaimProfile | null;
 }
 
 /** The packet columns a save may change. */
@@ -159,6 +163,9 @@ export async function loadClaimContext(args: {
         .map(toConsentRecord)
         .filter((c): c is ConsentRecord => c !== null && c.withdrawn_at === null),
       events: (eventRead.data ?? []) as Record<string, unknown>[],
+      claimProfile: flags.claimProfile()
+        ? await loadClaimProfile(supabase, userId, toProfileRecord(profileRead.data as Record<string, unknown> | null))
+        : null,
     },
   };
 }

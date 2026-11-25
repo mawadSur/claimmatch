@@ -1,0 +1,33 @@
+{
+  "slug": "moss-krivin-v-penske-media-corporation",
+  "officialUrl": "https://subscribe.rollingstone.com/krivin-rs",
+  "formUrlTried": "https://subscribe.rollingstone.com/krivin-rs",
+  "finalUrl": "https://subscribe.rollingstone.com/krivin-rs",
+  "deadline": "",
+  "extraUserFields": [
+    "Email used on the Rolling Stone lifetime subscription",
+    "Whether you bought a lifetime Rolling Stone print subscription"
+  ],
+  "filled": [
+    "first name",
+    "last name",
+    "email",
+    "street",
+    "city",
+    "state",
+    "state",
+    "zip",
+    "country"
+  ],
+  "stoppedAt": "final-step-before-submit",
+  "captcha": false,
+  "accountLogin": false,
+  "proofUpload": false,
+  "submitVisible": true,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/moss-krivin-v-penske-media-corporation/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "submit control visible; refusing to click"
+  ]
+}

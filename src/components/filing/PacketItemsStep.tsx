@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ONE_CLICK_COPY } from '@/lib/copy';
+import { NOTICE_ID_WARNING, NOTICE_PIN_NOT_COLLECTED } from '@/lib/claim-actions';
 import type { ClaimFilingView, PacketItemView } from '@/lib/filing/v2/contract';
 import { DocumentUploader } from './DocumentUploader';
 import type { FilingResult } from './filing-api';
@@ -156,9 +157,16 @@ export function PacketItemsStep({
       />
     );
 
+  const asksNoticeId = items.some((item) => /notice.?id|claim.?id|claim.?number|control.?number/i.test(`${item.path} ${item.label}`));
+
   return (
-    <form onSubmit={submit} noValidate className="mt-2 space-y-5">
+    <form id="missing-info" onSubmit={submit} noValidate className="mt-2 scroll-mt-24 space-y-5">
       <p className="text-sm leading-relaxed text-ink-muted">{COPY.intro}</p>
+      {asksNoticeId && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          {NOTICE_ID_WARNING} {NOTICE_PIN_NOT_COLLECTED}
+        </p>
+      )}
 
       {(general.length > 0 || loose.length > 0) && (
         <div ref={generalRef} tabIndex={-1} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 focus:outline-none">

@@ -3,6 +3,8 @@ import { buildAccountExport, type AccountExportConsent } from '@/lib/account-exp
 import { loadOneClickExport } from '@/lib/account-export-filing';
 import { factsFromRows } from '@/lib/profile-facts';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { claimProfileExport, loadClaimProfile } from '@/lib/claim-profile-server';
+import { flags } from '@/lib/flags';
 import type { Claim, Match, Profile, ProfileFact } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -78,6 +80,10 @@ export async function GET() {
       updated_at: new Date().toISOString(),
     } as Profile);
 
+  const claimProfile = flags.claimProfile()
+    ? claimProfileExport(await loadClaimProfile(supabase, user.id, profile))
+    : null;
+
   const payload = buildAccountExport({
     profile,
     facts: factsFromRows((factRows ?? []) as ProfileFact[]),
@@ -92,6 +98,7 @@ export async function GET() {
     })),
     claims: (claimRows ?? []) as Array<Pick<Claim, 'id' | 'status'> & { lawsuit_title?: string | null }>,
     oneClick: oneClick.data,
+    claimProfile,
     selfFiledReports: ((selfFiledRows ?? []) as Array<{
       confirmation_number?: string | null;
       confirmation_storage_path?: string | null;

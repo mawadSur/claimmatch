@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isOpenForClaims } from '@/lib/open-for-claims';
 import { planIngest, type ExistingRow } from '@/lib/scraper/plan';
-import { guidedDeadline, applySettlementGuide } from '@/lib/settlement-guides';
+import { guidedDeadline, applySettlementGuide, isMissingClaimActionColumn } from '@/lib/settlement-guides';
 import type { ScrapedLawsuit } from '@/lib/types';
 import { makeLawsuit } from './helpers';
 
@@ -71,6 +71,14 @@ describe('deadline override', () => {
     expect(plan.updates[0].patch).not.toHaveProperty('deadline_override');
     expect(plan.updates[0].patch).not.toHaveProperty('deadline_override_at');
     expect(plan.updates[0].patch).not.toHaveProperty('deadline_override_note');
+    expect(plan.updates[0].patch).not.toHaveProperty('claim_action_type');
+    expect(plan.updates[0].patch).not.toHaveProperty('claim_action');
     expect(plan.updates[0].closes).toBe(false);
+  });
+
+  it('detects a missing 0051 claim_action column without matching other names', () => {
+    expect(isMissingClaimActionColumn('column claim_action_type does not exist')).toBe(true);
+    expect(isMissingClaimActionColumn('Could not find the column claim_action')).toBe(true);
+    expect(isMissingClaimActionColumn('column deadline_override does not exist')).toBe(false);
   });
 });

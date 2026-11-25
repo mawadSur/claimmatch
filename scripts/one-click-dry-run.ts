@@ -9,13 +9,18 @@
  * Screenshots land in docs/one-click-e2e/<slug>/. Exit 1 if a run clicked, or
  * would have clicked, a submit control.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Locator, type Page } from '@playwright/test';
 import { FIVE_ONE_CLICK_SETTLEMENTS } from './one-click-five-settlements';
 import { MORE_ONE_CLICK_SETTLEMENTS } from './one-click-more-settlements';
+import { CLAIM_PROFILE_ONE_CLICK_SETTLEMENTS } from './one-click-claim-profile-settlements';
 
-const ALL_ONE_CLICK_SETTLEMENTS = [...FIVE_ONE_CLICK_SETTLEMENTS, ...MORE_ONE_CLICK_SETTLEMENTS];
+const ALL_ONE_CLICK_SETTLEMENTS = [
+  ...FIVE_ONE_CLICK_SETTLEMENTS,
+  ...MORE_ONE_CLICK_SETTLEMENTS,
+  ...CLAIM_PROFILE_ONE_CLICK_SETTLEMENTS,
+];
 
 const FAKE = {
   first: 'Testonly',
@@ -28,6 +33,7 @@ const FAKE = {
   city: 'Springfield',
   state: 'IL',
   zip: '62701',
+  vin: '1HGCM82633A004352',
 } as const;
 
 const USER_AGENT =
@@ -337,6 +343,7 @@ export async function dryRunSlug(
       await fillByHints(page, ['state', 'province'], 'Illinois', result.filled);
       await fillByHints(page, ['zip', 'postal'], FAKE.zip, result.filled);
       await fillByHints(page, ['country'], 'United States', result.filled);
+      await fillByHints(page, ['vin', 'vehicle identification'], FAKE.vin, result.filled);
       await fillByHints(page, ['signature'], FAKE.legal, result.filled);
       await fillByHints(page, ['signature date', 'date'], '11/25/2026', result.filled);
       await checkNonSubmitBoxes(page, isHomepage(page.url(), target.officialUrl), result.filled);
@@ -369,6 +376,7 @@ export async function dryRunSlug(
         await fillByHints(page, ['last name', 'lastname', 'last'], FAKE.last, result.filled);
         await fillByHints(page, ['email'], FAKE.email, result.filled);
         await fillByHints(page, ['confirm email'], FAKE.email, result.filled);
+        await fillByHints(page, ['vin', 'vehicle identification'], FAKE.vin, result.filled);
         await fillByHints(page, ['signature'], FAKE.legal, result.filled);
         await checkNonSubmitBoxes(page, false, result.filled);
       }
@@ -438,7 +446,23 @@ async function main() {
   } finally {
     await browser.close();
   }
-  writeFileSync(join(outDir, 'results.json'), JSON.stringify(results, null, 2));
+  const resultsPath = join(outDir, 'results.json');
+  if (only && existsSync(resultsPath)) {
+    try {
+      const previous = JSON.parse(readFileSync(resultsPath, 'utf8')) as DryRunResult[];
+      if (Array.isArray(previous)) {
+        const bySlug = new Map(previous.map((row) => [row.slug, row]));
+        for (const row of results) bySlug.set(row.slug, row);
+        writeFileSync(resultsPath, JSON.stringify([...bySlug.values()], null, 2));
+      } else {
+        writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+      }
+    } catch {
+      writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+    }
+  } else {
+    writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+  }
   const submitted = results.filter((row) => row.submitClicked);
   if (submitted.length > 0) {
     console.error('FATAL: a dry-run clicked submit', submitted.map((row) => row.slug));

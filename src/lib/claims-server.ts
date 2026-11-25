@@ -17,6 +17,7 @@ import { isFictionalSlug } from '@/lib/fictional-slugs';
 import {
   applySettlementGuideFacts,
   guidedDeadline,
+  isMissingClaimActionColumn,
   isMissingDeadlineOverrideColumn,
 } from '@/lib/settlement-guides';
 import {
@@ -36,7 +37,10 @@ export const SETTLEMENT_COLUMNS_BASE =
   'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order, final_approval_hearing_at, payment_timing_text';
 
 /** Includes 0050 deadline_override. Loaders fall back to BASE if the column is missing. */
-export const SETTLEMENT_COLUMNS = `${SETTLEMENT_COLUMNS_BASE}, deadline_override`;
+export const SETTLEMENT_COLUMNS_OVERRIDE = `${SETTLEMENT_COLUMNS_BASE}, deadline_override`;
+
+/** Includes 0051 claim-action CTAs. Loaders fall back if those columns are missing. */
+export const SETTLEMENT_COLUMNS = `${SETTLEMENT_COLUMNS_OVERRIDE}, claim_action_type, claim_action`;
 
 export interface SettlementRecord extends SettlementFacts {
   id: string;
@@ -54,6 +58,17 @@ export interface SettlementRecord extends SettlementFacts {
   final_approval_hearing_at?: string | null;
   /** 0035: listed payment-timing sentence. Null = not announced. */
   payment_timing_text?: string | null;
+  /** 0051: public claim CTA. Null keeps Start your claim. */
+  claim_action_type?: string | null;
+  claim_action?: {
+    form_url?: string | null;
+    mail_to?: string | null;
+    postmark?: boolean;
+    received_by?: boolean;
+    proof?: string | null;
+    address_update_url?: string | null;
+    notes?: string | null;
+  } | null;
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -124,6 +139,9 @@ async function selectSettlement(
   where: string,
 ): Promise<{ data: unknown; error: { message?: string; code?: string } | null }> {
   let result = await build(SETTLEMENT_COLUMNS).maybeSingle();
+  if (result.error && isMissingClaimActionColumn(result.error.message)) {
+    result = await build(SETTLEMENT_COLUMNS_OVERRIDE).maybeSingle();
+  }
   if (result.error && isMissingDeadlineOverrideColumn(result.error.message)) {
     result = await build(SETTLEMENT_COLUMNS_BASE).maybeSingle();
   }
@@ -186,6 +204,13 @@ export async function loadUserClaims(
     .select(`*, settlement:lawsuits(${SETTLEMENT_COLUMNS})`)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+  if (error && isMissingClaimActionColumn(error.message)) {
+    ({ data, error } = await supabase
+      .from('claims')
+      .select(`*, settlement:lawsuits(${SETTLEMENT_COLUMNS_OVERRIDE})`)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }));
+  }
   if (error && isMissingDeadlineOverrideColumn(error.message)) {
     ({ data, error } = await supabase
       .from('claims')

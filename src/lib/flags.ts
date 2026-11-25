@@ -49,6 +49,17 @@ function on(name: string): boolean {
 }
 
 /**
+ * Default-on switch: unset or any value other than exactly "0" is on.
+ * Used for the claim profile and accurate CTAs. Kill with NAME=0.
+ */
+function onUnlessOff(name: string): boolean {
+  if (overrides && !process.env.NEXT_RUNTIME && Object.prototype.hasOwnProperty.call(overrides, name)) {
+    return overrides[name as ClientFlagName] === true;
+  }
+  return process.env[name] !== '0';
+}
+
+/**
  * A server-only switch whose env var must be exactly `value` (never a client
  * override). Anything else, including unset, is off.
  */
@@ -415,4 +426,21 @@ export const flags = {
    * existing "I filed my claim" form stays as it is; new routes 404.
    */
   selfFiledReport: () => on('SELF_FILED_REPORT_ENABLED'),
+  /**
+   * Shared “Build your claim profile” on /settings/claim-profile and prefill
+   * from those extras. Default on. Set CLAIM_PROFILE_ENABLED=0 to hide.
+   */
+  claimProfile: () => onUnlessOff('CLAIM_PROFILE_ENABLED'),
+  /**
+   * Per-settlement claim CTAs (Easy submit, automatic payment, mail-in,
+   * notice ID, not open). Default on. Set CLAIM_ACTION_CTAS_ENABLED=0 to
+   * keep the existing “Start your claim” path for every row.
+   */
+  claimActionCtas: () => onUnlessOff('CLAIM_ACTION_CTAS_ENABLED'),
+  /**
+   * Collect an official-site login PIN or password. Default off. Do not turn
+   * on without counsel and security approval. Specs still may not list PIN
+   * fields (NEVER_COLLECTED_LABEL_RE). This flag is a documented future switch.
+   */
+  collectAdminPin: () => on('COLLECT_ADMIN_PIN_ENABLED'),
 };

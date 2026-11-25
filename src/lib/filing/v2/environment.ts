@@ -11,12 +11,17 @@ import {
   claimContext,
   SETTLEMENT_COLUMNS,
   SETTLEMENT_COLUMNS_BASE,
+  SETTLEMENT_COLUMNS_OVERRIDE,
   serviceRoleConfigured,
 } from '@/lib/claims-server';
 import type { SettlementContext } from '@/lib/claims';
 import { isVerifiedSender } from '@/lib/closing-soon-email';
 import { classifyMatch } from '@/lib/matching';
-import { applySettlementGuideFacts, isMissingDeadlineOverrideColumn } from '@/lib/settlement-guides';
+import {
+  applySettlementGuideFacts,
+  isMissingClaimActionColumn,
+  isMissingDeadlineOverrideColumn,
+} from '@/lib/settlement-guides';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { Lawsuit } from '@/lib/types';
 import { calendarDateInZone, DEADLINE_TIME_ZONE } from '@/lib/utils';
@@ -41,6 +46,7 @@ import {
 } from './records';
 
 export const FILING_SETTLEMENT_COLUMNS_BASE = `${SETTLEMENT_COLUMNS_BASE}, administrator_id, third_party_fee_status, tags`;
+export const FILING_SETTLEMENT_COLUMNS_OVERRIDE = `${SETTLEMENT_COLUMNS_OVERRIDE}, administrator_id, third_party_fee_status, tags`;
 export const FILING_SETTLEMENT_COLUMNS = `${SETTLEMENT_COLUMNS}, administrator_id, third_party_fee_status, tags`;
 
 export interface FilingSettlement {
@@ -170,6 +176,9 @@ export async function loadSettlementEnvs(ids: string[], now: Date): Promise<EnvB
   try {
     const db = createServiceClient();
     let lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS).in('id', unique)) as Rows;
+    if (lawsuits.error && isMissingClaimActionColumn(lawsuits.error.message)) {
+      lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS_OVERRIDE).in('id', unique)) as Rows;
+    }
     if (lawsuits.error && isMissingDeadlineOverrideColumn(lawsuits.error.message)) {
       lawsuits = (await db.from('lawsuits').select(FILING_SETTLEMENT_COLUMNS_BASE).in('id', unique)) as Rows;
     }

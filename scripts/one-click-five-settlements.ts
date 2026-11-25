@@ -63,7 +63,7 @@ export function target(input: {
   title: string;
   officialUrl: string;
   formUrl: string;
-  deadline: string;
+  deadline?: string;
   timeZone?: string;
   administrator: string;
   extraUserFields: string[];
@@ -78,7 +78,9 @@ export function target(input: {
     official_form: { url: input.formUrl, title: `${input.title} claim form` },
     class_definition: { text: input.classText, source_url: input.officialUrl },
     attestation: { text: input.attestation, source_url: input.officialUrl },
-    deadline: { date: input.deadline, time_zone: input.timeZone ?? 'America/New_York', type: 'submit_online_by' },
+    deadline: input.deadline
+      ? { date: input.deadline, time_zone: input.timeZone ?? 'America/New_York', type: 'submit_online_by' }
+      : null,
     member_fields: MEMBER_CONTACT,
     questions: input.questions ?? [
       {
@@ -104,6 +106,7 @@ export function target(input: {
       'answers.class_member',
       ...(input.questions ?? []).filter((q) => q.key !== 'class_member').map((q) => `answers.${q.key}`),
       ...(input.benefitTiers?.length ? ['benefit_tier'] : []),
+      ...(input.benefitTiers ?? []).flatMap((tier) => (tier.proof ?? []).map((p) => `documents.${p.kind}`)),
       ...(input.payoutOptions?.length ? ['payout_method'] : []),
     ],
     desk_notes: input.deskNotes,
@@ -137,7 +140,7 @@ export function target(input: {
     title: input.title,
     officialUrl: input.officialUrl,
     formUrl: input.formUrl,
-    deadline: input.deadline,
+    deadline: input.deadline ?? '',
     timeZone: input.timeZone ?? 'America/New_York',
     administrator: input.administrator,
     extraUserFields: input.extraUserFields,
