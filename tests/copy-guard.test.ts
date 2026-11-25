@@ -168,6 +168,18 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   // mobile/src/copy/filing.ts: the app's verbatim copies of the two src/lib/copy.ts entries above (issue #51).
   { file: 'mobile/src/copy/filing.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
     reason: 'App copy of ONE_CLICK_AGENT_TITLE / ONE_CLICK_AGENT_NOTE, shown only for an agent-lane claim while ONE_CLICK_FILING_ENABLED=1.' },
+  { file: 'mobile/src/copy/onboarding.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
+    reason: 'Issue #53: MAY_FILE_PAGE_COPY.onboardingStep / SOME_SETTLEMENTS, shown only while ONE_CLICK_FILING_ENABLED is on for the viewer.' },
+  { file: 'mobile/src/copy/settlement.ts', rule: 'we submit', text: 'Lawsuit AI can file your claim with the settlement administrator after you review and sign it',
+    reason: 'Issue #53: SETTLEMENT_FILING_COPY.agent.step, shown only when one-click is on and this settlement has an agent lane.' },
+  { file: 'mobile/src/copy/settlement.ts', rule: 'we submit', text: 'Lawsuit AI can file this claim for you after you review and sign it',
+    reason: 'Issue #53: SETTLEMENT_FILING_COPY.agent.points, same condition as the filing step above.' },
+  { file: 'mobile/src/copy/settlement.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
+    reason: 'Issue #53: SOME_SETTLEMENTS generic may-file wording when the catalog API has no lane and ONE_CLICK_FILING_ENABLED is on.' },
+  { file: 'mobile/src/copy/claim.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
+    reason: 'PREFILL_AGENT_LANE_NOTE: shown only for an agent-lane claim (web PrefillPacket agentLane).' },
+  { file: 'mobile/src/copy/store.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
+    reason: 'Draft store listing (counsel row 15): MAY_FILE_SHORT_SENTENCE / SOME_SETTLEMENTS from live /llms.txt. Not shown in the app.' },
   { file: 'mobile/src/copy/filing.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
     reason: 'App copy of ONE_CLICK_FILED_LABEL: the filed_by_claimmatch status, true for that claim.' },
   {

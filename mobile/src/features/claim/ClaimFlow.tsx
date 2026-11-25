@@ -161,6 +161,7 @@ export function ClaimFlow({ data, claimAtLoad }: ClaimFlowProps) {
           onChange={onChange}
           stepTwoTitle={oc ? filingCopy.selfFileTitle.text : undefined}
           stepTwoLead={oc?.reasons}
+          agentLane={Boolean(oc?.offerStart || oc?.lane?.agent)}
           prepared={
             oc?.handedBack ? (
               <>

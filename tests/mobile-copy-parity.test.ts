@@ -152,3 +152,29 @@ describe('mobile one-click filing copy parity', () => {
     expect(filingTexts.has(normalize(text))).toBe(true);
   });
 });
+
+/**
+ * Issue #53 leftovers: flag-on public copy already on the web must exist in
+ * the app's copy modules (onboarding, settlement, claim packet, store drafts).
+ */
+const allMobileTexts = new Set(copy.entries.map(([, entry]) => normalize(entry.text)));
+const requiredMayFile: Array<[string, string]> = [
+  ['MAY_FILE_PAGE_COPY.onboardingIntro', web.MAY_FILE_PAGE_COPY.onboardingIntro],
+  ['MAY_FILE_PAGE_COPY.onboardingStep lead', 'File on the official site yourself, where it’s free.'],
+  ['SOME_SETTLEMENTS', web.SOME_SETTLEMENTS],
+  ['MAY_FILE_SHORT_SENTENCE', web.MAY_FILE_SHORT_SENTENCE],
+  ['MAY_FILE_SENTENCE tail', 'You can always file on the official site yourself instead, where filing is free.'],
+  ['SETTLEMENT_FILING_COPY.agent.step.title', web.SETTLEMENT_FILING_COPY.agent.step.title],
+  ['SETTLEMENT_FILING_COPY.agent.step.body', web.SETTLEMENT_FILING_COPY.agent.step.body],
+  ['SETTLEMENT_FILING_COPY.agent.points.0', web.SETTLEMENT_FILING_COPY.agent.points[0]],
+  ['SETTLEMENT_FILING_COPY.self_file.step.body', web.SETTLEMENT_FILING_COPY.self_file.step.body],
+  ['PREFILL_AGENT_LANE_NOTE', web.PREFILL_AGENT_LANE_NOTE],
+  ['OFFICIAL_FILING_IS_FREE', web.OFFICIAL_FILING_IS_FREE],
+  ['BETA_FEE_COPY', web.BETA_FEE_COPY],
+];
+
+describe('mobile may-file copy parity (issues #52/#53)', () => {
+  it.each(requiredMayFile)('%s has an app entry', (_name, text) => {
+    expect(allMobileTexts.has(normalize(text))).toBe(true);
+  });
+});

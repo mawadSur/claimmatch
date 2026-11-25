@@ -17,10 +17,15 @@ export const onboarding = defineCopy({
     text: 'Welcome to Lawsuit AI',
     source: 'src/app/onboarding/page.tsx',
   },
-  /** "{intro} {howItWorks}" above the steps; step 2 repeats {intro} alone (plan 5). */
+  /** "{intro} {howItWorks}" above the steps; step 2 repeats {intro} alone (plan 5). Flag off. */
   intro: {
     text: 'Lawsuit AI is a free claim assistant. It never files for you and never handles settlement payments.',
     source: 'src/app/onboarding/page.tsx',
+  },
+  /** Flag on: MAY_FILE_PAGE_COPY.onboardingIntro. */
+  introMayFile: {
+    text: 'Lawsuit AI is a free claim assistant. For some settlements it can file the claim for you after you review and sign it. It never handles settlement payments.',
+    source: 'src/lib/copy.ts',
   },
   howItWorks: {
     text: 'Here’s how it works:',
@@ -37,6 +42,16 @@ export const onboarding = defineCopy({
   howStep3: {
     text: 'File on the official site. It’s free, and you do it yourself.',
     source: 'src/app/onboarding/page.tsx',
+  },
+  /** Flag on: lead of MAY_FILE_PAGE_COPY.onboardingStep. */
+  howStep3MayFile: {
+    text: 'File on the official site yourself, where it’s free.',
+    source: 'src/lib/copy.ts',
+  },
+  /** SOME_SETTLEMENTS, joined after {howStep3MayFile}. */
+  howStep3MayFileSome: {
+    text: 'For some settlements, Lawsuit AI files the claim for you after you review and sign it.',
+    source: 'src/lib/copy.ts',
   },
   howStep4: {
     text: 'Tell us you filed. We keep your deadline and confirmation number in one place.',
@@ -146,4 +161,16 @@ export function stepOfTwoText(step: 1 | 2): string {
 /** "Signed in as {email}." */
 export function signedInAsText(email: string): string {
   return `${onboarding.signedInAs.text} ${email}.`;
+}
+
+/** Intro while ONE_CLICK_FILING_ENABLED is on for this viewer (MAY_FILE_PAGE_COPY.onboardingIntro). */
+export function onboardingIntroText(mayFile: boolean): string {
+  return mayFile ? onboarding.introMayFile.text : onboarding.intro.text;
+}
+
+/** How-it-works step 3: never-files wording off, MAY_FILE_PAGE_COPY.onboardingStep on. */
+export function onboardingHowStep3Text(mayFile: boolean): string {
+  return mayFile
+    ? `${onboarding.howStep3MayFile.text} ${onboarding.howStep3MayFileSome.text}`
+    : onboarding.howStep3.text;
 }

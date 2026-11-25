@@ -6,7 +6,7 @@ import { AccessibilityInfo, StyleSheet, View, type TextInputProps } from 'react-
 
 import { AppText, Button, CheckboxRow, Notice, TextField } from '@/components/ui';
 import { Copy } from '@/components/ui/icons';
-import { claim as copy, copyFieldLabel } from '@/copy/claim';
+import { claim as copy, copyFieldLabel, packetNoteText } from '@/copy/claim';
 import { userFacingError } from '@/data/errors';
 import { useSaveSettings, type SettingsInput } from '@/data/profile';
 import { StatePickerField } from '@/features/shared';
@@ -66,14 +66,18 @@ const COPIED_FOR_MS = 1600;
  * Copy-ready claim details from the profile (src/components/claims/PrefillPacket.tsx),
  * in the official form's order when FORM_FIELD_ORDER_ENABLED is on. Each value
  * copies on its own, or all at once; edits save through POST /api/settings,
- * the address only with consent. Never writes claims: Lawsuit AI never files.
+ * the address only with consent. Self-file claims keep the never-files note;
+ * an agent lane uses PREFILL_AGENT_LANE_NOTE (web PrefillPacket).
  */
 export function PrefillPacket({
   profile,
   formFieldOrder,
+  agentLane = false,
 }: {
   profile: PacketProfile | null;
   formFieldOrder?: string[] | null;
+  /** Lawsuit AI files (or offers to file) this claim; false keeps the self-file lead. */
+  agentLane?: boolean;
 }) {
   const { isFlagOn } = useConfig();
   const saveSettings = useSaveSettings();
@@ -169,7 +173,7 @@ export function PrefillPacket({
           {copy.packetTitle.text}
         </AppText>
         <AppText variant="caption" color="textMuted">
-          {copy.packetNote.text}
+          {packetNoteText(agentLane)}
         </AppText>
       </View>
       <Button

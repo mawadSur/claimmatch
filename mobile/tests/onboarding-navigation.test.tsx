@@ -9,6 +9,9 @@ import { onboarding } from '@/copy/onboarding';
 jest.mock('@/providers/AuthProvider', () => ({
   useAuth: () => ({ status: 'signedIn', user: { id: 'user-1', email: 'ana@example.com' } }),
 }));
+jest.mock('@/providers/ConfigProvider', () => ({
+  useConfig: () => ({ isFlagOn: () => false }),
+}));
 
 const mockSave = jest.fn(async () => undefined);
 jest.mock('@/data/profile', () => ({

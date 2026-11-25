@@ -102,16 +102,19 @@ export interface FilingStepsProps {
   stepTwoLead?: readonly string[];
   /** A claim prepared in Lawsuit AI and now self-filed: its answers to copy, in Step 2. */
   prepared?: ReactNode;
+  /** Agent lane: PrefillPacket uses PREFILL_AGENT_LANE_NOTE instead of never-files. */
+  agentLane?: boolean;
 }
 
 /**
  * The three steps (ClaimFlow.tsx FilingSteps): (1) check you qualify, (2) file
- * on the official site, (3) tell us you filed. Lawsuit AI never files: the
- * official form opens in the in-app browser, and when it closes the screen
- * scrolls to Step 3. Each step is its own child of the scroll content.
+ * on the official site, (3) tell us you filed. The official form opens in the
+ * in-app browser, and when it closes the screen scrolls to Step 3. Each step
+ * is its own child of the scroll content.
  *
  * Assisted filing (ASSISTED_FILING_ENABLED) is not in the app (plan 7, item
- * 6): Step 2 is always the self-file step, which never says Lawsuit AI files.
+ * 6): Step 2 is always the self-file step. The packet note says Lawsuit AI
+ * never files only on the self-file lane.
  */
 export function FilingSteps({
   settlement,
@@ -122,6 +125,7 @@ export function FilingSteps({
   stepTwoTitle,
   stepTwoLead = [],
   prepared,
+  agentLane = false,
 }: FilingStepsProps) {
   const router = useRouter();
   const targets = useFlowTargetsApi();
@@ -199,7 +203,7 @@ export function FilingSteps({
           <Muted>{copy.filingIsFree.text}</Muted>
         </Panel>
         {prepared}
-        <PrefillPacket profile={profile} formFieldOrder={settlement.formFieldOrder} />
+        <PrefillPacket profile={profile} formFieldOrder={settlement.formFieldOrder} agentLane={agentLane} />
       </NumberedStep>
 
       <FlowTarget name="step3" testID="claim-step-3-target">

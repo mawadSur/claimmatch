@@ -8,9 +8,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText, Button } from '@/components/ui';
 import { ArrowRight } from '@/components/ui/icons';
-import { settlement } from '@/copy/settlement';
+import { settlement, settlementFilingUiMode } from '@/copy/settlement';
 import { toLawsuit, type SettlementRow } from '@/data/catalog';
 import { LegalDisclaimer, SettlementBadges, UnverifiedNotice, useIsVerified } from '@/features/shared';
+import { useConfig } from '@/providers/ConfigProvider';
 import { space } from '@/theme/tokens';
 
 import { AnswerBlock } from './AnswerBlock';
@@ -25,6 +26,12 @@ export interface SettlementDetailProps {
   /** From useNow(): open or closed, and the deadline wording. */
   now: Date;
   signedIn: boolean;
+  /**
+   * Per-settlement agent lane when an existing API already gave one (claim
+   * preview, tests). The catalog row does not include it; then the flag-on
+   * copy is the generic may-file wording, not SETTLEMENT_FILING_COPY.agent.
+   */
+  agentLane?: boolean | null;
   onStartClaim(): void;
   onBrowse(): void;
 }
@@ -38,8 +45,17 @@ export interface SettlementDetailProps {
  * LEGAL_DISCLAIMER (plan 3.3 and section 5). Breadcrumbs, hub links,
  * add-to-calendar and proof feedback are not in v1.
  */
-export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrowse }: SettlementDetailProps) {
+export function SettlementDetail({
+  lawsuit,
+  now,
+  signedIn,
+  agentLane,
+  onStartClaim,
+  onBrowse,
+}: SettlementDetailProps) {
   // Read through the config, so the page renders again when the server flags arrive.
+  const { isFlagOn } = useConfig();
+  const filingMode = settlementFilingUiMode(isFlagOn('ONE_CLICK_FILING_ENABLED'), agentLane);
   const verified = useIsVerified(lawsuit);
   const guided = hasOfficialNoticeGuide(lawsuit.slug);
   const checkedLabel = noticeCheckedOnLabel(lawsuit.slug);
@@ -114,7 +130,7 @@ export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrows
         testID="settlement-section-qualify"
       />
 
-      {open ? <HowFilingWorks testID="settlement-section-how" /> : null}
+      {open ? <HowFilingWorks filingMode={filingMode} testID="settlement-section-how" /> : null}
 
       <SettlementFaq items={lawsuit.faqs} testID="settlement-section-faq" />
 
@@ -126,6 +142,7 @@ export function SettlementDetail({ lawsuit, now, signedIn, onStartClaim, onBrows
         deadlinePassed={deadlinePassed}
         official={official}
         signedIn={signedIn}
+        filingMode={filingMode}
         onStartClaim={onStartClaim}
         onBrowse={onBrowse}
         testID="settlement-section-next-steps"

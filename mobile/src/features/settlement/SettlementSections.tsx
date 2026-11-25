@@ -5,7 +5,7 @@ import { displayProofLabel } from '@shared/lib/verified-fields';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Card, Divider } from '@/components/ui';
-import { settlement } from '@/copy/settlement';
+import { settlement, settlementFileStep, type SettlementFilingUiMode } from '@/copy/settlement';
 import type { SettlementRow } from '@/data/catalog';
 import { ExternalTextLink } from '@/features/shared';
 import { colors, fontFamilies, radii, space } from '@/theme/tokens';
@@ -106,19 +106,29 @@ export function WhoMayQualify({ eligibility, official, testID }: WhoMayQualifyPr
   );
 }
 
-const STEPS = [
-  { title: settlement.stepQualifyTitle.text, body: settlement.stepQualifyBody.text },
-  { title: settlement.stepFileTitle.text, body: settlement.stepFileBody.text },
-  { title: settlement.stepTrackTitle.text, body: settlement.stepTrackBody.text },
-] as const;
+function howFilingSteps(filingMode: SettlementFilingUiMode) {
+  const file = settlementFileStep(filingMode);
+  return [
+    { title: settlement.stepQualifyTitle.text, body: settlement.stepQualifyBody.text },
+    file,
+    { title: settlement.stepTrackTitle.text, body: settlement.stepTrackBody.text },
+  ];
+}
 
 /** "How filing works", shown while the settlement is open: three numbered steps, each read as one phrase. */
-export function HowFilingWorks({ testID }: { testID?: string }) {
+export function HowFilingWorks({
+  filingMode = 'never_files',
+  testID,
+}: {
+  filingMode?: SettlementFilingUiMode;
+  testID?: string;
+}) {
+  const steps = howFilingSteps(filingMode);
   return (
     <View style={styles.section} testID={testID}>
       <AppText variant="title">{settlement.howFilingWorks.text}</AppText>
       <View style={styles.steps}>
-        {STEPS.map((step, index) => (
+        {steps.map((step, index) => (
           <View key={step.title} accessible style={styles.step}>
             <View style={styles.stepNumber}>
               <AppText variant="labelSmall" color="textLink" style={styles.stepNumberText}>

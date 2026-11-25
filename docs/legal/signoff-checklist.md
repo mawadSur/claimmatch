@@ -24,7 +24,7 @@ the database, migrations 0042 and 0045).
 | 12 | Channels | Each administrator claims address verified at its source; written agreement before bulk or API; objections honored within 24h | Policy "Channels" editor. Approval is refused unless an enabled email channel's `published_at_url` is among the documents reviewed, and an enabled bulk or API channel has a reviewed "Administrator letter" (`src/lib/filing/v2/approval-checks.ts`). Objections and kill switch: Controls panel | Built (new approval checks); API adapters do not exist, so the API channel can never be chosen |
 | 13 | Copy: per-claim disclaimers | The per-claim sentences | `src/lib/copy.ts`: `CLAIM_AGENT_LEGAL_SENTENCE`, `PREFILL_AGENT_LANE_NOTE`, `ONE_CLICK_AGENT_NOTE`, `MAY_FILE_*`. Applied by `claimLegalDisclaimer` and `claimFiledByLawsuitAi` | Built (web + app claim `legalDisclaimer`) |
 | 14 | Retention periods | Documents 90 days, Jev runs, signatures, audit log | `docs/legal/retention-schedule.md`; settings `JEV_PARTIAL_RUN_RETENTION_DAYS`, `LEGAL_RECORD_RETENTION_DAYS`; constant `DOCUMENT_RETENTION_DAYS` | Built |
-| 15 | App stores (later) | Store listings, iOS privacy manifest, App Store privacy answers, Play Data safety | Not started | Not built |
+| 15 | App stores (later) | Store listings, iOS privacy manifest, App Store privacy answers, Play Data safety | Drafts in `mobile/store.config.json`, `mobile/src/copy/store.ts`, `docs/legal/store-privacy-answers.md`. Not in effect. Counsel sign-off required before pasting into consoles. | Software drafts exist; counsel still required |
 
 ## Founder decisions (#52)
 
