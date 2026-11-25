@@ -116,7 +116,26 @@ export function CatalogTable({ rows: initial }: { rows: Lawsuit[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-ink-muted">
-                  {formatDeadline(l.deadline)}
+                  <div>{formatDeadline(l.deadline_override || l.deadline)}</div>
+                  {l.deadline_override ? (
+                    <div className="text-[11px] text-ink-soft">
+                      Override · feed {formatDeadline(l.deadline)}
+                    </div>
+                  ) : null}
+                  <input
+                    key={`${l.id}-override-${l.deadline_override ?? ''}`}
+                    type="date"
+                    aria-label={`Deadline override for ${l.title}`}
+                    disabled={row.busy !== null}
+                    defaultValue={(l.deadline_override ?? '').slice(0, 10)}
+                    onBlur={(e) => {
+                      const next = e.target.value || null;
+                      const prev = (l.deadline_override ?? '').slice(0, 10) || null;
+                      if (next === prev) return;
+                      patchLawsuit(row, 'feature', { deadline_override: next });
+                    }}
+                    className="mt-1 w-[10.5rem] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs"
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <input

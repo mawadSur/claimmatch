@@ -583,8 +583,23 @@ export function guidesVersion(guides: readonly SettlementGuide[]): string {
 /** The version of the guides above. */
 export const SETTLEMENT_GUIDES_VERSION = guidesVersion(SETTLEMENT_GUIDES);
 
-/** The deadline people act on: the official notice's when a guide has one, otherwise the feed's. */
-export function guidedDeadline(row: { slug: string; deadline: string | null }): string | null {
+/**
+ * The deadline people act on: an admin override when set, otherwise the
+ * official notice's date when a guide has one, otherwise the feed's.
+ */
+/** True when PostgREST/Postgres cannot see lawsuits.deadline_override yet. */
+export function isMissingDeadlineOverrideColumn(message: string | null | undefined): boolean {
+  const msg = (message ?? '').toLowerCase();
+  return msg.includes('deadline_override') && (msg.includes('does not exist') || msg.includes('could not find'));
+}
+
+export function guidedDeadline(row: {
+  slug: string;
+  deadline: string | null;
+  deadline_override?: string | null;
+}): string | null {
+  const override = typeof row.deadline_override === 'string' ? row.deadline_override.trim() : '';
+  if (override) return override.slice(0, 10);
   return getSettlementGuide(row.slug)?.deadline ?? row.deadline;
 }
 
@@ -646,7 +661,10 @@ export type GuidedLawsuit = Pick<
   | 'claim_url'
   | 'proof_required'
   | 'eligibility'
->;
+> & {
+  deadline_override?: string | null;
+  is_test?: boolean | null;
+};
 
 /**
  * The columns a deadline, an official link or a proof rule is read from.
@@ -656,6 +674,7 @@ export type GuidedLawsuit = Pick<
 interface GuidedFacts {
   slug: string;
   deadline: string | null;
+  deadline_override?: string | null;
   claim_url: string | null;
   eligibility_text: string | null;
   proof_required: boolean | null;
@@ -680,7 +699,9 @@ function withOfficialFacts<T extends GuidedFacts>(row: T, guide: SettlementGuide
  */
 export function applySettlementGuideFacts<T extends GuidedFacts>(row: T): T {
   const guide = getSettlementGuide(row.slug);
-  return guide ? withOfficialFacts(row, guide, claimLinkOnSite(row.claim_url, guide)) : row;
+  const next = guide ? withOfficialFacts(row, guide, claimLinkOnSite(row.claim_url, guide)) : row;
+  const deadline = guidedDeadline(next);
+  return deadline === next.deadline ? next : { ...next, deadline };
 }
 
 /**
@@ -690,17 +711,22 @@ export function applySettlementGuideFacts<T extends GuidedFacts>(row: T): T {
  * people there to read the notice, while the claim flow keeps the feed's link
  * to the claim form (applySettlementGuideFacts).
  */
+function applyDeadlineOverride<T extends GuidedLawsuit>(lawsuit: T): T {
+  const deadline = guidedDeadline(lawsuit);
+  return deadline === lawsuit.deadline ? lawsuit : { ...lawsuit, deadline };
+}
+
 export function applySettlementGuide<T extends GuidedLawsuit>(lawsuit: T): T {
   const guide = getSettlementGuide(lawsuit.slug);
-  if (!guide) return lawsuit;
+  if (!guide) return applyDeadlineOverride(lawsuit);
 
-  return {
+  return applyDeadlineOverride({
     ...withOfficialFacts(lawsuit, guide, guide.officialUrl),
     summary: guide.summary ?? lawsuit.summary,
     description: guide.description ?? lawsuit.description,
     typical_payout: guide.typicalPayout,
     administrator: guide.administrator ?? lawsuit.administrator,
-  };
+  });
 }
 
 export function applySettlementGuides<T extends GuidedLawsuit>(lawsuits: T[]): T[] {
@@ -713,8 +739,17 @@ export function applySettlementGuides<T extends GuidedLawsuit>(lawsuits: T[]): T
  * row is read whatever its feed deadline says, because the official deadline
  * replaces that one before the open-for-claims rule runs (openGuidedCatalog).
  */
-export function catalogDeadlineFilter(now: Date): string {
-  const open = `deadline.is.null,deadline.gte.${todayInDeadlineZone(now)}`;
+export function catalogDeadlineFilter(
+  now: Date,
+  opts: { includeOverride?: boolean } = {},
+): string {
+  const today = todayInDeadlineZone(now);
+  // Override in the filter needs migration 0050. Default off so prod keeps
+  // working until the owner applies it; lookupLawsuits retries with it on.
+  const open =
+    opts.includeOverride === true
+      ? `deadline.is.null,deadline.gte.${today},deadline_override.gte.${today}`
+      : `deadline.is.null,deadline.gte.${today}`;
   const slugs = [...guidesBySlug().keys()];
   return slugs.length > 0 ? `${open},slug.in.(${slugs.join(',')})` : open;
 }

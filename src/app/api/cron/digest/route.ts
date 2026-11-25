@@ -15,7 +15,7 @@ import {
 import type { Lawsuit, Match, Profile } from '@/lib/types';
 import { maybeAlertCronFailure } from '@/lib/cron-alert';
 import { recordCronFailure } from '@/lib/jobs';
-import { isTestSettlementSlug } from '@/lib/test-settlements';
+import { isPublicTestListing } from '@/lib/test-settlements';
 import {
   D50_PAUSED,
   buildReport,
@@ -123,7 +123,10 @@ async function sendDigest(): Promise<{ users: number; emailed: number }> {
     // shows), then the open-for-claims rule on them, as the catalog does. As in
     // the match sweep, a match that is not emailed stays unnotified.
     const pending = rows.flatMap((row) => {
-      const lawsuit = isEmailableStoredMatch(row) && row.lawsuit ? applySettlementGuide(row.lawsuit) : null;
+      const lawsuit =
+        isEmailableStoredMatch(row) && row.lawsuit && !isPublicTestListing(row.lawsuit)
+          ? applySettlementGuide(row.lawsuit)
+          : null;
       return lawsuit && isOpenForClaims(lawsuit, now) ? [{ id: row.id, lawsuit }] : [];
     });
     const items: MatchNotifyItem[] = pending.map(({ lawsuit: l }) => ({
@@ -180,7 +183,7 @@ async function sendClosingSoon(): Promise<{
   // Guides first: a guided settlement is open (pickClosingSoonEmailRows applies
   // the open-for-claims rule) and closing soon by its official deadline.
   const items = pickClosingSoonEmailRows(
-    applySettlementGuides(((lawsuitData ?? []) as Lawsuit[]).filter((row) => !isTestSettlementSlug(row.slug))),
+    applySettlementGuides(((lawsuitData ?? []) as Lawsuit[]).filter((row) => !isPublicTestListing(row))),
   ).map((row) => ({
     title: row.title,
     slug: row.slug,

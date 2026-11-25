@@ -26,14 +26,17 @@ export function missingFeedCloseAfterFromEnv(value: string | undefined): number 
 }
 
 /** Columns the stale planner reads from existing rows. */
-export const STALE_CANDIDATE_COLUMNS =
+export const STALE_CANDIDATE_COLUMNS_BASE =
   'id, slug, status, deadline, review_status, source_id, external_id, last_seen_at, missed_feed_count';
+
+export const STALE_CANDIDATE_COLUMNS = `${STALE_CANDIDATE_COLUMNS_BASE}, deadline_override`;
 
 export interface StaleCandidate {
   id: string;
   slug: string;
   status: LawsuitStatus;
   deadline: string | null;
+  deadline_override?: string | null;
   review_status: ReviewStatus;
   source_id: string | null;
   external_id: string | null;

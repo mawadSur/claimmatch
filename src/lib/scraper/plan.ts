@@ -36,8 +36,11 @@ import { isDeadlinePassed, slugify } from '@/lib/utils';
  */
 
 /** Columns the ingest reads from existing rows. */
-export const EXISTING_ROW_COLUMNS =
+export const EXISTING_ROW_COLUMNS_BASE =
   'id, slug, external_id, status, deadline, review_status, reviewed_at, title, claim_url';
+
+/** Includes 0050 override columns. loadExisting falls back to BASE if they are missing. */
+export const EXISTING_ROW_COLUMNS = `${EXISTING_ROW_COLUMNS_BASE}, deadline_override, deadline_override_at`;
 
 export interface ExistingRow {
   id: string;
@@ -45,6 +48,8 @@ export interface ExistingRow {
   external_id: string | null;
   status: LawsuitStatus;
   deadline: string | null;
+  deadline_override?: string | null;
+  deadline_override_at?: string | null;
   review_status: ReviewStatus;
   reviewed_at: string | null;
   title: string;
@@ -154,16 +159,29 @@ export function nextStatus(
  * the closes counted here and the circuit breaker's open rows match the site.
  */
 export function isOpenForClaimsGuided(
-  row: { slug: string; status: string; review_status?: string | null; deadline: string | null },
+  row: {
+    slug: string;
+    status: string;
+    review_status?: string | null;
+    deadline: string | null;
+    deadline_override?: string | null;
+  },
   now: Date,
 ): boolean {
   return isOpenForClaims({ ...row, deadline: guidedDeadline(row) }, now);
 }
 
-/** The guided deadline has passed, read with the deadline this refresh leaves on the row. */
+/** The public deadline has passed, read with the deadline this refresh leaves on the row. */
 function guidedDeadlinePassed(row: ExistingRow, patch: Record<string, unknown>, now: Date): boolean {
   const deadline = typeof patch.deadline === 'string' ? patch.deadline : row.deadline;
-  return isDeadlinePassed(guidedDeadline({ slug: row.slug, deadline }), now);
+  return isDeadlinePassed(
+    guidedDeadline({
+      slug: row.slug,
+      deadline,
+      deadline_override: row.deadline_override,
+    }),
+    now,
+  );
 }
 
 function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string, now: Date): NewRow {
@@ -196,6 +214,14 @@ function newRowFrom(item: ScrapedLawsuit, sourceId: string, slug: string, now: D
   };
 }
 
+function stripOverrideWrites(patch: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...patch };
+  delete next.deadline_override;
+  delete next.deadline_override_note;
+  delete next.deadline_override_at;
+  return next;
+}
+
 function finishUpdate(
   row: ExistingRow,
   patch: Record<string, unknown>,
@@ -203,12 +229,13 @@ function finishUpdate(
   deadlineChange: PlannedUpdate['deadlineChange'],
   now: Date,
 ): PlannedUpdate {
-  const after = { ...row, ...patch } as ExistingRow;
+  const safePatch = stripOverrideWrites(patch);
+  const after = { ...row, ...safePatch } as ExistingRow;
   const closes = isOpenForClaimsGuided(row, now) && !isOpenForClaimsGuided(after, now);
   return {
     id: row.id,
     slug: row.slug,
-    patch,
+    patch: safePatch,
     changes,
     closes,
     reopens: row.status === 'closed' && patch.status === 'open',

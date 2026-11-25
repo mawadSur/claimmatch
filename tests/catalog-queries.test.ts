@@ -64,7 +64,11 @@ describe('catalog queries', () => {
     const call = (name: string) => db.calls.filter(([m]) => m === name).map(([, a]) => a);
     expect(call('eq')).toContainEqual(['review_status', 'published']);
     expect(call('in')).toContainEqual(['status', ['open', 'closing_soon']]);
-    expect(call('or')).toContainEqual([expect.stringMatching(/^deadline\.is\.null,deadline\.gte\.2026-10-16,slug\.in\.\(.*six-flags/)]);
+    expect(call('or')).toContainEqual([
+      expect.stringMatching(
+        /^deadline\.is\.null,deadline\.gte\.2026-10-16,deadline_override\.gte\.2026-10-16,slug\.in\.\(.*six-flags/,
+      ),
+    ]);
     const not = call('not')[0];
     expect(not[0]).toBe('slug');
     expect(not[1]).toBe('in');
@@ -80,6 +84,8 @@ describe('catalog queries', () => {
         lawsuit({ slug: 'closed', status: 'closed' }),
         lawsuit({ slug: 'pending', review_status: 'pending_review' }),
         lawsuit({ slug: 'past', deadline: '2020-01-01' }),
+        lawsuit({ slug: 'dummy-settlement', title: '[TEST] Dummy' }),
+        lawsuit({ slug: 'kept-but-flagged', title: 'Kept', is_test: true }),
       ],
       error: null,
     };

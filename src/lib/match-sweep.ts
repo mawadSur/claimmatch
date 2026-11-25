@@ -1,14 +1,18 @@
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 import { matchProfile } from '@/lib/matching';
 import { sendMatchEmail, type MatchEmailItem } from '@/lib/email';
-import { LIST_HIDDEN_SLUGS } from '@/lib/test-settlements';
+import { LIST_HIDDEN_SLUGS, rejectPublicTestListings } from '@/lib/test-settlements';
 import {
   isEmailableStoredMatch,
   MATCH_EMAIL_SCORE_THRESHOLD,
   wantsInstantMatchEmails,
 } from '@/lib/match-email';
 import { factsFromRows } from '@/lib/profile-facts';
-import { catalogDeadlineFilter, openGuidedCatalog } from '@/lib/settlement-guides';
+import {
+  catalogDeadlineFilter,
+  isMissingDeadlineOverrideColumn,
+  openGuidedCatalog,
+} from '@/lib/settlement-guides';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
 export interface MatchSweepResult {
@@ -42,13 +46,18 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
 
   // Candidate lawsuits: open for claims only. Build a lookup for email content.
   const now = new Date();
-  const { data: lawsuitData, error: lawsuitErr } = await supabase
-    .from('lawsuits')
-    .select('*')
-    .eq('review_status', 'published')
-    .in('status', ['open', 'closing_soon'])
-    .or(catalogDeadlineFilter(now))
-    .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
+  const run = (includeOverride: boolean) =>
+    supabase
+      .from('lawsuits')
+      .select('*')
+      .eq('review_status', 'published')
+      .in('status', ['open', 'closing_soon'])
+      .or(catalogDeadlineFilter(now, { includeOverride }))
+      .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`);
+  let { data: lawsuitData, error: lawsuitErr } = await run(true);
+  if (lawsuitErr && isMissingDeadlineOverrideColumn(lawsuitErr.message)) {
+    ({ data: lawsuitData, error: lawsuitErr } = await run(false));
+  }
   if (lawsuitErr) {
     // Fail loudly so the cron reports an error instead of a quiet "0 sent".
     throw new Error(`[match-sweep] loading settlements failed: ${lawsuitErr.message}`);
@@ -57,7 +66,10 @@ export async function runMatchSweep(): Promise<MatchSweepResult> {
   // reads every guided row; the official-notice guides replace the feed's
   // deadline (and payout) before the open rule runs again, and matchProfile
   // refuses any leftover expired row.
-  const lawsuits = openGuidedCatalog((lawsuitData ?? []) as Lawsuit[], now);
+  const lawsuits = openGuidedCatalog(
+    rejectPublicTestListings((lawsuitData ?? []) as Lawsuit[]),
+    now,
+  );
 
   if (lawsuits.length === 0) {
     return { users: 0, newMatches: 0, emailed: 0 };

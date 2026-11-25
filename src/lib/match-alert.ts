@@ -10,6 +10,7 @@ import { matchProfile, type MatchResult } from '@/lib/matching';
 import { isOpenForClaims } from '@/lib/open-for-claims';
 import { isDeadlinePassed } from '@/lib/utils';
 import { isVerifiedRecord } from '@/lib/verified-fields';
+import { isPublicTestListing } from '@/lib/test-settlements';
 import type { Lawsuit, Profile } from '@/lib/types';
 import { normalizeAlertEmail } from '@/lib/match-alert-token';
 
@@ -99,9 +100,10 @@ export function isAlertableLawsuit(
     | 'eligibility_text'
     | 'eligibility'
     | 'proof_required'
-  >,
+  > & { title?: string | null; is_test?: boolean | null },
   now: Date = new Date(),
 ): boolean {
+  if (isPublicTestListing(row)) return false;
   if (!isVerifiedRecord(row)) return false;
   if (!isOpenForClaims(row, now)) return false;
   if (isDeadlinePassed(row.deadline, now)) return false;

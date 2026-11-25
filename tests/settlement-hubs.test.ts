@@ -117,7 +117,9 @@ describe('hub pages', () => {
     expect(closing).toContain('BreadcrumbList');
     expect(closing).toContain('CollectionPage');
 
-    const newest = renderToStaticMarkup(await NewSettlementsHubPage());
+    const newest = renderToStaticMarkup(
+      await NewSettlementsHubPage({ searchParams: Promise.resolve({}) }),
+    );
     expect(newest).toContain('New settlements');
     expect(newest).toContain('Amazon Return Policy Settlement');
     expect(newest).toContain('href="/settlements/closing-soon"');

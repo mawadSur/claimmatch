@@ -12,6 +12,7 @@ import {
   matchStoreGate,
   matchSweepGate,
   missingConfigStep,
+  linkCheckGate,
   verifyAssistGate,
   reportHttpStatus,
   runStep,
@@ -117,6 +118,15 @@ describe('D50 gates', () => {
       },
     });
     expect(verifyAssistGate(true)).toEqual({ run: true });
+    expect(linkCheckGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (link check)',
+        resume: expect.stringContaining('LINK_CHECK_ENABLED=1'),
+      },
+    });
+    expect(linkCheckGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

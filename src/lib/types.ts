@@ -147,6 +147,14 @@ export interface Lawsuit {
   final_approval_hearing_at?: string | null;
   /** 0035: listed payment-timing sentence. Null = not announced. Never guessed. */
   payment_timing_text?: string | null;
+  /** 0050: hide from public pages and the sitemap. Never deleted. */
+  is_test?: boolean;
+  /** 0050: admin-set public deadline. Null = use `deadline`. Ingest must not write this. */
+  deadline_override?: string | null;
+  /** 0050: optional internal note for deadline_override. Not shown publicly. */
+  deadline_override_note?: string | null;
+  /** 0050: when deadline_override was last set or cleared. */
+  deadline_override_at?: string | null;
 }
 
 export type ProfileFactType =

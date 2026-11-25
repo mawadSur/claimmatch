@@ -14,7 +14,11 @@
  */
 import { createServiceClient } from '@/lib/supabase/server';
 import { isFictionalSlug } from '@/lib/fictional-slugs';
-import { applySettlementGuideFacts, guidedDeadline } from '@/lib/settlement-guides';
+import {
+  applySettlementGuideFacts,
+  guidedDeadline,
+  isMissingDeadlineOverrideColumn,
+} from '@/lib/settlement-guides';
 import {
   claimWriteFailure,
   isMissingSchemaError,
@@ -28,8 +32,11 @@ import {
 } from '@/lib/claims';
 
 /** Settlement columns the claim flow reads (0002+, plus 0035 timeline fields). */
-export const SETTLEMENT_COLUMNS =
+export const SETTLEMENT_COLUMNS_BASE =
   'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order, final_approval_hearing_at, payment_timing_text';
+
+/** Includes 0050 deadline_override. Loaders fall back to BASE if the column is missing. */
+export const SETTLEMENT_COLUMNS = `${SETTLEMENT_COLUMNS_BASE}, deadline_override`;
 
 export interface SettlementRecord extends SettlementFacts {
   id: string;
@@ -40,6 +47,7 @@ export interface SettlementRecord extends SettlementFacts {
   eligibility_text: string | null;
   eligibility: Record<string, unknown> | null;
   proof_required: boolean | null;
+  deadline_override?: string | null;
   /** 0013: official-form field order (C10). Absent until selected. */
   form_field_order?: string[] | null;
   /** 0035: listed hearing date. Null = not announced. */
@@ -109,35 +117,41 @@ function withGuide(row: unknown): SettlementRecord | null {
   return row ? applySettlementGuideFacts(row as SettlementRecord) : null;
 }
 
+async function selectSettlement(
+  build: (columns: string) => {
+    maybeSingle: () => PromiseLike<{ data: unknown; error: { message?: string; code?: string } | null }>;
+  },
+  where: string,
+): Promise<{ data: unknown; error: { message?: string; code?: string } | null }> {
+  let result = await build(SETTLEMENT_COLUMNS).maybeSingle();
+  if (result.error && isMissingDeadlineOverrideColumn(result.error.message)) {
+    result = await build(SETTLEMENT_COLUMNS_BASE).maybeSingle();
+  }
+  if (result.error) logClaimsError(where, result.error);
+  return result;
+}
+
 /** A settlement by slug, published or not. Callers decide what to show. */
 export async function loadSettlementBySlug(slug: string): Promise<SettlementLookup> {
   // Without the service role the read falls back to the anon key, and RLS
   // hides every unpublished row, including all fictional ones.
   if (!serviceRoleConfigured()) return UNREADABLE;
-  const { data, error } = await createServiceClient()
-    .from('lawsuits')
-    .select(SETTLEMENT_COLUMNS)
-    .eq('slug', slug)
-    .maybeSingle();
-  if (error) {
-    logClaimsError('settlement lookup by slug failed', error);
-    return UNREADABLE;
-  }
+  const { data, error } = await selectSettlement(
+    (columns) => createServiceClient().from('lawsuits').select(columns).eq('slug', slug),
+    'settlement lookup by slug failed',
+  );
+  if (error) return UNREADABLE;
   return { ok: true, settlement: withGuide(data) };
 }
 
 export async function loadSettlementById(id: string): Promise<SettlementLookup> {
   if (!UUID_RE.test(id)) return { ok: true, settlement: null };
   if (!serviceRoleConfigured()) return UNREADABLE;
-  const { data, error } = await createServiceClient()
-    .from('lawsuits')
-    .select(SETTLEMENT_COLUMNS)
-    .eq('id', id)
-    .maybeSingle();
-  if (error) {
-    logClaimsError('settlement lookup by id failed', error);
-    return UNREADABLE;
-  }
+  const { data, error } = await selectSettlement(
+    (columns) => createServiceClient().from('lawsuits').select(columns).eq('id', id),
+    'settlement lookup by id failed',
+  );
+  if (error) return UNREADABLE;
   return { ok: true, settlement: withGuide(data) };
 }
 
@@ -166,11 +180,19 @@ export async function loadUserClaims(
     console.error('[claims] SUPABASE_SERVICE_ROLE_KEY is not set; claims cannot be read');
     return { items: [], failed: true };
   }
-  const { data, error } = await createServiceClient()
+  const supabase = createServiceClient();
+  let { data, error } = await supabase
     .from('claims')
     .select(`*, settlement:lawsuits(${SETTLEMENT_COLUMNS})`)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+  if (error && isMissingDeadlineOverrideColumn(error.message)) {
+    ({ data, error } = await supabase
+      .from('claims')
+      .select(`*, settlement:lawsuits(${SETTLEMENT_COLUMNS_BASE})`)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }));
+  }
   if (error) {
     logClaimsError('claims list failed', error);
     return { items: [], failed: true };

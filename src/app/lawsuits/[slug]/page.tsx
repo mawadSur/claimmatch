@@ -67,6 +67,7 @@ import { settlementFilingMode } from '@/lib/filing/public-filing';
 import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
+import { CaptureView } from '@/components/analytics/CaptureView';
 import type { Lawsuit } from '@/lib/types';
 
 export const revalidate = 3600;
@@ -184,7 +185,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
 
   return (
     <>
-      <CaptureOnce
+      <CaptureView
         event="settlement_viewed"
         properties={{ lawsuit_id: lawsuit.id, slug: lawsuit.slug }}
       />

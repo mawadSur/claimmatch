@@ -7,7 +7,7 @@ import {
   settlementProofDetail,
 } from '@shared/lib/settlement-guides';
 import { settlementFaqs, type FaqItem } from '@shared/lib/settlement-seo';
-import { isTestSettlementSlug, LIST_HIDDEN_SLUGS } from '@shared/lib/test-settlements';
+import { isPublicTestListing, LIST_HIDDEN_SLUGS } from '@shared/lib/test-settlements';
 import type { Lawsuit } from '@shared/lib/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -92,7 +92,10 @@ export async function fetchCatalog(signal?: AbortSignal): Promise<GuidedRow[]> {
   const { data, error, status } = await query;
   if (error) throw supabaseReadError(error, status);
   const { version } = guidesInUse();
-  return openGuidedCatalog(parseCatalogRows(data), at).map((row) => ({ ...row, guidesVersion: version }));
+  return openGuidedCatalog(
+    parseCatalogRows(data).filter((row) => !isPublicTestListing(row)),
+    at,
+  ).map((row) => ({ ...row, guidesVersion: version }));
 }
 
 export type SettlementLookup =
@@ -107,8 +110,7 @@ export type SettlementLookup =
  */
 export async function fetchSettlementBySlug(slug: string, signal?: AbortSignal): Promise<SettlementLookup> {
   if (!slug || isFictionalSlug(slug)) return { status: 'missing', fictional: isFictionalSlug(slug) };
-  // The one-click test settlement has no public page, on the web or here.
-  if (isTestSettlementSlug(slug)) return { status: 'missing', fictional: false };
+  if (isPublicTestListing({ slug })) return { status: 'missing', fictional: false };
   let query = getSupabase()
     .from('lawsuits')
     .select(CATALOG_COLUMNS)
@@ -120,7 +122,7 @@ export async function fetchSettlementBySlug(slug: string, signal?: AbortSignal):
   if (data == null) return { status: 'missing', fictional: false };
   const lawsuit = parseCatalogRow(data);
   if (!lawsuit) throw invalidResponse(status);
-  if (!isPublicLawsuit(lawsuit)) return { status: 'missing', fictional: false };
+  if (!isPublicLawsuit(lawsuit) || isPublicTestListing(lawsuit)) return { status: 'missing', fictional: false };
   return {
     status: 'found',
     lawsuit: toSettlementRow({ ...applySettlementGuide(lawsuit), guidesVersion: guidesInUse().version }),

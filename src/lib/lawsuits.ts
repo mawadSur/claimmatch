@@ -2,12 +2,13 @@ import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { isFictionalSlug } from './fictional-slugs';
-import { LIST_HIDDEN_SLUGS } from './test-settlements';
+import { LIST_HIDDEN_SLUGS, rejectPublicTestListings, isPublicTestListing } from './test-settlements';
 import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
 import {
   applySettlementGuide,
   applySettlementGuides,
   catalogDeadlineFilter,
+  isMissingDeadlineOverrideColumn,
   openGuidedCatalog,
   sortByDeadline,
 } from './settlement-guides';
@@ -88,25 +89,32 @@ export async function lookupLawsuits(
   if (!supabaseConfigured()) return { lawsuits: [], error: false };
   try {
     const supabase = createPublicClient();
-    let query = supabase
-      .from('lawsuits')
-      .select('*')
-      .eq('review_status', 'published')
-      .in('status', [...OPEN_STATUSES])
-      // Also every guided slug, whatever its feed deadline says: the official
-      // deadline replaces it below, before the open rule decides.
-      .or(catalogDeadlineFilter(now))
-      .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`)
-      // Known deadlines first (soonest), then rows with no deadline.
-      .order('deadline', { ascending: true, nullsFirst: false })
-      .order('is_featured', { ascending: false });
-
     const q = cleanSearchTerm(opts?.q);
-    if (opts?.category) query = query.eq('category', opts.category);
-    if (opts?.featured) query = query.eq('is_featured', true);
-    if (q) query = query.ilike('title', `%${escapeLike(q)}%`);
 
-    const { data, error } = await query;
+    const run = async (includeOverride: boolean) => {
+      let query = supabase
+        .from('lawsuits')
+        .select('*')
+        .eq('review_status', 'published')
+        .in('status', [...OPEN_STATUSES])
+        // Also every guided slug, whatever its feed deadline says: the official
+        // deadline replaces it below, before the open rule decides.
+        .or(catalogDeadlineFilter(now, { includeOverride }))
+        .not('slug', 'in', `(${LIST_HIDDEN_SLUGS.join(',')})`)
+        // Known deadlines first (soonest), then rows with no deadline.
+        .order('deadline', { ascending: true, nullsFirst: false })
+        .order('is_featured', { ascending: false });
+
+      if (opts?.category) query = query.eq('category', opts.category);
+      if (opts?.featured) query = query.eq('is_featured', true);
+      if (q) query = query.ilike('title', `%${escapeLike(q)}%`);
+      return query;
+    };
+
+    let { data, error } = await run(true);
+    if (error && isMissingDeadlineOverrideColumn(error.message)) {
+      ({ data, error } = await run(false));
+    }
     if (error) {
       console.error('[lawsuits] catalog query failed:', error.message);
       return { lawsuits: [], error: true };
@@ -115,9 +123,9 @@ export async function lookupLawsuits(
     // open rule and the order read the official deadline (guides never insert
     // listings or change ingest / verified_at). The query already applies the
     // rule; filtering again keeps this list correct even if the query and the
-    // rule ever drift apart. The limit applies to that order, so it is taken
-    // here rather than in the query.
-    const lawsuits = openGuidedCatalog((data ?? []) as Lawsuit[], now);
+    // rule ever drift apart. Test/dummy rows never reach a visitor. The limit
+    // applies to that order, so it is taken here rather than in the query.
+    const lawsuits = openGuidedCatalog(rejectPublicTestListings((data ?? []) as Lawsuit[]), now);
     return { lawsuits: opts?.limit ? lawsuits.slice(0, opts.limit) : lawsuits, error: false };
   } catch (err) {
     console.error('[lawsuits] catalog query threw:', err instanceof Error ? err.message : err);
@@ -144,7 +152,7 @@ export type LawsuitLookup =
  * page and its metadata share one query.
  */
 export const lookupLawsuitBySlug = cache(async (slug: string): Promise<LawsuitLookup> => {
-  if (!slug || isFictionalSlug(slug)) return { status: 'missing' };
+  if (!slug || isFictionalSlug(slug) || isPublicTestListing({ slug })) return { status: 'missing' };
   if (!supabaseConfigured()) return { status: 'missing' };
   try {
     const supabase = createPublicClient();
@@ -159,7 +167,7 @@ export const lookupLawsuitBySlug = cache(async (slug: string): Promise<LawsuitLo
       return { status: 'error' };
     }
     const lawsuit = data as Lawsuit | null;
-    if (!lawsuit || !isPublicLawsuit(lawsuit)) return { status: 'missing' };
+    if (!lawsuit || !isPublicLawsuit(lawsuit) || isPublicTestListing(lawsuit)) return { status: 'missing' };
     return { status: 'found', lawsuit: applySettlementGuide(lawsuit) };
   } catch (err) {
     console.error('[lawsuits] settlement lookup threw:', err instanceof Error ? err.message : err);
@@ -209,7 +217,11 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
     }
     // Guides first, then the deadline order, as in lookupLawsuits.
     return {
-      lawsuits: sortByDeadline(applySettlementGuides(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit))),
+      lawsuits: sortByDeadline(
+        applySettlementGuides(
+          rejectPublicTestListings(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit)),
+        ),
+      ),
       error: false,
     };
   } catch (err) {

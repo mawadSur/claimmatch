@@ -221,7 +221,7 @@ describe('the catalog (lookupLawsuits; the app’s fetchCatalog takes the same s
 
   it('reads every guided row, then lists and orders by the official deadline', async () => {
     const { lawsuits } = await lookupLawsuits(undefined, now);
-    expect(db.calls).toContainEqual(['or', catalogDeadlineFilter(now)]);
+    expect(db.calls).toContainEqual(['or', catalogDeadlineFilter(now, { includeOverride: true })]);
     // A passed official deadline does not list as open, whatever the feed says.
     expect(lawsuits.map((l) => l.slug)).not.toContain(KIA);
     // A feed deadline later than the official one shows, and sorts by, the official one.

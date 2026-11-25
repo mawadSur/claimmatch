@@ -1,8 +1,10 @@
 import { AlertTriangle } from 'lucide-react';
+import { CatalogPagination } from '@/components/CatalogPagination';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HubLinks } from '@/components/settlement/HubLinks';
 import { PageBreadcrumbs } from '@/components/settlement/PageBreadcrumbs';
 import { RelatedSettlements } from '@/components/settlement/RelatedSettlements';
+import { LAWSUITS_PAGE_SIZE } from '@/lib/catalog-page';
 import type { RelatedSettlement } from '@/lib/related-settlements';
 import type { Lawsuit } from '@/lib/types';
 
@@ -16,6 +18,7 @@ export function HubChrome({
   emptyBody,
   related,
   relatedFromSlug,
+  pagination,
 }: {
   title: string;
   lede: string;
@@ -26,6 +29,13 @@ export function HubChrome({
   emptyBody: string;
   related?: RelatedSettlement[];
   relatedFromSlug?: string;
+  pagination?: {
+    page: number;
+    totalPages: number;
+    total: number;
+    prevHref: string | null;
+    nextHref: string | null;
+  };
 }) {
   return (
     <>
@@ -60,9 +70,7 @@ export function HubChrome({
 
       <section className="container-page py-10">
         <p className="text-sm text-ink-muted" role="status">
-          {lawsuits.length === 0
-            ? 'No open settlements in this list right now.'
-            : `Showing ${lawsuits.length} open ${lawsuits.length === 1 ? 'settlement' : 'settlements'}`}
+          {hubCountLabel(lawsuits.length, pagination)}
         </p>
         {lawsuits.length === 0 ? (
           <div className="mt-8 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-16 text-center">
@@ -78,10 +86,31 @@ export function HubChrome({
             ))}
           </ul>
         )}
+        {pagination ? (
+          <CatalogPagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            prevHref={pagination.prevHref}
+            nextHref={pagination.nextHref}
+          />
+        ) : null}
         {related && related.length > 0 && relatedFromSlug && (
           <RelatedSettlements items={related} fromSlug={relatedFromSlug} />
         )}
       </section>
     </>
   );
+}
+
+function hubCountLabel(
+  shown: number,
+  pagination?: { page: number; totalPages: number; total: number },
+): string {
+  if (shown === 0) return 'No open settlements in this list right now.';
+  if (!pagination || pagination.totalPages <= 1) {
+    return `Showing ${shown} open ${shown === 1 ? 'settlement' : 'settlements'}`;
+  }
+  const rangeStart = pagination.total === 0 ? 0 : (pagination.page - 1) * LAWSUITS_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(pagination.page * LAWSUITS_PAGE_SIZE, pagination.total);
+  return `Showing ${rangeStart}–${rangeEnd} of ${pagination.total} open ${pagination.total === 1 ? 'settlement' : 'settlements'}`;
 }

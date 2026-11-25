@@ -67,6 +67,20 @@ export function digestGate(digestEnabled: boolean): Gate {
   return digestEnabled ? { run: true } : { run: false, step: pausedByD50('DIGEST_ENABLED') };
 }
 
+/** Daily batched official claim-link checker. Off until LINK_CHECK_ENABLED=1. */
+export function linkCheckGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (link check)',
+          resume: 'Set LINK_CHECK_ENABLED=1 to probe official claim URLs daily in batches. The flag stays off until you turn it on.',
+        },
+      };
+}
+
 /** Official-site checks that feed held-closure triage groups. */
 export function heldTriageGate(enabled: boolean): Gate {
   return enabled

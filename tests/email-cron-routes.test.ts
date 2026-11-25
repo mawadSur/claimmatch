@@ -19,6 +19,7 @@ const m = vi.hoisted(() => {
     sendPayoutTrackerEmails: vi.fn(),
     sendMatchAlerts: vi.fn(),
     persistVerificationDrafts: vi.fn(),
+    runOfficialLinkCheck: vi.fn(),
     notifyNewMatches: vi.fn(),
     claimDue: vi.fn(),
     completeJob: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('@/lib/match-store', () => ({ persistStoredMatches: m.persistStoredMatch
 vi.mock('@/lib/payout-tracker', () => ({ sendPayoutTrackerEmails: m.sendPayoutTrackerEmails }));
 vi.mock('@/lib/match-alert-job', () => ({ sendMatchAlerts: m.sendMatchAlerts }));
 vi.mock('@/lib/verification-drafts-store', () => ({ persistVerificationDrafts: m.persistVerificationDrafts }));
+vi.mock('@/lib/link-check', () => ({ runOfficialLinkCheck: m.runOfficialLinkCheck }));
 vi.mock('@/lib/notifications', () => ({ notifyNewMatches: m.notifyNewMatches }));
 vi.mock('@/lib/jobs', () => ({
   claimDue: m.claimDue,
@@ -93,6 +95,7 @@ beforeEach(() => {
   m.sendPayoutTrackerEmails.mockResolvedValue({ candidates: 0, emailed: 0, skipped: null });
   m.sendMatchAlerts.mockResolvedValue({ considered: 0, planned: 0, emailed: 0, skipped: 'flag_off', dryRun: false, plans: [] });
   m.persistVerificationDrafts.mockResolvedValue({ considered: 0, drafted: 0, failed: 0, skipped: 0, skippedReason: null });
+  m.runOfficialLinkCheck.mockResolvedValue({ checked: 0, broken: 0, ok: 0, remaining: 0, batchSize: 25 });
   m.claimDue.mockResolvedValue([]);
   m.startIngestRun.mockResolvedValue('job-daily');
   m.finishIngestRun.mockResolvedValue(undefined);
@@ -135,6 +138,7 @@ describe('/api/cron/daily', () => {
         'payoutTracker',
         'verifyAssist',
         'matchAlerts',
+        'linkCheck',
       ],
       failedSteps: [],
       steps: {
@@ -147,6 +151,7 @@ describe('/api/cron/daily', () => {
         payoutTracker: { status: 'skipped', reason: 'paused (payout tracker emails)' },
         verifyAssist: { status: 'skipped', reason: 'paused (verification drafts)' },
         matchAlerts: { status: 'skipped', reason: 'paused (match alerts)' },
+        linkCheck: { status: 'skipped', reason: 'paused (link check)' },
       },
     });
   });
@@ -202,6 +207,15 @@ describe('/api/cron/daily', () => {
     expect(status).toBe(200);
     expect(m.sendMatchAlerts).toHaveBeenCalledOnce();
     expect(body.ranSteps).toEqual(['ingest', 'matchAlerts']);
+  });
+
+  it('runs the daily batched link check only when LINK_CHECK_ENABLED=1', async () => {
+    expect(m.runOfficialLinkCheck).not.toHaveBeenCalled();
+    vi.stubEnv('LINK_CHECK_ENABLED', '1');
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.runOfficialLinkCheck).toHaveBeenCalledOnce();
+    expect(body.ranSteps).toEqual(['ingest', 'linkCheck']);
   });
 
   it('answers 500 and names the step when ingest fails', async () => {

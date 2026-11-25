@@ -12,7 +12,7 @@ import { flags } from '@/lib/flags';
 import { daysUntilDeadline } from '@/lib/claim-deadlines';
 import { sendDeadlineReminderEmail } from '@/lib/email';
 import { NO_REMINDER_STATUSES, REMINDER_AGENT_STATUSES } from '@/lib/filing/v2/contract';
-import { guidedDeadline } from '@/lib/settlement-guides';
+import { guidedDeadline, isMissingDeadlineOverrideColumn } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
 
 export const DEADLINE_REMINDER_KINDS = ['7d', '1d'] as const;
@@ -142,7 +142,16 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
 
   const [{ data: lawsuitData, error: lawsuitError }, { data: profileData, error: profileError }] =
     await Promise.all([
-      supabase.from('lawsuits').select('id, slug, title, deadline').in('id', lawsuitIds),
+      (async () => {
+        const full = await supabase
+          .from('lawsuits')
+          .select('id, slug, title, deadline, deadline_override')
+          .in('id', lawsuitIds);
+        if (full.error && isMissingDeadlineOverrideColumn(full.error.message)) {
+          return supabase.from('lawsuits').select('id, slug, title, deadline').in('id', lawsuitIds);
+        }
+        return full;
+      })(),
       supabase.from('profiles').select('id, email, full_name, email_opt_in').in('id', userIds).eq('email_opt_in', true),
     ]);
   if (lawsuitError) {
@@ -153,7 +162,13 @@ export async function sendDeadlineReminders(opts: { now?: Date } = {}): Promise<
   }
 
   const lawsuits = new Map(
-    ((lawsuitData ?? []) as Array<{ id: string; slug: string; title: string; deadline: string | null }>).map(
+    ((lawsuitData ?? []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      deadline: string | null;
+      deadline_override?: string | null;
+    }>).map(
       (row) => [row.id, row],
     ),
   );

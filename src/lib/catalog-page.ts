@@ -158,6 +158,13 @@ export function catalogQueryString(opts: {
   return params.toString();
 }
 
+/** Hub path with an optional page param. Page 1 drops the query. */
+export function paginatedPath(base: string, page?: number): string {
+  if (!page || page <= 1) return base;
+  const join = base.includes('?') ? '&' : '?';
+  return `${base}${join}page=${page}`;
+}
+
 /** Path for a catalog page. Page 1 drops the page param (canonical target). */
 export function catalogPath(opts: {
   q?: string;
@@ -171,8 +178,8 @@ export function catalogPath(opts: {
 }
 
 /**
- * When pagination is off, every open row is one page (existing behavior).
- * When it is on, slice 24 at a time.
+ * Slice a catalog list. Public /lawsuits and /settlements/new always paginate;
+ * pass enabled=false only in tests that cover the legacy one-page HTML.
  */
 export function paginateCatalog<T>(
   items: T[],

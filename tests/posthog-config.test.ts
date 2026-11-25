@@ -52,7 +52,12 @@ describe('PostHog App Router wiring', () => {
     expect(packet).toContain("capture('prefill_opened'");
     expect(packet).toContain("capture('prefill_completed'");
     expect(home).toContain('landing_viewed');
+    expect(home).toContain('CaptureView');
     expect(settlement).toContain('settlement_viewed');
+    expect(settlement).toContain('CaptureView');
+    expect(read('src/components/analytics/CaptureView.tsx')).toContain('/api/analytics/view');
+    expect(read('src/components/PostHogProvider.tsx')).toContain('function initPostHog');
+    expect(read('src/lib/analytics/view-capture.ts')).toContain('landing_viewed');
     expect(report).toContain('claim_reported_filed');
     expect(report).toContain('claim_filed');
     expect(report).toContain('claim_self_reported');

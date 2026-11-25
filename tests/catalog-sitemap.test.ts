@@ -58,6 +58,22 @@ describe('sitemap', () => {
     expect((await sitemap()).some((e) => e.url.endsWith('/scorecard'))).toBe(true);
   });
 
+  it('lists paginated catalog URLs so /lawsuits page 2+ stay in the sitemap', async () => {
+    listed.lawsuits = Array.from({ length: 30 }, (_, i) =>
+      lawsuit({
+        id: String(i + 1),
+        slug: `open-settlement-${i}`,
+        title: `Open Settlement ${i}`,
+        eligibility_text: 'People who bought a widget.',
+        administrator: 'Angeion',
+      }),
+    );
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => u.endsWith('/lawsuits?page=2'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/new?page=2'))).toBe(true);
+    expect(urls.filter((u) => u.includes('/lawsuits/open-settlement-')).length).toBe(30);
+  });
+
   it('omits thin settlements that the detail page noindexes', async () => {
     listed.lawsuits = [
       lawsuit(),
