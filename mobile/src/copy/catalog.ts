@@ -14,7 +14,12 @@ export const catalog = defineCopy({
   },
   intro: {
     text: 'Class action settlements that are taking claims now. Check who qualifies on the official site, file there for free, and keep track of your claim in Lawsuit AI.',
-    source: 'src/app/lawsuits/page.tsx',
+    source: 'src/lib/copy.ts',
+  },
+  /** Flag on: CATALOG_INTRO_MAY_FILE. */
+  introMayFile: {
+    text: 'Class action settlements that are taking claims now. Check who qualifies on the official site. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.',
+    source: 'src/lib/copy.ts',
   },
 
   // Search and filters (src/components/LawsuitFilters.tsx) -------------------
@@ -159,3 +164,7 @@ export const catalog = defineCopy({
     mobileOnly: true,
   },
 });
+
+export function catalogIntroText(mayFile: boolean): string {
+  return mayFile ? catalog.introMayFile.text : catalog.intro.text;
+}

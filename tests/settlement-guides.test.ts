@@ -62,6 +62,19 @@ const WEEKLY_BATCH_SLUGS = [
   'lane-county-1-35m-tax-foreclosure-class-action-settlement',
 ] as const;
 
+const SEARCH_BATCH_SLUGS = [
+  'earn-company-fees-class-action-settlement',
+  'zumba-fitness-data-privacy-class-action-settlement',
+  'asure-software-bipa-settlement',
+  'starbucks-welfare-benefits-plan-class-action-settlement',
+  'bank-of-america-unused-vacation-class-action-settlement',
+  'al-piemonte-nissan-tcpa-settlement-100-voucher-or-20-cash',
+  'merrill-lynch-39m-edge-retirement-accounts-settlement',
+  'indegene-unwanted-faxes-class-action-settlement',
+  'steel-warehouse-company-data-breach-settlement',
+  'bright-lending-15-million-high-interest-loans-settlement',
+] as const;
+
 describe('settlement guides', () => {
   it('covers the original ten plus the new batch with an official https source', () => {
     const slugs = SETTLEMENT_GUIDES.flatMap((guide) => guide.slugs);
@@ -94,6 +107,17 @@ describe('settlement guides', () => {
       expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(guide?.sourceChecked).toBe('2026-11-24');
       expect((guide?.deadline ?? '') >= '2026-11-24').toBe(true);
+    }
+    for (const slug of SEARCH_BATCH_SLUGS) {
+      expect(slugs, slug).toContain(slug);
+      const guide = getSettlementGuide(slug);
+      expect(guide?.officialUrl).toMatch(/^https:\/\//);
+      expect(guide?.eligibilityText.length).toBeGreaterThan(40);
+      expect(guide?.typicalPayout.length).toBeGreaterThan(20);
+      expect(guide?.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(guide?.sourceChecked).toBe('2026-11-25');
+      expect((guide?.deadline ?? '') >= '2026-11-25').toBe(true);
+      expect(guide?.proofDetail).toMatch(/https:\/\//);
     }
     expect(new Set(SETTLEMENT_GUIDES.map((g) => g.officialUrl)).size).toBe(SETTLEMENT_GUIDES.length);
   });

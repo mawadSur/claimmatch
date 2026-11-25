@@ -11,6 +11,8 @@ import {
   NEUTRAL_BETA_FEE_COPY,
   WE_FILE_SUPPORTED,
   WE_FILE_SUPPORTED_SENTENCE,
+  SIGNUP_INTRO_MAY_FILE,
+  SIGNUP_INTRO_NEVER_FILES,
   WHAT_WE_STORE_MINIMAL,
 } from '@/lib/copy';
 import { publicPageMetadata } from '@/lib/site-metadata';
@@ -72,9 +74,7 @@ export default function SignupPage() {
               Create your free account
             </h1>
             <p className="mt-3 text-ink-muted">
-              {mayFile
-                ? `Keep track of your settlement claims in one place. ${WE_FILE_SUPPORTED_SENTENCE}`
-                : 'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.'}
+              {mayFile ? SIGNUP_INTRO_MAY_FILE : SIGNUP_INTRO_NEVER_FILES}
             </p>
           </div>
 

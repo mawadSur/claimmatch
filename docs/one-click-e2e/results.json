@@ -1,0 +1,152 @@
+[
+  {
+    "slug": "realpage-rental-software-antitrust-settlement",
+    "officialUrl": "https://www.realpagerentalsettlement.com/",
+    "formUrlTried": "https://www.realpagerentalsettlement.com/submit-claim",
+    "finalUrl": "https://www.realpagerentalsettlement.com/submit-claim",
+    "deadline": "2027-01-29",
+    "extraUserFields": [
+      "Whether you rented a multifamily apartment in the U.S. from Oct 18, 2018 through Nov 21, 2025",
+      "Whether rent was paid directly for a property on the official Property List",
+      "Optional notice ID if you have one; take the No-notice path if you do not"
+    ],
+    "filled": [
+      "first name",
+      "last name",
+      "legal name",
+      "email",
+      "confirm email",
+      "phone",
+      "address 1",
+      "address 2",
+      "city",
+      "state",
+      "state",
+      "zip",
+      "country",
+      "signature",
+      "signature date"
+    ],
+    "stoppedAt": "final-step-before-submit",
+    "captcha": false,
+    "accountLogin": false,
+    "proofUpload": false,
+    "submitVisible": true,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/realpage-rental-software-antitrust-settlement/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "clicked No (no-notice path)",
+      "clicked Continue after No",
+      "submit control visible; refusing to click"
+    ]
+  },
+  {
+    "slug": "john-deere-repair-services-antitrust-settlement",
+    "officialUrl": "https://www.deererepairsettlement.com/",
+    "formUrlTried": "https://www.deererepairsettlement.com/submit-claim",
+    "finalUrl": "https://www.deererepairsettlement.com/submit-claim",
+    "deadline": "2026-12-31",
+    "extraUserFields": [
+      "Equipment identification number from the machine",
+      "Type of equipment and approximate ownership and repair dates",
+      "Optional notice ID; take the No-notice path if you do not have one"
+    ],
+    "filled": [
+      "full name",
+      "email",
+      "confirm email",
+      "phone",
+      "address 1",
+      "address 2",
+      "city",
+      "state",
+      "state",
+      "zip",
+      "signature",
+      "signature date"
+    ],
+    "stoppedAt": "final-step-before-submit",
+    "captcha": false,
+    "accountLogin": false,
+    "proofUpload": true,
+    "submitVisible": true,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/john-deere-repair-services-antitrust-settlement/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "clicked No (no-notice path)",
+      "clicked Continue after No",
+      "submit control visible; refusing to click"
+    ]
+  },
+  {
+    "slug": "tenet-healthcare-pixel-tracking-settlement",
+    "officialUrl": "https://www.tenetpixelsettlement.com/",
+    "formUrlTried": "https://www.tenetpixelsettlement.com/file-a-claim",
+    "finalUrl": "https://www.tenetpixelsettlement.com/form/claim",
+    "deadline": "2027-03-15",
+    "extraUserFields": [
+      "Whether to claim $16 cash, privacy monitoring, or both",
+      "Notice LoginID if Simpluris still requires Claim Form Login — do not approve this draft while a PIN login is the only path"
+    ],
+    "filled": [],
+    "stoppedAt": "account-login",
+    "captcha": false,
+    "accountLogin": true,
+    "proofUpload": false,
+    "submitVisible": false,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/tenet-healthcare-pixel-tracking-settlement/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "official form requires a notice login; not fillable from profile"
+    ]
+  },
+  {
+    "slug": "seatgeek-ticket-fees-nevada-class-action-settlement",
+    "officialUrl": "https://www.seatgeekticketfeessettlement.com/",
+    "formUrlTried": "https://www.seatgeekticketfeessettlement.com/file-a-claim",
+    "finalUrl": "https://www.seatgeekticketfeessettlement.com/form/claim",
+    "deadline": "2027-01-05",
+    "extraUserFields": [
+      "Optional notice or claimant ID if the form shows one",
+      "Do not approve this draft while Simpluris Claim Form Login is the only path"
+    ],
+    "filled": [],
+    "stoppedAt": "account-login",
+    "captcha": false,
+    "accountLogin": true,
+    "proofUpload": false,
+    "submitVisible": false,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/seatgeek-ticket-fees-nevada-class-action-settlement/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "official form requires a notice login; not fillable from profile"
+    ]
+  },
+  {
+    "slug": "dental-intelligence-5-75m-privacy-class-action-settlement",
+    "officialUrl": "https://www.disettlement.com/",
+    "formUrlTried": "https://www.disettlement.com/file-a-claim",
+    "finalUrl": "https://www.disettlement.com/form/claim",
+    "deadline": "2027-01-25",
+    "extraUserFields": [
+      "Optional notice or claimant ID if the form shows one",
+      "Do not approve this draft while Simpluris Claim Form Login is the only path"
+    ],
+    "filled": [],
+    "stoppedAt": "account-login",
+    "captcha": false,
+    "accountLogin": true,
+    "proofUpload": false,
+    "submitVisible": false,
+    "submitClicked": false,
+    "screenshot": "docs/one-click-e2e/dental-intelligence-5-75m-privacy-class-action-settlement/final-step.png",
+    "notes": [
+      "clicked homepage claim link",
+      "official form requires a notice login; not fillable from profile"
+    ]
+  }
+]

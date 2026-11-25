@@ -1,0 +1,23 @@
+{
+  "slug": "tenet-healthcare-pixel-tracking-settlement",
+  "officialUrl": "https://www.tenetpixelsettlement.com/",
+  "formUrlTried": "https://www.tenetpixelsettlement.com/file-a-claim",
+  "finalUrl": "https://www.tenetpixelsettlement.com/form/claim",
+  "deadline": "2027-03-15",
+  "extraUserFields": [
+    "Whether to claim $16 cash, privacy monitoring, or both",
+    "Notice LoginID if Simpluris still requires Claim Form Login — do not approve this draft while a PIN login is the only path"
+  ],
+  "filled": [],
+  "stoppedAt": "account-login",
+  "captcha": false,
+  "accountLogin": true,
+  "proofUpload": false,
+  "submitVisible": false,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/tenet-healthcare-pixel-tracking-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "official form requires a notice login; not fillable from profile"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "slug": "dental-intelligence-5-75m-privacy-class-action-settlement",
+  "officialUrl": "https://www.disettlement.com/",
+  "formUrlTried": "https://www.disettlement.com/file-a-claim",
+  "finalUrl": "https://www.disettlement.com/form/claim",
+  "deadline": "2027-01-25",
+  "extraUserFields": [
+    "Optional notice or claimant ID if the form shows one",
+    "Do not approve this draft while Simpluris Claim Form Login is the only path"
+  ],
+  "filled": [],
+  "stoppedAt": "account-login",
+  "captcha": false,
+  "accountLogin": true,
+  "proofUpload": false,
+  "submitVisible": false,
+  "submitClicked": false,
+  "screenshot": "docs/one-click-e2e/dental-intelligence-5-75m-privacy-class-action-settlement/final-step.png",
+  "notes": [
+    "clicked homepage claim link",
+    "official form requires a notice login; not fillable from profile"
+  ]
+}

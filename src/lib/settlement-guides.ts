@@ -494,6 +494,251 @@ const KISCO: SettlementGuide = {
     'Gois et al. v. Kisco Senior Living, LLC covers U.S. residents Kisco notified of a June 1–6, 2023 data incident. The fund is $1,800,000. Claims may include credit monitoring, out-of-pocket losses, attested time, $250 for California residents at the time of the incident, and residual cash. A claim form is due January 19, 2027. CPT Group, Inc. administers the official site. The court still has to approve the settlement.',
 };
 
+const EARN_COMPANY: SettlementGuide = {
+  slugs: ['earn-company-fees-class-action-settlement'],
+  officialUrl: 'https://www.creditexterminatorsclassaction.com/',
+  sourceChecked: '2026-11-25',
+  eligibilityText:
+    'People covered by Christina Atterbury v. Earn Company, et al., a Pennsylvania case alleging Credit Repair Organizations Act claims against Earn Company, Earn Finance Company LLC, Credit Exterminators Inc., Sprinkle of Jesus Corp., and named individuals. Defendants deny the claims. The official site says you are affected whether you act or not.',
+  typicalPayout:
+    'A $125,000.00 gross fund, payable over about two years, for class members, administration costs, Class Counsel expenses, and a service award. If the court approves the settlement as presented, you are paid a proportionate share of the net proceeds by check unless you pick an electronic method. No claim form is listed.',
+  deadline: '2026-12-26',
+  proof: 'no',
+  proofDetail:
+    'The official site does not ask you to file a claim. Do nothing to stay in the class and receive a share if the court approves. December 26, 2026 is the deadline to object. The final hearing is January 20, 2027, at 10:00 a.m. in Courtroom 636. Source: https://www.creditexterminatorsclassaction.com/',
+  summary:
+    'A $125,000 Earn Company / Credit Exterminators settlement. Payment is automatic if the court approves; object by December 26, 2026.',
+  description:
+    'Christina Atterbury v. Earn Company, et al. is a proposed Credit Repair Organizations Act settlement. The fund is $125,000.00, paid over about two years. Defendants deny the claims. The official site says doing nothing keeps you in the class and, if approved, pays a proportionate share of the net proceeds. Object by December 26, 2026. The hearing is January 20, 2027. Source: https://www.creditexterminatorsclassaction.com/',
+  extraFaqs: [
+    {
+      q: 'Do I have to file an Earn Company claim to be paid?',
+      a: 'The official site lists Do Nothing, Object, and Go to a Hearing. It does not list a claim form. Confirm on https://www.creditexterminatorsclassaction.com/ before you act.',
+    },
+  ],
+};
+
+const ZUMBA_VPPA: SettlementGuide = {
+  slugs: ['zumba-fitness-data-privacy-class-action-settlement'],
+  officialUrl: 'https://www.zumbavppasettlement.com/',
+  sourceChecked: '2026-11-25',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'People who received notice of Kueppers et al. v. Zumba Fitness, LLC. Plaintiffs allege Zumba used third-party tracking technologies to send personally identifiable information about customers’ purchases to Meta, MNTN, and Pinterest under the Video Privacy Protection Act. Zumba denies wrongdoing. The Court certified a Class and three Subclasses. If you received notice by email or postal mail, Zumba’s records indicate you are a Class Member.',
+  typicalPayout:
+    'If you are a Class Member and do nothing, you automatically receive a Settlement payment if the Court grants final approval. The official homepage does not state a fixed per-person amount.',
+  deadline: '2026-12-14',
+  proof: 'no',
+  proofDetail:
+    'No claim form is required for payment. December 14, 2026 is the opt-out and objection deadline. Final approval is set for January 21, 2027 at 1:00 p.m. Eastern Time. Source: https://www.zumbavppasettlement.com/',
+  summary:
+    'A Zumba Fitness VPPA settlement. Class members who received notice are paid automatically if the court approves; opt out by December 14, 2026.',
+  description:
+    'Kueppers et al. v. Zumba Fitness, LLC alleges Video Privacy Protection Act tracking of purchase information. Zumba denies the claims. People who received notice are Class Members. Doing nothing means an automatic payment if the Court grants final approval. Opt out or object by December 14, 2026. Simpluris runs the official site. Source: https://www.zumbavppasettlement.com/',
+  extraFaqs: [
+    {
+      q: 'Is there a Zumba claim form?',
+      a: 'The official site says if you do nothing you automatically receive a payment if the Court grants final approval. Confirm on https://www.zumbavppasettlement.com/.',
+    },
+  ],
+};
+
+const ASURE_BIPA: SettlementGuide = {
+  slugs: ['asure-software-bipa-settlement'],
+  officialUrl: 'https://www.asurebipasettlement.com/',
+  sourceChecked: '2026-11-25',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'People who, at any time between January 25, 2017 and September 17, 2026, used an Asure Software, Inc. timeclock while working at a Packers Sanitation Service location in Illinois. Vega v. Asure Software, Inc., No. 2022-CH-00651, Circuit Court of Cook County, Illinois. Asure denies that it violated BIPA.',
+  typicalPayout:
+    'A $644,105.00 Settlement Fund. Each Settlement Class Member who submits a timely Claim Form that is deemed valid receives an equal payment. The official FAQ estimates a net per-person payment of about $950.00–$2,800.00, depending on how many valid claims are filed.',
+  deadline: '2026-12-21',
+  proof: 'no',
+  proofDetail:
+    'A valid, timely Claim Form is due by December 21, 2026, online or mailed to Vega v. Asure Software, Inc. c/o Settlement Administrator, P.O. Box 25226, Santa Ana, CA 92799-9958. The official FAQ says submitting that form is the only thing you need to do to receive a payment. Source: https://www.asurebipasettlement.com/faq',
+  summary:
+    'An Asure Software BIPA settlement for Illinois Packers Sanitation workers who used an Asure timeclock. Estimated cash is about $950 to $2,800 if you file by December 21, 2026.',
+  description:
+    'Vega v. Asure Software, Inc. covers people who used an Asure timeclock at a Packers Sanitation Service facility in Illinois from January 25, 2017 through September 17, 2026. The fund is $644,105.00. Valid timely claims share equally; the official FAQ estimates about $950.00–$2,800.00 net. Claims are due December 21, 2026. Simpluris administers the official site. Source: https://www.asurebipasettlement.com/',
+  extraFaqs: [
+    {
+      q: 'Do I need extra proof for the Asure BIPA settlement?',
+      a: 'The official FAQ says a valid and timely Claim Form is the only thing you need to do to receive a payment. Confirm on https://www.asurebipasettlement.com/faq.',
+    },
+  ],
+};
+
+const STARBUCKS_COBRA: SettlementGuide = {
+  slugs: ['starbucks-welfare-benefits-plan-class-action-settlement'],
+  officialUrl: 'https://cobranoticeclassaction.com/',
+  sourceChecked: '2026-11-25',
+  eligibilityText:
+    'All participants not subject to Starbucks’ Arbitration Agreement, and all beneficiaries in Starbucks’ Welfare Benefits Plan, including the Health Plan and Vision Plan, in the United States who were sent a COBRA notice between July 21, 2016 through January 1, 2023, as a result of a qualifying event, as determined by Starbucks and/or its third party administrator, and who did not elect continuation coverage. Lubin v. Starbucks Corporation, M.D. Fla. Case No. 8:20-cv-01311-CEH-TGW. About 33,800 potential members. Starbucks denies the claims.',
+  typicalPayout:
+    'A $325,000.00 fund. Every Settlement Class Member who submits a valid claim form receives a pro-rata share of the Net Settlement Fund, which shall be disbursed in full to all Settlement Class Members.',
+  deadline: '2026-12-02',
+  proof: 'no',
+  proofDetail:
+    'The official notice says you may submit a claim by mailing a completed claim form postmarked no later than December 2, 2026. Additional instructions are in FAQ question 7 on the official site. Source: https://cobranoticeclassaction.com/',
+  summary:
+    'A Starbucks COBRA-notice settlement. A $325,000 fund is shared among valid mailed claims postmarked by December 2, 2026.',
+  description:
+    'Raphyr Lubin et al. v. Starbucks Corporation covers participants and beneficiaries in Starbucks’ Welfare Benefits Plan who were sent a COBRA notice between July 21, 2016 and January 1, 2023 after a qualifying event and did not elect continuation coverage, excluding people subject to Starbucks’ arbitration agreement. The fund is $325,000.00. Mail a claim form postmarked by December 2, 2026. Starbucks denies the claims. Source: https://cobranoticeclassaction.com/',
+  extraFaqs: [
+    {
+      q: 'Can I file the Starbucks COBRA settlement claim online?',
+      a: 'The official homepage describes mailing a completed claim form postmarked no later than December 2, 2026. Check FAQ question 7 on https://cobranoticeclassaction.com/ for any other method.',
+    },
+  ],
+};
+
+const BOFA_VACATION: SettlementGuide = {
+  slugs: ['bank-of-america-unused-vacation-class-action-settlement'],
+  officialUrl: 'https://unusedvacationsettlement.com/',
+  sourceChecked: '2026-11-25',
+  eligibilityText:
+    'Former Bank of America employees who (1) worked in California, New York, and/or Illinois during the timeframes in the official FAQ; (2) had a positive vacation balance at separation (vacation accrued in the year of separation plus vacation carried over from the prior year, if any, greater than vacation recorded in Workday as used that year); and (3) did not receive any payout for accrued but unused vacation at separation; or any Named Plaintiff to the extent otherwise not included. Nguyen et al. v. Bank of America, N.A., Case No. 5:23-cv-04999-PCP.',
+  typicalPayout:
+    'An Individual Settlement Payment if you do nothing. You do not have to file a claim to participate. If you believe the data on the Adjustment Form that came with the Notice is wrong, you may submit a completed Adjustment Form and supporting documentation by January 7, 2027.',
+  deadline: '2027-01-07',
+  proof: 'optional',
+  proofDetail:
+    'No claim form is required for the Individual Settlement Payment. January 7, 2027 is the deadline to opt out, object, or submit an Adjustment Form with supporting documentation if you dispute the Notice’s data. Final approval is scheduled January 28, 2027. Source: https://unusedvacationsettlement.com/',
+  summary:
+    'A Bank of America unused-vacation settlement for certain former employees in California, New York, or Illinois. Payment is automatic; an adjustment form is optional by January 7, 2027.',
+  description:
+    'Nguyen et al. v. Bank of America, N.A. covers certain former employees in California, New York, and/or Illinois with unused vacation at separation that was not paid out. The official site says you don’t have to do anything to receive an Individual Settlement Payment. Opt out, object, or submit an Adjustment Form by January 7, 2027. Source: https://unusedvacationsettlement.com/',
+  extraFaqs: [
+    {
+      q: 'Do I file a Bank of America unused-vacation claim?',
+      a: 'The official site says you don’t have to do anything to participate and be eligible for an Individual Settlement Payment. An Adjustment Form is only if you dispute the Notice’s data. Confirm on https://unusedvacationsettlement.com/.',
+    },
+  ],
+};
+
+const AL_PIEMONTE: SettlementGuide = {
+  slugs: ['al-piemonte-nissan-tcpa-settlement-100-voucher-or-20-cash'],
+  officialUrl: 'https://www.apntcpasettlement.com/',
+  sourceChecked: '2026-11-25',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'Do Not Call Registry Class: All persons in the United States who from May 9, 2021 through September 1, 2026 (1) were sent a text message or received a phone call by or on behalf of Al Piemonte Nissan; (2) more than one time within any 12-month period; (3) where the person’s residential telephone number had been listed on the National Do Not Call Registry for at least thirty days prior to the communication; (4) for the purpose of selling APN’s products and services; and (5) for whom there was no established business relationship or prior express written consent. Hazem Arman v. Al Piemonte Nissan, Case No. 2026LA000850. APN denies the claims.',
+  typicalPayout:
+    'A Settlement Fund of up to $3,700,000.00 in vouchers or up to $740,000.00 in cash. Settlement Class Members who submit a timely claim receive a $100.00 voucher or $20.00 cash payment (member’s choice) per person, reduced pro rata if the fund is not enough. One Claim Form covers all texts and calls that person received.',
+  deadline: '2026-12-15',
+  proof: 'no',
+  proofDetail:
+    'A valid Claim Form is due by 11:59 p.m. Eastern on December 15, 2026 online, or mailed and postmarked by that date. You need the LoginID from the Notice of Settlement, or you can contact the Settlement Administrator. Source: https://www.apntcpasettlement.com/faq',
+  summary:
+    'An Al Piemonte Nissan TCPA settlement. A $100 voucher or $20 cash is claimed with a LoginID by December 15, 2026.',
+  description:
+    'Hazem Arman v. Al Piemonte Nissan covers U.S. people on the National Do Not Call Registry who got more than one marketing text or call from the dealership from May 9, 2021 through September 1, 2026. Valid timely claims may take a $100.00 voucher or $20.00 cash. Claims are due December 15, 2026 and need the LoginID from the notice. Simpluris administers the official site. Source: https://www.apntcpasettlement.com/',
+  extraFaqs: [
+    {
+      q: 'What is the Al Piemonte Nissan LoginID?',
+      a: 'The official FAQ says you will need the LoginID from the Notice of Settlement you received, or you can contact the Settlement Administrator at (866) 603-4665. Source: https://www.apntcpasettlement.com/faq',
+    },
+  ],
+};
+
+const MERRILL_EDGE: SettlementGuide = {
+  slugs: ['merrill-lynch-39m-edge-retirement-accounts-settlement'],
+  officialUrl: 'https://www.mlretirementaccountlitigation.com/',
+  sourceChecked: '2026-11-25',
+  administrator: 'JND Legal Administration',
+  eligibilityText:
+    'People who had one or more Merrill Edge Self-Directed Investing retirement accounts with cash balances swept pursuant to the Retirement Asset Savings Program (RASP) at any time from December 15, 2016 through March 15, 2020 (for example IRA, Roth IRA, Rollover IRA, Inherited IRA, SEP IRA, SIMPLE IRA). A Merrill Edge non-retirement account, or a retirement account not offered by Merrill Edge Self-Directed Investing, is not in the Class. Valelly v. Merrill Lynch, Pierce, Fenner & Smith Incorporated, Case No. 1:19-cv-07998-VEC.',
+  typicalPayout:
+    'A $39 million Settlement Fund. There is no need to file a claim. Payment goes into an existing Merrill Edge retirement account, or by check or electronic transfer if you no longer maintain the account. Payments under $10 will not be issued. Class Members who no longer maintain Merrill Edge retirement accounts may submit an Electronic Payment Request by March 26, 2027.',
+  deadline: '2027-03-26',
+  proof: 'no',
+  proofDetail:
+    'No claim form is required. March 26, 2027 is the deadline to choose electronic transfer instead of a check if you no longer have a Merrill Edge retirement account. Opt out or object by February 19, 2027. The settlement hearing is March 12, 2027 at 10:00 A.M. Eastern. Source: https://www.mlretirementaccountlitigation.com/',
+  summary:
+    'A $39 million Merrill Edge retirement-account settlement. No claim form is required; choose electronic payment by March 26, 2027 if you closed the account.',
+  description:
+    'Valelly v. Merrill Lynch covers Merrill Edge Self-Directed Investing retirement accounts with RASP sweeps from December 15, 2016 through March 15, 2020. The fund is $39 million. You do not need to file a claim. Payments under $10 are not issued. Electronic Payment Requests for closed accounts are due March 26, 2027. JND Legal Administration runs the official site. Source: https://www.mlretirementaccountlitigation.com/',
+  extraFaqs: [
+    {
+      q: 'Do I file a Merrill Edge retirement settlement claim?',
+      a: 'The official site says there is no need to file a claim. Closed-account holders may request electronic payment by March 26, 2027. Confirm on https://www.mlretirementaccountlitigation.com/.',
+    },
+  ],
+};
+
+const INDEGENE_FAX: SettlementGuide = {
+  slugs: ['indegene-unwanted-faxes-class-action-settlement'],
+  officialUrl: 'https://indegenetcpasettlement.com/',
+  sourceChecked: '2026-11-25',
+  eligibilityText:
+    'People who were successfully sent a fax on or about February 7, 2020 that states “Medical Record Review of the Impact of Adverse Events Associated with the Use of Current anti-Parkinson’s Disease Medications on Patient Clinical Therapeutics and Outcomes Trajectories in the U.S,” and offers an honorarium of $250 per eligible patient. Progressive Health and Rehab Corp. v. Indegene Inc. et al., Case No. 1:20-cv-10106, District of New Jersey. Defendants deny wrongdoing.',
+  typicalPayout:
+    'A share of the Settlement Fund if you complete and return a signed Claim Form. The official homepage does not state a fixed per-person amount.',
+  deadline: '2026-12-09',
+  proof: 'no',
+  proofDetail:
+    'A completed, signed Claim Form must be returned by December 9, 2026. The official homepage does not ask for receipts. Source: https://indegenetcpasettlement.com/',
+  summary:
+    'An Indegene TCPA fax settlement. A share of the fund is claimed with a signed form by December 9, 2026.',
+  description:
+    'Progressive v. Indegene covers faxes sent on or about February 7, 2020 about a medical-record-review honorarium. Defendants deny the claims. A signed Claim Form is due December 9, 2026. The official homepage does not state a per-person amount. Source: https://indegenetcpasettlement.com/',
+  extraFaqs: [
+    {
+      q: 'What fax is in the Indegene settlement?',
+      a: 'The official site describes a fax sent on or about February 7, 2020 with the title “Medical Record Review of the Impact of Adverse Events Associated with the Use of Current anti-Parkinson’s Disease Medications on Patient Clinical Therapeutics and Outcomes Trajectories in the U.S.” Source: https://indegenetcpasettlement.com/',
+    },
+  ],
+};
+
+const STEEL_WAREHOUSE: SettlementGuide = {
+  slugs: ['steel-warehouse-company-data-breach-settlement'],
+  officialUrl: 'https://www.steelwarehousedatasettlement.com/',
+  sourceChecked: '2026-11-25',
+  administrator: 'Simpluris',
+  eligibilityText:
+    'All individuals whose personal identifying information may have been compromised as a result of the January 2025 Steel Warehouse Company, LLC Data Incident, as identified on the Class List. In re: Steel Warehouse Data Incident Litigation, Cause No. 71D04-2508-CE-000011, Indiana Commercial Court, St. Joseph County Superior Court. Steel Warehouse denies wrongdoing.',
+  typicalPayout:
+    'One year of CyEx Financial Shield Complete credit monitoring with $1 million of financial fraud insurance, plus one cash option: up to $5,000.00 for documented out-of-pocket losses between January 23, 2025 and December 1, 2026; up to $60.00 for lost time (up to 3 hours at $20.00/hour); or a one-time $40.00 alternative cash payment with no proof.',
+  deadline: '2026-12-01',
+  proof: 'optional',
+  proofDetail:
+    'A Claim Form is due online or postmarked by December 1, 2026. The $40.00 alternative cash payment does not require proof. Out-of-pocket claims need documents such as bank statements or receipts. Lost-time claims need a brief description of the time spent. Source: https://www.steelwarehousedatasettlement.com/faq',
+  summary:
+    'A Steel Warehouse January 2025 data-incident settlement. Credit monitoring plus $40 cash, documented losses, or lost-time pay is claimed by December 1, 2026.',
+  description:
+    'In re: Steel Warehouse Data Incident Litigation covers people on the Class List whose information may have been accessed in a January 2025 cyberattack. Class members may claim one year of CyEx monitoring and one cash option, including a $40 payment with no proof. Claims are due December 1, 2026. Source: https://www.steelwarehousedatasettlement.com/',
+  extraFaqs: [
+    {
+      q: 'Do I need proof for the Steel Warehouse $40 cash option?',
+      a: 'The official FAQ says you do not have to provide any proof or explanation to claim the one-time $40.00 alternative cash payment. Out-of-pocket claims up to $5,000.00 do need documents. Source: https://www.steelwarehousedatasettlement.com/faq',
+    },
+  ],
+};
+
+const BRIGHT_LENDING: SettlementGuide = {
+  slugs: ['bright-lending-15-million-high-interest-loans-settlement'],
+  officialUrl: 'https://brightlendingsettlement.com/',
+  sourceChecked: '2026-11-25',
+  eligibilityText:
+    'Borrowers identified as members of the Classes of borrowers who obtained a loan from Aaniiih Nakoda Finance, LLC, dba Bright Lending. Curtis Dixon et al. v. Benjamin E. Gatzke et al. Defendants deny all wrongdoing and liability.',
+  typicalPayout:
+    'If the Settlement is approved, each Class member will receive (1) debt cancellation and/or (2) a cash payment. Monetary Relief Class Members may update a mailing address or elect ACH, Venmo, PayPal, or Zelle instead of a paper check by December 21, 2026. Doing nothing keeps you in the class.',
+  deadline: '2026-12-21',
+  proof: 'no',
+  proofDetail:
+    'The official site does not ask you to file a claim form for the listed benefits. December 21, 2026 is the deadline for Monetary Relief Class Members to change a payment option. Source: https://brightlendingsettlement.com/',
+  summary:
+    'A Bright Lending settlement offering debt cancellation and/or cash. No claim form is listed; change payment method by December 21, 2026.',
+  description:
+    'Curtis Dixon et al. v. Benjamin E. Gatzke et al. covers Bright Lending borrowers identified as class members. If approved, each class member receives debt cancellation and/or a cash payment. The official site lists Do Nothing, change payment option by December 21, 2026, exclude, or object. Defendants deny the claims. Source: https://brightlendingsettlement.com/',
+  extraFaqs: [
+    {
+      q: 'Do I file a Bright Lending claim form?',
+      a: 'The official homepage lists Do Nothing, Change Your Payment Option, Exclude Yourself, and Object. It does not list a claim form for the listed benefits. Confirm on https://brightlendingsettlement.com/.',
+    },
+  ],
+};
+
 const LANE_COUNTY: SettlementGuide = {
   slugs: ['lane-county-1-35m-tax-foreclosure-class-action-settlement'],
   officialUrl: 'https://www.lanetaxforeclosuresettlement.com/',
@@ -538,6 +783,16 @@ export const SETTLEMENT_GUIDES: SettlementGuide[] = [
   ADAMS_TOYOTA,
   KISCO,
   LANE_COUNTY,
+  EARN_COMPANY,
+  ZUMBA_VPPA,
+  ASURE_BIPA,
+  STARBUCKS_COBRA,
+  BOFA_VACATION,
+  AL_PIEMONTE,
+  MERRILL_EDGE,
+  INDEGENE_FAX,
+  STEEL_WAREHOUSE,
+  BRIGHT_LENDING,
 ];
 
 function bySlug(guides: readonly SettlementGuide[]): ReadonlyMap<string, SettlementGuide> {

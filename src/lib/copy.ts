@@ -46,6 +46,16 @@ export const WE_FILE_FOR_YOU_BADGE = 'We file for you';
 export const WE_FILE_SUPPORTED_SENTENCE =
   'We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
 
+export const SIGNUP_INTRO_MAY_FILE =
+  'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
+export const SIGNUP_INTRO_NEVER_FILES =
+  'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.';
+
+export const CATALOG_INTRO_NEVER_FILES =
+  'Class action settlements that are taking claims now. Check who qualifies on the official site, file there for free, and keep track of your claim in Lawsuit AI.';
+export const CATALOG_INTRO_MAY_FILE =
+  'Class action settlements that are taking claims now. Check who qualifies on the official site. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
+
 /** Catalog / trust bullet: supported settlements vs self-file. */
 export function whoFilesBullet(mayFile = lawsuitAiMayFile()): string {
   return mayFile ? WE_FILE_SUPPORTED : 'You file on the official site';

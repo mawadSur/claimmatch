@@ -28,7 +28,7 @@ import { HubLinks } from '@/components/settlement/HubLinks';
 import { pageUrl } from '@/lib/settlement-seo';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
-import { lawsuitAiMayFile, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
+import { CATALOG_INTRO_MAY_FILE, CATALOG_INTRO_NEVER_FILES, lawsuitAiMayFile } from '@/lib/copy';
 import { oneClickLawsuitIdSet } from '@/lib/one-click-listings';
 
 const DESCRIPTION =
@@ -136,9 +136,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             Open settlements
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
-            Class action settlements that are taking claims now. Check who qualifies on
-            the official site
-            {mayFile ? `. ${WE_FILE_SUPPORTED_SENTENCE}` : ', file there for free, and keep track of your claim in Lawsuit AI.'}
+            {mayFile ? CATALOG_INTRO_MAY_FILE : CATALOG_INTRO_NEVER_FILES}
             {flags.catalogValueRank()
               ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
               : ''}

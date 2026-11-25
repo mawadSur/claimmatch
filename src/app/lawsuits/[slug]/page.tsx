@@ -255,6 +255,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             qualifyHref={qualifyHref ?? undefined}
             qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
             qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
+            checkedOn={checkedLabel}
           />
 
           {open && (

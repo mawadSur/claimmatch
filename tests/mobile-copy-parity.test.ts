@@ -160,7 +160,7 @@ describe('mobile one-click filing copy parity', () => {
 const allMobileTexts = new Set(copy.entries.map(([, entry]) => normalize(entry.text)));
 const requiredMayFile: Array<[string, string]> = [
   ['MAY_FILE_PAGE_COPY.onboardingIntro', web.MAY_FILE_PAGE_COPY.onboardingIntro],
-  ['MAY_FILE_PAGE_COPY.onboardingStep lead', 'File on the official site yourself, where it’s free.'],
+  ['MAY_FILE_PAGE_COPY.onboardingStep', web.MAY_FILE_PAGE_COPY.onboardingStep],
   ['SOME_SETTLEMENTS', web.SOME_SETTLEMENTS],
   ['MAY_FILE_SHORT_SENTENCE', web.MAY_FILE_SHORT_SENTENCE],
   ['MAY_FILE_SENTENCE tail', 'You can always file on the official site yourself instead, where filing is free.'],

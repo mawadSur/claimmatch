@@ -46,7 +46,8 @@ describe('renderLlmsTxt', () => {
     expect(body).toContain('/trust');
     expect(body).toContain('/privacy');
     expect(body).toContain('/terms');
-    expect(body).not.toMatch(/we file|you(?:'|’)re owed|15%/i);
+    expect(body).toMatch(/we file claims for you on supported settlements/i);
+    expect(body).not.toMatch(/you(?:'|’)re owed|15%/i);
   });
 });
 

@@ -147,7 +147,7 @@ export const auth = defineCopy({
   },
   signupIntro: {
     text: 'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.',
-    source: 'src/app/signup/page.tsx',
+    source: 'src/lib/copy.ts',
   },
   /**
    * Replaces the web's "Free during beta. We may introduce a fee later."

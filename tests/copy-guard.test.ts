@@ -190,6 +190,7 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   { file: 'mobile/src/copy/store.ts', rule: 'we file', reason: 'Store listing draft of the supported-settlements sentence.' },
   { file: 'mobile/src/copy/dashboard.ts', rule: 'we file', reason: 'App dashboard copy while one-click is on.' },
   { file: 'mobile/src/copy/auth.ts', rule: 'we file', reason: 'App signup copy while one-click is on.' },
+  { file: 'mobile/src/copy/catalog.ts', rule: 'we file', reason: 'App catalog intro while one-click is on.' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
     reason: 'Owner: fee disclosure says Lawsuit AI files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',

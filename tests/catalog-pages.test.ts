@@ -181,9 +181,9 @@ describe('settlement page', () => {
     expectHonest(html);
 
     const meta = await generateMetadata(page('amazon-return-policy-settlement'));
-    expect(meta.title).toBe('Amazon Return Policy Settlement: Official Claim Link & What We Know');
+    expect(meta.title).toBe('Amazon Return Policy Settlement: Claim Deadline & Payout');
     expect(String(meta.title)).not.toContain('Who Qualifies');
-    expect(String(meta.title)).not.toContain('Claim Deadline');
+    expect(String(meta.title)).toContain('Claim Deadline');
     expect(meta.alternates).toMatchObject({
       canonical: expect.stringContaining('/lawsuits/amazon-return-policy-settlement'),
     });

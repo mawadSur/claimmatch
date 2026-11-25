@@ -34,6 +34,8 @@ describe('IndexNow', () => {
     const urls = indexNowUrlsForSlugs(['amazon-return-policy-settlement', 'robocall-tcpa-settlement', '']);
     expect(urls.some((u) => u.endsWith('/lawsuits/amazon-return-policy-settlement'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/lawsuits'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/closing-soon'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/settlements/new'))).toBe(true);
     expect(urls.some((u) => u.includes('robocall'))).toBe(false);
   });
 

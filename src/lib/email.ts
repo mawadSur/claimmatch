@@ -240,6 +240,7 @@ export function renderClosingSoonEmail(opts: ClosingSoonEmailOpts): string {
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">${esc(countLabel)}</h1>
           <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} these verified listings have a claim deadline in the next 14 days. Check the official notice and file there yourself if you qualify.${filingLine(` ${esc(PUBLIC_BRAND)} never files for you.`)}</p>
+          ${cards}
         </td></tr>
         ${footerNote(`You're receiving this because you opted in to emails from ${PUBLIC_BRAND}.`, opts.to)}
       </table>
