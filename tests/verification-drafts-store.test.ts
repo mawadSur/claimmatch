@@ -81,6 +81,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 vi.mock('@/lib/held-closures', () => ({
+  loadHeldClosureDecisions: async () => new Map(),
   recordHeldClosureDecision: async (row: Record<string, unknown>) => {
     h.decisions.push(row);
     return { ok: true };

@@ -6,6 +6,7 @@ import type { ScrapedLawsuit } from '@/lib/types';
 import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
   applyCloseBreaker,
+  omitDismissedClosingUpdates,
   EXISTING_ROW_COLUMNS,
   EXISTING_ROW_COLUMNS_BASE,
   heldChangeFingerprint,
@@ -38,7 +39,7 @@ import {
   type CatalogFailureSample,
 } from './catalog-failures';
 import { partitionHeldPastDeadline } from '@/lib/held-closure-triage';
-import { recordHeldClosureDecision } from '@/lib/held-closures';
+import { loadHeldClosureDecisions, recordHeldClosureDecision } from '@/lib/held-closures';
 
 export type { HeldClosure } from './plan';
 export type { WouldCloseRow } from './stale';
@@ -65,6 +66,9 @@ export { formatDryRunReport } from './stale';
  *   kept in the summary (heldClosures), which the cron routes store as a run
  *   record and report as a failed step, so a person reviews the whole list
  *   before raising the limit.
+ * - A dismissed held-closure decision blocks ingest from applying the same
+ *   close later (same fingerprint). That is how a manual reopen stays open.
+ *   A different planned close still goes through the breaker and review queue.
  * - INGEST_DRY_RUN=1 (or ingestAndExtract({ dryRun: true })) plans the same
  *   writes and reports which rows would close, then writes nothing.
  *
@@ -121,6 +125,9 @@ export type IngestSummary = {
   failureSamples: CatalogFailureSample[];
   /** Held rows this run closed because the stored deadline had passed (flag). */
   autoClosedPastDeadline: number;
+  /** Closures skipped because a dismissed decision still matches the planned change. */
+  skippedDismissed: number;
+  skippedDismissedSlugs: string[];
   bySource: Record<string, number>;
 };
 
@@ -166,6 +173,8 @@ function emptySummary(): IngestSummary {
     failed: 0,
     failureSamples: [],
     autoClosedPastDeadline: 0,
+    skippedDismissed: 0,
+    skippedDismissedSlugs: [],
     bySource: {},
   };
 }
@@ -364,7 +373,27 @@ async function applyPlanned(
   },
 ): Promise<void> {
   const { summary, adapterSlug, openCount, maxShare, dryRun, extrasById, now } = opts;
-  const broken = applyCloseBreaker(planned, { openCount, maxShare });
+  const closingSlugs = planned.updates.filter((u) => u.closes).map((u) => u.slug);
+  const decisions = await loadHeldClosureDecisions(supabase, closingSlugs);
+  const omitted = omitDismissedClosingUpdates(planned.updates, decisions);
+  if (omitted.skipped.length > 0) {
+    summary.skippedDismissed += omitted.skipped.length;
+    for (const row of omitted.skipped) {
+      if (!summary.skippedDismissedSlugs.includes(row.slug)) {
+        summary.skippedDismissedSlugs.push(row.slug);
+      }
+    }
+    console.log(
+      `[pipeline] ${adapterSlug}: skipped ${omitted.skipped.length} dismissed closure(s): ${omitted.skipped
+        .slice(0, LOG_LIST_LIMIT)
+        .map((row) => row.slug)
+        .join(', ')}`,
+    );
+  }
+  const broken = applyCloseBreaker(
+    { ...planned, updates: omitted.remaining },
+    { openCount, maxShare },
+  );
   let plan = broken.plan;
   let held = broken.held;
   const allowed = broken.allowed;

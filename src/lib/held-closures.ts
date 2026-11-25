@@ -122,7 +122,7 @@ async function loadRecentHeldFromJobs(
   return heldClosuresFromJobs(data as JobHeldRow[]);
 }
 
-async function loadDecisions(
+export async function loadHeldClosureDecisions(
   svc: ReturnType<typeof createServiceClient>,
   slugs: string[],
 ): Promise<Map<string, HeldClosureDecision>> {
@@ -218,7 +218,7 @@ export async function loadHeldClosureCandidates(
   if (held.length === 0) return [];
   const slugs = held.map((h) => h.slug);
   const [decisions, lawsuits] = await Promise.all([
-    loadDecisions(svc, slugs),
+    loadHeldClosureDecisions(svc, slugs),
     loadLawsuitsBySlug(svc, slugs),
   ]);
   const items: HeldClosureQueueItem[] = [];
