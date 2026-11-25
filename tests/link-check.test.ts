@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '@/app/api/cron/link-check/route';
-import { checkOfficialUrl, isBrokenLink, LINK_CHECK_USER_AGENT } from '@/lib/link-check';
+import {
+  checkOfficialUrl,
+  isBrokenLink,
+  LINK_CHECK_BATCH_SIZE,
+  LINK_CHECK_USER_AGENT,
+} from '@/lib/link-check';
 
 const SECRET = 'test-cron-secret';
 
@@ -9,6 +14,10 @@ afterEach(() => {
 });
 
 describe('official link checker', () => {
+  it('batches 25 URLs per daily run', () => {
+    expect(LINK_CHECK_BATCH_SIZE).toBe(25);
+  });
+
   it('classifies 200 as ok and 404 as broken', async () => {
     const fetch200 = vi.fn().mockResolvedValue({ status: 200 });
     const ok = await checkOfficialUrl('https://example.com/claim', fetch200);
