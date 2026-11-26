@@ -108,7 +108,11 @@ export const claim = defineCopy({
     text: 'We don’t have a link to the official notice. Use the notice you got by mail or email, or see step 2.',
     source: FLOW,
   },
-  notChecked: { text: 'We haven’t checked these details. The official site is the final word.', source: FLOW },
+  notChecked: {
+    text: 'We haven’t checked these details. The official site is the final word.',
+    source: FLOW,
+    mobileOnly: true,
+  },
   step2Title: { text: 'File on the official site', source: FLOW },
   openClaimForm: { text: 'Open the official claim form', source: FLOW },
   /**

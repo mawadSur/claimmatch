@@ -74,7 +74,9 @@ import {
   ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
   guideFilingCopy,
+  GET_PAID_AUTOMATICALLY,
   WE_FILE_THIS_CLAIM_GUIDE,
+  WE_HELP_YOU_PREPARE,
 } from '@/lib/copy';
 import {
   EASY_SUBMIT_EXPLAINER,
@@ -448,6 +450,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
               <NoticeIdSection
                 slug={lawsuit.slug}
                 lawsuitId={lawsuit.id}
+                title={lawsuit.title}
                 administrator={lawsuit.administrator}
                 officialHref={official?.kind === 'official' ? official.href : null}
                 signedIn={false}
@@ -594,9 +597,14 @@ export default async function LawsuitDetailPage({ params }: Params) {
                     ? filingMode === 'agent'
                       ? 'Easy submit: you answer a few questions and e-sign — we submit it to the official claims site for you. You can always file on the official site yourself instead, where filing is free.'
                       : EASY_SUBMIT_EXPLAINER
-                    : hideFileCtas
-                      ? 'There is nothing to file on Lawsuit AI for this settlement.'
-                      : 'Confirm who qualifies on the official notice, then file there. You do not need an account to file.'}
+                    : lawsuit.claim_action_type === 'automatic_payment'
+                      ? GET_PAID_AUTOMATICALLY
+                      : lawsuit.claim_action_type === 'needs_notice_id' ||
+                          lawsuit.claim_action_type === 'online_form'
+                        ? WE_HELP_YOU_PREPARE
+                        : hideFileCtas
+                          ? 'There is nothing to file on Lawsuit AI for this settlement.'
+                          : 'Confirm who qualifies on the official notice, then file there. You do not need an account to file.'}
                 </p>
                 {flags.claimActionCtas() && lawsuit.claim_action_type ? (
                   <div className="mt-5">

@@ -95,6 +95,28 @@ export function isFeedSourceRow(
  * settlement goes by its official deadline (guidedDeadline), not the feed's:
  * the catalog and the claim flow do, and a closed row leaves both.
  */
+/**
+ * Closeout convention so ingest will not reopen a past-deadline row: status,
+ * closed_at, deadline_override (the passed deadline), and a held-closure
+ * decision written by the pipeline. The catalog stays open through the
+ * deadline day in America/New_York; this runs the calendar day after.
+ */
+export const DEADLINE_CLOSEOUT_NOTE = 'closeout: deadline passed; ingest must not reopen';
+
+export function deadlineCloseoutPatch(deadline: string | null, now: Date): Record<string, unknown> {
+  const at = now.toISOString();
+  const patch: Record<string, unknown> = {
+    status: 'closed',
+    closed_at: at,
+  };
+  if (deadline) {
+    patch.deadline_override = deadline;
+    patch.deadline_override_at = at;
+    patch.deadline_override_note = DEADLINE_CLOSEOUT_NOTE;
+  }
+  return patch;
+}
+
 export function planDeadlineCloses(rows: StaleCandidate[], now: Date): PlannedStaleAction[] {
   const out: PlannedStaleAction[] = [];
   for (const row of rows) {
@@ -110,7 +132,7 @@ export function planDeadlineCloses(rows: StaleCandidate[], now: Date): PlannedSt
       close: true,
       missed_feed_count: row.missed_feed_count ?? 0,
       last_seen_at: row.last_seen_at,
-      patch: { status: 'closed' },
+      patch: deadlineCloseoutPatch(deadline, now),
       changes: [`${deadline === row.deadline ? 'deadline' : 'official deadline'} ${deadline} has passed`],
     });
   }

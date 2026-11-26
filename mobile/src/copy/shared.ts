@@ -33,6 +33,7 @@ export const shared = defineCopy({
   unverifiedLineLabel: {
     text: 'Unverified: check the official site.',
     source: 'src/components/LawsuitCard.tsx',
+    mobileOnly: true,
   },
   noLinkYet: {
     text: 'We don’t have its link yet.',
@@ -53,11 +54,11 @@ export const shared = defineCopy({
 
   // UnverifiedNotice, settlement variant -------------------------------------
   unverifiedOpenBody: {
-    text: 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.',
+    text: 'Confirm the deadline, who qualifies and what proof you need on the official site.',
     source: 'src/components/settlement/ListingVerification.tsx',
   },
   unverifiedClosedBody: {
-    text: 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.',
+    text: 'The official site has the latest status.',
     source: 'src/components/settlement/ListingVerification.tsx',
   },
   noOfficialLink: {

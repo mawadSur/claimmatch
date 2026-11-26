@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import {
+  GET_PAID_AUTOMATICALLY,
   OFFICIAL_FILING_IS_FREE,
   WE_FILE_THIS_CLAIM_GUIDE,
+  WE_HELP_YOU_PREPARE,
   type SettlementFilingMode,
 } from '@/lib/copy';
 import { guideSignupHref } from '@/lib/signup-context';
@@ -27,7 +29,11 @@ export function GuideSignupCta({
   const filingLine =
     claimActionType === 'desk_file' || filingMode === 'agent'
       ? (filingMode === 'agent' ? WE_FILE_THIS_CLAIM_GUIDE : EASY_SUBMIT_EXPLAINER)
-      : prompt?.why ?? 'Sign in only if you want to save this claim or get deadline alerts.';
+      : claimActionType === 'automatic_payment'
+        ? GET_PAID_AUTOMATICALLY
+        : claimActionType === 'needs_notice_id' || claimActionType === 'online_form'
+          ? WE_HELP_YOU_PREPARE
+          : prompt?.why ?? 'Sign in only if you want to save this claim or get deadline alerts.';
   const label = prompt?.label ?? 'Sign in to save this claim';
   return (
     <div className={className}>

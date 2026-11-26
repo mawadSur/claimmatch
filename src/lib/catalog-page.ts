@@ -6,7 +6,7 @@ import { displayProofStatus } from './verified-fields';
 import type { Lawsuit } from './types';
 
 /** Cards per page on /lawsuits. Keep HTML small enough to cache. */
-export const LAWSUITS_PAGE_SIZE = 24;
+export const LAWSUITS_PAGE_SIZE = 12;
 
 export interface CatalogPageQuery {
   q?: string;
@@ -14,6 +14,7 @@ export interface CatalogPageQuery {
   hasDeadline?: boolean;
   page?: number;
   fileForYou?: boolean;
+  openingSoon?: boolean;
 }
 
 export interface Paginated<T> {
@@ -43,8 +44,15 @@ export function parseProofFilter(raw: string | null | undefined): 'no' | undefin
   return raw?.trim().toLowerCase() === 'no' ? 'no' : undefined;
 }
 
-/** Catalog “We file for you” filter (`?fileForYou=1`). */
+/** Catalog Easy submit filter (`?fileForYou=1`). */
 export function parseFileForYou(raw: string | null | undefined): boolean {
+  if (raw == null) return false;
+  const v = raw.trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
+/** Catalog Opening soon filter (`?openingSoon=1`) — `not_open` rows. */
+export function parseOpeningSoon(raw: string | null | undefined): boolean {
   if (raw == null) return false;
   const v = raw.trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes';
@@ -166,6 +174,7 @@ export function catalogQueryString(opts: {
   hasDeadline?: boolean;
   proof?: 'no';
   fileForYou?: boolean;
+  openingSoon?: boolean;
   page?: number;
 }): string {
   const params = new URLSearchParams();
@@ -174,6 +183,7 @@ export function catalogQueryString(opts: {
   if (opts.hasDeadline) params.set('hasDeadline', '1');
   if (opts.proof === 'no') params.set('proof', 'no');
   if (opts.fileForYou) params.set('fileForYou', '1');
+  if (opts.openingSoon) params.set('openingSoon', '1');
   if (opts.page && opts.page > 1) params.set('page', String(opts.page));
   return params.toString();
 }
@@ -192,6 +202,7 @@ export function catalogPath(opts: {
   hasDeadline?: boolean;
   proof?: 'no';
   fileForYou?: boolean;
+  openingSoon?: boolean;
   page?: number;
 }): string {
   const qs = catalogQueryString(opts);

@@ -156,7 +156,15 @@ describe('a guided settlement the feed lists as open', () => {
     const summary = await ingestAndExtract({ now: NOW });
 
     expect(lawsuit('kia')?.status).toBe('closed');
-    expect(db.updates.filter((u) => u.id === 'kia')).toEqual([{ id: 'kia', patch: { status: 'closed' } }]);
+    expect(db.updates.filter((u) => u.id === 'kia')).toEqual([
+      expect.objectContaining({
+        id: 'kia',
+        patch: expect.objectContaining({
+          status: 'closed',
+          deadline_override: official(KIA),
+        }),
+      }),
+    ]);
     expect(lawsuit('deere')?.status).toBe('open');
     expect(summary).toMatchObject({ closed: 1, closedByDeadline: 1, reopened: 1 });
   });

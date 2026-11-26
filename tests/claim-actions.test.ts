@@ -32,7 +32,8 @@ describe('claim action types', () => {
   it('hides the file button for automatic payment and not_open', () => {
     const auto = claimActionCta({ type: 'automatic_payment', slug: 'millcreek' });
     expect(auto.hideFileButton).toBe(true);
-    expect(auto.heading).toBe(NO_CLAIM_NEEDED_HEADING);
+    expect(auto.heading).toBe('Get paid automatically');
+    expect(auto.body).toContain(NO_CLAIM_NEEDED_HEADING);
     const closed = claimActionCta({ type: 'not_open', slug: 'theranos' });
     expect(closed.hideFileButton).toBe(true);
     expect(closed.alert).toBe(NOT_OPEN_ALERT);

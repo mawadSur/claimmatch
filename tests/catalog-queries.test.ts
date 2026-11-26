@@ -59,7 +59,7 @@ describe('catalog queries', () => {
     db.list = { data: [lawsuit()], error: null };
     const now = new Date('2026-10-16T08:00:00Z'); // 04:00 America/New_York
     const result = await lookupLawsuits(undefined, now);
-    expect(result).toEqual({ lawsuits: [lawsuit()], error: false });
+    expect(result).toEqual({ lawsuits: [lawsuit()], openingSoon: [], error: false });
 
     const call = (name: string) => db.calls.filter(([m]) => m === name).map(([, a]) => a);
     expect(call('eq')).toContainEqual(['review_status', 'published']);
@@ -93,15 +93,28 @@ describe('catalog queries', () => {
     expect(lawsuits.map((l) => l.slug)).toEqual(['ok']);
   });
 
+  it('keeps not_open rows out of the default list and in openingSoon', async () => {
+    db.list = {
+      data: [
+        lawsuit({ slug: 'taking' }),
+        lawsuit({ slug: 'soon', claim_action_type: 'not_open' }),
+      ],
+      error: null,
+    };
+    const result = await lookupLawsuits();
+    expect(result.lawsuits.map((l) => l.slug)).toEqual(['taking']);
+    expect(result.openingSoon.map((l) => l.slug)).toEqual(['soon']);
+  });
+
   it('report a failed query instead of falling back to sample data', async () => {
     db.list = { data: null, error: { message: 'boom' } };
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(await lookupLawsuits()).toEqual({ lawsuits: [], error: true });
+    expect(await lookupLawsuits()).toEqual({ lawsuits: [], openingSoon: [], error: true });
   });
 
   it('return nothing, and no samples, when Supabase is not configured', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
-    expect(await lookupLawsuits()).toEqual({ lawsuits: [], error: false });
+    expect(await lookupLawsuits()).toEqual({ lawsuits: [], openingSoon: [], error: false });
     expect(await lookupLawsuitBySlug('nationwide-data-breach-settlement')).toEqual({ status: 'missing' });
     expect(db.calls).toHaveLength(0);
   });

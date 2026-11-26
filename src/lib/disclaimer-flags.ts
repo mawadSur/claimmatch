@@ -6,7 +6,7 @@
 import {
   APP_LEGAL_DISCLAIMER, APP_SHORT_DISCLAIMER, LEGAL_DISCLAIMER, SHORT_DISCLAIMER,
 } from '@/lib/disclaimer';
-import { CLAIM_AGENT_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
+import { CLAIM_AGENT_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 
 /* -------------------------------------------------------------------------- */
@@ -30,16 +30,25 @@ export function legalDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.feeD
   return adapt(LEGAL_DISCLAIMER, SELF_FILE_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, mayFile, free);
 }
 
-export function shortDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
-  return adapt(SHORT_DISCLAIMER, SELF_FILE_SHORT_SENTENCE, MAY_FILE_SHORT_SENTENCE, mayFile, free);
+export function shortDisclaimer(_mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
+  // Public short disclaimer always uses the approved Easy submit line, even
+  // when one-click flags are on. Do not swap in MAY_FILE_SHORT_SENTENCE
+  // (“otherwise you file every claim yourself”).
+  void _mayFile;
+  let out = SHORT_DISCLAIMER;
+  if (!free) out = out.replace('a free claim assistant', 'a claim assistant');
+  return out;
 }
 
 export function appLegalDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
   return adapt(APP_LEGAL_DISCLAIMER, SELF_FILE_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, mayFile, free);
 }
 
-export function appShortDisclaimer(mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
-  return adapt(APP_SHORT_DISCLAIMER, SELF_FILE_SHORT_SENTENCE, MAY_FILE_SHORT_SENTENCE, mayFile, free);
+export function appShortDisclaimer(_mayFile = lawsuitAiMayFile(), free = !flags.feeDisclosure()): string {
+  void _mayFile;
+  let out = APP_SHORT_DISCLAIMER;
+  if (!free) out = out.replace('a free claim assistant', 'a claim assistant');
+  return out;
 }
 
 /**

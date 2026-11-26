@@ -7,6 +7,7 @@ import {
   heldChangeFingerprint,
   heldClosureLogLines,
   omitDismissedClosingUpdates,
+  omitHeldReopenUpdates,
   isLocked,
   isOpenForClaimsGuided,
   maxCloseShareFromEnv,
@@ -340,6 +341,33 @@ describe('dismissed held closures', () => {
     });
     expect(held).toHaveLength(0);
     expect(plan.updates.filter((u) => u.closes)).toHaveLength(3);
+  });
+
+  it('never reopens a slug that already has a held_closure_decisions row', () => {
+    const reopen = {
+      id: 'realpage',
+      slug: 'realpage-rental-software-antitrust-settlement',
+      patch: { status: 'open' },
+      changes: ['status closed -> open'],
+      closes: false,
+      reopens: true,
+      deadlineChange: null,
+    };
+    const other = {
+      id: 'other',
+      slug: 'other-settlement',
+      patch: { missed_feed_count: 1 },
+      changes: ['missed_feed_count 0 -> 1'],
+      closes: false,
+      reopens: false,
+      deadlineChange: null,
+    };
+    const decisions = new Map([
+      ['realpage-rental-software-antitrust-settlement', { decision: 'auto_closed', change_fingerprint: 'x' }],
+    ]);
+    const { remaining, skipped } = omitHeldReopenUpdates([reopen, other], decisions);
+    expect(skipped.map((u) => u.slug)).toEqual(['realpage-rental-software-antitrust-settlement']);
+    expect(remaining.map((u) => u.slug)).toEqual(['other-settlement']);
   });
 });
 

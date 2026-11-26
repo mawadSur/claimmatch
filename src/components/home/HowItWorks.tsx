@@ -113,7 +113,12 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
                     </ul>
                     {/* Small screens: each step carries its own screen. */}
                     <div className="mt-10 flex justify-center lg:hidden" data-reveal="scale">
-                      <PhoneFrame screen={step.screen} className="w-[16.5rem]" sizes="16.5rem" />
+                      <PhoneFrame
+                        screen={step.screen}
+                        className="w-[16.5rem]"
+                        sizes="16.5rem"
+                        priority={i === 0}
+                      />
                     </div>
                   </div>
                 </li>
@@ -137,21 +142,24 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
                   className="relative"
                   style={{ aspectRatio: first ? `${first.width} / ${first.height}` : '390 / 844' }}
                 >
-                  {steps.map((step, i) => (
-                    <Image
-                      key={step.screen.src}
-                      src={step.screen.src}
-                      alt={step.screen.alt}
-                      width={step.screen.width}
-                      height={step.screen.height}
-                      sizes="18rem"
-                      aria-hidden={i !== active}
-                      className={cn(
-                        'absolute inset-0 h-full w-full object-cover object-top transition-[opacity,transform] duration-500 ease-out',
-                        i === active ? 'scale-100 opacity-100' : 'scale-[0.985] opacity-0',
-                      )}
-                    />
-                  ))}
+                  {steps.map((step, i) =>
+                    i === active || i === 0 ? (
+                      <Image
+                        key={step.screen.src}
+                        src={step.screen.src}
+                        alt={step.screen.alt}
+                        width={step.screen.width}
+                        height={step.screen.height}
+                        sizes="18rem"
+                        priority={i === 0}
+                        aria-hidden={i !== active}
+                        className={cn(
+                          'absolute inset-0 h-full w-full object-cover object-top transition-[opacity,transform] duration-500 ease-out',
+                          i === active ? 'scale-100 opacity-100' : 'scale-[0.985] opacity-0',
+                        )}
+                      />
+                    ) : null,
+                  )}
                 </div>
               </PhoneFrame>
             </div>

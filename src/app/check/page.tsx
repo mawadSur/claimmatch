@@ -41,7 +41,7 @@ export default async function CheckNoticePage({
   if (!flags.noticeLookup()) notFound();
 
   const q = cleanSearchTerm(firstParam((await searchParams).q));
-  const catalog = q ? await lookupPublishedLawsuits() : { lawsuits: [], error: false };
+  const catalog = q ? await lookupPublishedLawsuits() : { lawsuits: [], openingSoon: [], error: false };
   const matches = q && !catalog.error ? rankNoticeMatches(q, catalog.lawsuits) : [];
   const notFoundMessage = q && !catalog.error && matches.length === 0 ? NOTICE_NOT_FOUND : null;
 

@@ -95,9 +95,9 @@ describe('LawsuitCard', () => {
   const render = (props: Parameters<typeof LawsuitCard>[0]) =>
     renderToStaticMarkup(createElement(LawsuitCard, props));
 
-  it('shows the D50 label, the official link and "Start your claim" while open', () => {
+  it('shows the official link and "Start your claim" while open', () => {
     const html = render({ lawsuit: lawsuit() });
-    expect(html).toContain('Unverified: check the official site.');
+    expect(html).not.toContain('Unverified: check the official site.');
     expect(html).toContain('href="https://www.returnsettlement.com/submit-claim"');
     expect(html).toContain('href="/claim/amazon-return-policy-settlement"');
     expect(html).toContain('Start your claim');
@@ -167,8 +167,8 @@ describe('settlement page', () => {
     db.single = { data: lawsuit(), error: null };
     const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
     expect(html).toContain('Open for claims');
-    expect(html).toContain('Unverified: check the official site');
-    expect(html).toContain('We haven’t checked this listing against the official settlement notice yet.');
+    expect(html).not.toContain('Unverified: check the official site');
+    expect(html).toContain('Confirm the deadline, who qualifies and what proof you need on the official site.');
     expect(html).toContain('Official claim site (returnsettlement.com)');
     expect(html).not.toContain('Go to the official site (returnsettlement.com)');
     expect(html).toContain('href="https://www.returnsettlement.com/submit-claim"');
@@ -222,7 +222,7 @@ describe('settlement page', () => {
   it('still names the source page from the unverified banner when there is no official site', async () => {
     db.single = { data: lawsuit({ claim_url: null }), error: null };
     const html = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
-    expect(html).toContain('Unverified: check the official site');
+    expect(html).not.toContain('Unverified: check the official site');
     expect(html).toContain('We don’t have the official site’s link yet.');
     expect(html).toContain('SettleSignal listing');
     expect(html).not.toContain('Official claim site');
@@ -355,7 +355,7 @@ describe('catalog page', () => {
       error: null,
     };
     const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
-    expect(html).toContain('Unverified: check the official site');
+    expect(html).not.toContain('Unverified: check the official site');
     expect(html).toContain('Showing 1 open settlement');
     expect(html).toContain('Amazon Return Policy Settlement');
     expect(html).not.toContain('Fake');
@@ -370,7 +370,7 @@ describe('catalog page', () => {
     expect(html).toContain('Clear filters');
   });
 
-  it('paginates 24 per page even when the legacy pagination flag is off', async () => {
+  it('paginates 12 per page even when the legacy pagination flag is off', async () => {
     db.list = {
       data: Array.from({ length: 30 }, (_, i) =>
         lawsuit({
@@ -383,12 +383,12 @@ describe('catalog page', () => {
       error: null,
     };
     const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
-    expect(html).toContain('Showing 1–24 of 30 open settlements');
-    expect(html).toContain('Page 1 of 2');
+    expect(html).toContain('Showing 1–12 of 30 open settlements');
+    expect(html).toContain('Page 1 of 3');
     expect(html).not.toContain('No deadline listed');
   });
 
-  it('paginates 24 per page and keeps filters on page links', async () => {
+  it('paginates 12 per page and keeps filters on page links', async () => {
     db.list = {
       data: Array.from({ length: 30 }, (_, i) =>
         lawsuit({
@@ -401,21 +401,25 @@ describe('catalog page', () => {
       error: null,
     };
     const page1 = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
-    expect(page1).toContain('Showing 1–24 of 30 open settlements');
-    expect(page1).toContain('Page 1 of 2');
+    expect(page1).toContain('Showing 1–12 of 30 open settlements');
+    expect(page1).toContain('Page 1 of 3');
     expect(page1).toContain('href="/lawsuits?page=2"');
     expect(page1).toContain('rel="next"');
     // Known deadlines sort first, so page 1 is all dated.
     expect(page1).not.toContain('No deadline listed');
 
     const page2 = renderToStaticMarkup(await LawsuitsPage(searchParams({ page: '2' })));
-    expect(page2).toContain('Showing 25–30 of 30 open settlements');
-    expect(page2).toContain('No deadline listed');
+    expect(page2).toContain('Showing 13–24 of 30 open settlements');
+    expect(page2).not.toContain('No deadline listed');
     expect(page2).toContain('rel="prev"');
+
+    const page3 = renderToStaticMarkup(await LawsuitsPage(searchParams({ page: '3' })));
+    expect(page3).toContain('Showing 25–30 of 30 open settlements');
+    expect(page3).toContain('No deadline listed');
 
     const dated = renderToStaticMarkup(await LawsuitsPage(searchParams({ hasDeadline: '1' })));
     expect(dated).toContain('with a listed deadline');
-    expect(dated).toContain('Showing 1–24 of 25 open settlements');
+    expect(dated).toContain('Showing 1–12 of 25 open settlements');
     expect(dated).not.toContain('No deadline listed');
   });
 

@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 vi.mock('@/lib/lawsuits', () => ({
-  lookupLawsuits: async () => ({ lawsuits: listed.lawsuits, error: false }),
+  lookupLawsuits: async () => ({ lawsuits: listed.lawsuits, openingSoon: [], error: false }),
 }));
 
 import HomePage from '@/app/page';

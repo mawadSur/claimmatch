@@ -31,11 +31,19 @@ export function LawsuitFilters({
   const activeHasDeadline = searchParams.get('hasDeadline') === '1';
   const activeProofNo = searchParams.get('proof') === 'no';
   const activeFileForYou = searchParams.get('fileForYou') === '1';
+  const activeOpeningSoon = searchParams.get('openingSoon') === '1';
   const [q, setQ] = useState(activeQ);
   const [isPending, startTransition] = useTransition();
 
   const commit = useCallback(
-    (next: { q?: string; category?: string; hasDeadline?: boolean; proofNo?: boolean; fileForYou?: boolean }) => {
+    (next: {
+        q?: string;
+        category?: string;
+        hasDeadline?: boolean;
+        proofNo?: boolean;
+        fileForYou?: boolean;
+        openingSoon?: boolean;
+      }) => {
       const params = new URLSearchParams(searchParams.toString());
       if (next.q !== undefined) {
         if (next.q.trim()) params.set('q', next.q.trim());
@@ -56,6 +64,10 @@ export function LawsuitFilters({
       if (next.fileForYou !== undefined) {
         if (next.fileForYou) params.set('fileForYou', '1');
         else params.delete('fileForYou');
+      }
+      if (next.openingSoon !== undefined) {
+        if (next.openingSoon) params.set('openingSoon', '1');
+        else params.delete('openingSoon');
       }
       // Filters apply across pages; start again at page 1.
       params.delete('page');
@@ -86,7 +98,9 @@ export function LawsuitFilters({
     return () => clearTimeout(t);
   }, [q, activeQ, commit, posthog]);
 
-  const hasFilters = Boolean(activeQ || activeCategory || activeHasDeadline || activeProofNo || activeFileForYou);
+  const hasFilters = Boolean(
+    activeQ || activeCategory || activeHasDeadline || activeProofNo || activeFileForYou || activeOpeningSoon,
+  );
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-5">
@@ -155,9 +169,15 @@ export function LawsuitFilters({
             active={activeFileForYou}
             onClick={() => commit({ fileForYou: !activeFileForYou })}
           >
-            We file for you
+            Easy submit
           </Pill>
         )}
+        <Pill
+          active={activeOpeningSoon}
+          onClick={() => commit({ openingSoon: !activeOpeningSoon })}
+        >
+          Opening soon
+        </Pill>
       </div>
 
       {hasFilters && (
@@ -165,7 +185,14 @@ export function LawsuitFilters({
           type="button"
           onClick={() => {
             setQ('');
-            commit({ q: '', category: '', hasDeadline: false, proofNo: false, fileForYou: false });
+            commit({
+              q: '',
+              category: '',
+              hasDeadline: false,
+              proofNo: false,
+              fileForYou: false,
+              openingSoon: false,
+            });
           }}
           className="text-link mt-3 inline-flex min-h-tap items-center gap-1 text-sm"
         >

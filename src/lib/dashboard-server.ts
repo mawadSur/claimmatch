@@ -32,7 +32,7 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
     // Only settlements open for claims (the shared rule); buildClosingSoon
     // applies the same rule again and drops tracked ones. A failed query is
     // shown as an error, never as "no deadlines coming up".
-    lookupLawsuits().catch(() => ({ lawsuits: [], error: true })),
+    lookupLawsuits().catch(() => ({ lawsuits: [], openingSoon: [], error: true })),
     flags.assistedFiling() ? listUserFilingJobs(userId) : Promise.resolve([]),
     flags.profileV2()
       ? supabase

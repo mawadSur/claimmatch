@@ -216,6 +216,8 @@ export interface ClaimView {
   corrective_notice_required: boolean;
   /** 0052: notice/claim ID for this claim only. Never a PIN. */
   notice_id?: string | null;
+  /** 0053: when the member marked that they requested a notice ID. */
+  requested_notice_at?: string | null;
   created_at: string | null;
 }
 
@@ -237,6 +239,7 @@ export function toClaimView(row: Record<string, unknown>): ClaimView {
     corrective_notice_required:
       row.corrective_notice_required === true || row.filed_at != null || row.authorized_at != null,
     notice_id: str(row.notice_id),
+    requested_notice_at: str(row.requested_notice_at),
     created_at: str(row.created_at),
   };
 }
