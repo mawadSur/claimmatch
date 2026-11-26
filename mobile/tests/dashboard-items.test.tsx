@@ -147,7 +147,9 @@ describe('dashboard copy', () => {
     expect(introSentence(false)).toBe(
       'Track the claims you file on official settlement sites. Lawsuit AI is free for now. It doesn’t file for you and never handles settlement payments.',
     );
-    expect(introSentence(true)).toContain('Official filing stays free.');
+    expect(introSentence(true)).toBe(
+      'Track the claims you file on official settlement sites. Browsing and filing yourself stay free. Easy submit is included with membership. It doesn’t file for you and never handles settlement payments.',
+    );
   });
 
   it('words fees as disclosed, which is true either way, until the server flags are known', () => {
