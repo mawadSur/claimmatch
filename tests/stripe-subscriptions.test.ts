@@ -224,12 +224,30 @@ describe('checkout and portal', () => {
     };
     const result = await createPortalSession({ userId: USER_ID, returnPath: '/settings' });
     expect(result).toEqual({ ok: true, url: 'https://billing.stripe.test/session' });
-    expect(h.stripe?.billingPortal.sessions.create).toHaveBeenCalledWith(
-      expect.objectContaining({ customer: 'cus_test' }),
-    );
+    expect(h.stripe?.billingPortal.sessions.create).toHaveBeenCalledWith({
+      customer: 'cus_test',
+      return_url: expect.stringContaining('/settings'),
+    });
     const res = await portal(json('/api/billing/portal', { return_to: '/settings' }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ url: 'https://billing.stripe.test/session' });
+  });
+
+  it('passes STRIPE_PORTAL_CONFIGURATION_ID when set', async () => {
+    vi.stubEnv('STRIPE_PORTAL_CONFIGURATION_ID', 'bpc_test_lawsuitai');
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      status: 'trialing',
+      cancel_at_period_end: false,
+    };
+    const result = await createPortalSession({ userId: USER_ID, returnPath: '/settings' });
+    expect(result).toEqual({ ok: true, url: 'https://billing.stripe.test/session' });
+    expect(h.stripe?.billingPortal.sessions.create).toHaveBeenCalledWith({
+      customer: 'cus_test',
+      return_url: expect.stringContaining('/settings'),
+      configuration: 'bpc_test_lawsuitai',
+    });
   });
 });
 

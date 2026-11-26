@@ -304,9 +304,11 @@ export async function createPortalSession(args: {
     };
   }
   try {
+    const portalConfigId = process.env.STRIPE_PORTAL_CONFIGURATION_ID?.trim();
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: canonicalUrl(safeReturnPath(args.returnPath, '/settings')),
+      ...(portalConfigId ? { configuration: portalConfigId } : {}),
     });
     if (!session.url) {
       return { ok: false, error: 'Stripe did not return a portal URL.', code: 'service_unavailable' };
