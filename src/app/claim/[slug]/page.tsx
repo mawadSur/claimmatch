@@ -123,6 +123,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
         reauthWithApple: flags.appleSignIn() && hasAppleIdentity(user),
         slug: settlement.slug,
         lawsuitId: settlement.id,
+        claimActionType: settlement.claim_action_type,
         claim,
         context,
         now,

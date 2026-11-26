@@ -18,7 +18,7 @@ That pitch is **not** what the live site says.
 ## What the live site actually offers (tested)
 
 Grounded in current UI copy (`src/lib/copy.ts`, home, pricing, how-it-works),
-with `FEE_DISCLOSURE_ENABLED` and `ASSISTED_FILING_ENABLED` off:
+with `SUBSCRIPTION_BILLING_ENABLED` and `ASSISTED_FILING_ENABLED` off:
 
 - Lawsuit AI is **free during beta**.
 - You file on the official administrator site yourself. Filing there is free.

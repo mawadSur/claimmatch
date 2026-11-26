@@ -37,14 +37,16 @@ describe('FLAG_CATALOG', () => {
     expect(JSON.stringify(listFlagStatus())).not.toContain('super-secret-indexnow-key');
   });
 
-  it('AGENT_AUTH_CURRENT_VERSION reads on only for exactly agent-auth-v2', () => {
+  it('AGENT_AUTH_CURRENT_VERSION reads on for agent-auth-v2 or agent-auth-v3', () => {
     const row = () => listFlagStatus().find((r) => r.env === 'AGENT_AUTH_CURRENT_VERSION')?.enabled;
     expect(row()).toBe(false);
-    for (const value of ['1', 'agent-auth-v1', 'AGENT-AUTH-V2', ' agent-auth-v2', 'agent-auth-v3']) {
+    for (const value of ['1', 'agent-auth-v1', 'AGENT-AUTH-V2', ' agent-auth-v2']) {
       vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', value);
       expect(row()).toBe(false);
     }
     vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
+    expect(row()).toBe(true);
+    vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v3');
     expect(row()).toBe(true);
   });
 });

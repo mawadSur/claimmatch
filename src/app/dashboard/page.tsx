@@ -145,7 +145,7 @@ export default async function DashboardPage({
             <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
               Track the claims you file on official settlement sites.{' '}
               {flags.feeDisclosure()
-                ? 'Official filing stays free.'
+                ? 'Browsing and filing yourself stay free. Easy submit is included with membership.'
                 : 'Lawsuit AI is free during beta.'}{' '}
               {lawsuitAiMayFile()
                 ? WE_FILE_SUPPORTED_SENTENCE

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Compact, checkable trust facts. Shown on home, settlement pages, and signup.
- * Fee copy stays behind FEE_DISCLOSURE_ENABLED (howWeMakeMoneyFact).
+ * Membership copy stays behind SUBSCRIPTION_BILLING_ENABLED (howWeMakeMoneyFact).
  */
 export function PublicTrustBlock({
   className,

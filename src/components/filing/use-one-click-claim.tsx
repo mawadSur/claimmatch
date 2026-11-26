@@ -15,6 +15,7 @@ import {
   laneReasonLines,
 } from './filing-model';
 import { FilingTimeline } from './FilingTimeline';
+import { MembershipGate } from './MembershipGate';
 import { OneClickEntry } from './OneClickEntry';
 import { OneClickFiling } from './OneClickFiling';
 import { PreparedAnswers } from './PreparedAnswers';
@@ -51,12 +52,15 @@ export function useOneClickClaim({
   oneClick,
   claim,
   lawsuitId,
+  claimPath,
   setClaim,
   announce,
 }: {
   oneClick: OneClickClaimProps | null;
   claim: ClaimView | null;
   lawsuitId: string;
+  /** Path to return to after Stripe Checkout (e.g. /claim/slug). */
+  claimPath?: string;
   setClaim: Dispatch<SetStateAction<ClaimView | null>>;
   /** A stable setter (ClaimFlow's announcement). */
   announce: (message: string) => void;
@@ -94,7 +98,12 @@ export function useOneClickClaim({
         {ONE_CLICK_COPY.loadFailed}
       </p>
     ),
-    entry: offerStart && lane ? <OneClickEntry lane={lane} lawsuitId={lawsuitId} onStarted={onFilingChange} /> : null,
+    entry:
+      oneClick.needsMembership && lane ? (
+        <MembershipGate returnTo={claimPath ?? '/settings'} />
+      ) : offerStart && lane ? (
+        <OneClickEntry lane={lane} lawsuitId={lawsuitId} onStarted={onFilingChange} />
+      ) : null,
     history: filing && hasOneClickHistory(filing) ? <FilingTimeline entries={filing.timeline} /> : null,
     stepTwoTitle: ONE_CLICK_SELF_FILE_TITLE,
     stepTwoLead:

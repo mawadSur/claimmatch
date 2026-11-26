@@ -160,7 +160,7 @@ export const auth = defineCopy({
     mobileOnly: true,
   },
   bulletOfficialFilingFree: {
-    text: 'Official filing on the administrator’s site stays free.',
+    text: 'Browsing, matching, and filing yourself on official sites stay free.',
     source: 'src/app/signup/page.tsx',
   },
   bulletBrowse: {

@@ -5,8 +5,8 @@ import { flags } from '@/lib/flags';
 import { FeeDisclosure } from './FeeDisclosure';
 
 /**
- * Public money-disclosure copy. Default is free during beta. The recovery-share
- * fee on every claim is only shown when FEE_DISCLOSURE_ENABLED=1.
+ * Public money-disclosure copy. Default is free during beta. Membership
+ * (7-day trial then $19.99/month) is shown when SUBSCRIPTION_BILLING_ENABLED=1.
  */
 export function HowWeMakeMoney({
   heading = 'h2',
@@ -18,7 +18,7 @@ export function HowWeMakeMoney({
   const points = disclose
     ? [
         'You can still file on the official administrator’s site yourself. Official filing there stays free.',
-        'Lawsuit AI lists open settlements and, after you authorize a claim, processes and submits it. Copy-ready details stay available if you want to file yourself.',
+        'Easy submit and new-claim alerts are included with membership. Copy-ready details stay available if you want to file yourself.',
         feeEveryClaimCopy(),
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',

@@ -119,9 +119,10 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.payoutReport(),
   },
   {
-    env: 'FEE_DISCLOSURE_ENABLED',
-    description: 'Public recovery-share fee on every Lawsuit AI claim.',
-    read: () => flags.feeDisclosure(),
+    env: 'SUBSCRIPTION_BILLING_ENABLED',
+    description:
+      'Monthly membership after a 7-day free trial. Unlocks Easy submit and new-claim alerts. Off: free-during-beta copy and ungated Easy submit. Pair with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.',
+    read: () => flags.subscriptionBilling(),
   },
   {
     env: 'INGEST_MISSING_CLOSE_QUEUE_ENABLED',
@@ -307,8 +308,8 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   {
     env: 'AGENT_AUTH_CURRENT_VERSION',
     description:
-      'Exactly agent-auth-v2: new one-click members sign authorization v2 (a desk agent may complete a CAPTCHA by hand where the settlement rule allows it). Anything else: agent-auth-v1. Set only after the law firm approves v2; existing signatures keep their version.',
-    read: () => flags.agentAuthV2(),
+      'agent-auth-v3: membership disclosure (default when SUBSCRIPTION_BILLING_ENABLED is on). agent-auth-v2: desk CAPTCHA by hand. agent-auth-v1 or unset with billing off: v1. Existing signatures keep their version.',
+    read: () => flags.agentAuthV2() || flags.agentAuthV3(),
   },
   {
     env: 'APPLE_SIGN_IN_ENABLED',

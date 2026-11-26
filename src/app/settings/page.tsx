@@ -8,7 +8,10 @@ import { NotificationPrefs } from '@/components/NotificationPrefs';
 import { ReferralCard } from '@/components/ReferralCard';
 import { DeleteAccount } from '@/components/DeleteAccount';
 import { DownloadMyData } from '@/components/DownloadMyData';
+import { ManageBillingButton, MembershipCta } from '@/components/billing/MembershipCta';
 import { flags } from '@/lib/flags';
+import { membershipCopy } from '@/lib/copy';
+import { isPaidMembershipStatus, loadSubscription, userHasMembershipAccess } from '@/lib/subscriptions';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -47,6 +50,16 @@ export default async function SettingsPage() {
     } as Profile);
 
   const contact = legalContact();
+  const billingOn = flags.subscriptionBilling();
+  const subscription = billingOn ? await loadSubscription(user.id) : null;
+  const hasMembership = billingOn
+    ? await userHasMembershipAccess({
+        userId: user.id,
+        email: user.email ?? profile.email,
+        isAdmin: profile.is_admin,
+        isInternal: profile.is_internal,
+      })
+    : true;
 
   let referralClicks = 0;
   let referralSignups = 0;
@@ -109,7 +122,31 @@ export default async function SettingsPage() {
             </Link>
           </section>
         )}
-        <NotificationPrefs profile={profile} collectPhone={!flags.catalogHideUnknowns()} />
+        {billingOn && (
+          <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
+            <h2 className="text-lg font-bold">Membership</h2>
+            <p className="mt-1 text-sm text-ink-muted">{membershipCopy()}</p>
+            {hasMembership ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-ink">
+                  {subscription?.status === 'trialing'
+                    ? 'Your free trial is active.'
+                    : isPaidMembershipStatus(subscription?.status)
+                      ? 'Your membership is active.'
+                      : 'Staff access: Easy submit and alerts are available for testing.'}
+                </p>
+                <ManageBillingButton />
+              </div>
+            ) : (
+              <MembershipCta returnTo="/settings" />
+            )}
+          </section>
+        )}
+        <NotificationPrefs
+          profile={profile}
+          collectPhone={!flags.catalogHideUnknowns()}
+          alertsRequireMembership={billingOn && !hasMembership}
+        />
 
         <section
           aria-labelledby="your-data"

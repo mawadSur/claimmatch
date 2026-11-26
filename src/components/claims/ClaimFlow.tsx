@@ -14,7 +14,7 @@ import { ClaimActionCta } from './ClaimActionCta';
 import { MailInInstructions } from './MailInInstructions';
 import { NoticeIdSection } from './NoticeIdSection';
 import { PrintSummaryButton } from './PrintSummaryButton';
-import { SIGN_IN_TO_EASY_SUBMIT, SIGN_IN_TO_SAVE, hidesFileQualifySignup } from '@/lib/claim-actions';
+import { EASY_SUBMIT_EXPLAINER, SIGN_IN_TO_EASY_SUBMIT, SIGN_IN_TO_SAVE, hidesFileQualifySignup } from '@/lib/claim-actions';
 import { guideSignupHref } from '@/lib/signup-context';
 import { flags } from '@/lib/flags';
 import { mergeClaimProfile } from '@/lib/claim-profile';
@@ -88,7 +88,14 @@ export function ClaimFlow({
     setClaim(next);
     if (message) setAnnouncement(message);
   }, []);
-  const oc = useOneClickClaim({ oneClick, claim, lawsuitId: settlement.id, setClaim, announce: setAnnouncement });
+  const oc = useOneClickClaim({
+    oneClick,
+    claim,
+    lawsuitId: settlement.id,
+    claimPath: `/claim/${encodeURIComponent(settlement.slug)}`,
+    setClaim,
+    announce: setAnnouncement,
+  });
   // The retired assisted-filing form never shows while one-click filing is on.
   const stepsSettlement = oc ? { ...settlement, assistedFilingAllowed: false } : settlement;
 
@@ -170,6 +177,7 @@ export function ClaimFlow({
           onChange={onChange} onOpenOfficialForm={openedOfficialForm}
           stepTwoTitle={oc?.stepTwoTitle} stepTwoLead={oc?.stepTwoLead} prepared={oc?.prepared}
           agentLane={oc?.filesForMember ?? false}
+          easySubmit={settlement.claimActionType === 'desk_file'}
           selfFiledReport={selfFiledReport}
           signedIn={signedIn}
         />
@@ -225,7 +233,7 @@ export function ClaimFlow({
       )}
       <StatusPanel
         display={display} deadline={settlement.deadline} now={now} fictional={context.fictional}
-        badge={oc?.badge} note={oc?.note}
+        badge={oc?.badge} note={oc?.note} easySubmit={actionType === 'desk_file'}
       />
       <Announcement message={announcement} focusRef={announcementRef} />
       {body}
@@ -240,6 +248,7 @@ function StatusPanel({
   fictional,
   badge,
   note,
+  easySubmit = false,
 }: {
   display: ClaimDisplay | null;
   deadline: string | null;
@@ -249,6 +258,8 @@ function StatusPanel({
   badge?: { label: string; tone: ClaimTone } | null;
   /** One-click filing on: the lane's note replaces the general one. */
   note?: string;
+  /** Easy submit settlements never show the leftover “doesn’t file claims for you” copy. */
+  easySubmit?: boolean;
 }) {
   if (fictional) {
     // No deadline or filing note: there is nothing to file.
@@ -300,6 +311,12 @@ function StatusPanel({
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
         {note ? (
           <span>{note}</span>
+        ) : easySubmit ? (
+          <span>
+            {EASY_SUBMIT_EXPLAINER} You can always file on the official site yourself
+            instead, where filing is free. Check the official site for the exact
+            deadline time.
+          </span>
         ) : (
           <span>
             Lawsuit AI doesn&rsquo;t file claims for you. You file on the official site,
@@ -378,6 +395,7 @@ function FilingSteps({
   stepTwoLead,
   prepared,
   agentLane = false,
+  easySubmit = false,
   selfFiledReport = null,
   signedIn = true,
 }: {
@@ -393,6 +411,8 @@ function FilingSteps({
   prepared?: React.ReactNode;
   /** Lawsuit AI files (or offers to file) this claim: PrefillPacket's lead says so. */
   agentLane?: boolean;
+  /** Easy submit (`desk_file`): never the leftover “never files for you” packet note. */
+  easySubmit?: boolean;
   selfFiledReport?: SelfFiledReportView | null;
   signedIn?: boolean;
 }) {
@@ -475,7 +495,7 @@ function FilingSteps({
           the official site.
         </p>
         {prepared}
-        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} formFieldOrder={settlement.formFieldOrder} agentLane={agentLane} />
+        <PrefillPacket profile={profile} lawsuitId={settlement.id} lawsuitSlug={settlement.slug} formFieldOrder={settlement.formFieldOrder} agentLane={agentLane} easySubmit={easySubmit} />
       </Step>
 
       <Step n={3} title="Tell us when you’ve filed">

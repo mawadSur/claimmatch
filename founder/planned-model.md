@@ -2,15 +2,14 @@
 
 This is **not** the pitch the 100-buyer panel saw.
 
-Owner intent, pending legal clearance and still behind off flags
-(`FEE_DISCLOSURE_ENABLED`, `ASSISTED_FILING_ENABLED`):
+Owner intent, still behind off flags
+(`SUBSCRIPTION_BILLING_ENABLED`, `ASSISTED_FILING_ENABLED`):
 
-- Lawsuit AI would charge **15% of recovery** on claims, including self-filed
-  claims, if a paid model ships.
-- Assisted filing (Lawsuit AI files after review/e-sign) is a later phase,
-  counsel review required, administrator permission required.
-- Counsel and the legal entity are in progress, not cleared.
+- Membership: **7-day free trial, then $19.99/month**, cancel anytime.
+  Unlocks Easy submit and new-claim alerts. Lawsuit AI takes **0 percent** of
+  settlement payouts.
+- Browsing, matching, and filing yourself on official settlement sites stay free.
+- Assisted filing (`ASSISTED_FILING_ENABLED`) is a later phase, counsel review
+  required, administrator permission required.
 - Public pages today say free during beta and that a fee may come later, with
-  notice before it applies.
-
-Do not present this as a current offer, a conversion rate, or a testimonial.
+  notice before it applies, until `SUBSCRIPTION_BILLING_ENABLED=1`.

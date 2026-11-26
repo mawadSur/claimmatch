@@ -39,7 +39,7 @@ describe('public trust facts', () => {
     expect(operatorLine()).toContain('Wyoming');
     expect(howWeMakeMoneyFact(false)).toContain(NEVER_CHARGE_UPFRONT);
     expect(howWeMakeMoneyFact(false)).not.toMatch(/15\s*%|15 percent/i);
-    expect(howWeMakeMoneyFact(true)).toMatch(/15 percent/);
+    expect(howWeMakeMoneyFact(true)).toMatch(/0 percent of your settlement payouts/);
     const answer = isLawsuitAiLegitAnswer(false, false);
     expect(answer).toContain('Lawsuit AI LLC');
     expect(answer).toContain(FILE_FREE_DIRECTLY);

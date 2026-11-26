@@ -4,6 +4,8 @@ import { AUTH_UNAVAILABLE, getRequestUser } from '@/lib/supabase/request-user';
 import { applyAttributePatch } from '@/lib/profile-attributes';
 import { rateLimit } from '@/lib/ratelimit';
 import { parseSettingsInput } from '@/lib/settings-input';
+import { flags } from '@/lib/flags';
+import { userHasMembershipAccess } from '@/lib/subscriptions';
 
 export const runtime = 'nodejs';
 
@@ -46,6 +48,18 @@ export async function POST(req: Request) {
   }
 
   const patch = { ...parsed.patch };
+  if (patch.email_opt_in === true && flags.subscriptionBilling()) {
+    const allowed = await userHasMembershipAccess({ userId: user.id, email: user.email ?? null });
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error: 'New-claim alerts are included with Lawsuit AI membership. Start a free trial to opt in.',
+          code: 'membership_required',
+        },
+        { status: 402 },
+      );
+    }
+  }
   if (patch.attributes) {
     const { data: existing } = await supabase
       .from('profiles')

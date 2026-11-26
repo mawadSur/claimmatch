@@ -26,6 +26,7 @@
 --                           one-recovery-per-claim key
 --   A's / B's beta_feedback d0000000-0000-4000-8000-00000000000a and ...00b
 --   A's / B's claim_profile_addresses e0000000-0000-4000-8000-00000000000a and ...00b
+--   A's / B's subscriptions f0000000-0000-4000-8000-00000000000a and ...00b
 --   source of every lawsuit 20000000-0000-4000-8000-000000000001
 -- All matches and the claims ...00a and ...00b are on lawsuit ...001; ...002
 -- has none. Every lawsuit has an official claim_url and the source a
@@ -95,7 +96,7 @@ language sql immutable as $$
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
                'claim_reminder_sends', 'payout_tracker_sends',
-               'verification_drafts']
+               'verification_drafts', 'subscriptions']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -230,6 +231,14 @@ begin
       'current', '1 A Street', 'Austin', 'TX', '78701'),
     ('e0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b',
       'current', '1 B Street', 'Austin', 'TX', '78701');
+  -- Stripe membership (0054): a member reads their own; writes are service-role only.
+  insert into public.subscriptions (
+    id, user_id, stripe_customer_id, stripe_subscription_id, status, cancel_at_period_end
+  ) values
+    ('f0000000-0000-4000-8000-00000000000a',
+      'a0000000-0000-4000-8000-00000000000a', 'cus_rls_a', 'sub_rls_a', 'trialing', false),
+    ('f0000000-0000-4000-8000-00000000000b',
+      'b0000000-0000-4000-8000-00000000000b', 'cus_rls_b', 'sub_rls_b', 'active', false);
 
   -- Fixtures must exist, or "sees 0 rows" would only mean "the table is empty".
   if (select count(*) from public.profiles
@@ -240,7 +249,8 @@ begin
   foreach t in array array['claims', 'matches', 'subscribers', 'notifications',
                            'referrals', 'recoveries', 'jobs', 'sources',
                            'claim_events', 'share_links', 'share_link_clicks',
-                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses'] loop
+                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses',
+                           'subscriptions'] loop
     if pg_temp.visible_rows(format('select 1 from public.%I', t)) = 0 then
       raise exception 'fixtures: public.% has no rows', t;
     end if;
@@ -330,7 +340,8 @@ begin
   foreach t in array array['claims', 'profiles', 'subscribers', 'matches',
                            'notifications', 'referrals', 'recoveries', 'jobs',
                            'claim_events', 'share_links', 'share_link_clicks',
-                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses'] loop
+                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses',
+                           'subscriptions'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'anon can read % row(s) of public.%', n, t;
@@ -429,7 +440,12 @@ begin
     $q$insert into public.claim_profile_addresses (user_id, kind, line1, city, state, zip)
        values ('a0000000-0000-4000-8000-00000000000a', 'prior', '9 Anon St', 'Austin', 'TX', '78701')$q$,
     $q$update public.claim_profile_addresses set line1 = 'changed by anon'$q$,
-    $q$delete from public.claim_profile_addresses$q$
+    $q$delete from public.claim_profile_addresses$q$,
+    -- Stripe membership: a member reads their own; writes are service-role only.
+    $q$insert into public.subscriptions (user_id, status)
+       values ('a0000000-0000-4000-8000-00000000000a', 'trialing')$q$,
+    $q$update public.subscriptions set status = 'canceled'$q$,
+    $q$delete from public.subscriptions$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -485,6 +501,10 @@ begin
   if n is distinct from 1 then
     raise exception 'user A should read their own claim_profile_addresses, got % row(s)', n;
   end if;
+  n := pg_temp.visible_rows(format('select 1 from public.subscriptions where user_id = %L', me));
+  if n is distinct from 1 then
+    raise exception 'user A should read their own subscriptions, got % row(s)', n;
+  end if;
 
   for r in
     select * from (values
@@ -497,7 +517,8 @@ begin
       ('claim_events', 'user_id'),
       ('beta_feedback', 'user_id'),
       ('claim_profiles', 'user_id'),
-      ('claim_profile_addresses', 'user_id')
+      ('claim_profile_addresses', 'user_id'),
+      ('subscriptions', 'user_id')
     ) v(tbl, owner_col)
   loop
     n := pg_temp.visible_rows(format(
@@ -644,7 +665,19 @@ begin
        values ('a0000000-0000-4000-8000-00000000000a',
                'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
     $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
-    $q$delete from public.payout_tracker_sends$q$
+    $q$delete from public.payout_tracker_sends$q$,
+    $q$insert into public.subscriptions (user_id, status)
+       values ('a0000000-0000-4000-8000-00000000000a', 'trialing')$q$,
+    $q$insert into public.subscriptions (user_id, status)
+       values ('b0000000-0000-4000-8000-00000000000b', 'active')$q$,
+    $q$update public.subscriptions set status = 'canceled'
+       where id = 'f0000000-0000-4000-8000-00000000000b'$q$,
+    $q$update public.subscriptions set user_id = 'b0000000-0000-4000-8000-00000000000b'
+       where id = 'f0000000-0000-4000-8000-00000000000a'$q$,
+    $q$delete from public.subscriptions
+       where id = 'f0000000-0000-4000-8000-00000000000b'$q$,
+    $q$update public.subscriptions set status = 'canceled'$q$,
+    $q$delete from public.subscriptions$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -774,6 +807,22 @@ begin
     where user_id = 'b0000000-0000-4000-8000-00000000000b'
       and line1 = '9 Created St') then
     raise exception 'user A created a claim_profile_addresses row in user B''s name';
+  end if;
+  if not exists (
+    select 1 from public.subscriptions
+    where id = 'f0000000-0000-4000-8000-00000000000b'
+      and user_id = 'b0000000-0000-4000-8000-00000000000b'
+      and status = 'active') then
+    raise exception 'user B''s subscriptions was changed or deleted';
+  end if;
+  if exists (
+    select 1 from public.subscriptions
+    where id = 'f0000000-0000-4000-8000-00000000000a'
+      and user_id <> 'a0000000-0000-4000-8000-00000000000a') then
+    raise exception 'user A handed their subscriptions to another user';
+  end if;
+  if (select count(*) from public.subscriptions) <> 2 then
+    raise exception 'user A created a subscriptions row through the API';
   end if;
 end $$;
 call pg_temp.assert_protected_tables_unchanged('user A');

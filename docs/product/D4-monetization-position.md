@@ -1,3 +1,3 @@
 # D4 monetization (internal)
 
-One-click: no member fee (Terms + agent-auth). No public 15% or \"never takes a cut\" until founder + counsel decide. `FEE_DISCLOSURE_ENABLED` stays off. Full-service path = one-click, not `ASSISTED_FILING_ENABLED`.
+Membership (gated by `SUBSCRIPTION_BILLING_ENABLED`): 7-day free trial, then $19.99/month, cancel anytime. Unlocks Easy submit and new-claim alerts. 0 percent of settlement payouts. Never promise “never takes a cut.” Full-service path = one-click / Easy submit, not `ASSISTED_FILING_ENABLED`.

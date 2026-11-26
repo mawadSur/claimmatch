@@ -4,7 +4,9 @@
  */
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
 import { captureServerEvent, subscriberDistinctId } from '@/lib/analytics/server';
+import { flags } from '@/lib/flags';
 import { applySessionFlags } from '@/lib/session-flags';
+import { userHasMembershipAccess } from '@/lib/subscriptions';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import {
   MATCH_ALERT_TOKEN_PARAM,
@@ -154,9 +156,15 @@ export async function consumeMatchAlertToken(input: {
       .eq('email', parsed.email)
       .maybeSingle();
     const state = (subscriber as { state?: string | null } | null)?.state;
-    const patch: Record<string, unknown> = { email_opt_in: true };
+    const mayOptIn =
+      !flags.subscriptionBilling() ||
+      (await userHasMembershipAccess({ userId, email: parsed.email }));
+    const patch: Record<string, unknown> = {};
+    if (mayOptIn) patch.email_opt_in = true;
     if (state) patch.state = state;
-    await svc.from('profiles').update(patch).eq('id', userId);
+    if (Object.keys(patch).length > 0) {
+      await svc.from('profiles').update(patch).eq('id', userId);
+    }
   }
 
   const distinctId = userId || subscriberDistinctId(parsed.email);

@@ -195,6 +195,15 @@ describe('POST /api/filing/claims', () => {
     expect(view.actions.can_sign).toBe(false);
   });
 
+  it('Easy submit (desk_file) starts on the agent lane without a match-score gate', async () => {
+    h.db = new Db();
+    seedSettlement(h.db, { settlement: { eligibility: { states: ['CA'] }, claim_action_type: 'desk_file' } });
+    h.jobs.db = h.db;
+    const view = (await body(await start(), 201)).filing;
+    expect(view.lane.agent).toBe(true);
+    expect(view.lane.lane).not.toBe('self_file');
+  });
+
   it('keeps possible (state-only) matches and uncovered states on the self-file lane', async () => {
     h.db = new Db();
     seedSettlement(h.db, { settlement: { eligibility: { states: ['CA'] } } });

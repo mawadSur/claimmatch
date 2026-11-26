@@ -70,9 +70,9 @@ describe('claim action catalog', () => {
   it('matches the audit buckets and final action types', () => {
     const byType = (t: string) => CLAIM_ACTION_CATALOG.filter((r) => r.action_type === t).length;
     const byBucket = (t: string) => CLAIM_ACTION_CATALOG.filter((r) => r.audit_bucket === t).length;
-    expect(byType('desk_file')).toBe(2);
-    expect(byType('online_form')).toBe(17);
-    expect(byType('needs_notice_id')).toBe(50);
+    expect(byType('desk_file')).toBe(10);
+    expect(byType('online_form')).toBe(15);
+    expect(byType('needs_notice_id')).toBe(44);
     expect(byType('mail_in')).toBe(6);
     expect(byType('automatic_payment')).toBe(22);
     expect(byType('not_open')).toBe(25);
@@ -85,8 +85,16 @@ describe('claim action catalog', () => {
     expect(bySlug.get('realpage-rental-software-antitrust-settlement')?.action_type).toBe('desk_file');
     expect(bySlug.get('john-deere-repair-services-antitrust-settlement')?.action_type).toBe('desk_file');
     expect(bySlug.get('lawsuit-ai-one-click-test-settlement')?.action_type).toBe('not_open');
-    expect(bySlug.get('hyundai-kia-vehicle-theft')?.action_type).toBe('online_form');
-    expect(bySlug.get('rolling-stone-magazine-lifetime-subscription')?.action_type).toBe('online_form');
+    expect(bySlug.get('hyundai-kia-vehicle-theft')?.action_type).toBe('desk_file');
+    expect(bySlug.get('rolling-stone-magazine-lifetime-subscription')?.action_type).toBe('desk_file');
+    expect(bySlug.get('tenet-healthcare-pixel-tracking-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('seatgeek-ticket-fees-nevada-class-action-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('dental-intelligence-5-75m-privacy-class-action-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('blue-ridge-rural-water-company-data-breach-class-action-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('vida-y-salud-health-systems-data-breach-class-action-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('educational-computer-systems-data-breach-class-action-settlement')?.action_type).toBe('desk_file');
+    expect(bySlug.get('allstate-arizona-depreciation-settlement')?.action_type).not.toBe('desk_file');
+    expect(bySlug.get('kroger-prescription-drug-prices-class-action-settlement')?.action_type).not.toBe('desk_file');
     expect(bySlug.get('moss-krivin-v-penske-media-corporation')?.action_type).toBe('not_open');
     expect(bySlug.get('international-motors-wellness-program-surcharge-settlement')?.action_type).toBe(
       'automatic_payment',

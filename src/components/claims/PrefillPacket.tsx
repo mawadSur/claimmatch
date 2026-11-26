@@ -7,7 +7,7 @@ import { flags } from '@/lib/flags';
 import { packetFieldOrder, type PacketFieldKey } from '@/lib/form-field-order';
 import { US_STATES } from '@/lib/utils';
 import type { PacketProfile } from '@/lib/claim-screen';
-import { PREFILL_AGENT_LANE_NOTE } from '@/lib/copy';
+import { PREFILL_AGENT_LANE_NOTE, PREFILL_EASY_SUBMIT_NOTE } from '@/lib/copy';
 
 type PacketFields = {
   full_name: string;
@@ -59,6 +59,7 @@ export function PrefillPacket({
   lawsuitSlug,
   formFieldOrder,
   agentLane = false,
+  easySubmit = false,
 }: {
   profile: PacketProfile | null;
   lawsuitId?: string;
@@ -66,6 +67,8 @@ export function PrefillPacket({
   formFieldOrder?: string[] | null;
   /** Lawsuit AI files (or offers to file) this claim (checklist item 13); false keeps the self-file lead. */
   agentLane?: boolean;
+  /** Easy submit (`desk_file`): never the leftover “never files for you” lead. */
+  easySubmit?: boolean;
 }) {
   const posthog = usePostHog();
   const [fields, setFields] = useState<PacketFields>({
@@ -151,7 +154,9 @@ export function PrefillPacket({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold">Copy-ready details from your profile</h3>
-          <p className="mt-1 text-sm text-ink-muted">{agentLane ? PREFILL_AGENT_LANE_NOTE : SELF_FILE_NOTE}</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {agentLane ? PREFILL_AGENT_LANE_NOTE : easySubmit ? PREFILL_EASY_SUBMIT_NOTE : SELF_FILE_NOTE}
+          </p>
         </div>
         <button
           type="button"

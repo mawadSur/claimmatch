@@ -13,22 +13,46 @@ export const OFFICIAL_FILING_IS_FREE = 'Filing on the official site is always fr
 export const FILING_FREE_WARNING = OFFICIAL_FILING_IS_FREE;
 
 /**
- * Recovery share, in percent. Owner decision: Lawsuit AI files the claim and
- * charges this share only if the user is paid. Public pages show this only
- * when FEE_DISCLOSURE_ENABLED=1.
+ * Membership price and trial. Public pages show this only when
+ * SUBSCRIPTION_BILLING_ENABLED=1. Interpolate from these constants so the
+ * dollar amount cannot drift across Pricing, Terms, FAQ, and e-sign text.
  */
-export const CLAIMMATCH_FEE_RATE = 15;
+export const CLAIMMATCH_TRIAL_DAYS = 7;
+export const CLAIMMATCH_MEMBERSHIP_PRICE_CENTS = 1999;
 
-export function feeEveryClaimCopy(rate = CLAIMMATCH_FEE_RATE): string {
+export function membershipPriceCopy(cents = CLAIMMATCH_MEMBERSHIP_PRICE_CENTS): string {
+  const dollars = (cents / 100).toFixed(2);
+  return `$${dollars}`;
+}
+
+/** Public membership sentence: free browsing/self-file, paid Easy submit + alerts. */
+export function membershipCopy(
+  trialDays = CLAIMMATCH_TRIAL_DAYS,
+  price = membershipPriceCopy(),
+): string {
   return (
-    `Lawsuit AI files the claim for you and charges ${rate} percent only if you get paid. ` +
-    'The settlement administrator pays you directly.'
+    `Browsing, matching, and filing yourself on official settlement sites stay free. ` +
+    `Easy submit and new-claim alerts are included with Lawsuit AI membership: a ${trialDays}-day free trial, then ${price} a month, cancel anytime. ` +
+    `Lawsuit AI takes 0 percent of your settlement payouts. Administrators pay you directly and you keep 100 percent. ` +
+    `Lawsuit AI never holds or redirects settlement funds.`
   );
+}
+
+export function startTrialCtaLabel(
+  trialDays = CLAIMMATCH_TRIAL_DAYS,
+  price = membershipPriceCopy(),
+): string {
+  return `Start ${trialDays}-day free trial (${price}/mo after)`;
+}
+
+/** @deprecated Use membershipCopy. Same public membership sentence. */
+export function feeEveryClaimCopy(): string {
+  return membershipCopy();
 }
 
 /**
  * Who files, for public pages. True when Lawsuit AI may file some claims for
- * the member: the fee disclosure says so (FEE_DISCLOSURE_ENABLED) or one-click
+ * the member: membership copy is on (SUBSCRIPTION_BILLING_ENABLED) or one-click
  * filing is on (ONE_CLICK_FILING_ENABLED). Off: "never files for you" stays true.
  */
 export function lawsuitAiMayFile(
@@ -88,9 +112,8 @@ export const MAY_FILE_SENTENCE = WE_FILE_SUPPORTED_SENTENCE;
  * for the one-click launch; have counsel review before turning the flags on.
  */
 export const MAY_FILE_LEGAL_SENTENCE =
-  'Where Lawsuit AI offers one-click filing and you review and sign a claim, Lawsuit AI files the claim for you on the official settlement website; otherwise you file every claim yourself. Lawsuit AI never receives or handles settlement payments.';
-export const MAY_FILE_SHORT_SENTENCE =
-  'Where you choose one-click filing and sign the claim, Lawsuit AI files the claim for you; otherwise you file every claim yourself on the official settlement website.';
+  `${FILE_OR_EASY_SUBMIT} Lawsuit AI never receives or handles settlement payments.`;
+export const MAY_FILE_SHORT_SENTENCE = FILE_OR_EASY_SUBMIT;
 
 /** Answer to "Do you file claims for me?" / "Who files my claim?". */
 export function whoFilesAnswer(mayFile = lawsuitAiMayFile()): string {
@@ -143,10 +166,22 @@ export const SETTLEMENT_FILING_COPY = {
       'Lawsuit AI never handles settlement payments',
     ],
   },
+  easy_submit: {
+    step: {
+      title: 'Easy submit',
+      body: `${FILE_OR_EASY_SUBMIT} Lawsuit AI never handles settlement payments.`,
+    },
+    points: [
+      FILE_OR_EASY_SUBMIT,
+      'You can always file on the official site yourself instead',
+      'Lawsuit AI never handles settlement payments',
+    ],
+  },
 } as const;
 
-/** Guide pages: agent lane vs everyone else (including never_files). */
-export function guideFilingCopy(mode: SettlementFilingMode) {
+/** Guide pages: Easy submit (`desk_file`) even before an agent lane is live; else agent vs self-file. */
+export function guideFilingCopy(mode: SettlementFilingMode, deskFile = false) {
+  if (deskFile) return SETTLEMENT_FILING_COPY.easy_submit;
   return mode === 'agent' ? SETTLEMENT_FILING_COPY.agent : SETTLEMENT_FILING_COPY.self_file;
 }
 
@@ -232,9 +267,9 @@ export function operatorLine(
   return `${SITE.name} is operated by ${name}, a ${OPERATOR_JURISDICTION} limited liability company.`;
 }
 
-/** Public cost line. Beta wording until counsel flips FEE_DISCLOSURE_ENABLED. */
+/** Public cost line. Beta wording until SUBSCRIPTION_BILLING_ENABLED is on. */
 export function publicCostNote(disclose: boolean): string {
-  return disclose ? feeEveryClaimCopy() : `${OFFICIAL_FILING_IS_FREE} ${publicBetaFeeCopy()}`;
+  return disclose ? membershipCopy() : `${OFFICIAL_FILING_IS_FREE} ${publicBetaFeeCopy()}`;
 }
 
 /** Live beta fee sentence. Neutral wording is behind PANEL_TRUST_COPY_ENABLED. */
@@ -274,6 +309,10 @@ export const CLAIM_AGENT_LEGAL_SENTENCE =
 /** PrefillPacket's lead on a claim Lawsuit AI may file: the details are for filing it yourself instead. */
 export const PREFILL_AGENT_LANE_NOTE =
   'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose one-click filing and sign it.';
+
+/** PrefillPacket's lead on Easy submit (`desk_file`) when one-click is not yet offering start. */
+export const PREFILL_EASY_SUBMIT_NOTE =
+  'Name, email, phone, address and state you saved. Edit anything that’s wrong. Easy submit uses these details after you e-sign, or copy them into the official form if you file yourself.';
 
 /** The claim page's status note on the self-file lane while one-click filing is on. */
 export const ONE_CLICK_SELF_FILE_NOTE =

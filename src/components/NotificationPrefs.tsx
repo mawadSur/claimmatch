@@ -5,6 +5,7 @@ import { Loader2, Check, AlertCircle } from 'lucide-react';
 import type { Profile } from '@/lib/types';
 import { answersFromAttributes, type AttributeAnswers } from '@/lib/profile-attributes';
 import { US_STATES } from '@/lib/utils';
+import { MembershipCta } from '@/components/billing/MembershipCta';
 import { ProfileAttributesFields } from './ProfileAttributesFields';
 
 /**
@@ -14,10 +15,13 @@ import { ProfileAttributesFields } from './ProfileAttributesFields';
 export function NotificationPrefs({
   profile,
   collectPhone = true,
+  alertsRequireMembership = false,
 }: {
   profile: Profile;
   /** Off when CATALOG_HIDE_UNKNOWNS_ENABLED: stop collecting phone in Settings. */
   collectPhone?: boolean;
+  /** When membership billing is on and this member is not subscribed. */
+  alertsRequireMembership?: boolean;
 }) {
   const [fullName, setFullName] = useState(profile.full_name ?? '');
   const [state, setState] = useState(profile.state ?? '');
@@ -45,7 +49,7 @@ export function NotificationPrefs({
           full_name: fullName,
           state,
           ...(collectPhone ? { phone } : {}),
-          email_opt_in: emailOptIn,
+          email_opt_in: alertsRequireMembership ? false : emailOptIn,
           email_frequency: emailFrequency,
           match_metrics_consent: metricsConsent,
           attributes: answers,
@@ -135,6 +139,15 @@ export function NotificationPrefs({
       </div>
 
       <div className="mt-5 space-y-3">
+        {alertsRequireMembership ? (
+          <div className="rounded-xl border border-brand-100 bg-brand-50/50 p-4">
+            <p className="text-sm font-semibold text-ink">New-claim alerts</p>
+            <p className="mt-1 text-sm text-ink-muted">
+              New-claim alerts are included with Lawsuit AI membership. Browsing and filing yourself stay free.
+            </p>
+            <MembershipCta returnTo="/settings" className="btn-primary mt-3 w-full sm:w-auto" />
+          </div>
+        ) : (
         <Toggle
           id="email-opt-in"
           checked={emailOptIn}
@@ -142,7 +155,8 @@ export function NotificationPrefs({
           label="Email me about new settlements (optional)"
           hint="Off unless you turn this on. New accounts start opted out. These emails stay paused until match alerts are enabled. Account emails and important notices about your claims come either way. You can unsubscribe from any email."
         />
-        {emailOptIn && (
+        )}
+        {emailOptIn && !alertsRequireMembership && (
           <fieldset className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <legend className="text-sm font-semibold text-ink">How often</legend>
             <p className="mt-1 text-xs text-ink-muted">

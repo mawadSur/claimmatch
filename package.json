@@ -19,6 +19,7 @@
     "one-click:sql": "tsx scripts/one-click-five-settlements.ts",
     "one-click:sql:more": "tsx scripts/one-click-more-settlements.ts",
     "one-click:sql:claim-profile": "tsx scripts/one-click-claim-profile-settlements.ts",
+    "one-click:sql:eight": "tsx scripts/one-click-eight-easy-submit.ts",
     "one-click:dry-run": "tsx scripts/one-click-dry-run.ts",
     "claim-action:sql": "tsx scripts/claim-action-types.ts",
     "test:e2e:isolated": "bash scripts/run-isolated-journey.sh",
@@ -37,6 +38,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "resend": "^6.38.1",
+    "stripe": "^20.4.1",
     "tailwind-merge": "^2.6.0",
     "zod": "^4.6.7"
   },

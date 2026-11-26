@@ -10,10 +10,10 @@ import { CLAIM_AGENT_LEGAL_SENTENCE, MAY_FILE_LEGAL_SENTENCE, lawsuitAiMayFile }
 import { flags } from '@/lib/flags';
 
 /* -------------------------------------------------------------------------- */
-/* Flag-aware versions. With FEE_DISCLOSURE_ENABLED and ONE_CLICK_FILING_ENABLED
+/* Flag-aware versions. With SUBSCRIPTION_BILLING_ENABLED and ONE_CLICK_FILING_ENABLED
  * off (production today) these return the constants above word for word. When
  * Lawsuit AI may file (copy.ts lawsuitAiMayFile), only the filing sentence is
- * swapped; with the fee disclosed, "a free claim assistant" drops "free". */
+ * swapped; with membership disclosed, "a free claim assistant" drops "free". */
 
 const SELF_FILE_LEGAL_SENTENCE =
   'Lawsuit AI does not file, submit or sign claims for anyone, and it never receives or handles settlement payments.';

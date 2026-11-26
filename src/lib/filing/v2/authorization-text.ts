@@ -12,27 +12,42 @@
  * payment is not guaranteed, and nothing suggests filing yourself is riskier.
  *
  * agent-auth-v1: the desk agent stops at any code, robot check or identity check.
- * agent-auth-v2 (founder decision 2026-11-15, awaiting law-firm sign-off): the
- *   same text, except a person at the desk may complete a CAPTCHA by hand on
- *   the official site. Members sign v2 only once AGENT_AUTH_CURRENT_VERSION
- *   is set to agent-auth-v2 (flags.agentAuthV2), after counsel approves it.
+ * agent-auth-v2 (founder decision 2026-11-15): the same text, except a person
+ *   at the desk may complete a CAPTCHA by hand on the official site.
+ * agent-auth-v3: v2 how-it-will-be-submitted, plus membership (7-day free
+ *   trial, then $19.99/month) and no percentage of settlement payments.
+ *   Not yet in production; v1 and v2 text never change.
+ *
+ * Members sign the current version via AGENT_AUTH_CURRENT_VERSION. With that
+ * unset, SUBSCRIPTION_BILLING_ENABLED defaults new signatures to v3. Existing
+ * signatures keep the version they were signed under. v1 and v2 text never
+ * changes.
  */
+import { CLAIMMATCH_TRIAL_DAYS, membershipPriceCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import type { AgentChannel, DeskChallengeMode } from './contract-spec';
 
 export const AGENT_AUTH_V1 = 'agent-auth-v1';
 export const AGENT_AUTH_V2 = 'agent-auth-v2';
+export const AGENT_AUTH_V3 = 'agent-auth-v3';
 /** Every version this server can show and explain; a signature stores one of these. */
-export const AGENT_AUTHORIZATION_VERSIONS = [AGENT_AUTH_V1, AGENT_AUTH_V2] as const;
+export const AGENT_AUTHORIZATION_VERSIONS = [AGENT_AUTH_V1, AGENT_AUTH_V2, AGENT_AUTH_V3] as const;
 export type AgentAuthorizationVersion = (typeof AGENT_AUTHORIZATION_VERSIONS)[number];
 
 /**
- * The version new members sign now: agent-auth-v1 unless the founder sets
- * AGENT_AUTH_CURRENT_VERSION=agent-auth-v2 after the law firm signs off.
+ * The version new members sign now:
+ *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v3 → v3
+ *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v2 → v2
+ *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v1 → v1
+ *   unset + SUBSCRIPTION_BILLING_ENABLED=1 → v3
+ *   otherwise → v1
  * Existing signatures keep the version they were signed under.
  */
 export function currentAuthorizationVersion(): AgentAuthorizationVersion {
-  return flags.agentAuthV2() ? AGENT_AUTH_V2 : AGENT_AUTH_V1;
+  if (flags.agentAuthV3()) return AGENT_AUTH_V3;
+  if (flags.agentAuthV2()) return AGENT_AUTH_V2;
+  if (flags.agentAuthV1()) return AGENT_AUTH_V1;
+  return flags.subscriptionBilling() ? AGENT_AUTH_V3 : AGENT_AUTH_V1;
 }
 
 const HOW_V1: Readonly<Record<AgentChannel, string>> = {
@@ -55,10 +70,20 @@ const HOW_V2: Readonly<Record<AgentChannel, string>> = {
 const HOW: Readonly<Record<AgentAuthorizationVersion, Readonly<Record<AgentChannel, string>>>> = {
   [AGENT_AUTH_V1]: HOW_V1,
   [AGENT_AUTH_V2]: HOW_V2,
+  [AGENT_AUTH_V3]: HOW_V2,
 };
 
 function isKnownVersion(version: string): version is AgentAuthorizationVersion {
   return (AGENT_AUTHORIZATION_VERSIONS as readonly string[]).includes(version);
+}
+
+function feeBullet(version: AgentAuthorizationVersion): string {
+  if (version === AGENT_AUTH_V3) {
+    return (
+      `- Lawsuit AI does not take a percentage of my settlement payment. Easy submit is included with my Lawsuit AI membership (${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()}/month, cancel anytime). Filing a claim myself on the official settlement site is free.`
+    );
+  }
+  return '- Lawsuit AI does not charge me a fee for this claim. Filing a claim myself on the official settlement site is free.';
 }
 
 /** The authorization text for one agent channel (the lane the member signs for), under `version` (default: the current one). */
@@ -70,7 +95,7 @@ export function agentAuthorizationText(lane: AgentChannel, version: AgentAuthori
     'I understand that:',
     '- Lawsuit AI gives the settlement administrator my name, contact details and the answers in this claim, so the administrator can contact me directly about it.',
     '- Any payment from the settlement comes to me directly from the settlement administrator, by the payment method I chose. Lawsuit AI never receives, holds or redirects settlement money.',
-    '- Lawsuit AI does not charge me a fee for this claim. Filing a claim myself on the official settlement site is free.',
+    feeBullet(version),
     '- Lawsuit AI is not a law firm and is not affiliated with the settlement, the court, the parties or the settlement administrator. The settlement administrator decides who qualifies, and payment is not guaranteed.',
     '- I can withdraw this authorization in Lawsuit AI at any time before filing starts. After filing starts, I should contact the settlement administrator about any change.',
     '- If Lawsuit AI can’t submit this claim in time, it will tell me by email and in Lawsuit AI while there is still time before the deadline, and the claim will come back to me with my answers ready, so I can file it myself on the official site.',
@@ -84,12 +109,13 @@ export function authorizationTextFor(version: string, lane: AgentChannel): strin
 
 /**
  * The authorization versions whose desk text tells the member a desk agent
- * may complete a CAPTCHA by hand: agent-auth-v2 only. agent-auth-v1 says the
- * agent stops at any robot check, so a claim signed under v1 is always filed
- * under 'stop', whatever the settlement's rule (0045) says later. Under v2 the
- * settlement's 'staff_completes_captcha' rule still has to be on.
+ * may complete a CAPTCHA by hand: agent-auth-v2 and agent-auth-v3.
+ * agent-auth-v1 says the agent stops at any robot check, so a claim signed
+ * under v1 is always filed under 'stop', whatever the settlement's rule
+ * (0045) says later. Under v2/v3 the settlement's 'staff_completes_captcha'
+ * rule still has to be on.
  */
-export const VERSIONS_COVERING_STAFF_CAPTCHA: ReadonlySet<string> = new Set<string>([AGENT_AUTH_V2]);
+export const VERSIONS_COVERING_STAFF_CAPTCHA: ReadonlySet<string> = new Set<string>([AGENT_AUTH_V2, AGENT_AUTH_V3]);
 
 /** The challenge rule that actually applies to a claim signed (or to be signed) under `authorizationVersion`. */
 export function effectiveDeskChallengeMode(

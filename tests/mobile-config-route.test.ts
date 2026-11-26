@@ -39,12 +39,12 @@ describe('GET /api/mobile/config', () => {
 
     vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', 'true');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', 'true');
     const on = (await config()).body;
     expect(on.flags).toMatchObject({
       ASSISTED_FILING_ENABLED: true,
       VERIFIED_FIELDS_ENABLED: true,
-      FEE_DISCLOSURE_ENABLED: false,
+      SUBSCRIPTION_BILLING_ENABLED: false,
     });
     expect(Object.values(on.flags).every((value) => typeof value === 'boolean')).toBe(true);
     expect(JSON.stringify(on)).not.toMatch(/MATCH_EMAILS|DIRECT_FILING/);

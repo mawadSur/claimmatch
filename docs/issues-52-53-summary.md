@@ -4,7 +4,7 @@ This is a status map, not a close-out. **Do not close, edit, or comment on GitHu
 
 Verified read-only against production on **2026-11-25**. No staging Supabase project exists. This PR does not apply SQL, flip flags, create accounts, or spend money.
 
-Production flags (leave them): `ONE_CLICK_FILING_ENABLED` is ON. `FEE_DISCLOSURE_ENABLED` and `ASSISTED_FILING_ENABLED` stay off.
+Production flags (leave them): `ONE_CLICK_FILING_ENABLED` is ON. `SUBSCRIPTION_BILLING_ENABLED` and `ASSISTED_FILING_ENABLED` stay off.
 
 ---
 

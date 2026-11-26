@@ -43,3 +43,26 @@ test('signed-out onboarding and dashboard land on login; claim pages stay public
   await expect(page).not.toHaveURL(/\/signup/);
   await expect(page).not.toHaveURL(/\/login/);
 });
+
+test('Easy submit settlement pages have no leftover self-file copy', async ({ page }) => {
+  for (const slug of [
+    'realpage-rental-software-antitrust-settlement',
+    'john-deere-repair-services-antitrust-settlement',
+  ]) {
+    const lawsuit = await page.goto(`/lawsuits/${slug}`);
+    if (lawsuit && lawsuit.ok()) {
+      const text = await page.locator('body').innerText();
+      expect(text).not.toMatch(/doesn['’]t file claims for you/i);
+      expect(text).not.toMatch(/Lawsuit AI never files for you/i);
+      expect(text).not.toMatch(/Where Lawsuit AI offers one-click filing/i);
+      expect(text).toMatch(/Easy submit/i);
+    }
+    const claim = await page.goto(`/claim/${slug}`);
+    if (claim && claim.ok()) {
+      const text = await page.locator('body').innerText();
+      expect(text).not.toMatch(/doesn['’]t file claims for you/i);
+      expect(text).not.toMatch(/Lawsuit AI never files for you/i);
+      expect(text).not.toMatch(/Where Lawsuit AI offers one-click filing/i);
+    }
+  }
+});

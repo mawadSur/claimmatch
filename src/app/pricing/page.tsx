@@ -5,11 +5,12 @@ import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
 import {
   OFFICIAL_FILING_IS_FREE,
-  WE_FILE_SUPPORTED,
-  feeEveryClaimCopy,
+  membershipCopy,
+  membershipPriceCopy,
   filingFact,
   lawsuitAiMayFile,
   publicBetaFeeCopy,
+  CLAIMMATCH_TRIAL_DAYS,
 } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
@@ -19,7 +20,7 @@ export function generateMetadata(): Metadata {
   if (flags.feeDisclosure()) {
     return publicPageMetadata({
       title: 'Pricing',
-      description: feeEveryClaimCopy(),
+      description: membershipCopy(),
       path: '/pricing',
     });
   }
@@ -35,23 +36,35 @@ export function generateMetadata(): Metadata {
 function freeItems(mayFile: boolean): string[] {
   return [
     'Browsing settlements that are open for claims',
+    'Matching settlements to you',
+    'Filing yourself on official settlement sites',
     'Your Lawsuit AI account',
     'Keeping track of the claims you file',
-    ...(mayFile ? [WE_FILE_SUPPORTED] : []),
+    ...(mayFile ? [] : []),
+  ];
+}
+
+function membershipItems(): string[] {
+  return [
+    `A ${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()} a month. Cancel anytime.`,
+    'Easy submit on eligible claims after you e-sign',
+    'New-claim alerts',
+    'You keep 100 percent of settlement payouts. Administrators pay you directly.',
   ];
 }
 
 function neverItems(mayFile: boolean): string[] {
   return [
     'Handle your settlement money',
+    'Take a percentage of your settlement payouts',
     ...(mayFile ? [] : ['File a claim for you']),
-    'Charge you to file a claim',
+    'Charge you to file on the official site',
   ];
 }
 
 function pricingFaq(disclose: boolean) {
   if (disclose) {
-    const fee = feeEveryClaimCopy();
+    const fee = membershipCopy();
     return [
       {
         q: 'Does Lawsuit AI cost anything?',
@@ -59,15 +72,15 @@ function pricingFaq(disclose: boolean) {
       },
       {
         q: 'Do you handle my settlement money?',
-        a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly.',
+        a: 'No. We never handle settlement payments. If your claim is paid, the settlement administrator pays you directly. Lawsuit AI takes 0 percent of your payouts.',
       },
       {
         q: 'Do I have to pay to file a claim?',
-        a: `No. ${OFFICIAL_FILING_IS_FREE}`,
+        a: `No. ${OFFICIAL_FILING_IS_FREE} Easy submit is included with membership.`,
       },
       {
         q: 'How does Lawsuit AI make money?',
-        a: `${fee} We don’t run ads or sell paid plans, and we do not sell your personal information.`,
+        a: `${fee} We don’t run ads, and we do not sell your personal information.`,
       },
     ];
   }
@@ -98,6 +111,7 @@ export default function PricingPage() {
   const mayFile = lawsuitAiMayFile();
   const faq = pricingFaq(disclose);
   const free = freeItems(mayFile);
+  const membership = membershipItems();
   const never = neverItems(mayFile);
 
   return (
@@ -112,7 +126,7 @@ export default function PricingPage() {
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
               {disclose ? (
                 <>
-                  A share of what you receive.{' '}
+                  {CLAIMMATCH_TRIAL_DAYS}-day free trial, then {membershipPriceCopy()}/month.{' '}
                   <span className="text-brand-600">Official filing stays free.</span>
                 </>
               ) : (
@@ -128,7 +142,7 @@ export default function PricingPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               {disclose
-                ? `${feeEveryClaimCopy()} You can always file on the official settlement site yourself instead, where filing is free.`
+                ? `${membershipCopy()} You can always file on the official settlement site yourself instead, where filing is free.`
                 : flags.oneClickFiling()
                   ? `${publicBetaFeeCopy()} ${filingFact(true).body}`
                   : `${publicBetaFeeCopy()} You file on the official settlement site, and if your claim is paid, the money goes straight to you.`}
@@ -139,9 +153,9 @@ export default function PricingPage() {
 
       {/* What's free / what we never do ------------------------------------- */}
       <section className="container-page pb-4">
-        <div className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
+        <div className={`mx-auto grid gap-6 ${disclose ? 'max-w-5xl sm:grid-cols-3' : 'max-w-3xl sm:grid-cols-2'}`}>
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
-            <h2 className="text-lg font-bold">Free for you</h2>
+            <h2 className="text-lg font-bold">Free</h2>
             <ul className="mt-4 space-y-3">
               {free.map((t) => (
                 <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
@@ -151,6 +165,19 @@ export default function PricingPage() {
               ))}
             </ul>
           </div>
+          {disclose ? (
+            <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-6 shadow-card">
+              <h2 className="text-lg font-bold">Pro / Membership</h2>
+              <ul className="mt-4 space-y-3">
+                {membership.map((t) => (
+                  <li key={t} className="flex items-start gap-2.5 text-sm text-ink-muted">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-600" aria-hidden />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h2 className="text-lg font-bold">What we never do</h2>
             <ul className="mt-4 space-y-3">

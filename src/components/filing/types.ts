@@ -21,6 +21,11 @@ export interface OneClickClaimProps {
    * one-click claim under way yet.
    */
   canStart: boolean;
+  /**
+   * Easy submit would start, but SUBSCRIPTION_BILLING_ENABLED is on and this
+   * member has no active or trialing membership. Show the trial CTA instead.
+   */
+  needsMembership?: boolean;
   /** The claim is in a one-click status but its view could not be read. */
   loadFailed: boolean;
   /** The account's sign-in email, for signing in again before "File my claim". */

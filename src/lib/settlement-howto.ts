@@ -22,13 +22,13 @@ const TRACK: HowToStep = {
   text: 'Tell us when you’ve filed and save the confirmation number the official site gives you.',
 };
 
-export function settlementHowToSteps(mode: SettlementFilingMode): HowToStep[] {
-  const mid = guideFilingCopy(mode).step;
+export function settlementHowToSteps(mode: SettlementFilingMode, deskFile = false): HowToStep[] {
+  const mid = guideFilingCopy(mode, deskFile).step;
   return [QUALIFY, { name: mid.title, text: mid.body }, TRACK];
 }
 
-export function settlementHowToJsonLd(lawsuit: Lawsuit, mode: SettlementFilingMode) {
-  const steps = settlementHowToSteps(mode);
+export function settlementHowToJsonLd(lawsuit: Lawsuit, mode: SettlementFilingMode, deskFile = false) {
+  const steps = settlementHowToSteps(mode, deskFile);
   return {
     '@context': 'https://schema.org',
     '@type': 'HowTo',

@@ -88,7 +88,7 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INGEST_ALERT_EMAILS_ENABLED', 'yes');
     vi.stubEnv('LINK_CHECK_ENABLED', 'true');
     vi.stubEnv('PAYOUT_REPORT_ENABLED', 'yes');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', 'yes');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', 'yes');
     vi.stubEnv('INGEST_MISSING_CLOSE_QUEUE_ENABLED', 'yes');
     vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', 'true');
     vi.stubEnv('ADMIN_HELD_CLOSURES_ENABLED', 'yes');
@@ -205,7 +205,7 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('INGEST_ALERT_EMAILS_ENABLED', '1');
     vi.stubEnv('LINK_CHECK_ENABLED', '1');
     vi.stubEnv('PAYOUT_REPORT_ENABLED', '1');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', '1');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
     vi.stubEnv('INGEST_MISSING_CLOSE_QUEUE_ENABLED', '1');
     vi.stubEnv('LAWSUITS_PAGINATION_ENABLED', '1');
     vi.stubEnv('ADMIN_HELD_CLOSURES_ENABLED', '1');
