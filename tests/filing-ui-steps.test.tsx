@@ -63,6 +63,17 @@ describe('the one-click steps on an agent lane', () => {
     expect(at('File my claim')).toBeGreaterThan(at('Step 3:'));
   });
 
+  it('puts the we-file-this-claim card below the steps, so Step 1 comes first', () => {
+    const t = text(html);
+    const at = (s: string) => t.indexOf(s);
+    expect(at('Step 1: Confirm this describes you')).toBeGreaterThan(-1);
+    expect(at(ONE_CLICK_AGENT_TITLE)).toBeGreaterThan(at('Step 3: Review and sign'));
+    expect(at(ONE_CLICK_AGENT_TITLE)).toBeGreaterThan(at('File my claim'));
+    expect(t).toContain(ONE_CLICK_TIMING.filing_desk);
+    expect(t).toContain('Sign by Dec 10, 2026');
+    expect(t).toContain(ONE_CLICK_COPY.payout);
+  });
+
   it('step 1 shows the class definition word for word, the official link, and an unticked box', () => {
     expect(html).toContain(escape(CLASS_TEXT));
     expect(html).toContain('whitespace-pre-wrap');
@@ -108,6 +119,41 @@ describe('the one-click steps on an agent lane', () => {
   it('offers to save details to the profile only as the member’s own tick', () => {
     expect(tag(html, 'filing-save-to-profile')).not.toContain('checked');
     expect(render(filingView({ packet: { save_member_to_profile_available: false } }))).not.toContain('filing-save-to-profile');
+  });
+});
+
+describe('prepopulated member fields', () => {
+  const named = [
+    item({ path: 'member.first_name', kind: 'member', label: 'First name', value: 'Ada', missing: true }),
+    item({ path: 'member.last_name', kind: 'member', label: 'Last name', value: 'Lovelace', missing: true }),
+    item({ path: 'member.email', kind: 'member', label: 'Email address', type: 'email', value: 'ada@example.com', missing: true }),
+    item({ path: 'member.phone', kind: 'member', label: 'Phone number', type: 'phone', value: null, missing: true }),
+    item({ path: 'member.address.line1', kind: 'member', label: 'Street address', value: '1 Main St', missing: true }),
+    item({ path: 'member.address.city', kind: 'member', label: 'City', value: 'Springfield', missing: true }),
+    item({ path: 'member.address.state', kind: 'member', label: 'State', type: 'us_state', value: 'CA', missing: true }),
+    item({ path: 'member.address.zip', kind: 'member', label: 'ZIP Code', type: 'zip', value: '94110', missing: true }),
+  ];
+
+  it('shows profile values as input values, not placeholders, and leaves missing fields blank', () => {
+    const html = render(filingView({ items: named }));
+    expect(tag(html, 'filing-member-first_name')).toContain('value="Ada"');
+    expect(tag(html, 'filing-member-first_name')).not.toContain('placeholder');
+    expect(tag(html, 'filing-member-last_name')).toContain('value="Lovelace"');
+    expect(tag(html, 'filing-member-email')).toContain('value="ada@example.com"');
+    expect(tag(html, 'filing-member-phone')).toMatch(/value=""/);
+    expect(tag(html, 'filing-member-address-line1')).toContain('value="1 Main St"');
+    expect(tag(html, 'filing-member-address-city')).toContain('value="Springfield"');
+    expect(html).toContain('id="filing-member-address-state"');
+    expect(html).toMatch(/<option[^>]*value="CA"[^>]*selected|selected[^>]*value="CA"/);
+    expect(tag(html, 'filing-member-address-zip')).toContain('value="94110"');
+  });
+
+  it('keeps a saved answer on this claim over a profile default', () => {
+    const items = named.map((i) => (i.path === 'member.first_name' ? { ...i, value: 'Adda' } : i));
+    const html = render(filingView({ items }));
+    expect(tag(html, 'filing-member-first_name')).toContain('value="Adda"');
+    expect(tag(html, 'filing-member-first_name')).not.toContain('value="Ada"');
+    expect(tag(html, 'filing-member-last_name')).toContain('value="Lovelace"');
   });
 });
 

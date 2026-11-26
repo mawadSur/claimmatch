@@ -83,7 +83,6 @@ export function OneClickFiling({
 
   return (
     <div id="one-click" className="scroll-mt-24 space-y-5">
-      <LaneCard view={view} />
       <ol className="space-y-5" aria-label={ONE_CLICK_COPY.stepsLabel}>
         {packet.spec && (
           <FilingStep n={1} title={steps.confirm}>
@@ -106,11 +105,12 @@ export function OneClickFiling({
         <FilingActions view={view} busy={busy} onView={onChange} />
         <FilingTimeline entries={view.timeline} />
       </div>
+      <LaneCard view={view} />
     </div>
   );
 }
 
-/** The lane at the top of the steps: "Lawsuit AI files this claim for you" and what happens next, or why it can't. */
+/** The lane at the bottom of the steps: "We file this claim for you" and what happens next, or why it can't. */
 function LaneCard({ view }: { view: ClaimFilingView }) {
   const timing = laneTiming(view.lane);
   const lastDay = lastDayLine(view.lane);

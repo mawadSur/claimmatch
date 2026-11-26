@@ -21,7 +21,7 @@ import { Message, Muted } from './parts';
 import { ReviewSignStep } from './ReviewSignStep';
 import type { OnFilingView } from './use-one-click';
 
-/** The lane above the steps: "Lawsuit AI files this claim for you" and what happens next, or why it can't. */
+/** The lane below the steps: "We file this claim for you" and what happens next, or why it can't. */
 function LaneCard({ view }: { view: ClaimFilingView }) {
   const timing = laneTiming(view.lane);
   const lastDay = lastDayLine(view.lane);
@@ -141,7 +141,6 @@ export function OneClickFiling({ view, onView }: { view: ClaimFilingView; onView
 
   return (
     <>
-      <LaneCard view={view} />
       {packet.spec ? (
         <NumberedStep n={1} title={copy.stepConfirm.text} testID="filing-step-confirm">
           <ConfirmClassStep view={view} busy={busy} save={save} />
@@ -164,6 +163,7 @@ export function OneClickFiling({ view, onView }: { view: ClaimFilingView; onView
         <FilingActions view={view} busy={busy} onView={onView} />
         <FilingTimeline entries={view.timeline} />
       </Card>
+      <LaneCard view={view} />
     </>
   );
 }

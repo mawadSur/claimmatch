@@ -396,12 +396,56 @@ export function currentAddressOf(profile: ClaimProfile): ClaimProfileAddress | n
   return profile.addresses.find((a) => a.kind === 'current') ?? null;
 }
 
+/**
+ * Split a legal / full name into first and last for forms that ask for them
+ * separately. The first word is the first name; the rest is the last name, so
+ * multi-word last names like "Van Damme" stay together. A single word fills
+ * first name only. Never invents a last name.
+ */
+export function splitLegalName(name: string | null | undefined): { first_name: string | null; last_name: string | null } {
+  const text = typeof name === 'string' ? name.trim() : '';
+  if (!text) return { first_name: null, last_name: null };
+  const parts = text.split(/\s+/);
+  if (parts.length === 1) return { first_name: parts[0], last_name: null };
+  return { first_name: parts[0], last_name: parts.slice(1).join(' ') };
+}
+
+/** Contact fields a packet can prefill, taken from the merged claim profile. */
+export function memberPrefillFromClaimProfile(profile: ClaimProfile): {
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+} {
+  const current = currentAddressOf(profile);
+  const text = (value: string | null | undefined) => (typeof value === 'string' && value.trim() ? value.trim() : null);
+  return {
+    full_name: text(profile.legal_name),
+    email: text(profile.email),
+    phone: text(profile.phone),
+    address_line1: text(current?.line1),
+    address_line2: text(current?.line2),
+    city: text(current?.city),
+    state: text(current?.state),
+    zip: text(current?.zip),
+  };
+}
+
 /** Map a filing-spec path onto the shared profile, when one exists. */
 export function profileValueForSpecPath(profile: ClaimProfile, path: string): string | null {
   const current = currentAddressOf(profile);
+  const split = splitLegalName(profile.legal_name);
   switch (path) {
     case 'member.legal_name':
       return profile.legal_name;
+    case 'member.first_name':
+      return split.first_name;
+    case 'member.last_name':
+      return split.last_name;
     case 'member.email':
       return profile.email;
     case 'member.phone':
