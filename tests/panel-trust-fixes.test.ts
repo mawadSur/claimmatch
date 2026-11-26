@@ -8,10 +8,13 @@ import {
   ACCOUNT_FOR_SAVE_WHY,
   BETA_FEE_COPY,
   BROWSE_NO_ACCOUNT,
+  FILE_OR_EASY_SUBMIT,
   NEUTRAL_BETA_FEE_COPY,
+  SIGNUP_INTRO_NEVER_FILES,
   WHAT_WE_STORE_MINIMAL,
   publicBetaFeeCopy,
 } from '@/lib/copy';
+import { APP_SHORT_DISCLAIMER, SHORT_DISCLAIMER } from '@/lib/disclaimer';
 import { flags } from '@/lib/flags';
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
 import { filterCatalog, sortCatalogValueFirst } from '@/lib/catalog-page';
@@ -67,6 +70,18 @@ describe('no-account browse copy', () => {
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('email');
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('phone is optional');
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('address');
+  });
+
+  it('signup and footer name Easy submit instead of a global self-file promise', () => {
+    expect(FILE_OR_EASY_SUBMIT).toMatch(/easy submit/i);
+    expect(FILE_OR_EASY_SUBMIT).toMatch(/we submit it for you after you e-sign/i);
+    expect(SIGNUP_INTRO_NEVER_FILES).toContain(FILE_OR_EASY_SUBMIT);
+    expect(SIGNUP_INTRO_NEVER_FILES).not.toMatch(/you always file on the official settlement website yourself/i);
+    expect(SHORT_DISCLAIMER).toContain(FILE_OR_EASY_SUBMIT);
+    expect(SHORT_DISCLAIMER).toMatch(/not a law firm/i);
+    expect(APP_SHORT_DISCLAIMER).toContain(FILE_OR_EASY_SUBMIT);
+    expect(APP_SHORT_DISCLAIMER).toMatch(/not a law firm/i);
+    expect(SHORT_DISCLAIMER).not.toMatch(/you file every claim yourself on the official settlement website/i);
   });
 
   it('signup and onboarding never collect a phone field', () => {

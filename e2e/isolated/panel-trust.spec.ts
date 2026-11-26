@@ -59,7 +59,8 @@ test.describe('panel-trust signed-out surfaces', () => {
     await expect(page.locator('#email')).toBeVisible();
     await expect(page.locator('#full_name')).toBeVisible();
     await expect(page.locator('body')).not.toContainText(/phone number/i);
-    await expect(page.locator('body')).toContainText(/no phone/i);
+    await expect(page.locator('body')).toContainText(/phone is optional/i);
+    await expect(page.locator('body')).toContainText(/add it in Settings/i);
     await expect(page.locator('body')).toContainText(/street address only if a claim form needs it/i);
     await expect(page.locator('body')).toContainText(/free during beta\. any future pricing will be shown before you use it/i);
     await shot(page, 'panel-trust-signup.png');

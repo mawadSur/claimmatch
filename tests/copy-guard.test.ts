@@ -290,6 +290,24 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'Easy submit badge tooltip and desk_file CTA body.',
   },
   {
+    file: 'src/lib/copy.ts',
+    rule: 'we submit',
+    text: 'we submit it for you after you e-sign',
+    reason: 'Signup intro: official-site filing plus Easy submit on eligible claims.',
+  },
+  {
+    file: 'src/lib/disclaimer.ts',
+    rule: 'we submit',
+    text: 'we submit it for you after you e-sign',
+    reason: 'Footer / app short disclaimer: Easy submit on eligible claims, not a global self-file promise.',
+  },
+  {
+    file: 'src/lib/disclaimer-flags.ts',
+    rule: 'we submit',
+    text: 'we submit it for you after you e-sign',
+    reason: 'SELF_FILE_SHORT_SENTENCE swapped when one-click may-file copy is on.',
+  },
+  {
     file: 'src/app/privacy/page.tsx',
     rule: 'we send your claim',
     text:
