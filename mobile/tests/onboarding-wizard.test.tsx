@@ -22,7 +22,7 @@ jest.mock('@/providers/AuthProvider', () => ({ useAuth: () => mockAuth }));
 
 const mockFlags: Record<string, boolean> = {};
 jest.mock('@/providers/ConfigProvider', () => ({
-  useConfig: () => ({ isFlagOn: (name: string) => mockFlags[name] === true }),
+  useConfig: () => ({ status: 'ready', isFlagOn: (name: string) => mockFlags[name] === true }),
 }));
 
 const mockProfileRow: { current: Record<string, unknown> | null; offline: boolean } = { current: null, offline: false };

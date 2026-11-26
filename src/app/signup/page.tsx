@@ -9,7 +9,9 @@ import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import { WhyAccountExplainer } from '@/components/WhyAccountExplainer';
 import { flags } from '@/lib/flags';
 import {
+  CLAIMMATCH_TRIAL_DAYS,
   lawsuitAiMayFile,
+  membershipPriceCopy,
   NEUTRAL_BETA_FEE_COPY,
   WE_FILE_SUPPORTED,
   WE_FILE_SUPPORTED_SENTENCE,
@@ -43,7 +45,7 @@ const TRUST_BULLETS = [
 
 const DISCLOSED_BULLETS = [
   'Browsing, matching, and filing yourself on official sites stay free.',
-  'Easy submit and new-claim alerts are included with membership after a free trial.',
+  `Easy submit and new-claim alerts are included with membership: a ${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()}/month, cancel anytime.`,
   'You keep 100 percent of settlement payouts.',
 ];
 

@@ -8,9 +8,9 @@ import { pickTopPayouts } from '@/lib/top-payouts';
 import { HomeFeatures } from '@/components/home/HomeFeatures';
 import { homeStats } from '@/lib/home-stats';
 import {
-  ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
   OFFICIAL_FILING_IS_FREE,
+  accountGateWhy,
   lawsuitAiMayFile,
   publicBetaFeeCopy,
 } from '@/lib/copy';
@@ -33,6 +33,7 @@ import type { Screen } from '@/components/home/DeviceFrame';
 import { CaptureView } from '@/components/analytics/CaptureView';
 import { flags } from '@/lib/flags';
 import { homeWedgeAvailability, homeWedgesEnabled } from '@/lib/home-wedges';
+import { oneClickLawsuitIdSet } from '@/lib/one-click-listings';
 import { publicPageMetadata } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
@@ -174,11 +175,13 @@ export default async function HomePage() {
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
   const mayFile = lawsuitAiMayFile();
+  const easySubmitIds = await oneClickLawsuitIdSet();
   const accountFirst = flags.homeAccountFirstCta();
   // Live counts only when the catalog really loaded; never a made-up number.
   const stats = !catalog.failed && catalog.lawsuits.length > 0 ? homeStats(catalog.lawsuits) : null;
 
   const freeLabel = disclose ? 'Official filing stays free' : 'Free during beta';
+  const fileLine = mayFile ? 'Easy submit on eligible claims' : 'File on the official site';
   const browse = { href: '/lawsuits', label: 'See open settlements' };
   const account = { href: '/signup', label: 'Create a free account' };
   const primary = accountFirst ? account : browse;
@@ -192,8 +195,8 @@ export default async function HomePage() {
         primary={primary}
         extra={<MatchPreviewEntry variant="hero" />}
         freeLabel={freeLabel}
-        fileLine="File on the official site"
-        browseNote={`${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}`}
+        fileLine={fileLine}
+        browseNote={`${BROWSE_NO_ACCOUNT} ${accountGateWhy(mayFile, disclose)}`}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
         phone={SCREENS.dashboard}
@@ -227,7 +230,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-8">
-              <HomeSettlementList lawsuits={top} />
+              <HomeSettlementList lawsuits={top} easySubmitIds={easySubmitIds} />
             </div>
           </div>
         </section>
@@ -279,7 +282,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="mt-6">
-              <HomeSettlementList lawsuits={closing.rows} />
+              <HomeSettlementList lawsuits={closing.rows} easySubmitIds={easySubmitIds} />
             </div>
           )}
         </div>
@@ -303,7 +306,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-8">
-              <HomeSettlementList lawsuits={catalog.openingSoon.slice(0, 3)} />
+              <HomeSettlementList lawsuits={catalog.openingSoon.slice(0, 3)} easySubmitIds={easySubmitIds} />
             </div>
           </div>
         </section>

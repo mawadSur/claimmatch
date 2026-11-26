@@ -5,7 +5,7 @@ import { evaluateCondition, questionVisible, type ConditionContext } from '@/lib
 import { AGENT_CHANNELS, CanonicalPacketSchema, PacketViewSchema, type PacketDraft } from '@/lib/filing/v2/contract';
 import { FilingSpecContentSchema, type SpecQuestion } from '@/lib/filing/v2/contract-spec';
 import { memberDocumentPath, mimeMatches, sniffDocumentMime } from '@/lib/filing/v2/documents';
-import { ESIGN_TEXT_V1, ESIGN_TEXT_VERSION, esignText, esignTextSha256 } from '@/lib/filing/v2/esign';
+import { ESIGN_TEXT_V1, ESIGN_TEXT_V2, ESIGN_TEXT_VERSION, esignText, esignTextSha256 } from '@/lib/filing/v2/esign';
 import { freshSignInFromClaims } from '@/lib/filing/v2/fresh-sign-in';
 import {
   buildPacketDraft,
@@ -362,11 +362,15 @@ describe('fresh sign-in', () => {
 
 describe('versioned texts', () => {
   it('hashes the E-SIGN text as esign_consents checks it', () => {
-    expect(esignText(ESIGN_TEXT_VERSION)).toBe(ESIGN_TEXT_V1);
+    expect(ESIGN_TEXT_VERSION).toBe('esign-v2');
+    expect(esignText(ESIGN_TEXT_VERSION)).toBe(ESIGN_TEXT_V2);
+    expect(esignText('esign-v1')).toBe(ESIGN_TEXT_V1);
     expect(esignText('esign-v0')).toBeNull();
-    expect(esignTextSha256()).toBe(sha256Hex(ESIGN_TEXT_V1));
-    expect(ESIGN_TEXT_V1).toMatch(/paper copy/i);
-    expect(ESIGN_TEXT_V1).toMatch(/withdraw/i);
+    expect(esignTextSha256()).toBe(sha256Hex(ESIGN_TEXT_V2));
+    expect(ESIGN_TEXT_V1).toMatch(/one-click filing/);
+    expect(ESIGN_TEXT_V2).toMatch(/Easy submit/);
+    expect(ESIGN_TEXT_V2).toMatch(/paper copy/i);
+    expect(ESIGN_TEXT_V2).toMatch(/withdraw/i);
   });
 
   it('authorizes one claim through the named lane, with payment to the member', () => {

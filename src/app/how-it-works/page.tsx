@@ -345,7 +345,7 @@ export default function HowItWorksPage() {
               <Search className="h-4 w-4" aria-hidden /> Browse open settlements
             </Link>
             <Link href="/pricing" className="btn-secondary w-full sm:w-auto">
-              Is it really free?
+              {disclose ? 'How pricing works' : 'Is it really free?'}
             </Link>
           </div>
           <p className="mt-6 text-sm">

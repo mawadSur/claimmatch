@@ -20,11 +20,21 @@ export const onboarding = defineCopy({
   /** "{intro} {howItWorks}" above the steps; step 2 repeats {intro} alone (plan 5). Flag off. */
   intro: {
     text: 'Lawsuit AI is a free claim assistant. It never files for you and never handles settlement payments.',
-    source: 'src/app/onboarding/page.tsx',
+    source: 'src/lib/copy.ts',
   },
   /** Flag on: MAY_FILE_PAGE_COPY.onboardingIntro. */
   introMayFile: {
     text: 'Lawsuit AI is a free claim assistant. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
+    source: 'src/lib/copy.ts',
+  },
+  /** SUBSCRIPTION_BILLING_ENABLED, never-files. */
+  introMembership: {
+    text: 'Lawsuit AI is a claim assistant. Easy submit is included with membership after a 7-day free trial, then $19.99/month. It never handles settlement payments.',
+    source: 'src/lib/copy.ts',
+  },
+  /** SUBSCRIPTION_BILLING_ENABLED, may-file: MAY_FILE_PAGE_COPY.onboardingIntroMembership. */
+  introMayFileMembership: {
+    text: 'Lawsuit AI is a claim assistant. Easy submit is included with membership after a 7-day free trial, then $19.99/month, cancel anytime. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
     source: 'src/lib/copy.ts',
   },
   howItWorks: {
@@ -46,6 +56,11 @@ export const onboarding = defineCopy({
   /** Flag on: lead of MAY_FILE_PAGE_COPY.onboardingStep. */
   howStep3MayFile: {
     text: 'We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.',
+    source: 'src/lib/copy.ts',
+  },
+  /** SUBSCRIPTION_BILLING_ENABLED: MAY_FILE_PAGE_COPY.onboardingStepMembership. */
+  howStep3Membership: {
+    text: 'Easy submit is included with membership. We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.',
     source: 'src/lib/copy.ts',
   },
   /** SOME_SETTLEMENTS, joined after {howStep3MayFile}. */
@@ -164,13 +179,16 @@ export function signedInAsText(email: string): string {
 }
 
 /** Intro while ONE_CLICK_FILING_ENABLED is on for this viewer (MAY_FILE_PAGE_COPY.onboardingIntro). */
-export function onboardingIntroText(mayFile: boolean): string {
+export function onboardingIntroText(mayFile: boolean, disclose = false): string {
+  if (disclose) {
+    return mayFile ? onboarding.introMayFileMembership.text : onboarding.introMembership.text;
+  }
   return mayFile ? onboarding.introMayFile.text : onboarding.intro.text;
 }
 
 /** How-it-works step 3: never-files wording off, MAY_FILE_PAGE_COPY.onboardingStep on. */
-export function onboardingHowStep3Text(mayFile: boolean): string {
-  return mayFile
-    ? `${onboarding.howStep3MayFile.text} ${onboarding.howStep3MayFileSome.text}`
-    : onboarding.howStep3.text;
+export function onboardingHowStep3Text(mayFile: boolean, disclose = false): string {
+  if (!mayFile) return onboarding.howStep3.text;
+  if (disclose) return onboarding.howStep3Membership.text;
+  return `${onboarding.howStep3MayFile.text} ${onboarding.howStep3MayFileSome.text}`;
 }

@@ -8,10 +8,13 @@ export function ReferralCard({
   code,
   clicks = 0,
   signups = 0,
+  membership = false,
 }: {
   code: string | null;
   clicks?: number;
   signups?: number;
+  /** SUBSCRIPTION_BILLING_ENABLED: Easy submit and alerts are membership. */
+  membership?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const link = code ? `${SITE.url}/r/${code}` : null;
@@ -35,8 +38,10 @@ export function ReferralCard({
       </div>
       <p className="mt-1 text-sm text-ink-muted">
         Know someone who might qualify for a settlement? Send them your personal
-        referral link. It keeps a ref code (and any UTMs) through signup.
-        Lawsuit AI is free for them too, and they file on the official site themselves.
+        referral link. It keeps a ref code (and any UTMs) through signup.{' '}
+        {membership
+          ? 'Browsing and filing on the official site stay free for them. Easy submit and new-claim alerts are included with membership.'
+          : 'Lawsuit AI is free for them too, and they file on the official site themselves.'}
       </p>
 
       {link ? (

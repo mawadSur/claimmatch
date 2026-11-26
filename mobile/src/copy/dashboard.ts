@@ -26,10 +26,10 @@ export const dashboard = defineCopy({
     text: 'Track the claims you file on official settlement sites.',
     source: 'src/app/dashboard/page.tsx',
   },
-  /** SUBSCRIPTION_BILLING_ENABLED on. */
+  /** SUBSCRIPTION_BILLING_ENABLED on: ONE_CLICK_COPY.dashboardMembership. */
   introFeeOn: {
-    text: 'Browsing and filing yourself stay free. Easy submit is included with membership.',
-    source: 'src/app/dashboard/page.tsx',
+    text: 'Browsing and filing yourself stay free. Easy submit is included with membership: a 7-day free trial, then $19.99 a month, cancel anytime.',
+    source: 'src/lib/copy.ts',
   },
   /**
    * Replaces the web's "Lawsuit AI is free during beta." (src/app/dashboard/page.tsx):

@@ -228,11 +228,23 @@ export const US_STATES: { code: string; name: string }[] = [
   { code: 'DC', name: 'District of Columbia' },
 ];
 
+const BILLING_ON = () => process.env.SUBSCRIPTION_BILLING_ENABLED === '1';
+
+export const SITE_TAGLINE_BETA = 'Free claim assistant for class-action settlements';
+export const SITE_TAGLINE_MEMBERSHIP = 'Claim assistant for class-action settlements';
+export const SITE_DESCRIPTION_BETA =
+  'Find open class-action settlements, check who qualifies, and we file claims for you on supported settlements. Free.';
+export const SITE_DESCRIPTION_MEMBERSHIP =
+  'Find open class-action settlements, check who qualifies, and keep track of claims. Easy submit and new-claim alerts are included with membership: a 7-day free trial, then $19.99/month. Browsing and official self-filing stay free. Lawsuit AI takes 0 percent of payouts.';
+
 export const SITE = {
   name: 'Lawsuit AI',
-  tagline: 'Free claim assistant for class-action settlements',
-  description:
-    'Find open class-action settlements, check who qualifies, and we file claims for you on supported settlements. Free.',
+  get tagline() {
+    return BILLING_ON() ? SITE_TAGLINE_MEMBERSHIP : SITE_TAGLINE_BETA;
+  },
+  get description() {
+    return BILLING_ON() ? SITE_DESCRIPTION_MEMBERSHIP : SITE_DESCRIPTION_BETA;
+  },
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://lawsuitai.org',
 };
 

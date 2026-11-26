@@ -66,7 +66,7 @@ describe('Terms and Privacy', () => {
   it('terms describe self-file default, one-click agency, and the gated membership', () => {
     expect(terms).toMatch(/does not file, submit or sign claims for you/);
     expect(terms).toMatch(/not a law firm/);
-    expect(terms).toMatch(/14\. One-click filing/);
+    expect(terms).toMatch(/14\. Easy submit/);
     expect(terms).toMatch(/withdraw before filing starts/);
     expect(terms).toMatch(/CLAIMMATCH_TRIAL_DAYS/);
     expect(terms).toMatch(/membershipCopy|membershipPriceCopy/);
@@ -75,11 +75,11 @@ describe('Terms and Privacy', () => {
     expect(terms).toMatch(/never holds or redirects settlement/);
   });
 
-  it('privacy covers one-click collection, sharing and export', () => {
-    expect(privacy).toMatch(/One-click filing:/);
+  it('privacy covers Easy submit collection, sharing and export', () => {
+    expect(privacy).toMatch(/For Easy submit:/);
     expect(privacy).toMatch(/send the claim, documents and/);
-    expect(privacy).toMatch(/one-click filing/);
-    expect(privacy).toMatch(/including one-click/);
+    expect(privacy).toMatch(/Easy submit/);
+    expect(privacy).toMatch(/including Easy submit/);
   });
 });
 

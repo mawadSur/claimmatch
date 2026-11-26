@@ -148,7 +148,7 @@ describe('dashboard copy', () => {
       'Track the claims you file on official settlement sites. Lawsuit AI is free for now. It doesn’t file for you and never handles settlement payments.',
     );
     expect(introSentence(true)).toBe(
-      'Track the claims you file on official settlement sites. Browsing and filing yourself stay free. Easy submit is included with membership. It doesn’t file for you and never handles settlement payments.',
+      'Track the claims you file on official settlement sites. Browsing and filing yourself stay free. Easy submit is included with membership: a 7-day free trial, then $19.99 a month, cancel anytime. It doesn’t file for you and never handles settlement payments.',
     );
   });
 

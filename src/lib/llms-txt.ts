@@ -4,8 +4,9 @@
  * new fee or legal claims.
  */
 
-import { BETA_FEE_COPY, OFFICIAL_FILING_IS_FREE, publicBetaFeeCopy } from '@/lib/copy';
+import { OFFICIAL_FILING_IS_FREE, membershipCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
+import { flags } from '@/lib/flags';
 import { hasOfficialNoticeGuide } from '@/lib/settlement-guides';
 import {
   categoryHubPath,
@@ -82,8 +83,8 @@ function markdownList(links: readonly LlmsHubLink[]): string {
 }
 
 /**
- * Plain-text /llms.txt. `feeLine` defaults to the live public beta sentence so
- * tests can pin a string without flipping PANEL_TRUST_COPY_ENABLED.
+ * Plain-text /llms.txt. `feeLine` defaults to the live public fee sentence
+ * (membership when SUBSCRIPTION_BILLING_ENABLED=1, otherwise beta).
  */
 export function renderLlmsTxt(input: {
   categoryHubs?: readonly LlmsHubLink[];
@@ -92,7 +93,7 @@ export function renderLlmsTxt(input: {
 } = {}): string {
   const categoryHubs = input.categoryHubs ?? FALLBACK_CATEGORY_HUBS;
   const officialGuides = input.officialGuides ?? [];
-  const feeLine = input.feeLine ?? publicBetaFeeCopy();
+  const feeLine = input.feeLine ?? (flags.feeDisclosure() ? membershipCopy() : publicBetaFeeCopy());
   const guidesSection =
     officialGuides.length > 0
       ? `\n## Official-notice settlement guides\n\n${markdownList(officialGuides)}\n`
@@ -126,5 +127,5 @@ Site: ${SITE.url}
 
 /** Stable fallback used when the catalog cannot be read. */
 export function fallbackLlmsTxt(): string {
-  return renderLlmsTxt({ categoryHubs: FALLBACK_CATEGORY_HUBS, feeLine: BETA_FEE_COPY });
+  return renderLlmsTxt({ categoryHubs: FALLBACK_CATEGORY_HUBS });
 }

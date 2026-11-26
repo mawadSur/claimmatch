@@ -14,7 +14,13 @@ import { ClaimActionCta } from './ClaimActionCta';
 import { MailInInstructions } from './MailInInstructions';
 import { NoticeIdSection } from './NoticeIdSection';
 import { PrintSummaryButton } from './PrintSummaryButton';
-import { EASY_SUBMIT_EXPLAINER, SIGN_IN_TO_EASY_SUBMIT, SIGN_IN_TO_SAVE, hidesFileQualifySignup } from '@/lib/claim-actions';
+import {
+  EASY_SUBMIT_EXPLAINER,
+  SIGN_IN_TO_EASY_SUBMIT,
+  SIGN_IN_TO_SAVE,
+  hidesFileQualifySignup,
+  isPublicEasySubmit,
+} from '@/lib/claim-actions';
 import { guideSignupHref } from '@/lib/signup-context';
 import { flags } from '@/lib/flags';
 import { mergeClaimProfile } from '@/lib/claim-profile';
@@ -225,7 +231,9 @@ export function ClaimFlow({
       )}
       {!signedIn && !hidesFileQualifySignup(actionType) && (
         <p className="rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
-          {actionType === 'desk_file' ? SIGN_IN_TO_EASY_SUBMIT : SIGN_IN_TO_SAVE}{' '}
+          {isPublicEasySubmit(actionType, Boolean(oc?.filesForMember))
+            ? SIGN_IN_TO_EASY_SUBMIT
+            : SIGN_IN_TO_SAVE}{' '}
           <Link href={guideSignupHref(settlement.slug)} className="font-semibold text-brand-700 underline underline-offset-2">
             Sign in
           </Link>

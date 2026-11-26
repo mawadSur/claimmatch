@@ -64,7 +64,7 @@ export const settings = defineCopy({
     source: 'src/components/OnboardingWizard.tsx',
   },
   detailsIntro: {
-    text: 'We keep these on your account. We never send them to settlement sites; you enter your own details when you file on the official site.',
+    text: 'We keep these on your account. Easy submit uses them after you e-sign on eligible claims, or you copy them into the official form if you file yourself.',
     source: 'src/components/NotificationPrefs.tsx',
   },
   fullNameLabel: {

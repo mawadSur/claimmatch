@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
+import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
@@ -11,7 +12,7 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/privacy',
 });
 
-const LAST_UPDATED = 'November 17, 2026';
+const LAST_UPDATED = 'November 26, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 /** Service providers that process personal information for us (or, for SettleSignal, none). */
@@ -30,7 +31,7 @@ const PROVIDERS = [
   },
   {
     name: 'Resend',
-    role: 'Sends our emails. It receives your email address and the content of the email, including claims we email to a settlement administrator for you when you use one-click filing.',
+    role: 'Sends our emails. It receives your email address and the content of the email, including claims we email to a settlement administrator for you when you use Easy submit.',
   },
   {
     name: 'SettleSignal',
@@ -72,9 +73,10 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">1. Who we are</h2>
             <p>
-              Lawsuit AI is a free claim assistant that helps people find class-action
-              settlements, check the official details, and keep track of the claims they
-              file themselves.{operator ? ` Lawsuit AI is run by ${operator}.` : ''} We are
+              {flags.feeDisclosure()
+                ? 'Lawsuit AI is a claim assistant that helps people find class-action settlements, check the official details, and keep track of claims. Browsing and filing yourself on the official site stay free. Easy submit is included with membership.'
+                : 'Lawsuit AI is a free claim assistant that helps people find class-action settlements, check the official details, and keep track of the claims they file themselves.'}
+              {operator ? ` Lawsuit AI is run by ${operator}.` : ''} We are
               not a law firm. This policy covers the Lawsuit AI website and services (the
               “Service”).
             </p>
@@ -125,10 +127,10 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <span className="font-semibold text-ink">Mailing address:</span> when you save
-                an address to your profile or enter it for a claim (self-file or one-click).
+                an address to your profile or enter it for a claim (self-file or Easy submit).
               </li>
               <li>
-                <span className="font-semibold text-ink">One-click filing:</span> only when you
+                <span className="font-semibold text-ink">Easy submit:</span> only when you
                 choose it for a settlement — your answers in the official form&apos;s wording, benefit
                 and payout method names (never account numbers), notice or claim IDs you type (never
                 PINs or passcodes), photos and documents you upload, your e-signature record and
@@ -174,7 +176,7 @@ export default function PrivacyPage() {
               ask us to delete yours sooner.
             </p>
             <p>
-              For one-click filing, a health-sensitive settlement may show consent text the law firm
+              For Easy submit, a health-sensitive settlement may show consent text the law firm
               approved. We collect health answers or documents for that claim only after you tick that
               consent for that claim.
             </p>
@@ -221,12 +223,12 @@ export default function PrivacyPage() {
             <p>
               When you file on the official settlement website yourself, you give your information
               to the settlement administrator directly — Lawsuit AI does not send it for you. When you
-              use one-click filing and sign an authorization, we send the claim, documents and
+              use Easy submit and sign an authorization, we send the claim, documents and
               signature record to the settlement administrator on your behalf through the channel named
               in what you signed. The administrator handles that information under its own privacy policy.
             </p>
             <p>
-              Only Lawsuit AI staff with a filing role can see your signed one-click claim and uploads.
+              Only Lawsuit AI staff with a filing role can see your signed Easy submit claim and uploads.
               Every staff view is logged.
             </p>
           </section>
@@ -287,7 +289,7 @@ export default function PrivacyPage() {
               must keep to meet legal obligations.
             </p>
             <p>
-              For one-click filing: uploaded proof documents are deleted about 90 days after your claim
+              For Easy submit: uploaded proof documents are deleted about 90 days after your claim
               is finished or after the settlement&apos;s deadline window. Signature, consent and filing
               records follow your account-deletion setting (by default they are deleted with your account).
               Staff access logs may keep your member ID without your name after deletion. See our retention
@@ -300,8 +302,8 @@ export default function PrivacyPage() {
             <p>
               You can update your name, state and phone number, edit profile facts,
               and turn alert emails on or off (and choose instant or weekly), in
-              Settings. You can download a JSON copy of your data from Settings, including one-click
-              packets, signatures, consents and related filing records when you have used one-click filing.
+              Settings. You can download a JSON copy of your data from Settings, including Easy submit
+              packets, signatures, consents and related filing records when you have used Easy submit.
               You can request a copy of the personal information we have about you, including
               any answers you gave to our earlier questions, and you can ask us to
               correct it or to delete your account and data.

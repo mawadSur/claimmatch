@@ -104,7 +104,7 @@ export default function TermsPage() {
               to official settlement information when our source provides it, and lets you
               keep track of claims you file yourself.
               {mayFile
-                ? ' For some settlements we also offer one-click filing, where you can sign a claim and we submit it to the settlement administrator as your agent (section 14).'
+                ? ' For some settlements we also offer Easy submit, where you can sign a claim and we submit it to the settlement administrator as your agent (section 14).'
                 : ''}
             </p>
           </section>
@@ -119,7 +119,7 @@ export default function TermsPage() {
               </li>
               <li>
                 {mayFile
-                  ? 'Except when you choose one-click filing for a settlement and sign an authorization for that claim, Lawsuit AI is not your agent. One-click filing covers only the claim you reviewed and signed; we do not deal with courts for you.'
+                  ? 'Except when you choose Easy submit for a settlement and sign an authorization for that claim, Lawsuit AI is not your agent. Easy submit covers only the claim you reviewed and signed; we do not deal with courts for you.'
                   : 'Lawsuit AI is not your agent or representative. It does not deal with courts or settlement administrators for you.'}
               </li>
               <li>
@@ -258,13 +258,13 @@ export default function TermsPage() {
 
 
           <section className="space-y-3">
-            <h2 className="text-xl font-bold text-ink">14. One-click filing: when Lawsuit AI files a claim for you</h2>
+            <h2 className="text-xl font-bold text-ink">14. Easy submit: when Lawsuit AI files a claim for you</h2>
             <p>
-              This section applies when you choose one-click filing for a settlement and sign the
+              This section applies when you choose Easy submit for a settlement and sign the
               authorization shown in the product. It does not apply when you file on the official
               settlement website yourself.
             </p>
-            <h3 className="text-lg font-semibold text-ink">What one-click filing is</h3>
+            <h3 className="text-lg font-semibold text-ink">What Easy submit is</h3>
             <p>
               For some settlements, Lawsuit AI offers to submit a claim to the settlement administrator
               for you, as your agent. We offer it only where the law firm that advises us has reviewed
@@ -272,7 +272,7 @@ export default function TermsPage() {
               the claim yourself on the official settlement website, and Lawsuit AI only helps you prepare.
             </p>
             <p>
-              You never have to use one-click filing. You can always file on the official settlement
+              You never have to use Easy submit. You can always file on the official settlement
               website yourself, where filing is free.
             </p>
             <h3 className="text-lg font-semibold text-ink">Scope of each authorization</h3>
@@ -323,7 +323,7 @@ export default function TermsPage() {
             <p>
               You can withdraw your authorization in Lawsuit AI at any time before filing starts. Once filing has
               started, contact the settlement administrator about any change; we will tell you how. If you
-              withdraw before filing starts, that claim is closed for one-click in Lawsuit AI and you cannot start
+              withdraw before filing starts, that claim is closed for Easy submit in Lawsuit AI and you cannot start
               the same claim again here after withdrawal.
             </p>
             <h3 className="text-lg font-semibold text-ink">If we cannot submit your claim in time</h3>
@@ -336,14 +336,14 @@ export default function TermsPage() {
             <h3 className="text-lg font-semibold text-ink">Identity</h3>
             <p>
               We do not verify your identity with a third-party service. Settlements whose administrator requires
-              an identity check are not offered for one-click filing. You agree to file only your own claim, in your
+              an identity check are not offered for Easy submit. You agree to file only your own claim, in your
               own name, and never one for another person.
             </p>
             <h3 className="text-lg font-semibold text-ink">Fees and payments</h3>
             <p>
               {disclose
                 ? `Lawsuit AI does not take a percentage of your settlement payment. Easy submit is included with Lawsuit AI membership (${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${price} a month, cancel anytime). Filing a claim yourself on the official settlement website is free.`
-                : 'Lawsuit AI does not charge you a fee when you use one-click filing for a claim.'}{' '}
+                : 'Lawsuit AI does not charge you a fee when you use Easy submit for a claim.'}{' '}
               Any payment from the settlement goes to you directly from the settlement administrator, by the payment
               method you choose. We never receive, hold or redirect settlement money, and we never ask for bank or card
               account numbers.

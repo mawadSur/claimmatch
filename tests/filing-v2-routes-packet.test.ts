@@ -45,7 +45,7 @@ import { POST as SLOT } from '@/app/api/filing/claims/[claimId]/documents/route'
 import { GET as DOWNLOAD, DELETE as REMOVE } from '@/app/api/filing/claims/[claimId]/documents/[documentId]/route';
 import { POST as COMPLETE_UPLOAD } from '@/app/api/filing/claims/[claimId]/documents/[documentId]/complete/route';
 import { DELETE as WITHDRAW_CONSENT, POST as CONSENT } from '@/app/api/filing/claims/[claimId]/esign-consent/route';
-import { ESIGN_TEXT_V1 } from '@/lib/filing/v2/esign';
+import { ESIGN_TEXT_V2 } from '@/lib/filing/v2/esign';
 import { sha256Hex } from '@/lib/filing/v2/packet';
 import { FakeDb as Db, sha } from './filing-v2-fake';
 import { EXE_BYTES, HEALTH_TEXT, LAWSUIT, NOW, PNG_BYTES, SPEC_CONTENT, USER_A, USER_B, getRequest, jsonRequest, seedSettlement, signInClaims } from './filing-v2-fixtures';
@@ -244,10 +244,10 @@ describe('E-SIGN consent', () => {
   it('records the exact text once per version, and withdraws it', async () => {
     const id = await startClaim();
     expect(await json(await consent(id, { accepted: true, text_version: 'esign-v0' }), 400)).toMatchObject({ code: 'invalid_request' });
-    expect(await json(await consent(id, { accepted: false, text_version: 'esign-v1' }), 400)).toMatchObject({ code: 'invalid_request' });
-    const first = await json(await consent(id, { accepted: true, text_version: 'esign-v1' }), 201);
-    expect(h.db.rows('esign_consents')[0]).toMatchObject({ full_text: ESIGN_TEXT_V1, text_sha256: sha(ESIGN_TEXT_V1), ip: '203.0.113.7', user_agent: 'vitest', context_claim_id: id });
-    expect((await json(await consent(id, { accepted: true, text_version: 'esign-v1' }), 200)).consent.id).toBe(first.consent.id);
+    expect(await json(await consent(id, { accepted: false, text_version: 'esign-v2' }), 400)).toMatchObject({ code: 'invalid_request' });
+    const first = await json(await consent(id, { accepted: true, text_version: 'esign-v2' }), 201);
+    expect(h.db.rows('esign_consents')[0]).toMatchObject({ full_text: ESIGN_TEXT_V2, text_sha256: sha(ESIGN_TEXT_V2), ip: '203.0.113.7', user_agent: 'vitest', context_claim_id: id });
+    expect((await json(await consent(id, { accepted: true, text_version: 'esign-v2' }), 200)).consent.id).toBe(first.consent.id);
     expect((await view(id)).actions.needs_esign_consent).toBe(false);
 
     const withdrawn = await json(await WITHDRAW_CONSENT(getRequest(`/api/filing/claims/${id}/esign-consent`), p1(id)), 200);

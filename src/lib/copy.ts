@@ -86,6 +86,13 @@ export const WE_FILE_THIS_CLAIM_GUIDE =
   'Free. We file this claim for you on this settlement.';
 export const WE_HELP_YOU_FILE_GUIDE = 'Free. We help you file.';
 
+/** Guide-page Easy submit line. Membership wording when billing is on. */
+export function weFileThisClaimGuide(disclose = flags.feeDisclosure()): string {
+  return disclose
+    ? `Easy submit is included with membership: a ${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()}/mo. Filing yourself on the official site stays free.`
+    : WE_FILE_THIS_CLAIM_GUIDE;
+}
+
 export const SIGNUP_INTRO_MAY_FILE =
   'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
 /** Official-site filing is always available; Easy submit is extra on eligible claims. */
@@ -179,9 +186,9 @@ export const SETTLEMENT_FILING_COPY = {
   },
 } as const;
 
-/** Guide pages: Easy submit (`desk_file`) even before an agent lane is live; else agent vs self-file. */
+/** Guide pages: Easy submit only after an approved agent lane; drafts fall back to self-file. */
 export function guideFilingCopy(mode: SettlementFilingMode, deskFile = false) {
-  if (deskFile) return SETTLEMENT_FILING_COPY.easy_submit;
+  if (deskFile && mode === 'agent') return SETTLEMENT_FILING_COPY.easy_submit;
   return mode === 'agent' ? SETTLEMENT_FILING_COPY.agent : SETTLEMENT_FILING_COPY.self_file;
 }
 
@@ -192,6 +199,8 @@ export const SOME_SETTLEMENTS =
 export const MAY_FILE_PAGE_COPY = {
   inviteIntro:
     'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. We file claims for you on supported settlements after you sign them; otherwise you submit on the official site. It is free during beta.',
+  inviteIntroMembership:
+    'Lawsuit AI helps you find open US class-action settlements, get your claim ready and keep track of it. Easy submit is included with membership: a 7-day free trial, then $19.99/month, cancel anytime. Browsing and filing yourself on the official site stay free.',
   inviteStep: {
     title: 'We file claims for you on supported settlements',
     body: `${SOME_SETTLEMENTS} Otherwise you file on the settlement’s official website. Lawsuit AI is not a law firm.`,
@@ -199,9 +208,30 @@ export const MAY_FILE_PAGE_COPY = {
   inviteBullet: 'You can always file on the official settlement website yourself.',
   onboardingIntro:
     'Lawsuit AI is a free claim assistant. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
+  onboardingIntroMembership:
+    'Lawsuit AI is a claim assistant. Easy submit is included with membership after a 7-day free trial, then $19.99/month, cancel anytime. We file claims for you on supported settlements after you review and sign them. It never handles settlement payments.',
   onboardingStep: `We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.`,
+  onboardingStepMembership: `Easy submit is included with membership. We file claims for you on supported settlements after you review and sign them. You can always file on the official site yourself instead, where it’s free.`,
   scorecard: `${SOME_SETTLEMENTS} Otherwise you file on the official settlement site yourself. Lawsuit AI never handles settlement payments.`,
 } as const;
+
+export function inviteIntroCopy(mayFile: boolean, disclose = flags.feeDisclosure()): string {
+  if (mayFile) return disclose ? MAY_FILE_PAGE_COPY.inviteIntroMembership : MAY_FILE_PAGE_COPY.inviteIntro;
+  return disclose
+    ? 'Lawsuit AI helps you find open US class-action settlements, copy a packet for the official form, and keep track of what you file. You can always file on the official site yourself. Easy submit and new-claim alerts are included with membership.'
+    : 'Lawsuit AI helps you find open US class-action settlements, copy a packet for the official form, and keep track of what you file. You submit on the official site. It is free during beta.';
+}
+
+export function onboardingIntroCopy(mayFile: boolean, disclose = flags.feeDisclosure()): string {
+  if (disclose) {
+    return mayFile
+      ? MAY_FILE_PAGE_COPY.onboardingIntroMembership
+      : 'Lawsuit AI is a claim assistant. Easy submit is included with membership after a 7-day free trial, then $19.99/month. It never handles settlement payments.';
+  }
+  return mayFile
+    ? MAY_FILE_PAGE_COPY.onboardingIntro
+    : 'Lawsuit AI is a free claim assistant. It never files for you and never handles settlement payments.';
+}
 
 /** Primary match CTA when ASSISTED_FILING_ENABLED=1. */
 export const FILE_FOR_YOU_CTA = 'We’ll file it for you';
@@ -222,8 +252,15 @@ export const BROWSE_NO_ACCOUNT =
 export const ACCOUNT_FOR_SAVE_WHY =
   'Create an account only to save matches or get deadline alerts.';
 
+export const ACCOUNT_FOR_SAVE_WHY_MEMBERSHIP =
+  'Create an account to save matches, get new-claim alerts included with membership, or use Easy submit on eligible claims.';
+
 /** Why an account exists, including filing when Lawsuit AI may file. */
-export function accountGateWhy(mayFile = lawsuitAiMayFile()): string {
+export function accountGateWhy(
+  mayFile = lawsuitAiMayFile(),
+  disclose = flags.feeDisclosure(),
+): string {
+  if (disclose) return ACCOUNT_FOR_SAVE_WHY_MEMBERSHIP;
   return mayFile
     ? 'Create an account only to save matches, get deadline alerts, or have us file on supported settlements.'
     : ACCOUNT_FOR_SAVE_WHY;
@@ -308,7 +345,7 @@ export const CLAIM_AGENT_LEGAL_SENTENCE =
 
 /** PrefillPacket's lead on a claim Lawsuit AI may file: the details are for filing it yourself instead. */
 export const PREFILL_AGENT_LANE_NOTE =
-  'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose one-click filing and sign it.';
+  'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose Easy submit and sign it.';
 
 /** PrefillPacket's lead on Easy submit (`desk_file`) when one-click is not yet offering start. */
 export const PREFILL_EASY_SUBMIT_NOTE =
@@ -554,6 +591,8 @@ export const ONE_CLICK_COPY = {
     failed: 'We couldn’t load your filing status right now. Please refresh the page in a minute.',
   },
   dashboardIntro: `Track your claims and what happens next. ${WE_FILE_SUPPORTED}. Lawsuit AI never handles settlement payments.`,
+  dashboardMembership:
+    'Browsing and filing yourself stay free. Easy submit is included with membership: a 7-day free trial, then $19.99 a month, cancel anytime.',
   welcomeSteps: [
     'Find an open settlement in our list.',
     'Read the official notice to see if you qualify.',

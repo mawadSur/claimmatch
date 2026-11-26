@@ -7,7 +7,14 @@ import {
 import { TrustBadges } from '@/components/TrustBadges';
 import { Disclaimer } from '@/components/Disclaimer';
 import {
-  BETA_FEE_COPY, feeEveryClaimCopy, filingFact, lawsuitAiMayFile, publicBetaFeeCopy, whoFilesAnswer,
+  BETA_FEE_COPY,
+  CLAIMMATCH_TRIAL_DAYS,
+  feeEveryClaimCopy,
+  filingFact,
+  lawsuitAiMayFile,
+  membershipPriceCopy,
+  publicBetaFeeCopy,
+  whoFilesAnswer,
 } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { jsonLd } from '@/lib/jsonld';
@@ -82,6 +89,15 @@ const VERIFY_STEPS = [
   'Compare the deadline and who qualifies with what we show. If anything is different, the official site is right.',
   'Notice that we never ask you to pay, and never ask for bank or card details.',
 ];
+
+function verifySteps(disclose: boolean): string[] {
+  if (!disclose) return VERIFY_STEPS;
+  return [
+    VERIFY_STEPS[0],
+    VERIFY_STEPS[1],
+    `Official filing is free. We never ask for a bank account or Social Security number. A card is used only if you start the optional ${CLAIMMATCH_TRIAL_DAYS}-day free trial (${membershipPriceCopy()}/mo after).`,
+  ];
+}
 
 const FAQ = [
   {
@@ -263,7 +279,7 @@ export default function TrustPage() {
             <p className="mt-3 text-ink-muted">It takes about a minute.</p>
           </div>
           <ol className="mx-auto mt-10 max-w-2xl space-y-4">
-            {VERIFY_STEPS.map((step, i) => (
+            {verifySteps(disclose).map((step, i) => (
               <li
                 key={step}
                 className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-card"

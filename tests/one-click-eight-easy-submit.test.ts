@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   EIGHT_EASY_SUBMIT_SETTLEMENTS,
@@ -42,5 +44,22 @@ describe('eight Easy submit owner-apply drafts', () => {
     for (const slug of EXPECTED) {
       expect(sql).toContain(slug);
     }
+  });
+});
+
+describe('backup table RLS owner-apply', () => {
+  it('enables RLS on both public backup tables with IF EXISTS and a rollback comment', () => {
+    const sql = readFileSync(
+      fileURLToPath(new URL('../supabase/owner-apply/lock-backup-tables-rls.sql', import.meta.url)),
+      'utf8',
+    );
+    expect(sql).toMatch(/Owner-apply only/);
+    expect(sql).toMatch(/alter table if exists public\.lawsuits_top20_backup_2026_11 enable row level security/);
+    expect(sql).toMatch(
+      /alter table if exists public\.owner_apply_eight_easy_submit_backup_20261126 enable row level security/,
+    );
+    expect(sql).toMatch(/disable row level security/);
+    expect(sql).toMatch(/revoke all on table public\.lawsuits_top20_backup_2026_11 from anon, authenticated/);
+    expect(sql).not.toMatch(/create policy/i);
   });
 });

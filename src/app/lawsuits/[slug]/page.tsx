@@ -71,17 +71,17 @@ import { PaymentUpdatesCta } from '@/components/claims/PaymentUpdatesCta';
 import { SignedInMailSummary } from '@/components/claims/SignedInMailSummary';
 import { ListingVerification } from '@/components/settlement/ListingVerification';
 import {
-  ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
+  accountGateWhy,
   guideFilingCopy,
   GET_PAID_AUTOMATICALLY,
-  WE_FILE_THIS_CLAIM_GUIDE,
+  weFileThisClaimGuide,
   WE_HELP_YOU_PREPARE,
 } from '@/lib/copy';
 import {
-  EASY_SUBMIT_EXPLAINER,
   claimActionOf,
   hidesFileQualifySignup,
+  isPublicEasySubmit,
   statusChipLabel,
 } from '@/lib/claim-actions';
 import { settlementFilingMode } from '@/lib/filing/public-filing';
@@ -181,10 +181,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
   // Who files. Agent lane: we file this claim; every other guide: we help you file.
   const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
-  const deskFile = lawsuit.claim_action_type === 'desk_file';
+  const easySubmit = isPublicEasySubmit(lawsuit.claim_action_type, filingMode === 'agent');
   const summary = displaySummary(lawsuit) || catalogGuideSummary({ ...lawsuit, summary: null });
   const guideSections = catalogGuideSections(lawsuit, filingMode === 'agent');
-  const filingCopy = guideFilingCopy(filingMode, deskFile);
+  const filingCopy = guideFilingCopy(filingMode, easySubmit);
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
   const eligibility = displayEligibilityText(lawsuit);
   const verified = showVerifiedBadge(lawsuit);
@@ -231,7 +231,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit, filingMode)} />
       <JsonLd data={settlementLegalServiceJsonLd(lawsuit, filingMode)} />
-      {!hideFileCtas && <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode, deskFile)} />}
+      {!hideFileCtas && <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode, easySubmit)} />}
 
       {/* Header ------------------------------------------------------------- */}
       <section className="bg-brand-50">
@@ -259,7 +259,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             ) : (
               <span className="badge-gray">Claims closed</span>
             )}
-            <EasySubmitBadge type={lawsuit.claim_action_type} />
+            <EasySubmitBadge type={lawsuit.claim_action_type} approved={easySubmit} />
             {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
                 <Clock className="h-3 w-3" aria-hidden="true" /> {urgency}
@@ -274,7 +274,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
           </h1>
           {summary && <p className="mt-4 max-w-2xl min-w-0 text-lg text-ink-muted">{summary}</p>}
           <p className="mt-3 max-w-2xl text-sm text-ink-muted">
-            {BROWSE_NO_ACCOUNT} {ACCOUNT_FOR_SAVE_WHY}
+            {BROWSE_NO_ACCOUNT} {accountGateWhy()}
           </p>
           <ListingVerification lawsuit={lawsuit} official={official} open={open} />
 
@@ -321,10 +321,8 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 </Link>
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                {lawsuit.claim_action_type === 'desk_file' || filingMode === 'agent'
-                  ? filingMode === 'agent'
-                    ? WE_FILE_THIS_CLAIM_GUIDE
-                    : EASY_SUBMIT_EXPLAINER
+                {easySubmit || filingMode === 'agent'
+                  ? weFileThisClaimGuide()
                   : BROWSE_NO_ACCOUNT}
               </p>
               <GuideSignupCta
@@ -484,7 +482,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
-                {settlementHowToSteps(filingMode, deskFile).map((step, i) => (
+                {settlementHowToSteps(filingMode, easySubmit).map((step, i) => (
                   <li key={step.name} className="flex gap-3">
                     <span
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700"
@@ -589,15 +587,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 <h2 className="text-lg font-bold">
                   {hideFileCtas
                     ? statusChipLabel(lawsuit.claim_action_type, true).label
-                    : lawsuit.claim_action_type === 'desk_file'
+                    : easySubmit
                       ? 'Easy submit'
                       : 'Next step'}
                 </h2>
                 <p className="mt-2 text-sm text-ink-muted">
-                  {lawsuit.claim_action_type === 'desk_file' || filingMode === 'agent'
-                    ? filingMode === 'agent'
-                      ? 'Easy submit: you answer a few questions and e-sign — we submit it to the official claims site for you. You can always file on the official site yourself instead, where filing is free.'
-                      : EASY_SUBMIT_EXPLAINER
+                  {easySubmit || filingMode === 'agent'
+                    ? 'Easy submit: you answer a few questions and e-sign — we submit it to the official claims site for you. You can always file on the official site yourself instead, where filing is free.'
                     : lawsuit.claim_action_type === 'automatic_payment'
                       ? GET_PAID_AUTOMATICALLY
                       : lawsuit.claim_action_type === 'needs_notice_id' ||
@@ -651,7 +647,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   className="mt-4"
                 />
                 {!hideFileCtas ? (
-                  <p className="mt-2 text-center text-xs text-ink-muted">{ACCOUNT_FOR_SAVE_WHY}</p>
+                  <p className="mt-2 text-center text-xs text-ink-muted">{accountGateWhy()}</p>
                 ) : null}
                 {official?.kind === 'official' && (
                   <OfficialFormLink

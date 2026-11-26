@@ -21,9 +21,30 @@ export function isClaimActionType(value: string | null | undefined): value is Cl
   return typeof value === 'string' && (CLAIM_ACTION_TYPES as readonly string[]).includes(value);
 }
 
-/** Public Easy submit: desk_file with an approved spec + filing_desk policy. */
+/** Stored Easy submit type. Public pages also need an approved spec + policy. */
 export function isEasySubmitType(value: string | null | undefined): boolean {
   return value === 'desk_file';
+}
+
+/**
+ * Public Easy submit: desk_file only after a legal_reviewer approved the
+ * filing spec and policy. Draft desk_file rows fall back to the official-site
+ * / prepare-it CTA until then.
+ */
+export function isPublicEasySubmit(
+  type: string | null | undefined,
+  approved = false,
+): boolean {
+  return type === 'desk_file' && approved;
+}
+
+/** Public CTA type: unapproved desk_file is treated as online_form. */
+export function publicClaimActionType(
+  type: ClaimActionType | null,
+  approved = false,
+): ClaimActionType | null {
+  if (type === 'desk_file' && !approved) return 'online_form';
+  return type;
 }
 
 /** Extra, optional facts for mail-in / automatic-payment CTAs. Stored as lawsuits.claim_action. */
@@ -97,7 +118,7 @@ export function claimActionCta(input: {
   slug: string;
   officialHref?: string | null;
   details?: ClaimActionDetails;
-  /** When true, desk_file uses the one-click submit path. */
+  /** When true, desk_file has an approved spec + policy and may show Easy submit. */
   deskEligible?: boolean;
 }): ClaimActionCtaModel {
   const claimHref = `/claim/${input.slug}`;
@@ -105,8 +126,9 @@ export function claimActionCta(input: {
   const details = input.details ?? {};
 
   const publicPage = `/lawsuits/${input.slug}`;
+  const type = publicClaimActionType(input.type, Boolean(input.deskEligible));
 
-  switch (input.type) {
+  switch (type) {
     case 'desk_file':
       return {
         type: 'desk_file',
@@ -221,11 +243,11 @@ export function statusChipLabel(
   return { label: 'Open for claims', tone: 'green' };
 }
 
-export function cardCtaLabel(type: string | null | undefined): string {
-  if (type === 'desk_file') return SUBMIT_CLAIM_CTA;
+export function cardCtaLabel(type: string | null | undefined, approved = false): string {
+  if (isPublicEasySubmit(type, approved)) return SUBMIT_CLAIM_CTA;
   if (type === 'needs_notice_id') return ADD_NOTICE_ID_CTA;
   if (type === 'mail_in') return PRINT_AND_MAIL_CTA;
-  if (type === 'online_form') return FILE_ON_OFFICIAL_CTA;
+  if (type === 'online_form' || type === 'desk_file') return FILE_ON_OFFICIAL_CTA;
   return START_CLAIM_CTA;
 }
 
@@ -233,21 +255,29 @@ export function cardCtaHref(input: {
   type: string | null | undefined;
   slug: string;
   officialHref?: string | null;
+  approved?: boolean;
 }): string {
   const publicPage = `/lawsuits/${input.slug}`;
-  if (input.type === 'mail_in') return `${publicPage}#mail-in`;
-  if (input.type === 'needs_notice_id') return `${publicPage}#notice-id`;
-  if (input.type === 'automatic_payment') return `${publicPage}#payment-updates`;
-  if (input.type === 'online_form' && input.officialHref) return input.officialHref;
+  const type =
+    input.type && isClaimActionType(input.type)
+      ? publicClaimActionType(input.type, Boolean(input.approved))
+      : input.type;
+  if (type === 'mail_in') return `${publicPage}#mail-in`;
+  if (type === 'needs_notice_id') return `${publicPage}#notice-id`;
+  if (type === 'automatic_payment') return `${publicPage}#payment-updates`;
+  if (type === 'online_form' && input.officialHref) return input.officialHref;
   return `/claim/${input.slug}`;
 }
 
-export function signupPromptFor(type: string | null | undefined): {
+export function signupPromptFor(
+  type: string | null | undefined,
+  approved = false,
+): {
   label: string;
   why: string;
 } | null {
   if (hidesFileQualifySignup(type)) return null;
-  if (type === 'desk_file') {
+  if (isPublicEasySubmit(type, approved)) {
     return { label: 'Sign in to Easy submit', why: SIGN_IN_TO_EASY_SUBMIT };
   }
   return { label: 'Sign in to save this claim', why: SIGN_IN_TO_SAVE };

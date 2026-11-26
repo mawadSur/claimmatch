@@ -152,8 +152,32 @@ describe('the settlement page', () => {
     expect(html).not.toContain('never files');
   });
 
-  it('Easy submit (desk_file) uses Easy submit how-to and never leftover self-file copy', async () => {
+  it('unapproved desk_file does not show Easy submit on the public guide', async () => {
     setMode('off');
+    m.lawsuit = makeLawsuit(
+      {},
+      {
+        id: LAWSUIT_ID,
+        slug: 'rolling-stone-magazine-lifetime-subscription',
+        title: 'Rolling Stone magazine',
+        deadline: '2099-12-01',
+        claim_url: 'https://subscribe.rollingstone.com/krivin-rs',
+        claim_action_type: 'desk_file',
+      },
+    );
+    const raw = renderToStaticMarkup(
+      await LawsuitDetailPage({ params: Promise.resolve({ slug: 'rolling-stone-magazine-lifetime-subscription' }) }),
+    );
+    const html = text(raw);
+    expect(html).not.toContain('Easy submit');
+    expect(html).not.toContain('Sign in to Easy submit');
+    expect(html).toContain('We help you file');
+    expect(html).not.toContain('Where Lawsuit AI offers one-click filing');
+  });
+
+  it('approved agent-lane desk_file shows Easy submit and never leftover self-file copy', async () => {
+    setMode('live');
+    agentLane(true);
     m.lawsuit = makeLawsuit(
       {},
       {
@@ -170,7 +194,7 @@ describe('the settlement page', () => {
     );
     const html = text(raw);
     expect(html).toContain('Easy submit');
-    expect(html).toContain('we submit it for you after you e-sign');
+    expect(html).toContain('we submit it to the official claims site for you');
     expect(html).not.toContain("doesn't file claims for you");
     expect(html).not.toContain('never files for you');
     expect(html).not.toContain('Where Lawsuit AI offers one-click filing');

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { AuthForm } from '@/components/AuthForm';
 import { flags } from '@/lib/flags';
+import { lawsuitAiMayFile } from '@/lib/copy';
 import { safeNextPath } from '@/lib/safe-next';
 
 export const metadata: Metadata = {
@@ -35,7 +36,9 @@ export default async function LoginPage({
             </h1>
             <p className="mt-2 text-ink-muted">
               {fromClaim
-                ? 'You need a free account to keep track of this claim. You still file on the official site yourself.'
+                ? lawsuitAiMayFile()
+                  ? 'You need a free account to keep track of this claim. You can file on the official site yourself, or use Easy submit on eligible claims.'
+                  : 'You need a free account to keep track of this claim. You still file on the official site yourself.'
                 : 'Log in to see and update the claims you are tracking.'}
             </p>
           </div>
