@@ -113,6 +113,40 @@ describe('buildPacketDraft', () => {
     });
   });
 
+  it('prefills first and last name from the legal name when the official form asks for them', () => {
+    const withNames = FilingSpecContentSchema.parse({
+      ...SPEC_CONTENT,
+      member_fields: [
+        ...SPEC_CONTENT.member_fields,
+        { field: 'first_name', official_label: 'First Name', required: true },
+        { field: 'last_name', official_label: 'Last Name', required: true },
+      ],
+    });
+    const fromProfile = buildPacketDraft({ ...input(), spec: { ...SPEC, content: withNames } });
+    expect(fromProfile.member.first_name).toBe('Ada');
+    expect(fromProfile.member.last_name).toBe('Lovelace');
+    expect(fromProfile.member.legal_name).toBe('Ada Lovelace');
+    expect(fromProfile.member.email).toBe('ada@example.test');
+    expect(fromProfile.member.address.line1).toBe('1 Main St');
+
+    const savedWins = buildPacketDraft(
+      input(
+        { member_snapshot: { first_name: 'Adda', last_name: 'King', legal_name: 'Ada Lovelace' } },
+        { spec: { ...SPEC, content: withNames } },
+      ),
+    );
+    expect(savedWins.member.first_name).toBe('Adda');
+    expect(savedWins.member.last_name).toBe('King');
+    expect(savedWins.member.legal_name).toBe('Ada Lovelace');
+
+    const cleared = buildPacketDraft(
+      input({ member_snapshot: { first_name: null, last_name: '' } }, { spec: { ...SPEC, content: withNames } }),
+    );
+    expect(cleared.member.first_name).toBeNull();
+    expect(cleared.member.last_name).toBeNull();
+    expect(cleared.member.legal_name).toBe('Ada Lovelace');
+  });
+
   it('carries only the member fields the official form asks for (plus contact fields)', () => {
     expect(buildPacketDraft(input()).member.phone).toBeNull();
     expect(buildPacketDraft(input({}, { spec: null })).member.phone).toBe('555-0100');

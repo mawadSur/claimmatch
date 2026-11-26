@@ -36,6 +36,7 @@ import {
   tierProofs,
   type AskContext,
 } from './packet-items';
+import { splitLegalName } from '@/lib/claim-profile';
 
 /**
  * Canonical JSON: object keys sorted by UTF-16 code units, array order kept,
@@ -179,10 +180,12 @@ function keepAskedFields(member: MemberDraft, spec: FilingSpecContent | null): M
 function buildMember(snapshot: BuildPacketDraftInput['row']['member_snapshot'], profile: ProfileMemberFields | null): MemberDraft {
   const a = snapshot.address ?? {};
   const p = profile;
+  const legal_name = fieldValue(snapshot.legal_name, p?.full_name);
+  const split = splitLegalName(legal_name);
   return {
-    legal_name: fieldValue(snapshot.legal_name, p?.full_name),
-    first_name: fieldValue(snapshot.first_name, null),
-    last_name: fieldValue(snapshot.last_name, null),
+    legal_name,
+    first_name: fieldValue(snapshot.first_name, split.first_name),
+    last_name: fieldValue(snapshot.last_name, split.last_name),
     email: fieldValue(snapshot.email, p?.email, (v) => EMAIL.safeParse(v).success),
     phone: fieldValue(snapshot.phone, p?.phone, (v) => v.length <= 40),
     address: {

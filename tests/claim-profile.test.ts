@@ -4,7 +4,9 @@ import {
   secretsError,
   emptyClaimProfile,
   mergeClaimProfile,
+  memberPrefillFromClaimProfile,
   profileValueForSpecPath,
+  splitLegalName,
 } from '@/lib/claim-profile';
 import { missingFieldsForSpec } from '@/lib/filing/v2/missing-fields';
 import type { FilingSpecContent } from '@/lib/filing/v2/contract-spec';
@@ -89,7 +91,53 @@ describe('profileValueForSpecPath', () => {
       { full_name: 'Ada' },
     );
     expect(profileValueForSpecPath(profile, 'member.legal_name')).toBe('Ada');
+    expect(profileValueForSpecPath(profile, 'member.first_name')).toBe('Ada');
+    expect(profileValueForSpecPath(profile, 'member.last_name')).toBeNull();
     expect(profileValueForSpecPath(profile, 'member.address.zip')).toBe('78701');
     expect(profileValueForSpecPath(profile, 'answers.vin')).toBe('1HGCM82633A004352');
+  });
+
+  it('splits a multi-word legal name into first and last', () => {
+    const profile = mergeClaimProfile({ legal_name: 'Ada Lovelace' }, null);
+    expect(profileValueForSpecPath(profile, 'member.first_name')).toBe('Ada');
+    expect(profileValueForSpecPath(profile, 'member.last_name')).toBe('Lovelace');
+  });
+});
+
+describe('splitLegalName', () => {
+  it('splits a full name on the first word, and leaves a single word as the first name only', () => {
+    expect(splitLegalName('Ada Lovelace')).toEqual({ first_name: 'Ada', last_name: 'Lovelace' });
+    expect(splitLegalName('  Jean  Claude Van Damme ')).toEqual({ first_name: 'Jean', last_name: 'Claude Van Damme' });
+    expect(splitLegalName('Ada')).toEqual({ first_name: 'Ada', last_name: null });
+    expect(splitLegalName('')).toEqual({ first_name: null, last_name: null });
+    expect(splitLegalName(null)).toEqual({ first_name: null, last_name: null });
+  });
+});
+
+describe('memberPrefillFromClaimProfile', () => {
+  it('maps contact fields from the merged claim profile, leaving blanks empty', () => {
+    const profile = mergeClaimProfile(
+      {
+        legal_name: 'Ada Lovelace',
+        email: 'ada@example.test',
+        phone: '555-0100',
+        addresses: [
+          { kind: 'current', line1: '1 Main', line2: 'Apt 2', city: 'Austin', state: 'TX', zip: '78701', lived_from: null, lived_to: null },
+        ],
+      },
+      { full_name: 'Ignored' },
+    );
+    expect(memberPrefillFromClaimProfile(profile)).toEqual({
+      full_name: 'Ada Lovelace',
+      email: 'ada@example.test',
+      phone: '555-0100',
+      address_line1: '1 Main',
+      address_line2: 'Apt 2',
+      city: 'Austin',
+      state: 'TX',
+      zip: '78701',
+    });
+    expect(memberPrefillFromClaimProfile(emptyClaimProfile()).phone).toBeNull();
+    expect(memberPrefillFromClaimProfile(emptyClaimProfile()).full_name).toBeNull();
   });
 });

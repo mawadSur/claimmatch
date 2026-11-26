@@ -47,9 +47,11 @@ export type DocumentMime = (typeof DOCUMENT_MIME_TYPES)[number];
 /**
  * Member (identity and contact) fields of the packet. legal_name, email,
  * phone and the address are prefilled from the profile (profiles.full_name,
- * email, phone, address_line1, address_line2, city, state, zip) and saved
- * back only with the member's consent. first_name and last_name exist for
- * forms that split the name; they are asked per claim and never saved.
+ * email, phone, address_line1, address_line2, city, state, zip, and the
+ * merged claim profile when present) and saved back only with the member's
+ * consent. first_name and last_name exist for forms that split the name:
+ * they are prefilled by splitting legal_name / full_name, a saved answer on
+ * this claim wins, and they are never written back to the profile.
  */
 export const MEMBER_FIELDS = [
   'legal_name',

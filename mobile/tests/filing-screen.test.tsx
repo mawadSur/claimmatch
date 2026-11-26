@@ -135,6 +135,28 @@ describe('starting one-click filing', () => {
 });
 
 describe('what we still need', () => {
+  it('puts the we-file-this-claim card below the steps', async () => {
+    reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
+    await show(flow({ canStart: false }, claimRow('preparing')));
+    expect(await screen.findByTestId('filing-step-confirm')).toBeTruthy();
+    expect(screen.getByTestId('filing-lane')).toBeTruthy();
+    const ids: string[] = [];
+    const seen = new Set<object>();
+    const walk = (node: unknown) => {
+      if (!node || typeof node !== 'object' || seen.has(node)) return;
+      seen.add(node);
+      const rec = node as { props?: { testID?: string }; children?: unknown };
+      if (typeof rec.props?.testID === 'string') ids.push(rec.props.testID);
+      const children = rec.children;
+      if (Array.isArray(children)) children.forEach(walk);
+      else walk(children);
+    };
+    walk(screen.toJSON());
+    expect(ids.indexOf('filing-step-confirm')).toBeGreaterThan(-1);
+    expect(ids.indexOf('filing-step-confirm')).toBeLessThan(ids.indexOf('filing-lane'));
+    expect(ids.indexOf('filing-step-review')).toBeLessThan(ids.indexOf('filing-lane'));
+  });
+
   it('shows profile details, asks the rest and saves only what changed', async () => {
     reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
     reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: filingView() }]);

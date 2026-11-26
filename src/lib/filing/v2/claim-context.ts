@@ -6,7 +6,7 @@
  * only. Server only.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { CanonicalPacketSchema, type CanonicalPacket, type FilingErrorCode, type PacketDraft } from './contract';
+import { CanonicalPacketSchema, type CanonicalPacket, type AnswerValue, type FilingErrorCode, type PacketDraft } from './contract';
 import { createServiceClient } from '@/lib/supabase/server';
 import { DOCUMENT_COLUMNS, toDocumentRecord, type DocumentRecord } from './documents';
 import { loadSettlementEnvs, type LaneEnv, type SettlementEnv } from './environment';
@@ -32,8 +32,8 @@ import {
 } from './records';
 import type { LaneView } from './contract';
 import { flags } from '@/lib/flags';
-import type { ClaimProfile } from '@/lib/claim-profile';
-import { loadClaimProfile } from '@/lib/claim-profile-server';
+import { memberPrefillFromClaimProfile, type ClaimProfile } from '@/lib/claim-profile';
+import { loadClaimProfile, packetSeedFromClaimProfile } from '@/lib/claim-profile-server';
 
 export const PROFILE_COLUMNS = 'full_name, email, phone, address_line1, address_line2, city, state, zip, prefill_consent_at';
 
@@ -203,26 +203,45 @@ export function contentOf(packet: PacketRecord): PacketContent {
  * comes first (meta.lane may decide which questions are asked); health
  * consent counts only for the policy's current text.
  */
+function answersWithProfileDefaults(
+  stored: Record<string, AnswerValue>,
+  claimProfile: ClaimProfile | null | undefined,
+  questionKeys: readonly string[],
+): Record<string, AnswerValue> {
+  if (!claimProfile || questionKeys.length === 0) return stored;
+  const seed = packetSeedFromClaimProfile(claimProfile, questionKeys, []);
+  return { ...seed.answers, ...stored };
+}
+
 export function derivePacketState(
-  ctx: Pick<ClaimContext, 'claim' | 'env' | 'laneEnv' | 'profile' | 'now'>,
+  ctx: Pick<ClaimContext, 'claim' | 'env' | 'laneEnv' | 'profile' | 'claimProfile' | 'now'>,
   content: PacketContent,
   spec: SpecRecord | null,
   documents: DocumentRecord[],
 ): PacketState {
   const consent = healthFacts({ env: ctx.env, spec: null, draft: null, consent: { at: content.health_consent_at, textSha256: content.health_consent_text_sha256 } });
+  const profile = ctx.claimProfile ? memberPrefillFromClaimProfile(ctx.claimProfile) : ctx.profile;
+  const payoutSeed =
+    ctx.claimProfile && spec
+      ? packetSeedFromClaimProfile(
+          ctx.claimProfile,
+          spec.content.questions.map((q) => q.key),
+          spec.content.payout_options.map((o) => o.value),
+        ).payout_method
+      : null;
   const draft = buildPacketDraft({
     claim: { id: ctx.claim.id, lawsuit_id: ctx.claim.lawsuit_id },
     spec: spec ? { id: spec.id, version: spec.version, content: spec.content } : null,
     row: {
-      answers: content.answers,
+      answers: answersWithProfileDefaults(content.answers, ctx.claimProfile, spec?.content.questions.map((q) => q.key) ?? []),
       member_snapshot: content.member_snapshot,
       benefit_tier: content.benefit_tier,
-      payout_method: content.payout_method,
+      payout_method: content.payout_method ?? payoutSeed,
       class_definition_confirmed_at: content.class_definition_confirmed_at,
       health_consent_at: consent.given === true ? content.health_consent_at : null,
       health_consent_declined: consent.given === false,
     },
-    profile: ctx.profile,
+    profile,
     documents,
     hashes: {
       class_definition_sha256: spec?.class_definition_sha256 ?? null,
