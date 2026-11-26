@@ -26,6 +26,7 @@
 --                           one-recovery-per-claim key
 --   A's / B's beta_feedback d0000000-0000-4000-8000-00000000000a and ...00b
 --   A's / B's claim_profile_addresses e0000000-0000-4000-8000-00000000000a and ...00b
+--   A's / B's fee_invoices f0000000-0000-4000-8000-00000000000a and ...00b
 --   source of every lawsuit 20000000-0000-4000-8000-000000000001
 -- All matches and the claims ...00a and ...00b are on lawsuit ...001; ...002
 -- has none. Every lawsuit has an official claim_url and the source a
@@ -95,7 +96,7 @@ language sql immutable as $$
                'account_deletion_audit', 'held_closure_decisions',
                'admin_access_log', 'held_closure_site_checks',
                'claim_reminder_sends', 'payout_tracker_sends',
-               'verification_drafts']
+               'verification_drafts', 'fee_invoices']
 $$;
 
 create function pg_temp.tables_tested_elsewhere() returns text[]
@@ -230,6 +231,16 @@ begin
       'current', '1 A Street', 'Austin', 'TX', '78701'),
     ('e0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b',
       'current', '1 B Street', 'Austin', 'TX', '78701');
+  -- Stripe fee invoices (0054): a member reads their own; writes are service-role only.
+  insert into public.fee_invoices (
+    id, claim_id, user_id, payout_amount_cents, fee_pct, fee_amount_cents, status
+  ) values
+    ('f0000000-0000-4000-8000-00000000000a',
+      'c0000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-00000000000a',
+      10000, 15, 1500, 'open'),
+    ('f0000000-0000-4000-8000-00000000000b',
+      'c0000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-00000000000b',
+      10000, 15, 1500, 'open');
 
   -- Fixtures must exist, or "sees 0 rows" would only mean "the table is empty".
   if (select count(*) from public.profiles
@@ -240,7 +251,8 @@ begin
   foreach t in array array['claims', 'matches', 'subscribers', 'notifications',
                            'referrals', 'recoveries', 'jobs', 'sources',
                            'claim_events', 'share_links', 'share_link_clicks',
-                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses'] loop
+                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses',
+                           'fee_invoices'] loop
     if pg_temp.visible_rows(format('select 1 from public.%I', t)) = 0 then
       raise exception 'fixtures: public.% has no rows', t;
     end if;
@@ -330,7 +342,8 @@ begin
   foreach t in array array['claims', 'profiles', 'subscribers', 'matches',
                            'notifications', 'referrals', 'recoveries', 'jobs',
                            'claim_events', 'share_links', 'share_link_clicks',
-                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses'] loop
+                           'beta_feedback', 'claim_profiles', 'claim_profile_addresses',
+                           'fee_invoices'] loop
     n := pg_temp.visible_rows(format('select 1 from public.%I', t));
     if n <> 0 then
       raise exception 'anon can read % row(s) of public.%', n, t;
@@ -429,7 +442,13 @@ begin
     $q$insert into public.claim_profile_addresses (user_id, kind, line1, city, state, zip)
        values ('a0000000-0000-4000-8000-00000000000a', 'prior', '9 Anon St', 'Austin', 'TX', '78701')$q$,
     $q$update public.claim_profile_addresses set line1 = 'changed by anon'$q$,
-    $q$delete from public.claim_profile_addresses$q$
+    $q$delete from public.claim_profile_addresses$q$,
+    -- Recovery-only Stripe invoices: a member reads their own; writes are service-role only.
+    $q$insert into public.fee_invoices (claim_id, user_id, payout_amount_cents, fee_pct, fee_amount_cents)
+       values ('c0000000-0000-4000-8000-0000000000b2',
+               'a0000000-0000-4000-8000-00000000000a', 10000, 15, 1500)$q$,
+    $q$update public.fee_invoices set status = 'paid'$q$,
+    $q$delete from public.fee_invoices$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -485,6 +504,10 @@ begin
   if n is distinct from 1 then
     raise exception 'user A should read their own claim_profile_addresses, got % row(s)', n;
   end if;
+  n := pg_temp.visible_rows(format('select 1 from public.fee_invoices where user_id = %L', me));
+  if n is distinct from 1 then
+    raise exception 'user A should read their own fee_invoices, got % row(s)', n;
+  end if;
 
   for r in
     select * from (values
@@ -497,7 +520,8 @@ begin
       ('claim_events', 'user_id'),
       ('beta_feedback', 'user_id'),
       ('claim_profiles', 'user_id'),
-      ('claim_profile_addresses', 'user_id')
+      ('claim_profile_addresses', 'user_id'),
+      ('fee_invoices', 'user_id')
     ) v(tbl, owner_col)
   loop
     n := pg_temp.visible_rows(format(
@@ -644,7 +668,21 @@ begin
        values ('a0000000-0000-4000-8000-00000000000a',
                'c0000000-0000-4000-8000-00000000000a', 'hearing_passed')$q$,
     $q$update public.payout_tracker_sends set kind = 'payment_timing'$q$,
-    $q$delete from public.payout_tracker_sends$q$
+    $q$delete from public.payout_tracker_sends$q$,
+    $q$insert into public.fee_invoices (claim_id, user_id, payout_amount_cents, fee_pct, fee_amount_cents)
+       values ('c0000000-0000-4000-8000-0000000000b2',
+               'a0000000-0000-4000-8000-00000000000a', 10000, 15, 1500)$q$,
+    $q$insert into public.fee_invoices (claim_id, user_id, payout_amount_cents, fee_pct, fee_amount_cents)
+       values ('c0000000-0000-4000-8000-00000000000b',
+               'b0000000-0000-4000-8000-00000000000b', 10000, 15, 1500)$q$,
+    $q$update public.fee_invoices set status = 'paid'
+       where id = 'f0000000-0000-4000-8000-00000000000b'$q$,
+    $q$update public.fee_invoices set user_id = 'b0000000-0000-4000-8000-00000000000b'
+       where id = 'f0000000-0000-4000-8000-00000000000a'$q$,
+    $q$delete from public.fee_invoices
+       where id = 'f0000000-0000-4000-8000-00000000000b'$q$,
+    $q$update public.fee_invoices set status = 'paid'$q$,
+    $q$delete from public.fee_invoices$q$
   ] loop
     n := pg_temp.rows_changed(stmt);
     if n <> 0 then
@@ -774,6 +812,25 @@ begin
     where user_id = 'b0000000-0000-4000-8000-00000000000b'
       and line1 = '9 Created St') then
     raise exception 'user A created a claim_profile_addresses row in user B''s name';
+  end if;
+  if not exists (
+    select 1 from public.fee_invoices
+    where id = 'f0000000-0000-4000-8000-00000000000b'
+      and user_id = 'b0000000-0000-4000-8000-00000000000b'
+      and status = 'open'
+      and fee_amount_cents = 1500) then
+    raise exception 'user B''s fee_invoices was changed or deleted';
+  end if;
+  if exists (
+    select 1 from public.fee_invoices
+    where id = 'f0000000-0000-4000-8000-00000000000a'
+      and user_id <> 'a0000000-0000-4000-8000-00000000000a') then
+    raise exception 'user A handed their fee_invoices to another user';
+  end if;
+  if exists (
+    select 1 from public.fee_invoices
+    where claim_id = 'c0000000-0000-4000-8000-0000000000b2') then
+    raise exception 'user A created a fee_invoices row through the API';
   end if;
 end $$;
 call pg_temp.assert_protected_tables_unchanged('user A');
