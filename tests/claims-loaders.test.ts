@@ -117,6 +117,7 @@ describe('official-notice guides on every settlement read', () => {
     eligibility_text: guide.eligibilityText,
     eligibility: { proof: guide.proof },
     proof_required: guide.proof === 'yes',
+    ...(guide.administrator ? { administrator: guide.administrator } : {}),
   };
 
   it('the claim screen and claim writes read the official deadline, link and proof rule', async () => {

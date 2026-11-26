@@ -86,6 +86,10 @@ describe('home page redesign', () => {
     expect(html).toContain('Is Lawsuit AI legit?');
     expect(html).toContain('hello@lawsuitai.org');
     expect(html).not.toMatch(/15\s*%/);
+    const matchAt = html.indexOf('See matching settlements');
+    const browseAt = html.indexOf('See open settlements');
+    expect(matchAt).toBeGreaterThan(-1);
+    expect(browseAt).toBeGreaterThan(matchAt);
   });
 
   it('every screenshot it references exists, at the size the page declares', () => {

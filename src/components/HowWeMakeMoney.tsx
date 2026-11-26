@@ -26,8 +26,8 @@ export function HowWeMakeMoney({
     : [
         'Filing a settlement claim is always free on the official administrator’s site. You never need Lawsuit AI to file.',
         flags.oneClickFiling()
-          ? `Lawsuit AI lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. ${filingFact(true).body}`
-          : 'Lawsuit AI lists open settlements and gives you copy-ready details (name, email, phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. Lawsuit AI never files for you.',
+          ? `Lawsuit AI lists open settlements and gives you copy-ready details (name, email, optional phone, address, and state you saved) to paste into the official form. ${filingFact(true).body}`
+          : 'Lawsuit AI lists open settlements and gives you copy-ready details (name, email, optional phone, address, and state you saved) to paste into the official form. You review and file every claim yourself. Lawsuit AI never files for you.',
         'Lawsuit AI is free during beta. We don’t run ads or sell paid plans today.',
         'We don’t sell your personal information.',
         'We don’t take money from settlement administrators or law firms to rank settlements.',

@@ -29,7 +29,7 @@ export function MatchPreviewEntry({
   return (
     <Link
       href="/preview"
-      className={variant === 'hero' ? 'btn-secondary px-6 text-base' : 'btn-secondary'}
+      className={variant === 'hero' ? 'btn-primary px-6 text-base' : 'btn-secondary'}
     >
       See matching settlements <ArrowRight className="h-4 w-4" aria-hidden />
     </Link>

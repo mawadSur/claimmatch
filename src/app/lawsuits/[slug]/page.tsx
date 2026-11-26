@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -67,15 +66,22 @@ import { GuideSignupCta } from '@/components/settlement/GuideSignupCta';
 import { SettlementQualifyCta } from '@/components/settlement/SettlementQualifyCta';
 import { StickyQualifyCta } from '@/components/settlement/StickyQualifyCta';
 import { ClaimActionCta, EasySubmitBadge } from '@/components/claims/ClaimActionCta';
+import { NoticeIdSection } from '@/components/claims/NoticeIdSection';
+import { PaymentUpdatesCta } from '@/components/claims/PaymentUpdatesCta';
+import { SignedInMailSummary } from '@/components/claims/SignedInMailSummary';
+import { ListingVerification } from '@/components/settlement/ListingVerification';
 import {
   ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
   guideFilingCopy,
-  WE_FILE_THIS_CLAIM,
-  WE_HELP_YOU_FILE,
   WE_FILE_THIS_CLAIM_GUIDE,
-  WE_HELP_YOU_FILE_GUIDE,
 } from '@/lib/copy';
+import {
+  EASY_SUBMIT_EXPLAINER,
+  claimActionOf,
+  hidesFileQualifySignup,
+  statusChipLabel,
+} from '@/lib/claim-actions';
 import { settlementFilingMode } from '@/lib/filing/public-filing';
 import { eligibilityQuizPrompts } from '@/lib/settlement-quiz';
 import { Disclaimer } from '@/components/Disclaimer';
@@ -85,7 +91,7 @@ import { FileFreeDirectly } from '@/components/FileFreeDirectly';
 import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Lawsuit } from '@/lib/types';
 
-export const revalidate = 3600;
+export const revalidate = 300;
 export const dynamic = 'force-static';
 
 type Params = { params: Promise<{ slug: string }> };
@@ -181,7 +187,6 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const verified = showVerifiedBadge(lawsuit);
   const guided = hasOfficialNoticeGuide(lawsuit.slug);
   const checkedLabel = noticeCheckedOnLabel(lawsuit.slug);
-  const showUnverifiedBanner = !verified && !guided;
   const showAbout =
     !!lawsuit.description &&
     lawsuit.description.trim() !== payout &&
@@ -192,7 +197,9 @@ export default async function LawsuitDetailPage({ params }: Params) {
     ...catalogGuideFaqs(lawsuit),
   ];
   const claimHref = `/claim/${lawsuit.slug}`;
-  const qualifyEnabled = open;
+  const hideFileCtas = flags.claimActionCtas() && hidesFileQualifySignup(lawsuit.claim_action_type);
+  const { details: claimDetails } = claimActionOf(lawsuit);
+  const qualifyEnabled = open && !hideFileCtas;
   const qualifyHref = qualifyEnabled ? settlementPreviewPath(lawsuit.slug) : null;
   const quizPrompts = eligibilityQuizPrompts(eligibility);
   const related = flags.relatedSettlements()
@@ -221,7 +228,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit, filingMode)} />
       <JsonLd data={settlementLegalServiceJsonLd(lawsuit, filingMode)} />
-      <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode)} />
+      {!hideFileCtas && <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode)} />}
 
       {/* Header ------------------------------------------------------------- */}
       <section className="bg-brand-50">
@@ -235,7 +242,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             ]}
           />
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="mt-5 flex min-w-0 flex-wrap items-center gap-2">
             <Link
               href={categoryHubPath(lawsuit.category)}
               className="badge-brand rounded-full hover:bg-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
@@ -243,16 +250,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
               {lawsuit.category}
             </Link>
             {open ? (
-              <span className="badge-green">Open for claims</span>
+              <span className={statusChipLabel(lawsuit.claim_action_type, true).tone === 'green' ? 'badge-green' : 'badge-gray'}>
+                {statusChipLabel(lawsuit.claim_action_type, true).label}
+              </span>
             ) : (
               <span className="badge-gray">Claims closed</span>
             )}
-            {open &&
-              (filingMode === 'agent' ? (
-                <span className="badge-green">{WE_FILE_THIS_CLAIM}</span>
-              ) : (
-                <span className="badge-brand rounded-full">{WE_HELP_YOU_FILE}</span>
-              ))}
             <EasySubmitBadge type={lawsuit.claim_action_type} />
             {!flags.closesInChips() && urgency && (
               <span className="badge-red gap-1">
@@ -266,10 +269,11 @@ export default async function LawsuitDetailPage({ params }: Params) {
           <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight sm:text-4xl">
             {lawsuit.title}
           </h1>
-          {summary && <p className="mt-4 max-w-2xl text-lg text-ink-muted">{summary}</p>}
+          {summary && <p className="mt-4 max-w-2xl min-w-0 text-lg text-ink-muted">{summary}</p>}
           <p className="mt-3 max-w-2xl text-sm text-ink-muted">
             {BROWSE_NO_ACCOUNT} {ACCOUNT_FOR_SAVE_WHY}
           </p>
+          <ListingVerification lawsuit={lawsuit} official={official} open={open} />
 
           <AnswerBlock
             facts={facts}
@@ -282,6 +286,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
             qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
             checkedOn={checkedLabel}
+            hideQualify={hideFileCtas}
           />
 
           {open && (
@@ -313,37 +318,26 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 </Link>
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                {filingMode === 'agent' ? WE_FILE_THIS_CLAIM_GUIDE : WE_HELP_YOU_FILE_GUIDE}
+                {lawsuit.claim_action_type === 'desk_file' || filingMode === 'agent'
+                  ? filingMode === 'agent'
+                    ? WE_FILE_THIS_CLAIM_GUIDE
+                    : EASY_SUBMIT_EXPLAINER
+                  : BROWSE_NO_ACCOUNT}
               </p>
-              <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
+              <GuideSignupCta
+                slug={lawsuit.slug}
+                filingMode={filingMode}
+                claimActionType={lawsuit.claim_action_type}
+                className="mt-4"
+              />
             </div>
           )}
         </div>
       </section>
 
-      {/* Unverified warning — hidden for admin-verified rows (C7) and official-notice guides. */}
-      {showUnverifiedBanner ? (
-      <section className="container-page pb-4" aria-labelledby="unverified-heading">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
-            <div className="flex-1">
-              <h2 id="unverified-heading" className="text-sm font-bold text-amber-900">
-                Unverified: check the official site
-              </h2>
-              <p className="mt-1 text-sm text-amber-900">
-                {open
-                  ? 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.'
-                  : 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.'}
-              </p>
-              <OfficialLink link={official} />
-            </div>
-          </div>
-        </div>
-      </section>
-      ) : checkedLabel ? (
+      {official?.kind === 'source' && !verified && !guided ? (
       <section className="container-page pb-4">
-        <p className="text-sm text-ink-muted">{checkedLabel}</p>
+        <OfficialLink link={official} />
       </section>
       ) : null}
 
@@ -420,7 +414,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             )}
           </div>
 
-          {open && quizPrompts.length > 0 && (
+          {open && !hideFileCtas && quizPrompts.length > 0 && (
             <SettlementEligibilityQuiz
               eligibilityText={eligibility}
               lawsuitId={lawsuit.id}
@@ -443,13 +437,46 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <p className="mt-2 leading-relaxed text-ink">{guideSections.deadline}</p>
           </div>
 
-          {open && (
+          {open && !hideFileCtas && (
             <div className="mt-8">
               <FileFreeDirectly official={official} lawsuitId={lawsuit.id} slug={lawsuit.slug} />
             </div>
           )}
 
-          {open && (
+          {flags.claimActionCtas() && lawsuit.claim_action_type === 'needs_notice_id' && (
+            <div className="mt-8">
+              <NoticeIdSection
+                slug={lawsuit.slug}
+                lawsuitId={lawsuit.id}
+                administrator={lawsuit.administrator}
+                officialHref={official?.kind === 'official' ? official.href : null}
+                signedIn={false}
+              />
+            </div>
+          )}
+
+          {flags.claimActionCtas() && lawsuit.claim_action_type === 'mail_in' && (
+            <div className="mt-8">
+              <SignedInMailSummary
+                title={lawsuit.title}
+                details={claimDetails}
+                deadline={deadlineText(lawsuit)}
+              />
+            </div>
+          )}
+
+          {flags.claimActionCtas() && lawsuit.claim_action_type === 'automatic_payment' && (
+            <div className="mt-8">
+              <PaymentUpdatesCta
+                slug={lawsuit.slug}
+                signedIn={false}
+                officialHref={official?.kind === 'official' ? official.href : null}
+                addressUpdateUrl={claimDetails.address_update_url}
+              />
+            </div>
+          )}
+
+          {open && !hideFileCtas && (
             <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
@@ -468,7 +495,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
                   </li>
                 ))}
               </ol>
-              <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-6" />
+              <GuideSignupCta
+                slug={lawsuit.slug}
+                filingMode={filingMode}
+                claimActionType={lawsuit.claim_action_type}
+                className="mt-6"
+              />
             </div>
           )}
 
@@ -550,11 +582,21 @@ export default async function LawsuitDetailPage({ params }: Params) {
           <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             {open ? (
               <>
-                <h2 className="text-lg font-bold">Check if you qualify</h2>
+                <h2 className="text-lg font-bold">
+                  {hideFileCtas
+                    ? statusChipLabel(lawsuit.claim_action_type, true).label
+                    : lawsuit.claim_action_type === 'desk_file'
+                      ? 'Easy submit'
+                      : 'Next step'}
+                </h2>
                 <p className="mt-2 text-sm text-ink-muted">
-                  {filingMode === 'agent'
-                    ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
-                    : 'We help you file. Filing is free on the official site. You can always file this claim yourself.'}
+                  {lawsuit.claim_action_type === 'desk_file' || filingMode === 'agent'
+                    ? filingMode === 'agent'
+                      ? 'Easy submit: you answer a few questions and e-sign — we submit it to the official claims site for you. You can always file on the official site yourself instead, where filing is free.'
+                      : EASY_SUBMIT_EXPLAINER
+                    : hideFileCtas
+                      ? 'There is nothing to file on Lawsuit AI for this settlement.'
+                      : 'Confirm who qualifies on the official notice, then file there. You do not need an account to file.'}
                 </p>
                 {flags.claimActionCtas() && lawsuit.claim_action_type ? (
                   <div className="mt-5">
@@ -593,8 +635,15 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 </Link>
                   </>
                 )}
-                <GuideSignupCta slug={lawsuit.slug} filingMode={filingMode} className="mt-4" />
-                <p className="mt-2 text-center text-xs text-ink-muted">{ACCOUNT_FOR_SAVE_WHY}</p>
+                <GuideSignupCta
+                  slug={lawsuit.slug}
+                  filingMode={filingMode}
+                  claimActionType={lawsuit.claim_action_type}
+                  className="mt-4"
+                />
+                {!hideFileCtas ? (
+                  <p className="mt-2 text-center text-xs text-ink-muted">{ACCOUNT_FOR_SAVE_WHY}</p>
+                ) : null}
                 {official?.kind === 'official' && (
                   <OfficialFormLink
                     href={official.href}
@@ -609,6 +658,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 {official?.kind === 'official' && (
                   <p className="mt-2 text-center text-xs text-ink-muted">{BROWSE_NO_ACCOUNT}</p>
                 )}
+                {!hideFileCtas ? (
                 <ul className="mt-5 space-y-2 border-t border-gray-100 pt-5">
                   {filingCopy.points.map((t) => (
                     <li key={t} className="flex items-start gap-2 text-sm text-ink-muted">
@@ -617,6 +667,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                     </li>
                   ))}
                 </ul>
+                ) : null}
               </>
             ) : (
               <>
@@ -647,6 +698,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
           href={qualifyHref}
           slug={lawsuit.slug}
           lawsuitId={lawsuit.id}
+          claimActionType={lawsuit.claim_action_type}
         />
       )}
     </>

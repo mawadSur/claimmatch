@@ -17,7 +17,8 @@ import { flags } from '@/lib/flags';
 
 const SELF_FILE_LEGAL_SENTENCE =
   'Lawsuit AI does not file, submit or sign claims for anyone, and it never receives or handles settlement payments.';
-const SELF_FILE_SHORT_SENTENCE = 'You file every claim yourself on the official settlement website.';
+const SELF_FILE_SHORT_SENTENCE =
+  'File free on the official site yourself, or use Easy submit on eligible claims and we submit it for you after you e-sign.';
 
 function adapt(text: string, selfFile: string, mayFileText: string, mayFile: boolean, free: boolean): string {
   let out = mayFile ? text.replace(selfFile, mayFileText) : text;

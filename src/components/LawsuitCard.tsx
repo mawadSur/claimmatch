@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck, Sparkles } from 'lucide-react';
-import { WE_FILE_FOR_YOU_BADGE } from '@/lib/copy';
+import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
@@ -16,7 +15,13 @@ import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
 import { MissingDetailsBlock } from '@/components/settlement/AnswerBlock';
 import { EasySubmitBadge, shouldHideFileButton } from '@/components/claims/ClaimActionCta';
-import { ADD_NOTICE_ID_CTA, NO_CLAIM_NEEDED_HEADING, PRINT_AND_MAIL_CTA, START_CLAIM_CTA, SUBMIT_CLAIM_CTA } from '@/lib/claim-actions';
+import {
+  NO_CLAIM_NEEDED_HEADING,
+  START_CLAIM_CTA,
+  cardCtaHref,
+  cardCtaLabel,
+  statusChipLabel,
+} from '@/lib/claim-actions';
 
 /**
  * The settlement card (server component; brand top border from the original
@@ -36,7 +41,7 @@ export function LawsuitCard({
   badge,
   reasons,
   href,
-  fileForYou = false,
+  fileForYou: _fileForYou = false,
 }: {
   lawsuit: Lawsuit;
   badge?: { label: string; tone?: 'brand' | 'green' | 'red' | 'gray' };
@@ -72,11 +77,6 @@ export function LawsuitCard({
       <div className="flex items-start justify-between gap-3">
         <span className={badgeClass}>{shownBadge?.label ?? lawsuit.category}</span>
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
-          {fileForYou && (
-            <span className="badge-green shrink-0 gap-1">
-              <Sparkles className="h-3 w-3" aria-hidden="true" /> {WE_FILE_FOR_YOU_BADGE}
-            </span>
-          )}
           <EasySubmitBadge type={lawsuit.claim_action_type} />
           <VerifiedBadge lawsuit={lawsuit} />
           <ClosesInChip deadline={lawsuit.deadline} />
@@ -162,7 +162,7 @@ export function LawsuitCard({
                 </p>
               ) : (
                 <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-950">
-                  This settlement is not open for claims on Lawsuit AI.
+                  {statusChipLabel(lawsuit.claim_action_type, false).label}
                 </p>
               )}
               <Link href={detailsHref} className="btn-secondary w-full justify-center px-3">
@@ -170,12 +170,17 @@ export function LawsuitCard({
               </Link>
             </div>
           ) : (
-          <div className="flex flex-wrap gap-2">
-            <Link href={`/claim/${lawsuit.slug}${lawsuit.claim_action_type === 'mail_in' ? '#mail-in' : lawsuit.claim_action_type === 'needs_notice_id' ? '#missing-info' : ''}`} className="btn-primary grow basis-40 px-3">
-              {cardCtaLabel(lawsuit.claim_action_type)} <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only"> for {lawsuit.title}</span>
-            </Link>
-            <Link href={detailsHref} className="btn-secondary grow basis-20 px-3">
+          <div className="flex min-w-0 flex-wrap gap-2">
+            <CtaLink
+              href={cardCtaHref({
+                type: flags.claimActionCtas() ? lawsuit.claim_action_type : null,
+                slug: lawsuit.slug,
+                officialHref: official?.kind === 'official' ? official.href : null,
+              })}
+              label={flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type) : START_CLAIM_CTA}
+              title={lawsuit.title}
+            />
+            <Link href={detailsHref} className="btn-secondary min-w-0 grow basis-20 px-3">
               Details<span className="sr-only"> about {lawsuit.title}</span>
             </Link>
           </div>
@@ -190,13 +195,27 @@ export function LawsuitCard({
   );
 }
 
-function cardCtaLabel(type: Lawsuit['claim_action_type']): string {
-  if (!flags.claimActionCtas() || !type) return START_CLAIM_CTA;
-  if (type === 'desk_file') return SUBMIT_CLAIM_CTA;
-  if (type === 'needs_notice_id') return ADD_NOTICE_ID_CTA;
-  if (type === 'mail_in') return PRINT_AND_MAIL_CTA;
-  if (type === 'online_form') return START_CLAIM_CTA;
-  return START_CLAIM_CTA;
+function CtaLink({ href, label, title }: { href: string; label: string; title: string }) {
+  const external = href.startsWith('http');
+  const className = 'btn-primary min-w-0 grow basis-40 px-3';
+  const body = (
+    <>
+      {label} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="sr-only"> for {title}</span>
+    </>
+  );
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {body}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {body}
+    </Link>
+  );
 }
 
 /** No match scores or "Matched" labels on cards (D50; no percentage scores anywhere). */

@@ -193,7 +193,11 @@ describe('ISR revalidate exports', () => {
     ];
     for (const rel of files) {
       const src = readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
-      expect(src, rel).toMatch(/export const revalidate = 3600;/);
+      if (rel.includes('lawsuits/[slug]')) {
+        expect(src, rel).toMatch(/export const revalidate = 300;/);
+      } else {
+        expect(src, rel).toMatch(/export const revalidate = 3600;/);
+      }
       expect(src, rel).not.toMatch(/export const revalidate = [A-Za-z_]/);
     }
   });

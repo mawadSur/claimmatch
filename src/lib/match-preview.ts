@@ -2,6 +2,7 @@ import { ELIGIBILITY_QUESTIONS, RETIRED_QUESTION_KEYS } from './eligibility';
 import { matchProfile, matchStrengthFromScore, matchStrengthLabel, type MatchStrength } from './matching';
 import { answersFromAttributes, parseAttributeAnswers, type AttributeAnswers } from './profile-attributes';
 import type { EligibilityQuestion, Lawsuit, Profile } from './types';
+import { isClaimActionType, type ClaimActionType } from './claim-actions';
 import { US_STATES } from './utils';
 6
 /** Browser storage for logged-out preview answers until signup/onboarding. */
@@ -40,6 +41,7 @@ export interface MatchPreviewResult {
   strength: MatchStrength;
   strengthLabel: string;
   reasons: string[];
+  claim_action_type: ClaimActionType | null;
 }
 44
 const PREVIEW_RESULT_CAP = 8;
@@ -141,6 +143,7 @@ export function previewMatchesFor(
         strength,
         strengthLabel: matchStrengthLabel(strength),
         reasons: result.reasons.slice(0, 3),
+        claim_action_type: isClaimActionType(lawsuit.claim_action_type) ? lawsuit.claim_action_type : null,
       } satisfies MatchPreviewResult;
     })
     .filter((row): row is MatchPreviewResult => row !== null)
@@ -191,6 +194,37 @@ export function settlementPreviewPath(slug: string): string | null {
   const safe = parseSettlementScopeSlug(slug);
   return safe ? `/preview?settlement=${encodeURIComponent(safe)}` : null;
 }
+
+/** Guest save-by-link: restore answers from /preview query params. */
+export function matchPreviewSharePath(draft: MatchPreviewDraft, settlementSlug?: string | null): string {
+  const params = new URLSearchParams();
+  const scoped = settlementSlug ? parseSettlementScopeSlug(settlementSlug) : null;
+  if (scoped) params.set('settlement', scoped);
+  if (draft.state) params.set('state', draft.state);
+  for (const key of MATCH_PREVIEW_ATTRIBUTE_KEYS) {
+    if (draft.attributes[key] === true) params.set(key, '1');
+    else if (draft.attributes[key] === false) params.set(key, '0');
+  }
+  const qs = params.toString();
+  return qs ? `/preview?${qs}` : '/preview';
+}
+
+export function draftFromPreviewSearch(
+  params: Record<string, string | string[] | undefined>,
+): MatchPreviewDraft | null {
+  const first = (key: string): string | undefined => {
+    const value = params[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+  const attributes: MatchPreviewDraft['attributes'] = {};
+  for (const key of MATCH_PREVIEW_ATTRIBUTE_KEYS) {
+    const raw = first(key);
+    if (raw === '1' || raw === 'true') attributes[key] = true;
+    else if (raw === '0' || raw === 'false') attributes[key] = false;
+  }
+  return parseMatchPreviewDraft({ state: first('state') ?? '', attributes });
+}
+
 194
 /**
  * Questions for a settlement-scoped preview. Only onboarding keys the listing

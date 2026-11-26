@@ -213,6 +213,7 @@ describe('settlement guides', () => {
     expect(overlaid.typical_payout).toMatch(/\$359,925,000/);
     expect(overlaid.deadline).toBe('2027-01-29');
     expect(overlaid.claim_url).toBe('https://www.realpagerentalsettlement.com/');
+    expect(overlaid.administrator).toBe('Epiq Class Action & Claims Solutions, Inc.');
     expect(overlaid.eligibility.proof).toBe('optional');
     expect(overlaid.verified_at).toBeUndefined();
   });
@@ -374,7 +375,7 @@ describe('guides wherever a deadline or official link is read', () => {
   /** Noon in New York, `days` after the guide's deadline. */
   const at = (days: number) => new Date(`${day(days)}T17:00:00Z`);
 
-  // The claim flow's settlement record (claims-server SETTLEMENT_COLUMNS): no summary, payout or administrator.
+  // The claim flow's settlement record (claims-server SETTLEMENT_COLUMNS): no summary or payout.
   const record = (slug: string) => ({
     id: '00000000-0000-4000-8000-0000000000d1',
     slug,

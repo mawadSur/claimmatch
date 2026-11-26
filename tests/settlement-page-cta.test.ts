@@ -122,6 +122,46 @@ describe('settlement page CTA flag', () => {
     expect(html).not.toMatch(/\$50,000 people|testimonials/i);
   });
 
+  it('shows a public notice-ID field and help without requiring signup', async () => {
+    const html = await renderDetail(
+      lawsuit({
+        claim_action_type: 'needs_notice_id',
+        administrator: 'Simpluris, Inc.',
+      }),
+    );
+    expect(html).toContain('Add your notice ID');
+    expect(html).toContain('Notice ID or claim ID');
+    expect(html).toContain('Where’s my ID?');
+    expect(html).toContain('No notice?');
+    expect(html).toContain('does not collect the official site');
+    expect(html).not.toContain('Create a free account');
+  });
+
+  it('shows mail-in steps on the public settlement page', async () => {
+    const html = await renderDetail(
+      lawsuit({
+        claim_action_type: 'mail_in',
+        claim_action: { mail_to: 'P.O. Box 1', form_url: 'https://official.example.test/form.pdf' },
+      }),
+    );
+    expect(html).toContain('Print, sign and mail this claim');
+    expect(html).toContain('Download the official form');
+    expect(html).toContain('Certified mail is optional');
+  });
+
+  it('hides file, qualify, and signup-to-file CTAs on automatic_payment pages', async () => {
+    const html = await renderDetail(lawsuit({ claim_action_type: 'automatic_payment' }));
+    expect(html.replace(/&#x27;|&apos;|&#39;/g, "'")).toContain(
+      "No claim needed — you'll be paid automatically",
+    );
+    expect(html).toContain('Keep your mailing address current');
+    expect(html).toContain('Get payment updates');
+    expect(html).not.toContain('Check if you qualify');
+    expect(html).not.toContain('Start your claim');
+    expect(html).not.toContain('Create a free account');
+    expect(html).not.toContain('We help you file');
+  });
+
   it('never shows the qualify preview CTA on a closed settlement', async () => {
     vi.stubEnv('SETTLEMENT_PAGE_CTA_ENABLED', '1');
     const html = await renderDetail(lawsuit({ status: 'closed' }));

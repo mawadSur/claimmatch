@@ -1,9 +1,8 @@
 /**
- * Server-only: what /claim/[slug] shows one signed-in user. The claim page and
- * the app's claim endpoint both call it, so they cannot drift apart. The
- * settlement is read with the service role (claims-server); the claim and
- * profile with the caller's client (RLS: own rows). Never import this from a
- * client component.
+ * Server-only: what /claim/[slug] shows. Guests get the settlement, steps, and
+ * official link (userId null). Signed-in users also get their claim, profile,
+ * and self-filed report. The claim page and the app's claim endpoint both call
+ * it, so they cannot drift apart. Never import this from a client component.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -52,7 +51,7 @@ export type ClaimScreen =
 
 export async function loadClaimScreen(
   supabase: SupabaseClient,
-  userId: string,
+  userId: string | null,
   slug: string,
   now: Date,
 ): Promise<ClaimScreen> {
@@ -64,15 +63,21 @@ export async function loadClaimScreen(
   if (!settlement || !UUID_RE.test(settlement.id)) return { kind: 'not_found' };
 
   const context = claimContext(settlement, now);
-  const [{ data: claimRow, error: claimError }, { data: profileRow }] = await Promise.all([
-    supabase.from('claims').select('*').eq('user_id', userId).eq('lawsuit_id', settlement.id).maybeSingle(),
-    supabase.from('profiles').select(PACKET_PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
-  ]);
-  if (claimError) logClaimsError('claim page lookup failed', claimError);
-  const claim = claimRow ? toClaimView(claimRow as Record<string, unknown>) : null;
-  const profile = (profileRow as PacketProfile | null) ?? null;
+  let claim: ClaimView | null = null;
+  let profile: PacketProfile | null = null;
+  if (userId) {
+    const [{ data: claimRow, error: claimError }, { data: profileRow }] = await Promise.all([
+      supabase.from('claims').select('*').eq('user_id', userId).eq('lawsuit_id', settlement.id).maybeSingle(),
+      supabase.from('profiles').select(PACKET_PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
+    ]);
+    if (claimError) {
+      logClaimsError('claim page lookup failed', claimError);
+      return { kind: 'load_error', what: 'your claim' };
+    }
+    claim = claimRow ? toClaimView(claimRow as Record<string, unknown>) : null;
+    profile = (profileRow as PacketProfile | null) ?? null;
+  }
 
-  if (claimError) return { kind: 'load_error', what: 'your claim' };
   if (!claim && (!context.published || context.fictional)) return { kind: 'not_found' };
 
   // Without a claim, a settlement that no longer takes claims still lets people
@@ -92,7 +97,7 @@ export async function loadClaimScreen(
     selfFiledReportEnabled: flags.selfFiledReport(),
   });
   let selfFiledReport: SelfFiledReportView | null = null;
-  if (flags.selfFiledReport()) {
+  if (userId && flags.selfFiledReport()) {
     const { data: reportRow, error: reportError } = await supabase
       .from('self_filed_reports')
       .select('id, lawsuit_id, claim_id, confirmation_storage_path, confirmation_mime, confirmation_bytes')

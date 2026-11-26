@@ -102,6 +102,7 @@ const HYUNDAI_KIA_AIRBAG: SettlementGuide = {
 const REALPAGE: SettlementGuide = {
   slugs: ['realpage-rental-software-antitrust-settlement'],
   officialUrl: 'https://www.realpagerentalsettlement.com/',
+  administrator: 'Epiq Class Action & Claims Solutions, Inc.',
   sourceChecked: '2026-11-03',
   eligibilityText:
     'People and entities in the United States and its territories who paid rent on at least one multifamily residential lease directly to an owner, manager or owner-operator (including a division, subsidiary, predecessor, agent or affiliate) on a property that had a license for RealPage Revenue Management Solutions — Lease Rent Options (LRO), YieldStar (YS) and/or AI Revenue Management (AIRM) — at any time from October 18, 2018 through November 21, 2025.',
@@ -945,9 +946,11 @@ interface GuidedFacts {
   eligibility_text: string | null;
   proof_required: boolean | null;
   eligibility: object | null;
+  administrator?: string | null;
 }
 
 function withOfficialFacts<T extends GuidedFacts>(row: T, guide: SettlementGuide, claimUrl: string): T {
+  const administrator = guide.administrator ?? row.administrator;
   return {
     ...row,
     eligibility_text: guide.eligibilityText,
@@ -955,6 +958,7 @@ function withOfficialFacts<T extends GuidedFacts>(row: T, guide: SettlementGuide
     claim_url: claimUrl,
     proof_required: guide.proof === 'yes',
     eligibility: { ...row.eligibility, proof: guide.proof },
+    ...(administrator ? { administrator } : {}),
   };
 }
 

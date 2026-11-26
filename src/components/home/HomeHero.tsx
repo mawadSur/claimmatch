@@ -46,7 +46,7 @@ export function HomeHero({
 
       <div className="container-page pb-16 pt-12 sm:pt-16 lg:pb-20 lg:pt-20">
         <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-12">
-          <div className="stagger max-w-xl">
+          <div className="max-w-xl min-w-0">
             <p
               style={{ '--i': 0 } as CSSProperties}
               className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 shadow-sm ring-1 ring-slate-200"
@@ -87,15 +87,15 @@ export function HomeHero({
 
             <div
               style={{ '--i': 3 } as CSSProperties}
-              className="mt-9 flex flex-col gap-3 sm:flex-row"
+              className="mt-9 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap"
             >
-              <Link href={primary.href} className="btn-primary px-6 text-base">
+              {extra}
+              <Link href={primary.href} className="btn-secondary px-6 text-base">
                 {primary.label} <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link href="#how-it-works" className="btn-secondary px-6 text-base">
                 How it works
               </Link>
-              {extra}
             </div>
 
             <ul

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, Info } from 'lucide-react';
+import { AlertCircle, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
@@ -96,10 +96,10 @@ function howSteps(mayFile: boolean): HowStep[] {
     },
     mayFile
       ? {
-          title: WE_FILE_SUPPORTED,
-          body: WE_FILE_SUPPORTED_SENTENCE,
+          title: 'Easy submit on supported settlements',
+          body: 'You answer a few questions and e-sign — we submit it to the official claims site for you. You can always file on the official site yourself instead, where filing is free.',
           points: [
-            'We file claims for you on supported settlements',
+            'Easy submit: a few questions and an e-sign',
             'You can always file on the official site yourself',
             'No fee to file on the official site',
           ],
@@ -109,7 +109,7 @@ function howSteps(mayFile: boolean): HowStep[] {
           title: 'File on the official site',
           body: 'Open the official claim form and copy in the details you saved, like your name, address and email. Filing there is always free, and you send it yourself.',
           points: [
-            'Copy-ready details from your profile',
+            'Copy-ready details from your profile (name, email, and phone or address if you added them)',
             'The official form opens in a new tab',
             'No fee to file on the official site',
           ],
@@ -178,20 +178,6 @@ export default async function HomePage() {
   const primary = accountFirst ? account : browse;
   const secondary = accountFirst ? browse : account;
 
-  const unverifiedNotice = (
-    <div className="flex items-start gap-3 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3.5 text-sm leading-relaxed text-amber-950">
-      <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-      <p>
-        <strong className="font-semibold">Unverified: check the official site.</strong>{' '}
-        These listings come from SettleSignal, a public data source, and we haven’t
-        checked most of them yet.
-        {flags.verifiedFields() ? ' Ones we have checked show a “Verified” badge.' : ''} Before
-        you file, confirm the deadline (including the exact cutoff time) and who
-        qualifies on the official settlement site.
-      </p>
-    </div>
-  );
-
   return (
     <>
       <CaptureView event="landing_viewed" />
@@ -234,8 +220,7 @@ export default async function HomePage() {
                 See all settlements <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
-            <div className="mt-8">{unverifiedNotice}</div>
-            <div className="mt-6">
+            <div className="mt-8">
               <HomeSettlementList lawsuits={top} />
             </div>
           </div>
@@ -261,8 +246,6 @@ export default async function HomePage() {
               See all settlements <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
-
-          {top.length === 0 && <div className="mt-8">{unverifiedNotice}</div>}
 
           {closing.failed ? (
             <div

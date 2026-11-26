@@ -214,6 +214,8 @@ export interface ClaimView {
   corrective_notice_answered_at: string | null;
   /** The old flow recorded this claim as filed (ClaimFields.corrective_notice_required). */
   corrective_notice_required: boolean;
+  /** 0052: notice/claim ID for this claim only. Never a PIN. */
+  notice_id?: string | null;
   created_at: string | null;
 }
 
@@ -234,6 +236,7 @@ export function toClaimView(row: Record<string, unknown>): ClaimView {
     // reaches the browser, never the stamps.
     corrective_notice_required:
       row.corrective_notice_required === true || row.filed_at != null || row.authorized_at != null,
+    notice_id: str(row.notice_id),
     created_at: str(row.created_at),
   };
 }

@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowRight, ExternalLink, Sparkles } from 'lucide-react';
 import {
   EASY_SUBMIT_BADGE,
+  EASY_SUBMIT_EXPLAINER,
   claimActionCta,
   claimActionOf,
+  hidesFileQualifySignup,
   type ClaimActionDetails,
   type ClaimActionType,
 } from '@/lib/claim-actions';
@@ -12,7 +14,7 @@ import { flags } from '@/lib/flags';
 export function EasySubmitBadge({ type }: { type: ClaimActionType | null | undefined }) {
   if (!flags.claimActionCtas() || type !== 'desk_file') return null;
   return (
-    <span className="badge-green shrink-0 gap-1">
+    <span className="badge-green shrink-0 gap-1" title={EASY_SUBMIT_EXPLAINER}>
       <Sparkles className="h-3 w-3" aria-hidden="true" /> {EASY_SUBMIT_BADGE}
     </span>
   );
@@ -87,5 +89,5 @@ export function ClaimActionCta({
 
 export function shouldHideFileButton(claimActionType?: string | null): boolean {
   if (!flags.claimActionCtas()) return false;
-  return claimActionType === 'automatic_payment' || claimActionType === 'not_open';
+  return hidesFileQualifySignup(claimActionType);
 }

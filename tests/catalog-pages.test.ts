@@ -105,6 +105,16 @@ describe('LawsuitCard', () => {
     expectHonest(html);
   });
 
+  it('hides file CTAs on automatic_payment listings', () => {
+    const html = render({ lawsuit: lawsuit({ claim_action_type: 'automatic_payment' }) });
+    expect(html.replace(/&#x27;|&apos;|&#39;/g, "'")).toContain(
+      "No claim needed — you'll be paid automatically",
+    );
+    expect(html).not.toContain('Start your claim');
+    expect(html).not.toContain('Check if you qualify');
+    expect(html).not.toContain('Create a free account');
+  });
+
   it('shows "Claims closed" and no call to action when not open', () => {
     for (const l of [lawsuit({ status: 'closed' }), lawsuit({ deadline: '2020-01-01' })]) {
       const html = render({ lawsuit: l });

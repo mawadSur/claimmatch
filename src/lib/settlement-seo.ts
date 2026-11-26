@@ -99,10 +99,25 @@ const FALLBACK_META_SUFFIX = 'Official Claim Link & What We Know';
 const WE_FILE_THIS_CLAIM_META =
   'We file this claim for you. File free on the official site yourself anytime.';
 const HELP_FILE_META = 'We help you file. File free on the official site yourself anytime.';
+const NO_FILE_META = 'No claim needed — you will be paid automatically if you qualify.';
 
-function mayFileLine(filingMode: SettlementSeoFilingMode | null = null): string {
+function noFileClaim(lawsuit: Pick<Lawsuit, 'claim_action_type'>): boolean {
+  return lawsuit.claim_action_type === 'automatic_payment' || lawsuit.claim_action_type === 'not_open';
+}
+
+function mayFileLine(
+  lawsuit: Pick<Lawsuit, 'claim_action_type'>,
+  filingMode: SettlementSeoFilingMode | null = null,
+): string {
+  if (noFileClaim(lawsuit)) return NO_FILE_META;
   if (filingMode === 'agent') return WE_FILE_THIS_CLAIM_META;
   return HELP_FILE_META;
+}
+
+/** Avoid "stated.." when the catalog value already ends with a period. */
+export function withTerminalPeriod(text: string): string {
+  const t = text.trim();
+  return /[.!?…]['"”’)\]]*$/.test(t) ? t : `${t}.`;
 }
 
 function hasQualifies(
@@ -140,10 +155,10 @@ export function settlementMetaDescription(
   const title = lawsuit.title.trim();
   const qualifies = hasQualifies(lawsuit);
   const dated = hasDeadline(lawsuit);
-  const fileLine = mayFileLine(filingMode);
+  const fileLine = mayFileLine(lawsuit, filingMode);
   if (!qualifies || !dated) {
     const payout = lawsuit.typical_payout?.trim()
-      ? ` Listed payout: ${lawsuit.typical_payout.trim()}.`
+      ? ` Listed payout: ${withTerminalPeriod(lawsuit.typical_payout.trim())}`
       : '';
     return truncateAtWord(
       `${title}: official claim link and what we know.${payout} ${fileLine}`,
@@ -152,7 +167,7 @@ export function settlementMetaDescription(
   }
   const deadline = `Claim deadline ${formatDeadline(lawsuit.deadline)}.`;
   const payout = lawsuit.typical_payout?.trim()
-    ? `Listed payout: ${lawsuit.typical_payout.trim()}.`
+    ? `Listed payout: ${withTerminalPeriod(lawsuit.typical_payout.trim())}`
     : '';
   const hideProof = hideUnknownSettlementFacts() && proofStatus(lawsuit) === 'unknown';
   const proof = hideProof ? '' : `Proof: ${proofLabel(lawsuit)}.`;
@@ -223,13 +238,17 @@ export function settlementFaqs(
   const eligibility = eligibilitySummary(lawsuit.eligibility_text);
   const official = officialLinkFor(lawsuit);
 
-  const filingLine = agentLane
-    ? ' We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
-    : ' We help you file. You can always file on the official site yourself, where filing is free.';
+  const noFile = noFileClaim(lawsuit);
+  const filingLine = noFile
+    ? ''
+    : agentLane
+      ? ' We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
+      : ' We help you file. You can always file on the official site yourself, where filing is free.';
   const officialHow =
     official?.kind === 'official'
       ? ` File on the official site (${official.host}).${filingLine}`
       : ` File on the official settlement website.${filingLine}`;
+  const payout = lawsuit.typical_payout?.trim();
 
   return [
     {
@@ -250,8 +269,8 @@ export function settlementFaqs(
     },
     {
       q: `How much does the ${name} pay?`,
-      a: lawsuit.typical_payout?.trim()
-        ? `The listing states the payout as ${lawsuit.typical_payout.trim()}. The amount you get depends on the settlement’s rules and how many people file. The official notice is the final word.`
+      a: payout
+        ? `The listing states the payout as ${payout.replace(/[.]+$/, '')}. The amount you get depends on the settlement’s rules and how many people file. The official notice is the final word.`
         : `This listing does not state a payout amount. The official notice has the payment rules.`,
     },
     {
@@ -260,16 +279,26 @@ export function settlementFaqs(
         ? `Our listing names ${lawsuit.administrator.trim()} as the administrator. Confirm that on the official notice.`
         : `This listing does not name an administrator. The official notice says who runs the claims process.`,
     },
-    {
-      q: `Can I file a ${name} claim for free without Lawsuit AI?`,
-      a: `Yes. Anyone can file for free on the official settlement website. You never need a Lawsuit AI account to file.${officialHow}`,
-    },
-    {
-      q: `How do I file a claim for the ${name}?`,
-      a: agentLane
-        ? `Check that you qualify on the official notice. We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.${officialHow}`
-        : `Check that you qualify on the official notice. We help you file. You can always file on the official site yourself, where filing is free.${officialHow}`,
-    },
+    noFile
+      ? {
+          q: `Do I need to file a claim for the ${name}?`,
+          a: `No. No claim is needed — you will be paid automatically if you qualify. Keep your mailing address current with the settlement administrator so they can send your payment. Confirm the details on the official site.`,
+        }
+      : {
+          q: `Can I file a ${name} claim for free without Lawsuit AI?`,
+          a: `Yes. Anyone can file for free on the official settlement website. You never need a Lawsuit AI account to file.${officialHow}`,
+        },
+    noFile
+      ? {
+          q: `Can I check the ${name} without a Lawsuit AI account?`,
+          a: `Yes. Anyone can open the official site with no Lawsuit AI account. There is nothing to file here.`,
+        }
+      : {
+          q: `How do I file a claim for the ${name}?`,
+          a: agentLane
+            ? `Check that you qualify on the official notice. We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.${officialHow}`
+            : `Check that you qualify on the official notice. We help you file. You can always file on the official site yourself, where filing is free.${officialHow}`,
+        },
     ...settlementGuideFaqs(lawsuit.slug),
   ];
 }
@@ -349,6 +378,7 @@ export function settlementLegalServiceJsonLd(
 ) {
   const url = pageUrl(settlementPath(lawsuit.slug));
   const agent = filingMode === 'agent';
+  const noFile = noFileClaim(lawsuit);
   return {
     '@context': 'https://schema.org',
     '@type': 'LegalService',
@@ -368,10 +398,16 @@ export function settlementLegalServiceJsonLd(
           url,
           itemOffered: {
             '@type': 'Service',
-            name: agent ? 'We file this claim for you' : 'We help you file',
-            description: agent
-              ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
-              : 'We help you file. You can always file on the official site yourself, where filing is free.',
+            name: noFile
+              ? 'No claim needed'
+              : agent
+                ? 'We file this claim for you'
+                : 'We help you file',
+            description: noFile
+              ? 'No claim needed — you will be paid automatically if you qualify. Keep your mailing address current with the settlement administrator.'
+              : agent
+                ? 'We file this claim for you after you review and sign it. You can always file on the official site yourself instead, where filing is free.'
+                : 'We help you file. You can always file on the official site yourself, where filing is free.',
             url,
           },
         },

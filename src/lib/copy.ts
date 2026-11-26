@@ -62,8 +62,11 @@ export const WE_HELP_YOU_FILE_GUIDE = 'Free. We help you file.';
 
 export const SIGNUP_INTRO_MAY_FILE =
   'Keep track of your settlement claims in one place. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.';
+/** Official-site filing is always available; Easy submit is extra on eligible claims. */
+export const FILE_OR_EASY_SUBMIT =
+  'File free on the official site yourself, or use Easy submit on eligible claims and we submit it for you after you e-sign.';
 export const SIGNUP_INTRO_NEVER_FILES =
-  'Keep track of the settlement claims you file, all in one place. You always file on the official settlement website yourself.';
+  `Keep track of the settlement claims you file, all in one place. ${FILE_OR_EASY_SUBMIT}`;
 
 export const CATALOG_INTRO_NEVER_FILES =
   'Class action settlements that are taking claims now. Check who qualifies on the official site, file there for free, and keep track of your claim in Lawsuit AI.';
@@ -204,7 +207,7 @@ export function lawsuitAiValueLine(mayFile = lawsuitAiMayFile()): string {
 }
 
 export const WHAT_WE_STORE_MINIMAL =
-  'We store your name and email so you can sign in. After onboarding we store the state and answers you give so we can match settlements. No phone. Street address only if a claim form needs it.';
+  'We store your name and email so you can sign in. After onboarding we store the state and answers you give so we can match settlements. Phone is optional — add it in Settings if a claim form needs it; we never ask for it at sign-up. Street address only if a claim form needs it.';
 
 /** Matching never asks for SSN or bank details. Checkable against eligibility.ts and Jev. */
 export const NO_SSN_OR_BANK_TO_MATCH =

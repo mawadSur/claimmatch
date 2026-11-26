@@ -12,6 +12,10 @@ import {
 import { ClaimTimelineCard } from './ClaimTimeline';
 import { ClaimActionCta } from './ClaimActionCta';
 import { MailInInstructions } from './MailInInstructions';
+import { NoticeIdSection } from './NoticeIdSection';
+import { PrintSummaryButton } from './PrintSummaryButton';
+import { SIGN_IN_TO_EASY_SUBMIT, SIGN_IN_TO_SAVE, hidesFileQualifySignup } from '@/lib/claim-actions';
+import { guideSignupHref } from '@/lib/signup-context';
 import { flags } from '@/lib/flags';
 import { mergeClaimProfile } from '@/lib/claim-profile';
 import { formatDeadline } from '@/lib/utils';
@@ -55,6 +59,7 @@ export function ClaimFlow({
   profile = null,
   oneClick = null,
   selfFiledReport = null,
+  signedIn = true,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -63,6 +68,7 @@ export function ClaimFlow({
   profile?: PacketProfile | null;
   oneClick?: OneClickClaimProps | null;
   selfFiledReport?: SelfFiledReportView | null;
+  signedIn?: boolean;
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -166,6 +172,7 @@ export function ClaimFlow({
           stepTwoTitle={oc?.stepTwoTitle} stepTwoLead={oc?.stepTwoLead} prepared={oc?.prepared}
           agentLane={oc?.filesForMember ?? false}
           selfFiledReport={selfFiledReport}
+          signedIn={signedIn}
         />
       </>
     );
@@ -187,23 +194,33 @@ export function ClaimFlow({
         />
       )}
       {flags.claimActionCtas() && actionType === 'mail_in' && (
-        <MailInInstructions
-          title={settlement.title}
-          details={actionDetails}
-          deadline={settlement.deadline}
-          profile={claimProfile}
-        />
+        <div className="space-y-3">
+          <MailInInstructions
+            title={settlement.title}
+            details={actionDetails}
+            deadline={settlement.deadline}
+            profile={signedIn ? claimProfile : null}
+          />
+          {signedIn && claimProfile ? <PrintSummaryButton label="Print this prefilled summary" /> : null}
+        </div>
       )}
       {flags.claimActionCtas() && actionType === 'needs_notice_id' && !oc?.active && (
-        <section id="missing-info" className="scroll-mt-24 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-lg font-bold">You need the ID from your notice</h2>
-          <p className="mt-2 text-sm text-amber-950">
-            This administrator asks for a notice ID or claim ID from the letter they mailed you.
-            Lawsuit AI does not collect the official site’s login PIN or password. Use those only
-            on the administrator’s site. Add the notice ID when you start a desk filing, or type
-            it on the official form.
-          </p>
-        </section>
+        <NoticeIdSection
+          slug={settlement.slug}
+          lawsuitId={settlement.id}
+          administrator={settlement.administrator}
+          officialHref={settlement.officialUrl}
+          signedIn={signedIn}
+          savedNoticeId={claim?.notice_id ?? null}
+        />
+      )}
+      {!signedIn && !hidesFileQualifySignup(actionType) && (
+        <p className="rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
+          {actionType === 'desk_file' ? SIGN_IN_TO_EASY_SUBMIT : SIGN_IN_TO_SAVE}{' '}
+          <Link href={guideSignupHref(settlement.slug)} className="font-semibold text-brand-700 underline underline-offset-2">
+            Sign in
+          </Link>
+        </p>
       )}
       <StatusPanel
         display={display} deadline={settlement.deadline} now={now} fictional={context.fictional}
@@ -361,6 +378,7 @@ function FilingSteps({
   prepared,
   agentLane = false,
   selfFiledReport = null,
+  signedIn = true,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -375,6 +393,7 @@ function FilingSteps({
   /** Lawsuit AI files (or offers to file) this claim: PrefillPacket's lead says so. */
   agentLane?: boolean;
   selfFiledReport?: SelfFiledReportView | null;
+  signedIn?: boolean;
 }) {
   return (
     <ol className="space-y-5" aria-label="How to file">
@@ -474,7 +493,7 @@ function FilingSteps({
             lawsuitId={settlement.id}
             claim={claim}
             context={context}
-            allowSave={context.openForClaims}
+            allowSave={signedIn && context.openForClaims}
             onChange={onChange}
             selfFiledEnabled={settlement.selfFiledReportEnabled === true}
             selfFiledReport={selfFiledReport}

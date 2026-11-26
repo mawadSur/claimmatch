@@ -34,7 +34,7 @@ import {
 
 /** Settlement columns the claim flow reads (0002+, plus 0035 timeline fields). */
 export const SETTLEMENT_COLUMNS_BASE =
-  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order, final_approval_hearing_at, payment_timing_text';
+  'id, slug, title, category, status, review_status, deadline, claim_url, source_url, eligibility_text, eligibility, proof_required, form_field_order, final_approval_hearing_at, payment_timing_text, administrator';
 
 /** Includes 0050 deadline_override. Loaders fall back to BASE if the column is missing. */
 export const SETTLEMENT_COLUMNS_OVERRIDE = `${SETTLEMENT_COLUMNS_BASE}, deadline_override`;
@@ -58,6 +58,7 @@ export interface SettlementRecord extends SettlementFacts {
   final_approval_hearing_at?: string | null;
   /** 0035: listed payment-timing sentence. Null = not announced. */
   payment_timing_text?: string | null;
+  administrator?: string | null;
   /** 0051: public claim CTA. Null keeps Start your claim. */
   claim_action_type?: string | null;
   claim_action?: {

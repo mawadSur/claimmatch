@@ -228,7 +228,7 @@ export const settlement = defineCopy({
   // The web sidebar, shown inline ----------------------------------------------
   sidebarOpenBody: {
     text: 'We help you file. Filing is free on the official site. You can always file this claim yourself.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/copy.ts',
   },
   signInFirst: {
     text: 'Create an account only to save matches or get deadline alerts.',

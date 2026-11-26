@@ -33,14 +33,19 @@ export interface ClaimActionDetails {
 }
 
 export const EASY_SUBMIT_BADGE = 'Easy submit';
+/** One-line explainer for desk-filed claims. Copy-guard allowlisted. */
+export const EASY_SUBMIT_EXPLAINER =
+  'You answer a few questions and e-sign — we submit it to the official claims site for you.';
 export const SUBMIT_CLAIM_CTA = 'Submit a claim';
 export const START_CLAIM_CTA = 'Start your claim';
 export const FILE_ON_OFFICIAL_CTA = 'File on the official site';
 export const ADD_NOTICE_ID_CTA = 'Add your notice ID';
 export const PRINT_AND_MAIL_CTA = 'Print and mail instructions';
-export const NO_CLAIM_NEEDED_HEADING = 'No claim needed — you get paid automatically';
+/** Automatic-payment settlements. Copy-guard allowlisted: administrator pays, not Lawsuit AI. */
+export const NO_CLAIM_NEEDED_HEADING = "No claim needed — you'll be paid automatically";
 export const KEEP_ADDRESS_CURRENT =
-  'Make sure your address is current with the settlement administrator so they can reach you.';
+  'Keep your mailing address current with the settlement administrator so they can send your payment.';
+export const GET_PAYMENT_UPDATES_CTA = 'Get payment updates';
 export const NOT_OPEN_ALERT = 'This settlement is not open for claims on Lawsuit AI.';
 export const NOTICE_ID_WARNING =
   'This administrator asks for a notice ID or claim ID from the letter they mailed you. We cannot log into the official site for you.';
@@ -48,6 +53,8 @@ export const NOTICE_PIN_NOT_COLLECTED =
   'Lawsuit AI does not collect the official site’s login PIN or password. Use those only on the administrator’s site.';
 export const COLLECT_ADMIN_PIN_NOTE =
   'Collecting an official-site login PIN or password stays off until counsel and security approve COLLECT_ADMIN_PIN_ENABLED.';
+export const SIGN_IN_TO_SAVE = 'Sign in only if you want to save this on Lawsuit AI.';
+export const SIGN_IN_TO_EASY_SUBMIT = 'Sign in to Easy submit. You can still file on the official site with no account.';
 
 export interface ClaimActionCtaModel {
   type: ClaimActionType;
@@ -90,13 +97,15 @@ export function claimActionCta(input: {
   const official = input.officialHref ?? null;
   const details = input.details ?? {};
 
+  const publicPage = `/lawsuits/${input.slug}`;
+
   switch (input.type) {
     case 'desk_file':
       return {
         type: 'desk_file',
         badge: EASY_SUBMIT_BADGE,
-        heading: 'Easy submit',
-        body: 'Fill in anything still missing, review the official attestation, and e-sign. Staff then files it on the official site from your packet. Captcha, one-time codes and identity checks still stop us.',
+        heading: EASY_SUBMIT_BADGE,
+        body: EASY_SUBMIT_EXPLAINER,
         primary: { label: SUBMIT_CLAIM_CTA, href: claimHref },
         secondary: official ? { label: FILE_ON_OFFICIAL_CTA, href: official } : null,
         hideFileButton: false,
@@ -107,9 +116,11 @@ export function claimActionCta(input: {
         type: 'online_form',
         badge: null,
         heading: 'File on the official site',
-        body: 'Use your claim profile to copy the details the form asks for, then submit on the administrator’s site. Lawsuit AI does not submit this one for you unless a later desk policy is approved.',
-        primary: { label: START_CLAIM_CTA, href: claimHref },
-        secondary: official ? { label: FILE_ON_OFFICIAL_CTA, href: official } : null,
+        body: 'Copy your details into the official form, then submit on the administrator’s site. You do not need a Lawsuit AI account to file.',
+        primary: official
+          ? { label: FILE_ON_OFFICIAL_CTA, href: official }
+          : { label: START_CLAIM_CTA, href: claimHref },
+        secondary: { label: 'View claim details', href: claimHref },
         hideFileButton: false,
         alert: null,
       };
@@ -119,7 +130,7 @@ export function claimActionCta(input: {
         badge: null,
         heading: 'You need the ID from your notice',
         body: NOTICE_ID_WARNING,
-        primary: { label: ADD_NOTICE_ID_CTA, href: `${claimHref}#missing-info` },
+        primary: { label: ADD_NOTICE_ID_CTA, href: `${publicPage}#notice-id` },
         secondary: official ? { label: FILE_ON_OFFICIAL_CTA, href: official } : null,
         hideFileButton: false,
         alert: NOTICE_PIN_NOT_COLLECTED,
@@ -129,8 +140,8 @@ export function claimActionCta(input: {
         type: 'mail_in',
         badge: null,
         heading: 'Print, sign and mail this claim',
-        body: details.notes?.trim() || 'This administrator takes mailed claim forms. Download the form, fill it from your profile summary, sign it, and keep a copy.',
-        primary: { label: PRINT_AND_MAIL_CTA, href: `${claimHref}#mail-in` },
+        body: details.notes?.trim() || 'This administrator takes mailed claim forms. Download the form, fill it, sign it, and keep a copy. You do not need an account to see the steps.',
+        primary: { label: PRINT_AND_MAIL_CTA, href: `${publicPage}#mail-in` },
         secondary: details.form_url
           ? { label: 'Download the claim form', href: details.form_url }
           : official
@@ -150,7 +161,7 @@ export function claimActionCta(input: {
           : official
             ? { label: 'Official administrator site', href: official }
             : null,
-        secondary: { label: 'Keep your claim profile current', href: '/settings/claim-profile' },
+        secondary: { label: GET_PAYMENT_UPDATES_CTA, href: `${publicPage}#payment-updates` },
         hideFileButton: true,
         alert: null,
       };
@@ -181,7 +192,7 @@ export function claimActionCta(input: {
 
 export const MAIL_IN_STEPS = [
   'Download the official claim form.',
-  'Fill it using the printable summary of your claim profile. Do not invent facts.',
+  'Fill it using the printable summary of your claim profile when you are signed in. Do not invent facts.',
   'Sign the form the way the notice says (wet ink unless it allows e-sign).',
   'Attach the proof the notice lists, if any.',
   'Mail it to the address on the form.',
@@ -189,3 +200,48 @@ export const MAIL_IN_STEPS = [
   'Keep a copy of everything you send.',
   'Certified mail is optional and is your choice, not required by Lawsuit AI.',
 ] as const;
+
+export function hidesFileQualifySignup(type: string | null | undefined): boolean {
+  return type === 'automatic_payment' || type === 'not_open';
+}
+
+export function statusChipLabel(
+  type: string | null | undefined,
+  open: boolean,
+): { label: string; tone: 'green' | 'gray' } {
+  if (type === 'automatic_payment') return { label: 'No claim needed', tone: 'green' };
+  if (type === 'not_open' || !open) return { label: 'Not open for claims', tone: 'gray' };
+  return { label: 'Open for claims', tone: 'green' };
+}
+
+export function cardCtaLabel(type: string | null | undefined): string {
+  if (type === 'desk_file') return SUBMIT_CLAIM_CTA;
+  if (type === 'needs_notice_id') return ADD_NOTICE_ID_CTA;
+  if (type === 'mail_in') return PRINT_AND_MAIL_CTA;
+  if (type === 'online_form') return FILE_ON_OFFICIAL_CTA;
+  return START_CLAIM_CTA;
+}
+
+export function cardCtaHref(input: {
+  type: string | null | undefined;
+  slug: string;
+  officialHref?: string | null;
+}): string {
+  const publicPage = `/lawsuits/${input.slug}`;
+  if (input.type === 'mail_in') return `${publicPage}#mail-in`;
+  if (input.type === 'needs_notice_id') return `${publicPage}#notice-id`;
+  if (input.type === 'automatic_payment') return `${publicPage}#payment-updates`;
+  if (input.type === 'online_form' && input.officialHref) return input.officialHref;
+  return `/claim/${input.slug}`;
+}
+
+export function signupPromptFor(type: string | null | undefined): {
+  label: string;
+  why: string;
+} | null {
+  if (hidesFileQualifySignup(type)) return null;
+  if (type === 'desk_file') {
+    return { label: 'Sign in to Easy submit', why: SIGN_IN_TO_EASY_SUBMIT };
+  }
+  return { label: 'Sign in to save this claim', why: SIGN_IN_TO_SAVE };
+}

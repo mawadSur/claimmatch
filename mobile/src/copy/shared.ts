@@ -22,7 +22,7 @@ export const shared = defineCopy({
   // SettlementBadges -------------------------------------------------------
   openForClaims: {
     text: 'Open for claims',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/lib/claim-actions.ts',
   },
   claimsClosed: {
     text: 'Claims closed',
@@ -54,11 +54,11 @@ export const shared = defineCopy({
   // UnverifiedNotice, settlement variant -------------------------------------
   unverifiedOpenBody: {
     text: 'We haven’t checked this listing against the official settlement notice yet. Before you file, confirm the deadline, who qualifies and what proof you need on the official site.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/components/settlement/ListingVerification.tsx',
   },
   unverifiedClosedBody: {
     text: 'We haven’t checked this listing against the official settlement notice. The official site has the latest status.',
-    source: 'src/app/lawsuits/[slug]/page.tsx',
+    source: 'src/components/settlement/ListingVerification.tsx',
   },
   noOfficialLink: {
     text: 'We don’t have a link to the official site yet. Search for the settlement’s official website, and only use a site the settlement notice names.',

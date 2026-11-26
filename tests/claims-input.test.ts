@@ -147,6 +147,7 @@ describe('content helpers', () => {
         'id',
         'lawsuit_id',
         'lawsuit_title',
+        'notice_id',
         'reported_filed_at',
         'status',
         'user_filed_on',

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, RefreshCw, SearchX } from 'lucide-react';
+import { RefreshCw, SearchX } from 'lucide-react';
 import {
   catalogPath,
   catalogQueryString,
@@ -131,8 +131,8 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   return (
     <>
       <section className="border-b border-slate-200/70 bg-white">
-        <div className="container-page py-10 sm:py-14">
-          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+        <div className="container-page py-6 sm:py-14">
+          <h1 className="text-3xl font-bold leading-tight sm:text-5xl">
             Open settlements
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
@@ -141,25 +141,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               ? ' Listings with no proof required, a higher listed payout, and a sooner deadline appear first when those facts are in the catalog.'
               : ''}
           </p>
-
-          <div className="mt-6 max-w-3xl">
-            <AccountMatchBanner />
-          </div>
+          <p className="mt-3 max-w-2xl text-sm text-ink-muted">
+            These listings come from public sources, and we haven’t checked them against the official notices yet. Each one links to the official site, or to where we found it. Confirm the details there before you file.
+          </p>
 
           <div className="mt-6">
             <HubLinks categories={categories} current="all" />
-          </div>
-
-          <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
-            <div className="text-sm text-amber-950">
-              <p className="font-bold">Unverified: check the official site</p>
-              <p className="mt-1">
-                These listings come from public sources, and we haven’t checked them
-                against the official notices yet. Each one links to the official site, or
-                to where we found it. Confirm the details there before you file.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -255,6 +242,9 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               prevHref={prevHref}
               nextHref={nextHref}
             />
+            <div className="mt-8 max-w-3xl">
+              <AccountMatchBanner />
+            </div>
           </>
         )}
 

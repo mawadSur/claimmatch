@@ -85,7 +85,7 @@ export function catalogGuideSections(
       ? `Our listing shows a claim deadline of ${formatDeadline(lawsuit.deadline)}. Deadlines often end at 11:59 pm in the settlement’s time zone. Check the official site for the exact cutoff.`
       : `This listing has no deadline. Check the official site for the cutoff.`,
     payout: payout
-      ? `The listing states the payout as ${payout}. The amount you get depends on the settlement’s rules and how many people file. The official notice is the final word.`
+      ? `The listing states the payout as ${payout.replace(/[.]+$/, '')}. The amount you get depends on the settlement’s rules and how many people file. The official notice is the final word.`
       : `This listing does not state a payout amount. The official notice has the payment rules.`,
     proof: settlementProofDetail(lawsuit),
     howToFile: catalogHowToFile(lawsuit, agentLane),
@@ -133,7 +133,7 @@ export function catalogGuideFaqs(
   if (payout) {
     faqs.push({
       q: `What payout does the ${name} listing show?`,
-      a: `The listing states the payout as ${payout}. The official notice is the final word on what a valid claim pays.`,
+      a: `The listing states the payout as ${payout.replace(/[.]+$/, '')}. The official notice is the final word on what a valid claim pays.`,
     });
   }
   if (proofStatus(lawsuit) !== 'unknown') {
@@ -163,7 +163,7 @@ export function catalogGuideSummary(
   const parts = [`${lawsuit.title.trim()} is an open ${lawsuit.category.trim() || 'class-action'} settlement.`];
   if (lawsuit.deadline) parts.push(`The listed claim deadline is ${formatDeadline(lawsuit.deadline)}.`);
   const payout = lawsuit.typical_payout?.trim();
-  if (payout) parts.push(`Listed payout: ${payout}.`);
+  if (payout) parts.push(`Listed payout: ${/[.!?…]['"”’)\]]*$/.test(payout) ? payout : `${payout}.`}`);
   parts.push('Check the official notice for who qualifies and how to file.');
   return parts.join(' ');
 }
