@@ -22,6 +22,7 @@ import { classifyMatch, matchProfile } from '@/lib/matching';
 import { factsFromRows } from '@/lib/profile-facts';
 import type { Profile } from '@/lib/types';
 import { isEasySubmitType } from '@/lib/claim-actions';
+import { userHasMembershipAccess } from '@/lib/subscriptions';
 import { isOneClickStatus } from './filing-model';
 import { sessionHasFreshSignIn } from './fresh-sign-in';
 import type { OneClickClaimProps } from './types';
@@ -107,20 +108,36 @@ export async function loadOneClickClaimPage(args: {
   const startable = context.openForClaims && !context.deadlinePassed && !context.fictional;
   const skipMatchGate = isEasySubmitType(args.claimActionType);
   const matchOk = skipMatchGate || (await isStrongMatch(supabase, userId, args.slug, now));
+  const membershipOk = skipMatchGate
+    ? await userHasMembershipAccess({ userId, email: args.accountEmail })
+    : true;
+  const needsMembership = skipMatchGate && !membershipOk;
 
   if (claim) {
     const view = await readView(supabase, userId, claim.id, now);
     if (!view) return { ...base, loadFailed: isOneClickStatus(claim.status) };
     // A saved self-file claim can move to one-click once its settlement has an agent lane.
-    const canStart =
+    const eligible =
       startable &&
       claim.status === 'self_file' &&
       view.lane.agent &&
       matchOk;
-    return { ...base, view, lane: view.lane, canStart };
+    return {
+      ...base,
+      view,
+      lane: view.lane,
+      canStart: eligible && !needsMembership,
+      needsMembership: eligible && needsMembership,
+    };
   }
 
   if (!startable || !matchOk) return base;
   const lane = await previewLane(userId, args.lawsuitId, now);
-  return { ...base, lane, canStart: Boolean(lane?.agent) };
+  const eligible = Boolean(lane?.agent);
+  return {
+    ...base,
+    lane,
+    canStart: eligible && !needsMembership,
+    needsMembership: eligible && needsMembership,
+  };
 }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CLAIMMATCH_FEE_RATE } from '@/lib/copy';
+import { CLAIMMATCH_TRIAL_DAYS, membershipPriceCopy } from '@/lib/copy';
 import { shortDisclaimer } from '@/lib/disclaimer-flags';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
@@ -24,7 +24,7 @@ export function Footer() {
             <SiteLogo size="sm" />
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-ink-muted">
               {flags.feeDisclosure()
-                ? `A claim assistant. Matching is free. Filing yourself on the official site is free. Easy submit claims have a ${CLAIMMATCH_FEE_RATE} percent recovery-only fee, billed by invoice after payout. Lawsuit AI never holds settlement funds.`
+                ? `A claim assistant. Matching is free. Filing yourself on the official site is free. Easy submit and new-claim alerts are included with membership: a ${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()} a month, cancel anytime. Lawsuit AI takes 0 percent of settlement payouts.`
                 : 'A free claim assistant. Find open class-action settlements, file on the official site, and keep track of your claims. Free during beta.'}
             </p>
           </div>

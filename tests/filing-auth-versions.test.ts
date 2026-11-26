@@ -11,7 +11,7 @@ import {
   effectiveDeskChallengeMode,
   VERSIONS_COVERING_STAFF_CAPTCHA,
 } from '@/lib/filing/v2/authorization-text';
-import { CLAIMMATCH_FEE_RATE } from '@/lib/copy';
+import { CLAIMMATCH_TRIAL_DAYS, membershipPriceCopy } from '@/lib/copy';
 import { AGENT_CHANNELS } from '@/lib/filing/v2/contract-spec';
 
 // Founder decisions 2026-11-15 (docs/legal/signoff-checklist.md): staff may
@@ -92,19 +92,20 @@ describe('agent-auth-v3', () => {
     expect(b).toHaveLength(a.length);
     const changed = a.map((line, i) => (line === b[i] ? null : i)).filter((i) => i !== null);
     expect(changed).toEqual([6]);
-    expect(b[6]).toContain(`${CLAIMMATCH_FEE_RATE} percent`);
-    expect(b[6]).toContain('billed separately by invoice');
-    expect(b[6]).toContain('If I recover nothing, I owe $0');
-    expect(b[6]).toContain('Filing this claim myself on the official settlement site is free');
+    expect(b[6]).toContain('Lawsuit AI does not take a percentage of my settlement payment');
+    expect(b[6]).toContain(`Easy submit is included with my Lawsuit AI membership (${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()}/month, cancel anytime)`);
+    expect(b[6]).toContain('Filing a claim myself on the official settlement site is free');
     expect(v3).toContain('a person at the Lawsuit AI filing desk may complete it by hand');
     expect(v3).not.toContain('Lawsuit AI does not charge me a fee for this claim');
+    expect(v3).not.toContain('15 percent');
+    expect(v3).not.toContain('billed separately by invoice');
   });
 
   it('pins SHA-256 per lane so the published v3 text cannot drift', () => {
-    expect(sha(agentAuthorizationText('filing_desk', AGENT_AUTH_V3))).toBe('322e21166b197aa6d5e9bbb1259c6acf67e7e0a6469181c475639b3baccd22a5');
-    expect(sha(agentAuthorizationText('administrator_email', AGENT_AUTH_V3))).toBe('fb39bb17177a43a6faf570f0d84ea325a8219b2fa57fae6cd25c81ed32496321');
-    expect(sha(agentAuthorizationText('administrator_bulk', AGENT_AUTH_V3))).toBe('a6dd5ef5a002358a321293161f584de158d9a08122b109cd642c9ec33c0eb85a');
-    expect(sha(agentAuthorizationText('administrator_api', AGENT_AUTH_V3))).toBe('aa8b4e74eba7ebc590a38d3250d34e6d92bede19f83fe784605131a219a96709');
+    expect(sha(agentAuthorizationText('filing_desk', AGENT_AUTH_V3))).toBe('628f5bbc50988047e48556a8580f29d713e4b25d12fc0fb8a392cb05a1468d67');
+    expect(sha(agentAuthorizationText('administrator_email', AGENT_AUTH_V3))).toBe('b7ada960399b8c9925275c286d2aa9636c1768caa980ee9afb0331bfcda6754a');
+    expect(sha(agentAuthorizationText('administrator_bulk', AGENT_AUTH_V3))).toBe('7d23e7b631e5753b02ec3351474352d927961575c511a9c89f2780332c75de1c');
+    expect(sha(agentAuthorizationText('administrator_api', AGENT_AUTH_V3))).toBe('2c7bf11156f8b72617c8b13368694940dea30fb43e170b738ce2d483b58401c8');
   });
 });
 
@@ -125,8 +126,8 @@ describe('the version new members sign', () => {
     expect(agentAuthorizationText('filing_desk')).toBe(agentAuthorizationText('filing_desk', AGENT_AUTH_V3));
   });
 
-  it('defaults to v3 when FEE_DISCLOSURE_ENABLED is on and the version is unset', () => {
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', '1');
+  it('defaults to v3 when SUBSCRIPTION_BILLING_ENABLED is on and the version is unset', () => {
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
     expect(currentAuthorizationVersion()).toBe(AGENT_AUTH_V3);
     vi.stubEnv('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2');
     expect(currentAuthorizationVersion()).toBe(AGENT_AUTH_V2);

@@ -13,24 +13,46 @@ export const OFFICIAL_FILING_IS_FREE = 'Filing on the official site is always fr
 export const FILING_FREE_WARNING = OFFICIAL_FILING_IS_FREE;
 
 /**
- * Recovery share, in percent. Owner decision: Lawsuit AI files the claim and
- * charges this share only if the user is paid. Public pages show this only
- * when FEE_DISCLOSURE_ENABLED=1.
+ * Membership price and trial. Public pages show this only when
+ * SUBSCRIPTION_BILLING_ENABLED=1. Interpolate from these constants so the
+ * dollar amount cannot drift across Pricing, Terms, FAQ, and e-sign text.
  */
-export const CLAIMMATCH_FEE_RATE = 15;
+export const CLAIMMATCH_TRIAL_DAYS = 7;
+export const CLAIMMATCH_MEMBERSHIP_PRICE_CENTS = 1999;
 
-export function feeEveryClaimCopy(rate = CLAIMMATCH_FEE_RATE): string {
+export function membershipPriceCopy(cents = CLAIMMATCH_MEMBERSHIP_PRICE_CENTS): string {
+  const dollars = (cents / 100).toFixed(2);
+  return `$${dollars}`;
+}
+
+/** Public membership sentence: free browsing/self-file, paid Easy submit + alerts. */
+export function membershipCopy(
+  trialDays = CLAIMMATCH_TRIAL_DAYS,
+  price = membershipPriceCopy(),
+): string {
   return (
-    `Lawsuit AI files the claim for you and charges ${rate} percent only if you get paid. ` +
-    'The fee is billed separately by invoice after the settlement administrator pays you. ' +
-    'Matching is free, and filing yourself on the official site is free. If you recover nothing, you owe $0. ' +
-    'Lawsuit AI never holds or redirects settlement funds. The settlement administrator pays you directly.'
+    `Browsing, matching, and filing yourself on official settlement sites stay free. ` +
+    `Easy submit and new-claim alerts are included with Lawsuit AI membership: a ${trialDays}-day free trial, then ${price} a month, cancel anytime. ` +
+    `Lawsuit AI takes 0 percent of your settlement payouts. Administrators pay you directly and you keep 100 percent. ` +
+    `Lawsuit AI never holds or redirects settlement funds.`
   );
+}
+
+export function startTrialCtaLabel(
+  trialDays = CLAIMMATCH_TRIAL_DAYS,
+  price = membershipPriceCopy(),
+): string {
+  return `Start ${trialDays}-day free trial (${price}/mo after)`;
+}
+
+/** @deprecated Use membershipCopy. Same public membership sentence. */
+export function feeEveryClaimCopy(): string {
+  return membershipCopy();
 }
 
 /**
  * Who files, for public pages. True when Lawsuit AI may file some claims for
- * the member: the fee disclosure says so (FEE_DISCLOSURE_ENABLED) or one-click
+ * the member: membership copy is on (SUBSCRIPTION_BILLING_ENABLED) or one-click
  * filing is on (ONE_CLICK_FILING_ENABLED). Off: "never files for you" stays true.
  */
 export function lawsuitAiMayFile(
@@ -245,9 +267,9 @@ export function operatorLine(
   return `${SITE.name} is operated by ${name}, a ${OPERATOR_JURISDICTION} limited liability company.`;
 }
 
-/** Public cost line. Beta wording until counsel flips FEE_DISCLOSURE_ENABLED. */
+/** Public cost line. Beta wording until SUBSCRIPTION_BILLING_ENABLED is on. */
 export function publicCostNote(disclose: boolean): string {
-  return disclose ? feeEveryClaimCopy() : `${OFFICIAL_FILING_IS_FREE} ${publicBetaFeeCopy()}`;
+  return disclose ? membershipCopy() : `${OFFICIAL_FILING_IS_FREE} ${publicBetaFeeCopy()}`;
 }
 
 /** Live beta fee sentence. Neutral wording is behind PANEL_TRUST_COPY_ENABLED. */

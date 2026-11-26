@@ -204,8 +204,8 @@ export function eightEasySubmitOwnerApplySql(
 --
 -- Apply order:
 --   1. This file (backup + drafts + desk_file).
---   2. Unrelated: supabase/migrations/0054_stripe_fee_invoices.sql when ready
---      to store fee invoices (separate, also unapplied).
+--   2. Unrelated: supabase/migrations/0054_stripe_subscriptions.sql when ready
+--      to store Stripe membership rows (separate, also unapplied).
 ${rollbackSql(slugs)}
 ${backupAndDeskFileSql(slugs)}${drafts}${deskFileUpdateSql(slugs)}
 `;

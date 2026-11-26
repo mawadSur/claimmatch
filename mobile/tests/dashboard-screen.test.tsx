@@ -262,8 +262,8 @@ describe('sections', () => {
     expect(screen.getByText(`${dashboard.introLead.text} ${dashboard.introFeeOff.text} ${dashboard.introTail.text}`)).toBeOnTheScreen();
   });
 
-  it('uses the fee-disclosure sentence when FEE_DISCLOSURE_ENABLED is on, and no greeting without a name', async () => {
-    mockFlags.FEE_DISCLOSURE_ENABLED = true;
+  it('uses the fee-disclosure sentence when SUBSCRIPTION_BILLING_ENABLED is on, and no greeting without a name', async () => {
+    mockFlags.SUBSCRIPTION_BILLING_ENABLED = true;
     serve(response({ profile: { firstName: '', onboarded: true, needsProfile: false } }));
     await renderDashboard();
     expect(

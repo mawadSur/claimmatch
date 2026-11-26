@@ -8,8 +8,8 @@
 --
 -- Apply order:
 --   1. This file (backup + drafts + desk_file).
---   2. Unrelated: supabase/migrations/0054_stripe_fee_invoices.sql when ready
---      to store fee invoices (separate, also unapplied).
+--   2. Unrelated: supabase/migrations/0054_stripe_subscriptions.sql when ready
+--      to store Stripe membership rows (separate, also unapplied).
 
 -- Rollback (owner only; do not run from CI):
 --   update public.lawsuits l

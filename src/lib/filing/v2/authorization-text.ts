@@ -14,15 +14,16 @@
  * agent-auth-v1: the desk agent stops at any code, robot check or identity check.
  * agent-auth-v2 (founder decision 2026-11-15): the same text, except a person
  *   at the desk may complete a CAPTCHA by hand on the official site.
- * agent-auth-v3 (counsel 2026-11-26): v2 how-it-will-be-submitted, plus the
- *   recovery-only fee on Easy submit claims Lawsuit AI submitted.
+ * agent-auth-v3: v2 how-it-will-be-submitted, plus membership (7-day free
+ *   trial, then $19.99/month) and no percentage of settlement payments.
+ *   Not yet in production; v1 and v2 text never change.
  *
  * Members sign the current version via AGENT_AUTH_CURRENT_VERSION. With that
- * unset, FEE_DISCLOSURE_ENABLED defaults new signatures to v3. Existing
+ * unset, SUBSCRIPTION_BILLING_ENABLED defaults new signatures to v3. Existing
  * signatures keep the version they were signed under. v1 and v2 text never
  * changes.
  */
-import { CLAIMMATCH_FEE_RATE } from '@/lib/copy';
+import { CLAIMMATCH_TRIAL_DAYS, membershipPriceCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import type { AgentChannel, DeskChallengeMode } from './contract-spec';
 
@@ -38,7 +39,7 @@ export type AgentAuthorizationVersion = (typeof AGENT_AUTHORIZATION_VERSIONS)[nu
  *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v3 → v3
  *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v2 → v2
  *   AGENT_AUTH_CURRENT_VERSION=agent-auth-v1 → v1
- *   unset + FEE_DISCLOSURE_ENABLED=1 → v3
+ *   unset + SUBSCRIPTION_BILLING_ENABLED=1 → v3
  *   otherwise → v1
  * Existing signatures keep the version they were signed under.
  */
@@ -46,7 +47,7 @@ export function currentAuthorizationVersion(): AgentAuthorizationVersion {
   if (flags.agentAuthV3()) return AGENT_AUTH_V3;
   if (flags.agentAuthV2()) return AGENT_AUTH_V2;
   if (flags.agentAuthV1()) return AGENT_AUTH_V1;
-  return flags.feeDisclosure() ? AGENT_AUTH_V3 : AGENT_AUTH_V1;
+  return flags.subscriptionBilling() ? AGENT_AUTH_V3 : AGENT_AUTH_V1;
 }
 
 const HOW_V1: Readonly<Record<AgentChannel, string>> = {
@@ -78,7 +79,9 @@ function isKnownVersion(version: string): version is AgentAuthorizationVersion {
 
 function feeBullet(version: AgentAuthorizationVersion): string {
   if (version === AGENT_AUTH_V3) {
-    return `- If Lawsuit AI submitted this claim for me and I recover money from it, Lawsuit AI charges ${CLAIMMATCH_FEE_RATE} percent of that recovery, billed separately by invoice after the settlement administrator pays me. If I recover nothing, I owe $0. Filing this claim myself on the official settlement site is free.`;
+    return (
+      `- Lawsuit AI does not take a percentage of my settlement payment. Easy submit is included with my Lawsuit AI membership (${CLAIMMATCH_TRIAL_DAYS}-day free trial, then ${membershipPriceCopy()}/month, cancel anytime). Filing a claim myself on the official settlement site is free.`
+    );
   }
   return '- Lawsuit AI does not charge me a fee for this claim. Filing a claim myself on the official settlement site is free.';
 }

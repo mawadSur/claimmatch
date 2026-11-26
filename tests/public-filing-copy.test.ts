@@ -77,7 +77,7 @@ beforeEach(() => {
   vi.stubEnv('INTERNAL_EMAILS', TESTER);
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://127.0.0.1:54321');
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon');
-  vi.stubEnv('FEE_DISCLOSURE_ENABLED', '');
+  vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '');
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -113,7 +113,7 @@ describe('settlementFilingMode', () => {
 
   it('the fee disclosure alone means Lawsuit AI may file: self_file, no lane read', async () => {
     setMode('off');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', '1');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
     expect(viewerMayFile(null)).toBe(true);
     expect(await settlementFilingMode({ lawsuitId: LAWSUIT_ID, viewer: null })).toBe('self_file');
     expect(m.loadSettlementEnvs).not.toHaveBeenCalled();

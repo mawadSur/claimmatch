@@ -15,7 +15,7 @@ export const CLIENT_FLAG_NAMES = [
   'ASSISTED_FILING_ENABLED',
   'PAYOUT_REPORT_ENABLED',
   'MATCH_METRICS_ENABLED',
-  'FEE_DISCLOSURE_ENABLED',
+  'SUBSCRIPTION_BILLING_ENABLED',
   'CATALOG_HIDE_UNKNOWNS_ENABLED',
   'ONE_CLICK_FILING_ENABLED',
 ] as const;
@@ -182,11 +182,14 @@ export const flags = {
    */
   payoutReport: () => on('PAYOUT_REPORT_ENABLED'),
   /**
-   * Public recovery-only fee on Easy submit claims Lawsuit AI submitted.
-   * Off: the site keeps saying it is free during beta. Counsel has signed off
-   * on turning this on with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.
+   * 7-day free trial, then $19.99/month membership. Unlocks Easy submit and
+   * new-claim alerts. Off: Easy submit stays ungated and public copy stays
+   * free-during-beta. On only when set to exactly "1". Pair with
+   * AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.
    */
-  feeDisclosure: () => on('FEE_DISCLOSURE_ENABLED'),
+  subscriptionBilling: () => on('SUBSCRIPTION_BILLING_ENABLED'),
+  /** Same switch as subscriptionBilling (the env var replaced FEE_DISCLOSURE_ENABLED). */
+  feeDisclosure: () => on('SUBSCRIPTION_BILLING_ENABLED'),
   /**
    * After N consecutive successful-feed misses, queue the open SettleSignal
    * row on /admin for a person to close or keep. Never auto-closes. Off: the

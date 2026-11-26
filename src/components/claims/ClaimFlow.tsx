@@ -88,7 +88,14 @@ export function ClaimFlow({
     setClaim(next);
     if (message) setAnnouncement(message);
   }, []);
-  const oc = useOneClickClaim({ oneClick, claim, lawsuitId: settlement.id, setClaim, announce: setAnnouncement });
+  const oc = useOneClickClaim({
+    oneClick,
+    claim,
+    lawsuitId: settlement.id,
+    claimPath: `/claim/${encodeURIComponent(settlement.slug)}`,
+    setClaim,
+    announce: setAnnouncement,
+  });
   // The retired assisted-filing form never shows while one-click filing is on.
   const stepsSettlement = oc ? { ...settlement, assistedFilingAllowed: false } : settlement;
 

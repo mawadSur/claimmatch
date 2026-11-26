@@ -45,8 +45,8 @@ export const USER_OWNED_TABLES = [
   'claim_packets',
   'esign_consents',
   'staff_roles',
-  // Recovery-only Stripe fee invoices (0054). Deleted with the account.
-  'fee_invoices',
+  // Stripe membership (0054). Deleted with the account.
+  'subscriptions',
 ] as const;
 
 export type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
@@ -102,7 +102,7 @@ export const EXPLICIT_DELETE_ORDER = [
   'claim_packets',
   'esign_consents',
   'staff_roles',
-  'fee_invoices',
+  'subscriptions',
   'matches',
   'claims',
 ] as const;

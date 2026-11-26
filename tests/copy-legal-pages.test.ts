@@ -63,14 +63,15 @@ describe('Terms and Privacy', () => {
     expect(privacy).toMatch(/new accounts start opted out/i);
   });
 
-  it('terms describe self-file default, one-click agency, and the gated recovery-only fee', () => {
+  it('terms describe self-file default, one-click agency, and the gated membership', () => {
     expect(terms).toMatch(/does not file, submit or sign claims for you/);
     expect(terms).toMatch(/not a law firm/);
     expect(terms).toMatch(/14\. One-click filing/);
     expect(terms).toMatch(/withdraw before filing starts/);
-    expect(terms).toMatch(/CLAIMMATCH_FEE_RATE/);
-    expect(terms).toMatch(/percent of what you recover/);
-    expect(terms).toMatch(/billed separately by invoice/);
+    expect(terms).toMatch(/CLAIMMATCH_TRIAL_DAYS/);
+    expect(terms).toMatch(/membershipCopy|membershipPriceCopy/);
+    expect(terms).toMatch(/0 percent of your settlement payouts/);
+    expect(terms).toMatch(/cancel anytime/);
     expect(terms).toMatch(/never holds or redirects settlement/);
   });
 

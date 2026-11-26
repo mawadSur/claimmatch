@@ -328,8 +328,8 @@ describe('SignupScreen', () => {
     expect(mockSignUp).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the fee-disclosure bullet when FEE_DISCLOSURE_ENABLED is on', async () => {
-    mockFlags.on = ['FEE_DISCLOSURE_ENABLED'];
+  it('shows the fee-disclosure bullet when SUBSCRIPTION_BILLING_ENABLED is on', async () => {
+    mockFlags.on = ['SUBSCRIPTION_BILLING_ENABLED'];
     await renderScreen(<SignupScreen />);
     expect(screen.getByText(auth.bulletOfficialFilingFree.text)).toBeOnTheScreen();
     expect(screen.queryByText(auth.bulletFreeForNow.text)).toBeNull();

@@ -7,8 +7,10 @@
  * (self_file -> preparing; the packet then moves to the approved spec).
  * Claims already reported or filed are never started again. Server only.
  */
+import { isEasySubmitType } from '@/lib/claim-actions';
 import { serviceRoleConfigured } from '@/lib/claims-server';
 import { isInternalEmail } from '@/lib/internal-users';
+import { userHasMembershipAccess } from '@/lib/subscriptions';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
 import { createServiceClient } from '@/lib/supabase/server';
 import { contentOf, loadClaimContext, PROFILE_COLUMNS, settlementLane, toProfileRecord, derivePacketState } from './claim-context';
@@ -61,6 +63,12 @@ export async function startFiling(caller: FilingCaller, lawsuitId: string, req: 
   // The one-click test settlement is for INTERNAL_EMAILS testers only, also once one-click is live.
   if (isTestSettlementSlug(env.settlement.slug) && !isInternalEmail(user.email)) return { ok: false, code: 'not_found' };
   const open = openForClaimsNow(env, env.approvedSpec?.content ?? null, now);
+  const startingEasySubmit =
+    isEasySubmitType(env.settlement.claim_action_type) && (!claim || claim.status === 'self_file');
+  if (startingEasySubmit) {
+    const membershipOk = await userHasMembershipAccess({ userId: user.id, email: user.email ?? null });
+    if (!membershipOk) return { ok: false, code: 'membership_required' };
+  }
 
   let created = false;
   if (!claim) {

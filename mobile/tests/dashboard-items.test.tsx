@@ -153,7 +153,7 @@ describe('dashboard copy', () => {
   it('words fees as disclosed, which is true either way, until the server flags are known', () => {
     const off = () => false;
     expect(showsFeeDisclosure({ status: 'ready', isFlagOn: off })).toBe(false);
-    expect(showsFeeDisclosure({ status: 'ready', isFlagOn: (name) => name === 'FEE_DISCLOSURE_ENABLED' })).toBe(true);
+    expect(showsFeeDisclosure({ status: 'ready', isFlagOn: (name) => name === 'SUBSCRIPTION_BILLING_ENABLED' })).toBe(true);
     expect(showsFeeDisclosure({ status: 'loading', isFlagOn: off })).toBe(true);
     expect(showsFeeDisclosure({ status: 'unavailable', isFlagOn: off })).toBe(true);
   });

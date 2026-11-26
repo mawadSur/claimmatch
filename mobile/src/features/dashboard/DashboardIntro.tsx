@@ -19,7 +19,7 @@ import { IconTile } from './parts';
  */
 
 /**
- * "Hi, {firstName}." and the header sentence, worded for FEE_DISCLOSURE_ENABLED
+ * "Hi, {firstName}." and the header sentence, worded for SUBSCRIPTION_BILLING_ENABLED
  * (plan 5), with the disclosed wording until the server's flags are known.
  */
 export function DashboardHeader({ firstName }: { firstName: string }) {

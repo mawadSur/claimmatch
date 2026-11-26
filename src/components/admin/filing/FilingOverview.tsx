@@ -9,7 +9,6 @@ import { fetchJobs, type ApiError, type Fetcher } from './api';
 import { ChannelBadge, JobStatusBadge, SlaBadge } from './Badges';
 import { formatDateTime, formatDay } from './format';
 import { CHANNEL_LABEL, JOB_STATUS_LABEL } from './labels';
-import { FeeInvoicePanel } from './FeeInvoicePanel';
 import { SettlementsTable } from './SettlementsTable';
 import { countJobs, isOpenJob, slaWarnings, URGENT_DEADLINE_DAYS } from './sla';
 import type { FilingPermissions, JobSummary } from './types';
@@ -210,8 +209,6 @@ export function FilingOverview({
           </div>
         </Panel>
       ) : null}
-
-      {permissions.isAdmin ? <FeeInvoicePanel /> : null}
 
       <SettlementsTable />
     </div>

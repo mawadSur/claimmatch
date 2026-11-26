@@ -26,9 +26,9 @@ export const dashboard = defineCopy({
     text: 'Track the claims you file on official settlement sites.',
     source: 'src/app/dashboard/page.tsx',
   },
-  /** FEE_DISCLOSURE_ENABLED on. */
+  /** SUBSCRIPTION_BILLING_ENABLED on. */
   introFeeOn: {
-    text: 'Official filing stays free.',
+    text: 'Browsing and filing yourself stay free. Easy submit is included with membership.',
     source: 'src/app/dashboard/page.tsx',
   },
   /**
@@ -311,7 +311,7 @@ export function groupHint(group: ClaimGroup): string {
   }
 }
 
-/** The header sentence, worded for FEE_DISCLOSURE_ENABLED. */
+/** The header sentence, worded for SUBSCRIPTION_BILLING_ENABLED. */
 export function introSentence(feeDisclosure: boolean): string {
   const fee = feeDisclosure ? dashboard.introFeeOn.text : dashboard.introFeeOff.text;
   return `${dashboard.introLead.text} ${fee} ${dashboard.introTail.text}`;

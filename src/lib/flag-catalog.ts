@@ -119,10 +119,10 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.payoutReport(),
   },
   {
-    env: 'FEE_DISCLOSURE_ENABLED',
+    env: 'SUBSCRIPTION_BILLING_ENABLED',
     description:
-      'Public recovery-only fee on Easy submit claims Lawsuit AI submitted. Off: free-during-beta copy. Pair with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.',
-    read: () => flags.feeDisclosure(),
+      'Monthly membership after a 7-day free trial. Unlocks Easy submit and new-claim alerts. Off: free-during-beta copy and ungated Easy submit. Pair with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.',
+    read: () => flags.subscriptionBilling(),
   },
   {
     env: 'INGEST_MISSING_CLOSE_QUEUE_ENABLED',
@@ -308,7 +308,7 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   {
     env: 'AGENT_AUTH_CURRENT_VERSION',
     description:
-      'agent-auth-v3: recovery-only fee disclosure (default when FEE_DISCLOSURE_ENABLED is on). agent-auth-v2: desk CAPTCHA by hand. agent-auth-v1 or unset with the fee off: v1. Existing signatures keep their version.',
+      'agent-auth-v3: membership disclosure (default when SUBSCRIPTION_BILLING_ENABLED is on). agent-auth-v2: desk CAPTCHA by hand. agent-auth-v1 or unset with billing off: v1. Existing signatures keep their version.',
     read: () => flags.agentAuthV2() || flags.agentAuthV3(),
   },
   {

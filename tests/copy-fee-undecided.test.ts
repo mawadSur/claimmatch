@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CLAIMMATCH_FEE_RATE, feeEveryClaimCopy } from '@/lib/copy';
+import { CLAIMMATCH_TRIAL_DAYS, feeEveryClaimCopy, membershipPriceCopy } from '@/lib/copy';
 
 const BANNED = [
   /never\s+takes?\s+a\s+cut/i,
@@ -27,9 +27,9 @@ const TBD_PHRASES = [
 async function loadSurfaces(disclose?: boolean) {
   vi.resetModules();
   if (disclose) {
-    process.env.FEE_DISCLOSURE_ENABLED = '1';
+    process.env.SUBSCRIPTION_BILLING_ENABLED = '1';
   } else {
-    delete process.env.FEE_DISCLOSURE_ENABLED;
+    delete process.env.SUBSCRIPTION_BILLING_ENABLED;
   }
   const { FeeDisclosure } = await import('@/components/FeeDisclosure');
   const { HowWeMakeMoney } = await import('@/components/HowWeMakeMoney');
@@ -47,7 +47,7 @@ function expectNoBanned(html: string) {
 }
 
 afterEach(() => {
-  delete process.env.FEE_DISCLOSURE_ENABLED;
+  delete process.env.SUBSCRIPTION_BILLING_ENABLED;
   vi.resetModules();
 });
 
@@ -80,36 +80,41 @@ describe('fee copy while disclosure is off (beta)', () => {
   });
 });
 
-describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
-  it('FeeDisclosure says Lawsuit AI files and charges only if paid', async () => {
+describe('fee copy when SUBSCRIPTION_BILLING_ENABLED=1', () => {
+  it('FeeDisclosure says membership, no percentage of payouts', async () => {
     const { FeeDisclosure } = await loadSurfaces(true);
     const html = htmlOf(FeeDisclosure);
     expect(html).toContain(feeEveryClaimCopy());
-    expect(html).toContain(`${CLAIMMATCH_FEE_RATE} percent`);
-    expect(html).toContain('files the claim for you');
-    expect(html).toContain('only if you get paid');
+    expect(html).toContain(`${CLAIMMATCH_TRIAL_DAYS}-day free trial`);
+    expect(html).toContain(`${membershipPriceCopy()} a month`);
+    expect(html).toContain('0 percent of your settlement payouts');
     expect(html).not.toContain('You always file on the official site');
     expect(html).not.toContain('Lawsuit AI never files for you');
     expect(html).not.toContain('free during beta');
     expect(html).not.toContain('We may introduce a fee later');
     expect(html).not.toContain('15%');
+    expect(html).not.toContain('15 percent');
     expectNoBanned(html);
   });
 
-  it('Footer, Terms short summary and FAQ say the recovery-only invoice fee with no leftover $0 cut promise', async () => {
-    process.env.FEE_DISCLOSURE_ENABLED = '1';
+  it('Footer, Terms short summary and FAQ say membership with no leftover $0 cut promise', async () => {
+    process.env.SUBSCRIPTION_BILLING_ENABLED = '1';
     vi.resetModules();
     const { Footer } = await import('@/components/Footer');
     const { default: TermsPage } = await import('@/app/terms/page');
     const { homeFaqItems } = await import('@/components/home/HomeFaq');
+    const { membershipPriceCopy: price } = await import('@/lib/copy');
     const footer = htmlOf(Footer);
-    expect(footer).toContain(`${CLAIMMATCH_FEE_RATE} percent recovery-only fee`);
-    expect(footer).toContain('invoice after payout');
+    expect(footer).toContain(`${CLAIMMATCH_TRIAL_DAYS}-day free trial`);
+    expect(footer).toContain(`${price()} a month`);
+    expect(footer).toContain('0 percent of settlement payouts');
     expect(footer).not.toContain('Free during beta');
     expect(footer).not.toContain('15%');
     const terms = htmlOf(TermsPage);
-    expect(terms).toContain(`${CLAIMMATCH_FEE_RATE} percent recovery-only fee`);
-    expect(terms).toContain('Lawsuit AI submitted for you');
+    expect(terms).toContain(`${CLAIMMATCH_TRIAL_DAYS}-day free trial`);
+    expect(terms).toContain('0 percent of your settlement payouts');
+    expect(terms).toContain('cancel anytime');
+    expect(terms).not.toContain('Lawsuit AI submitted for you');
     expect(terms).not.toContain('never takes a share of it');
     expect(terms).not.toContain('We never take a share of any settlement payment.');
     const faq = homeFaqItems(true, true)
@@ -120,16 +125,17 @@ describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
     expect(faq).not.toContain('15%');
   });
 
-  it('HowWeMakeMoney swaps the beta bullets for the paid-if-recovered fee', async () => {
+  it('HowWeMakeMoney swaps the beta bullets for membership', async () => {
     const { HowWeMakeMoney } = await loadSurfaces(true);
     const html = htmlOf(HowWeMakeMoney);
     expect(html).toContain(feeEveryClaimCopy());
     expect(html).toContain('Copy-ready details');
-    expect(html).toContain('processes and submits it');
+    expect(html).toContain('Easy submit and new-claim alerts are included with membership');
     expect(html).toContain('href="/pricing"');
     expect(html).not.toContain('Lawsuit AI never files for you');
     expect(html).not.toContain('don’t run ads or sell paid plans today');
     expect(html).not.toContain('We may introduce a fee later');
+    expect(html).not.toContain('processes and submits it');
     expect(html).not.toContain('Draft');
     expect(html).not.toContain('counsel');
     expect(html).not.toContain('15%');

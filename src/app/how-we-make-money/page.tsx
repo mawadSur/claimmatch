@@ -3,14 +3,14 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
 import { Disclaimer } from '@/components/Disclaimer';
-import { feeEveryClaimCopy } from '@/lib/copy';
+import { membershipCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
 export function generateMetadata(): Metadata {
   const disclose = flags.feeDisclosure();
   const description = disclose
-    ? feeEveryClaimCopy()
+    ? membershipCopy()
     : flags.oneClickFiling()
       ? 'Lawsuit AI is free during beta: copy-ready details, plus one-click filing through the official site for some settlements.'
       : 'Lawsuit AI is free during beta; copy-ready details; you file on the official site.';

@@ -122,7 +122,7 @@ describe('FAQ', () => {
 
   it('money and badge surfaces drop "never files" when one-click filing is on', () => {
     vi.stubEnv('ONE_CLICK_FILING_ENABLED', '1');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', '');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '');
     try {
       for (const el of [createElement(HowWeMakeMoney), createElement(FeeDisclosure), createElement(TrustBadges)]) {
         const html = renderToStaticMarkup(el);

@@ -98,7 +98,7 @@ describe('clientFlagValues', () => {
       'ASSISTED_FILING_ENABLED',
       'PAYOUT_REPORT_ENABLED',
       'MATCH_METRICS_ENABLED',
-      'FEE_DISCLOSURE_ENABLED',
+      'SUBSCRIPTION_BILLING_ENABLED',
       'CATALOG_HIDE_UNKNOWNS_ENABLED',
       'ONE_CLICK_FILING_ENABLED',
     ]);
@@ -108,13 +108,13 @@ describe('clientFlagValues', () => {
     for (const name of CLIENT_FLAG_NAMES) vi.stubEnv(name, '');
     vi.stubEnv('MATCH_EMAILS_ENABLED', '1');
     vi.stubEnv('ASSISTED_FILING_ENABLED', '1');
-    vi.stubEnv('FEE_DISCLOSURE_ENABLED', 'true');
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', 'true');
 
     const values = clientFlagValues();
     expect(Object.keys(values).sort()).toEqual([...CLIENT_FLAG_NAMES].sort());
     expect(Object.values(values).every((value) => typeof value === 'boolean')).toBe(true);
     expect(values.ASSISTED_FILING_ENABLED).toBe(true);
-    expect(values.FEE_DISCLOSURE_ENABLED).toBe(false);
+    expect(values.SUBSCRIPTION_BILLING_ENABLED).toBe(false);
     expect(values).not.toHaveProperty('MATCH_EMAILS_ENABLED');
   });
 

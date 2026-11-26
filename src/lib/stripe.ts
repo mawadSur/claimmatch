@@ -14,6 +14,11 @@ export function stripeWebhookSecret(): string | null {
   return secret || null;
 }
 
+export function stripePriceId(): string | null {
+  const id = process.env.STRIPE_PRICE_ID?.trim();
+  return id || null;
+}
+
 let cached: Stripe | null | undefined;
 
 /** Null when STRIPE_SECRET_KEY is unset. Callers must handle that. */
@@ -34,7 +39,10 @@ export function resetStripeClientForTests(): void {
 }
 
 export const STRIPE_NOT_CONFIGURED =
-  'Stripe is not configured. Set STRIPE_SECRET_KEY in Vercel before sending fee invoices.';
+  'Stripe is not configured. Set STRIPE_SECRET_KEY in Vercel before starting a membership.';
+
+export const STRIPE_PRICE_NOT_CONFIGURED =
+  'Stripe is not configured. Set STRIPE_PRICE_ID in Vercel to the $19.99/month Price.';
 
 export const STRIPE_WEBHOOK_NOT_CONFIGURED =
   'Stripe webhook is not configured. Set STRIPE_WEBHOOK_SECRET in Vercel.';

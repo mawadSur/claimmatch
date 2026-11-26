@@ -26,6 +26,8 @@ import {
   openGuidedCatalog,
 } from '@/lib/settlement-guides';
 import { createServiceClient, isSupabaseConfigured } from '@/lib/supabase/server';
+import { flags } from '@/lib/flags';
+import { paidMembershipUserIds, staffBypassesMembership } from '@/lib/subscriptions';
 import { SITE } from '@/lib/utils';
 import type { Lawsuit, Profile, ProfileFact } from '@/lib/types';
 
@@ -100,14 +102,25 @@ export async function sendMatchAlerts(opts: {
 
   const { data: profileData, error: profileErr } = await supabase
     .from('profiles')
-    .select('id, email, full_name, state, attributes, email_opt_in')
+    .select('id, email, full_name, state, attributes, email_opt_in, is_admin, is_internal')
     .eq('email_opt_in', true);
   if (profileErr) {
     throw new Error(`[match-alert] loading profiles failed: ${profileErr.message}`);
   }
-  const profiles = ((profileData ?? []) as Array<
-    Pick<Profile, 'id' | 'email' | 'full_name' | 'state' | 'attributes' | 'email_opt_in'>
+  let profiles = ((profileData ?? []) as Array<
+    Pick<Profile, 'id' | 'email' | 'full_name' | 'state' | 'attributes' | 'email_opt_in'> & {
+      is_admin?: boolean | null;
+      is_internal?: boolean | null;
+    }
   >).filter((row) => row.email && row.email.includes('@'));
+  if (flags.subscriptionBilling()) {
+    const paid = await paidMembershipUserIds(profiles.map((p) => p.id));
+    profiles = profiles.filter(
+      (row) =>
+        paid.has(row.id) ||
+        staffBypassesMembership({ isAdmin: row.is_admin, isInternal: row.is_internal, email: row.email }),
+    );
+  }
 
   const optedOutEmails = new Set<string>();
   const { data: optedOut } = await supabase
@@ -152,21 +165,23 @@ export async function sendMatchAlerts(opts: {
       },
     });
   }
-  for (const raw of subscriberData ?? []) {
-    const row = raw as {
-      email: string;
-      state?: string | null;
-      interests?: string[] | null;
-      unsubscribed_at?: string | null;
-    };
-    const email = normalizeAlertEmail(row.email);
-    if (profileEmails.has(email) || optedOutEmails.has(email)) continue;
-    people.push({
-      email,
-      source: 'subscriber',
-      state: row.state ?? null,
-      interests: row.interests ?? [],
-    });
+  if (!flags.subscriptionBilling()) {
+    for (const raw of subscriberData ?? []) {
+      const row = raw as {
+        email: string;
+        state?: string | null;
+        interests?: string[] | null;
+        unsubscribed_at?: string | null;
+      };
+      const email = normalizeAlertEmail(row.email);
+      if (profileEmails.has(email) || optedOutEmails.has(email)) continue;
+      people.push({
+        email,
+        source: 'subscriber',
+        state: row.state ?? null,
+        interests: row.interests ?? [],
+      });
+    }
   }
 
   if (people.length === 0) {

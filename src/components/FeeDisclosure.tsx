@@ -4,8 +4,8 @@ import { flags } from '@/lib/flags';
 
 /**
  * Single public fee surface. Default: free during beta. When
- * FEE_DISCLOSURE_ENABLED=1, states that Lawsuit AI files the claim and
- * charges a recovery share only if the user is paid.
+ * SUBSCRIPTION_BILLING_ENABLED=1, states the 7-day trial then $19.99/month
+ * membership.
  */
 export function FeeDisclosure({
   compact = false,

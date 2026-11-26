@@ -154,7 +154,7 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   },
   // src/lib/copy.ts: exact texts only, so a new filing claim there always needs its own entry.
   { file: 'src/lib/copy.ts', rule: 'we file',
-    reason: 'Counsel-approved core message while ONE_CLICK_FILING_ENABLED or FEE_DISCLOSURE_ENABLED is on: “We file claims for you on supported settlements” site-wide, and “We file this claim for you” on agent-lane settlements. FILE_FOR_YOU_CTA remains ASSISTED_FILING_ENABLED-only.' },
+    reason: 'Counsel-approved core message while ONE_CLICK_FILING_ENABLED or SUBSCRIPTION_BILLING_ENABLED is on: “We file claims for you on supported settlements” site-wide, and “We file this claim for you” on agent-lane settlements. FILE_FOR_YOU_CTA remains ASSISTED_FILING_ENABLED-only.' },
   { file: 'src/lib/utils.ts', rule: 'we file', reason: 'Site meta description uses the supported-settlements filing sentence.' },
   { file: 'src/lib/llms-txt.ts', rule: 'we file', reason: '/llms.txt reuses SITE.description.' },
   { file: 'src/lib/email.ts', rule: 'we file', reason: 'Transactional emails mention filing on supported settlements when one-click is on.' },
@@ -202,20 +202,8 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   { file: 'mobile/src/copy/auth.ts', rule: 'we file', reason: 'App signup copy while one-click is on.' },
   { file: 'mobile/src/copy/catalog.ts', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'App catalog intro matches CATALOG_INTRO_MAY_FILE Easy submit line.' },
   { file: 'mobile/src/copy/store.ts', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'Store listing draft matches MAY_FILE_SHORT_SENTENCE / FILE_OR_EASY_SUBMIT.' },
-  {
-    file: 'src/lib/filing/v2/authorization-text.ts',
-    rule: 'we submit',
-    text: 'Lawsuit AI submitted this claim',
-    reason: 'agent-auth-v3 fee bullet: recovery-only fee only if Lawsuit AI submitted the claim.',
-  },
-  {
-    file: 'src/lib/flag-catalog.ts',
-    rule: 'we submit',
-    text: 'Lawsuit AI submitted',
-    reason: 'FEE_DISCLOSURE_ENABLED catalog description: recovery-only fee on Easy submit claims Lawsuit AI submitted.',
-  },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
-    reason: 'Owner: fee disclosure says Lawsuit AI files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.' },
+    reason: 'Owner: fee disclosure and may-file sentences that name Lawsuit AI as the filer, shown only when SUBSCRIPTION_BILLING_ENABLED or ONE_CLICK_FILING_ENABLED is on.' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
     reason: 'Legal/disclaimer sentences that still name Lawsuit AI as the filer (MAY_FILE_LEGAL_SENTENCE, CLAIM_AGENT_LEGAL_SENTENCE).' },
   { file: 'src/lib/copy.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
@@ -253,12 +241,6 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     rule: 'you are owed',
     text: 'Signed-in matches dashboard “You might be owed” header from listed settlement payout ranges. Off: hidden.',
     reason: 'Admin /admin/flags description of OWED_ESTIMATE_HEADER_ENABLED, not a public payout promise.',
-  },
-  {
-    file: 'src/app/terms/page.tsx',
-    rule: 'we submit',
-    text: 'Lawsuit AI submitted',
-    reason: 'Counsel 2026-11-26: Terms §8/§14 recovery-only fee applies only to Easy submit claims Lawsuit AI submitted.',
   },
   {
     file: 'src/app/terms/page.tsx',

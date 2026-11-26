@@ -42,9 +42,9 @@ const TRUST_BULLETS = [
 ];
 
 const DISCLOSED_BULLETS = [
-  'Official filing on the administrator’s site stays free.',
-  'Browse settlements that are open for claims.',
-  'Keep track of the claims you file on official sites.',
+  'Browsing, matching, and filing yourself on official sites stay free.',
+  'Easy submit and new-claim alerts are included with membership after a free trial.',
+  'You keep 100 percent of settlement payouts.',
 ];
 
 function AuthFormFallback() {
