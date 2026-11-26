@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Badge, Card, Notice } from '@/components/ui';
 import { Clock } from '@/components/ui/icons';
 import { onboarding, onboardingHowStep3Text, onboardingIntroText } from '@/copy/onboarding';
+import { showsFeeDisclosure } from '@/lib/flags';
 import { useConfig } from '@/providers/ConfigProvider';
 import { colors, radii, space } from '@/theme/tokens';
 
@@ -12,12 +13,14 @@ import { colors, radii, space } from '@/theme/tokens';
  * on), how Lawsuit AI works, and "Email confirmed." after an email link.
  */
 export function OnboardingIntro({ emailConfirmed }: { emailConfirmed: boolean }) {
-  const mayFile = useConfig().isFlagOn('ONE_CLICK_FILING_ENABLED');
-  const intro = onboardingIntroText(mayFile);
+  const config = useConfig();
+  const mayFile = config.isFlagOn('ONE_CLICK_FILING_ENABLED');
+  const disclose = showsFeeDisclosure(config);
+  const intro = onboardingIntroText(mayFile, disclose);
   const howItWorks = [
     onboarding.howStep1.text,
     onboarding.howStep2.text,
-    onboardingHowStep3Text(mayFile),
+    onboardingHowStep3Text(mayFile, disclose),
     onboarding.howStep4.text,
   ];
   return (

@@ -28,7 +28,14 @@ function badgeParts(deadline: string | null): { month: string; day: string } | n
   };
 }
 
-export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
+export function HomeSettlementList({
+  lawsuits,
+  easySubmitIds,
+}: {
+  lawsuits: Lawsuit[];
+  /** Approved filing spec + policy IDs (oneClickLawsuitIdSet). */
+  easySubmitIds?: ReadonlySet<string>;
+}) {
   return (
     <ul className="divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
       {lawsuits.map((lawsuit, i) => {
@@ -66,7 +73,10 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                   <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                     {lawsuit.category}
                   </span>
-                  <EasySubmitBadge type={lawsuit.claim_action_type} />
+                  <EasySubmitBadge
+                    type={lawsuit.claim_action_type}
+                    approved={easySubmitIds?.has(lawsuit.id) ?? false}
+                  />
                   <VerifiedBadge lawsuit={lawsuit} />
                   <ClosesInChip deadline={lawsuit.deadline} />
                   {!flags.closesInChips() && urgency && (
@@ -113,7 +123,10 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                     : 'Not open for claims'}
                 </p>
               ) : open ? (
-                <HomeRowCta lawsuit={lawsuit} />
+                <HomeRowCta
+                  lawsuit={lawsuit}
+                  approved={easySubmitIds?.has(lawsuit.id) ?? false}
+                />
               ) : (
                 <p className="rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-semibold text-ink-muted">
                   Claims closed
@@ -134,16 +147,23 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
   );
 }
 
-function HomeRowCta({ lawsuit }: { lawsuit: Lawsuit }) {
+function HomeRowCta({
+  lawsuit,
+  approved = false,
+}: {
+  lawsuit: Lawsuit;
+  approved?: boolean;
+}) {
   const official = officialLinkFor(lawsuit);
   const href = flags.claimActionCtas()
     ? cardCtaHref({
         type: lawsuit.claim_action_type,
         slug: lawsuit.slug,
         officialHref: official?.kind === 'official' ? official.href : null,
+        approved,
       })
     : `/claim/${lawsuit.slug}`;
-  const label = flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type) : START_CLAIM_CTA;
+  const label = flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type, approved) : START_CLAIM_CTA;
   const className = 'btn-primary w-full !py-2.5 sm:w-auto';
   const body = (
     <>

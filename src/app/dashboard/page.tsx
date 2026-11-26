@@ -139,19 +139,20 @@ export default async function DashboardPage({
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
             {firstName ? `Hi, ${firstName}.` : 'Your claims'}
           </h1>
-          {oneClick ? (
-            <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">{ONE_CLICK_COPY.dashboardIntro}</p>
-          ) : (
-            <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
-              Track the claims you file on official settlement sites.{' '}
-              {flags.feeDisclosure()
-                ? 'Browsing and filing yourself stay free. Easy submit is included with membership.'
-                : 'Lawsuit AI is free during beta.'}{' '}
-              {lawsuitAiMayFile()
-                ? WE_FILE_SUPPORTED_SENTENCE
-                : 'It doesn’t file for you and never handles settlement payments.'}
-            </p>
-          )}
+          <p className="mt-2 max-w-2xl leading-relaxed text-ink-muted">
+            {oneClick
+              ? ONE_CLICK_COPY.dashboardIntro
+              : `Track the claims you file on official settlement sites. ${
+                  lawsuitAiMayFile()
+                    ? WE_FILE_SUPPORTED_SENTENCE
+                    : 'It doesn’t file for you and never handles settlement payments.'
+                }`}{' '}
+            {flags.feeDisclosure()
+              ? ONE_CLICK_COPY.dashboardMembership
+              : oneClick
+                ? ''
+                : 'Lawsuit AI is free during beta.'}
+          </p>
         </header>
         {!user.email_confirmed_at && (
           <ConfirmEmailBanner email={user.email ?? null} />

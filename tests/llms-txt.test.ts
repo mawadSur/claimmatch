@@ -85,6 +85,20 @@ describe('officialGuideLinks', () => {
   });
 });
 
+describe('membership /llms.txt', () => {
+  it('uses membership copy when SUBSCRIPTION_BILLING_ENABLED is on', () => {
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
+    const body = renderLlmsTxt({
+      categoryHubs: [{ name: 'Data Breach', path: '/settlements/category/data-breach' }],
+    });
+    expect(body).toContain('7-day free trial');
+    expect(body).toContain('$19.99');
+    expect(body).not.toMatch(/free during beta/i);
+    expect(body).not.toMatch(/Free claim assistant/i);
+    expect(body).toMatch(/0 percent of payouts/i);
+  });
+});
+
 describe('GET /llms.txt', () => {
   it('returns 404 when LLMS_TXT_ENABLED is off', async () => {
     vi.stubEnv('LLMS_TXT_ENABLED', '');

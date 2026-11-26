@@ -83,7 +83,7 @@ async function readyClaim(headers: Record<string, string> = {}) {
   const id = start.filing.claim.id as string;
   const body = { revision: 1, answers: { purchase_count: 2 }, benefit_tier: 'basic', payout_method: 'check', class_definition_confirmed: true };
   const saved = await json(await PATCH(jsonRequest(`/api/filing/claims/${id}/packet`, 'PATCH', body, headers), params(id)), 200);
-  await json(await post(CONSENT, id, 'esign-consent', { accepted: true, text_version: 'esign-v1' }, headers), 201);
+  await json(await post(CONSENT, id, 'esign-consent', { accepted: true, text_version: 'esign-v2' }, headers), 201);
   const packet = saved.filing.packet;
   const sign = {
     packet_hash: packet.packet_hash as string,

@@ -41,7 +41,7 @@ export function LawsuitCard({
   badge,
   reasons,
   href,
-  fileForYou: _fileForYou = false,
+  fileForYou = false,
 }: {
   lawsuit: Lawsuit;
   badge?: { label: string; tone?: 'brand' | 'green' | 'red' | 'gray' };
@@ -77,7 +77,7 @@ export function LawsuitCard({
       <div className="flex items-start justify-between gap-3">
         <span className={badgeClass}>{shownBadge?.label ?? lawsuit.category}</span>
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
-          <EasySubmitBadge type={lawsuit.claim_action_type} />
+          <EasySubmitBadge type={lawsuit.claim_action_type} approved={fileForYou} />
           <VerifiedBadge lawsuit={lawsuit} />
           <ClosesInChip deadline={lawsuit.deadline} />
           {!flags.closesInChips() && urgency && (
@@ -176,8 +176,9 @@ export function LawsuitCard({
                 type: flags.claimActionCtas() ? lawsuit.claim_action_type : null,
                 slug: lawsuit.slug,
                 officialHref: official?.kind === 'official' ? official.href : null,
+                approved: fileForYou,
               })}
-              label={flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type) : START_CLAIM_CTA}
+              label={flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type, fileForYou) : START_CLAIM_CTA}
               title={lawsuit.title}
             />
             <Link href={detailsHref} className="btn-secondary min-w-0 grow basis-20 px-3">

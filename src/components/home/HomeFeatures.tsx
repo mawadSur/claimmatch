@@ -12,7 +12,9 @@ interface Feature {
   body: string;
 }
 
-type FeatureFlags = Pick<typeof flags, 'deadlineReminders' | 'matchAlertEmails' | 'noticeLookup'>;
+type FeatureFlags = Pick<typeof flags, 'deadlineReminders' | 'matchAlertEmails' | 'noticeLookup'> & {
+  feeDisclosure?: typeof flags.feeDisclosure;
+};
 
 /**
  * What the product does today. Same rule as HomeTrust: every line must stay
@@ -52,7 +54,9 @@ export function homeFeatures(f: FeatureFlags = flags): Feature[] {
     list.push({
       icon: MailPlus,
       title: 'New match alerts',
-      body: 'Opt in and we email you when a newly verified settlement may fit your profile, at most once a week.',
+      body: (f.feeDisclosure ?? flags.feeDisclosure)()
+        ? 'Included with membership. Opt in and we email you when a newly verified settlement may fit your profile, at most once a week.'
+        : 'Opt in and we email you when a newly verified settlement may fit your profile, at most once a week.',
     });
   }
   if (f.noticeLookup()) {

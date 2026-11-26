@@ -39,11 +39,31 @@ describe('claim action types', () => {
     expect(closed.alert).toBe(NOT_OPEN_ALERT);
   });
 
-  it('promotes desk_file with Easy submit and Submit a claim', () => {
-    const desk = claimActionCta({ type: 'desk_file', slug: 'realpage-rental-software-antitrust-settlement' });
+  it('promotes desk_file with Easy submit and Submit a claim when approved', () => {
+    const desk = claimActionCta({
+      type: 'desk_file',
+      slug: 'realpage-rental-software-antitrust-settlement',
+      deskEligible: true,
+    });
     expect(desk.badge).toBe(EASY_SUBMIT_BADGE);
     expect(desk.primary?.label).toBe(SUBMIT_CLAIM_CTA);
     expect(desk.hideFileButton).toBe(false);
+  });
+
+  it('hides Easy submit on unapproved draft desk_file and falls back to the official-site CTA', () => {
+    const draft = claimActionCta({
+      type: 'desk_file',
+      slug: 'rolling-stone-magazine-lifetime-subscription',
+      officialHref: 'https://subscribe.rollingstone.com/krivin-rs',
+    });
+    expect(draft.badge).toBe('We help you prepare it');
+    expect(draft.type).toBe('online_form');
+    expect(draft.primary?.label).toBe('File on the official site');
+    expect(draft.primary?.href).toBe('https://subscribe.rollingstone.com/krivin-rs');
+    expect(cardCtaLabel('desk_file')).toBe('File on the official site');
+    expect(cardCtaLabel('desk_file', true)).toBe(SUBMIT_CLAIM_CTA);
+    expect(signupPromptFor('desk_file')?.label).toBe('Sign in to save this claim');
+    expect(signupPromptFor('desk_file', true)?.label).toBe('Sign in to Easy submit');
   });
 
   it('routes notice-id and mail-in to the public settlement page, never signup', () => {
@@ -54,9 +74,9 @@ describe('claim action types', () => {
     expect(hidesFileQualifySignup('automatic_payment')).toBe(true);
     expect(hidesFileQualifySignup('online_form')).toBe(false);
     expect(statusChipLabel('automatic_payment', true).label).toBe('No claim needed');
-    expect(cardCtaLabel('desk_file')).toBe(SUBMIT_CLAIM_CTA);
+    expect(cardCtaLabel('desk_file', true)).toBe(SUBMIT_CLAIM_CTA);
     expect(signupPromptFor('automatic_payment')).toBeNull();
-    expect(signupPromptFor('desk_file')?.label).toBe('Sign in to Easy submit');
+    expect(signupPromptFor('desk_file', true)?.label).toBe('Sign in to Easy submit');
   });
 });
 

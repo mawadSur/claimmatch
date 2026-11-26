@@ -7,15 +7,19 @@ import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { CaptureOnce } from '@/components/analytics/CaptureOnce';
 import { flags } from '@/lib/flags';
 import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
-import { MAY_FILE_PAGE_COPY, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
+import { MAY_FILE_PAGE_COPY, onboardingIntroCopy, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 import { viewerMayFile } from '@/lib/filing/public-filing';
 import { factsFromRows } from '@/lib/profile-facts';
 
-export const metadata: Metadata = {
-  title: 'Set up your profile',
-  description: 'Add a few details to your free Lawsuit AI account.',
-  robots: { index: false, follow: false },
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: 'Set up your profile',
+    description: flags.feeDisclosure()
+      ? 'Add a few details to your Lawsuit AI account.'
+      : 'Add a few details to your free Lawsuit AI account.',
+    robots: { index: false, follow: false },
+  };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +47,15 @@ export default async function OnboardingPage({
 
   // Who files (issue #53): per viewer, so a one-click tester sees the one-click text in test mode.
   const mayFile = viewerMayFile({ kind: 'member', email: user.email });
+  const disclose = flags.feeDisclosure();
   const howItWorks = mayFile
-    ? HOW_IT_WORKS.map((step, i) => (i === 2 ? MAY_FILE_PAGE_COPY.onboardingStep : step))
+    ? HOW_IT_WORKS.map((step, i) =>
+        i === 2
+          ? disclose
+            ? MAY_FILE_PAGE_COPY.onboardingStepMembership
+            : MAY_FILE_PAGE_COPY.onboardingStep
+          : step,
+      )
     : HOW_IT_WORKS;
   const profileV2 = flags.profileV2();
   const { data: profile } = await supabase
@@ -69,14 +80,7 @@ export default async function OnboardingPage({
             </span>
             <h1 className="mt-5 text-3xl font-extrabold sm:text-4xl">Welcome to Lawsuit AI</h1>
             <p className="mt-3 leading-relaxed text-ink-muted">
-              {mayFile ? (
-                <>{MAY_FILE_PAGE_COPY.onboardingIntro} Here&rsquo;s how it works:</>
-              ) : (
-                <>
-                  Lawsuit AI is a free claim assistant. It never files for you and never
-                  handles settlement payments. Here&rsquo;s how it works:
-                </>
-              )}
+              {onboardingIntroCopy(mayFile, disclose)} Here&rsquo;s how it works:
             </p>
           </div>
 

@@ -142,3 +142,21 @@ describe('fee copy when SUBSCRIPTION_BILLING_ENABLED=1', () => {
     expectNoBanned(html);
   });
 });
+
+describe('membership leftovers', () => {
+  it('SITE meta and weFileThisClaimGuide drop beta leftovers when billing is on', async () => {
+    process.env.SUBSCRIPTION_BILLING_ENABLED = '1';
+    vi.resetModules();
+    const { SITE, SITE_TAGLINE_MEMBERSHIP } = await import('@/lib/utils');
+    const { weFileThisClaimGuide, WE_FILE_THIS_CLAIM_GUIDE, inviteIntroCopy } = await import('@/lib/copy');
+    expect(SITE.tagline).toBe(SITE_TAGLINE_MEMBERSHIP);
+    expect(SITE.description).toMatch(/7-day free trial/);
+    expect(SITE.description).toMatch(/\$19\.99/);
+    expect(SITE.description).not.toMatch(/Free claim assistant/);
+    expect(SITE.description).not.toMatch(/Free\./);
+    expect(weFileThisClaimGuide()).toMatch(/Easy submit is included with membership/);
+    expect(weFileThisClaimGuide()).not.toBe(WE_FILE_THIS_CLAIM_GUIDE);
+    expect(inviteIntroCopy(true)).not.toMatch(/free during beta/i);
+    expect(inviteIntroCopy(false)).not.toMatch(/free during beta/i);
+  });
+});

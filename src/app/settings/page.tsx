@@ -185,6 +185,7 @@ export default async function SettingsPage() {
           code={profile.referral_code}
           clicks={referralClicks}
           signups={referralSignups}
+          membership={flags.feeDisclosure()}
         />
       </div>
     </div>

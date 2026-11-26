@@ -73,8 +73,8 @@ export function NotificationPrefs({
     <form onSubmit={save} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card" noValidate>
       <h2 className="text-lg font-bold">Your details and emails</h2>
       <p className="mt-1 text-sm text-ink-muted">
-        We keep these on your account. We never send them to settlement sites; you
-        enter your own details when you file on the official site.
+        We keep these on your account. Easy submit uses them after you e-sign on
+        eligible claims, or you copy them into the official form if you file yourself.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">

@@ -6,13 +6,21 @@ import {
   claimActionCta,
   claimActionOf,
   hidesFileQualifySignup,
+  isPublicEasySubmit,
   type ClaimActionDetails,
   type ClaimActionType,
 } from '@/lib/claim-actions';
 import { flags } from '@/lib/flags';
 
-export function EasySubmitBadge({ type }: { type: ClaimActionType | null | undefined }) {
-  if (!flags.claimActionCtas() || type !== 'desk_file') return null;
+export function EasySubmitBadge({
+  type,
+  approved = false,
+}: {
+  type: ClaimActionType | null | undefined;
+  /** Approved filing spec + policy. Draft desk_file rows stay hidden. */
+  approved?: boolean;
+}) {
+  if (!flags.claimActionCtas() || !isPublicEasySubmit(type, approved)) return null;
   return (
     <span className="badge-green shrink-0 gap-1" title={EASY_SUBMIT_EXPLAINER}>
       <Sparkles className="h-3 w-3" aria-hidden="true" /> {EASY_SUBMIT_BADGE}

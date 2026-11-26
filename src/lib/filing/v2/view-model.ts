@@ -28,7 +28,7 @@ import {
   type PacketState,
 } from './claim-context';
 import { toDocumentView } from './documents';
-import { ESIGN_TEXT_V1, ESIGN_TEXT_VERSION } from './esign';
+import { ESIGN_TEXT_VERSION, esignText } from './esign';
 import { buildPacketView } from './packet';
 import { tierProofs } from './packet-items';
 import { isoTime } from './records';
@@ -181,7 +181,11 @@ export function buildClaimFilingView(ctx: ClaimContext, freshSignIn: boolean): C
     packet: parts.packetView,
     timeline: toTimeline(ctx.events, claim.confirmation_number),
     actions: actionsFor(ctx, parts, freshSignIn),
-    esign: { text_version: ESIGN_TEXT_VERSION, text: ESIGN_TEXT_V1, consented: hasCurrentEsignConsent(ctx) },
+    esign: {
+      text_version: ESIGN_TEXT_VERSION,
+      text: esignText() ?? '',
+      consented: hasCurrentEsignConsent(ctx),
+    },
     authorization: isAgentLane(authorizationLane) ? authorizationView(authorizationLane, signature) : null,
     signature: signature
       ? {

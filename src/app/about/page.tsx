@@ -5,16 +5,20 @@ import {
   ShieldAlert, Target,
 } from 'lucide-react';
 import { Disclaimer } from '@/components/Disclaimer';
-import { BETA_FEE_COPY, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
+import { BETA_FEE_COPY, FILE_OR_EASY_SUBMIT, feeEveryClaimCopy, publicBetaFeeCopy } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
-export const metadata: Metadata = publicPageMetadata({
-  title: 'About',
-  description:
-    'A free claim assistant. It helps people find open class-action settlements, file on the official settlement site, and keep track of their claims.',
-  path: '/about',
-});
+export function generateMetadata(): Metadata {
+  const disclose = flags.feeDisclosure();
+  return publicPageMetadata({
+    title: 'About',
+    description: disclose
+      ? 'A claim assistant. It helps people find open class-action settlements, file on the official settlement site, and keep track of their claims. Easy submit is included with membership.'
+      : 'A free claim assistant. It helps people find open class-action settlements, file on the official settlement site, and keep track of their claims.',
+    path: '/about',
+  });
+}
 
 const HARD_PARTS = [
   { icon: MailX, text: 'Settlement notices are easy to miss or mistake for spam.' },
@@ -55,7 +59,12 @@ export default function AboutPage() {
               title: 'Official filing stays free',
               body: `${feeEveryClaimCopy()} We never handle settlement payments.`,
             }
-          : v,
+          : v.title === 'You stay in charge'
+            ? {
+                ...v,
+                body: `You decide which claims to file. ${FILE_OR_EASY_SUBMIT} You stay in control.`,
+              }
+            : v,
       )
     : flags.panelTrustCopy()
       ? VALUES.map((v) =>
@@ -78,8 +87,9 @@ export default function AboutPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               Class-action settlements set money aside for people who were affected.
-              Lawsuit AI is a free claim assistant that helps you find settlements that
-              are open, check the official details, and keep track of the claims you file.
+              Lawsuit AI is {disclose ? 'a claim assistant' : 'a free claim assistant'} that
+              helps you find settlements that are open, check the official details, and keep
+              track of your claims.
             </p>
           </div>
         </div>

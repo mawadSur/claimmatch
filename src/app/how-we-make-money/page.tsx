@@ -12,7 +12,7 @@ export function generateMetadata(): Metadata {
   const description = disclose
     ? membershipCopy()
     : flags.oneClickFiling()
-      ? 'Lawsuit AI is free during beta: copy-ready details, plus one-click filing through the official site for some settlements.'
+      ? 'Lawsuit AI is free during beta: copy-ready details, plus Easy submit through the official site for some settlements.'
       : 'Lawsuit AI is free during beta; copy-ready details; you file on the official site.';
   return publicPageMetadata({
     title: 'How we make money',

@@ -42,3 +42,11 @@ test('a public claim page does not bounce to signup', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/signup/);
   await expect(page).not.toHaveURL(/\/login/);
 });
+
+test('unapproved draft desk_file settlements do not show Easy submit', async ({ page }) => {
+  const res = await page.goto('/lawsuits/rolling-stone-magazine-lifetime-subscription');
+  if (!res || !res.ok()) return;
+  const text = await page.locator('body').innerText();
+  expect(text).not.toMatch(/Sign in to Easy submit/i);
+  await expect(page.getByText('Easy submit', { exact: true })).toHaveCount(0);
+});

@@ -308,6 +308,35 @@ describe('ClaimFlow with one-click data', () => {
     expect(html).toContain(LEGACY_NOTE);
   });
 
+  it('unsigned draft desk_file does not show Sign in to Easy submit', () => {
+    const html = renderToStaticMarkup(
+      createElement(ClaimFlow, {
+        settlement: { ...SETTLEMENT, claimActionType: 'desk_file' },
+        context,
+        initialClaim: null,
+        nowIso: NOW.toISOString(),
+        signedIn: false,
+        oneClick: null,
+      }),
+    );
+    expect(html).not.toContain('Sign in to Easy submit');
+    expect(html).toContain('Sign in only if you want to save this');
+  });
+
+  it('unsigned approved Easy submit still offers Sign in to Easy submit', () => {
+    const html = renderToStaticMarkup(
+      createElement(ClaimFlow, {
+        settlement: { ...SETTLEMENT, claimActionType: 'desk_file' },
+        context,
+        initialClaim: null,
+        nowIso: NOW.toISOString(),
+        signedIn: false,
+        oneClick: { ...base, lane: DESK_LANE, canStart: true },
+      }),
+    );
+    expect(html).toContain('Sign in to Easy submit');
+  });
+
   it('with one-click on, the retired assisted-filing form never shows', () => {
     for (const oneClick of [base, { ...base, lane: DESK_LANE, canStart: true }]) {
       const html = flow(oneClick);

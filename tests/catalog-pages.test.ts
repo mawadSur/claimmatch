@@ -105,6 +105,18 @@ describe('LawsuitCard', () => {
     expectHonest(html);
   });
 
+  it('hides Easy submit on desk_file until the spec is approved', () => {
+    const draft = render({ lawsuit: lawsuit({ claim_action_type: 'desk_file' }) });
+    expect(draft).not.toContain('Easy submit');
+    expect(draft).not.toContain('Sign in to Easy submit');
+    const approved = render({
+      lawsuit: lawsuit({ claim_action_type: 'desk_file' }),
+      fileForYou: true,
+    });
+    expect(approved).toContain('Easy submit');
+    expect(approved).toContain('Submit a claim');
+  });
+
   it('hides file CTAs on automatic_payment listings', () => {
     const html = render({ lawsuit: lawsuit({ claim_action_type: 'automatic_payment' }) });
     expect(html.replace(/&#x27;|&apos;|&#39;/g, "'")).toContain(

@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight } from '@/components/ui/icons';
 import { common } from '@/copy/common';
 import { onboarding, onboardingIntroText, signedInAsText, stepOfTwoText } from '@/copy/onboarding';
 import { userFacingError } from '@/data/errors';
+import { showsFeeDisclosure } from '@/lib/flags';
 import { useSaveSettings, type SettingsInput } from '@/data/profile';
 import { MatchingQuestions, sameAnswers } from '@/features/settings/fields';
 import { StatePickerField } from '@/features/shared';
@@ -43,7 +44,9 @@ export interface OnboardingWizardProps {
  */
 export function OnboardingWizard({ initial, email, next, emailConfirmed }: OnboardingWizardProps) {
   const router = useRouter();
-  const mayFile = useConfig().isFlagOn('ONE_CLICK_FILING_ENABLED');
+  const config = useConfig();
+  const mayFile = config.isFlagOn('ONE_CLICK_FILING_ENABLED');
+  const disclose = showsFeeDisclosure(config);
   const save = useSaveSettings();
   const [step, setStep] = useState<1 | 2>(1);
   const [fullName, setFullName] = useState(initial.fullName);
@@ -99,7 +102,7 @@ export function OnboardingWizard({ initial, email, next, emailConfirmed }: Onboa
         <OnboardingIntro emailConfirmed={emailConfirmed} />
       ) : (
         <AppText variant="body" color="textMuted" testID="onboarding-intro-short">
-          {onboardingIntroText(mayFile)}
+          {onboardingIntroText(mayFile, disclose)}
         </AppText>
       )}
       <Card style={styles.card}>
