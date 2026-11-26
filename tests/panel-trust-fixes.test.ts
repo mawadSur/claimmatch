@@ -65,7 +65,7 @@ describe('no-account browse copy', () => {
     expect(ACCOUNT_FOR_SAVE_WHY.toLowerCase()).toContain('alert');
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('name');
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('email');
-    expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('no phone');
+    expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('phone is optional');
     expect(WHAT_WE_STORE_MINIMAL.toLowerCase()).toContain('address');
   });
 

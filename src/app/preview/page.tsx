@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { draftFromAttributes } from '@/lib/match-preview';
+import { isClaimActionType } from '@/lib/claim-actions';
+import { draftFromAttributes, draftFromPreviewSearch } from '@/lib/match-preview';
 import { eligibilitySummary } from '@/lib/claim-input';
 import { flags } from '@/lib/flags';
 import { getLawsuitBySlug } from '@/lib/lawsuits';
@@ -45,6 +46,8 @@ export default async function PreviewPage({
   }
 
   const params = searchParams ? await searchParams : {};
+  const urlDraft = draftFromPreviewSearch(params);
+  if (!accountDraft && urlDraft) accountDraft = urlDraft;
   const slug = parseSettlementScopeSlug(firstParam(params.settlement));
   const scopedCta = Boolean(slug);
 
@@ -59,6 +62,7 @@ export default async function PreviewPage({
         typical_payout: lawsuit.typical_payout?.trim() || null,
         deadline: lawsuit.deadline,
         eligibility: lawsuit.eligibility || {},
+        claim_action_type: isClaimActionType(lawsuit.claim_action_type) ? lawsuit.claim_action_type : null,
       };
     }
   }

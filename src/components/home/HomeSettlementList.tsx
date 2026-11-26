@@ -1,13 +1,21 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, Clock, ExternalLink } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
-import { isOpenForClaims } from '@/lib/lawsuits';
+import { isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
 import { flags } from '@/lib/flags';
 import { catalogCardDeadlineLabel, catalogCardPayout } from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
+import { ListingVerification } from '@/components/settlement/ListingVerification';
+import { EasySubmitBadge, shouldHideFileButton } from '@/components/claims/ClaimActionCta';
+import {
+  NO_CLAIM_NEEDED_HEADING,
+  START_CLAIM_CTA,
+  cardCtaHref,
+  cardCtaLabel,
+} from '@/lib/claim-actions';
 
 /** "Jan" / "22" for the calendar badge. Deadlines are calendar dates, so read them as UTC. */
 function badgeParts(deadline: string | null): { month: string; day: string } | null {
@@ -58,6 +66,7 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                   <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                     {lawsuit.category}
                   </span>
+                  <EasySubmitBadge type={lawsuit.claim_action_type} />
                   <VerifiedBadge lawsuit={lawsuit} />
                   <ClosesInChip deadline={lawsuit.deadline} />
                   {!flags.closesInChips() && urgency && (
@@ -72,6 +81,12 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                 >
                   {lawsuit.title}
                 </Link>
+                <ListingVerification
+                  lawsuit={lawsuit}
+                  official={officialLinkFor(lawsuit)}
+                  compact
+                  open={open}
+                />
                 <dl className="mt-2.5 grid gap-1.5 text-sm sm:grid-cols-[minmax(0,1fr)_11.5rem] sm:gap-x-8">
                   {payoutShown ? (
                     <div className="flex min-w-0 gap-1.5">
@@ -90,12 +105,15 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
                 </dl>
               </div>
             </div>
-            <div className="flex shrink-0 flex-col gap-1 sm:items-end">
-              {open ? (
-                <Link href={`/claim/${lawsuit.slug}`} className="btn-primary w-full !py-2.5 sm:w-auto">
-                  Start your claim
-                  <span className="sr-only"> for {lawsuit.title}</span>
-                </Link>
+            <div className="flex min-w-0 shrink-0 flex-col gap-1 sm:items-end">
+              {open && shouldHideFileButton(lawsuit.claim_action_type) ? (
+                <p className="max-w-[16rem] rounded-lg bg-brand-50 px-3 py-2 text-center text-sm font-semibold text-ink">
+                  {lawsuit.claim_action_type === 'automatic_payment'
+                    ? NO_CLAIM_NEEDED_HEADING
+                    : 'Not open for claims'}
+                </p>
+              ) : open ? (
+                <HomeRowCta lawsuit={lawsuit} />
               ) : (
                 <p className="rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-semibold text-ink-muted">
                   Claims closed
@@ -113,5 +131,41 @@ export function HomeSettlementList({ lawsuits }: { lawsuits: Lawsuit[] }) {
         );
       })}
     </ul>
+  );
+}
+
+function HomeRowCta({ lawsuit }: { lawsuit: Lawsuit }) {
+  const official = officialLinkFor(lawsuit);
+  const href = flags.claimActionCtas()
+    ? cardCtaHref({
+        type: lawsuit.claim_action_type,
+        slug: lawsuit.slug,
+        officialHref: official?.kind === 'official' ? official.href : null,
+      })
+    : `/claim/${lawsuit.slug}`;
+  const label = flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type) : START_CLAIM_CTA;
+  const className = 'btn-primary w-full !py-2.5 sm:w-auto';
+  const body = (
+    <>
+      {label}
+      {href.startsWith('http') ? (
+        <ExternalLink className="h-4 w-4" aria-hidden />
+      ) : (
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      )}
+      <span className="sr-only"> for {lawsuit.title}</span>
+    </>
+  );
+  if (href.startsWith('http')) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {body}
+      </a>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {body}
+    </Link>
   );
 }

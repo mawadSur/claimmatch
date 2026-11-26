@@ -1,4 +1,3 @@
-import { AlertTriangle } from 'lucide-react';
 import { CatalogPagination } from '@/components/CatalogPagination';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HubLinks } from '@/components/settlement/HubLinks';
@@ -49,20 +48,9 @@ export function HubChrome({
               { name: title },
             ]}
           />
-          <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">{title}</h1>
+          <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-5xl">{title}</h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">{lede}</p>
-          <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
-            <div className="text-sm text-amber-900">
-              <p className="font-bold">Unverified: check the official site</p>
-              <p className="mt-1">
-                These listings come from public sources, and we haven’t checked them
-                against the official notices yet. Confirm the deadline, who qualifies and
-                what proof you need on the official site before you file.
-              </p>
-            </div>
-          </div>
-          <div className="mt-8">
+          <div className="mt-6">
             <HubLinks categories={categories} current={current} />
           </div>
         </div>

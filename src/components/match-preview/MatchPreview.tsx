@@ -18,6 +18,14 @@ import {
 import { profileHasMatchSignals } from '@/lib/profile-attributes';
 import type { EligibilityCriteria } from '@/lib/types';
 import { ACCOUNT_FOR_SAVE_WHY } from '@/lib/copy';
+import {
+  NO_CLAIM_NEEDED_HEADING,
+  cardCtaHref,
+  cardCtaLabel,
+  hidesFileQualifySignup,
+  type ClaimActionType,
+} from '@/lib/claim-actions';
+import { GuestMatchShare } from './GuestMatchShare';
 import { claimReturnPath } from '@/lib/signup-context';
 import { formatDeadline, US_STATES } from '@/lib/utils';
 
@@ -30,6 +38,7 @@ export interface MatchPreviewScope {
   typical_payout: string | null;
   deadline: string | null;
   eligibility: EligibilityCriteria;
+  claim_action_type?: ClaimActionType | null;
 }
 
 export function MatchPreview({
@@ -192,14 +201,7 @@ export function MatchPreview({
               These answers did not produce a match for this listing. That is
               not a decision that you qualify. The official notice has the rules.
             </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <Link href={`/claim/${scope.slug}`} className="btn-primary">
-                Start this claim <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <Link href={signupHref(scope.slug)} className="btn-secondary">
-                Save with a free account
-              </Link>
-            </div>
+            <MatchResultCtas slug={scope.slug} type={scope.claim_action_type} signupHref={signupHref(scope.slug)} />
           </div>
         ) : (
           <ul className="mt-6 space-y-4">
@@ -240,17 +242,20 @@ export function MatchPreview({
                     ))}
                   </ul>
                 )}
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <Link href={`/claim/${match.slug}`} className="btn-primary">
-                    Start this claim <ArrowRight className="h-4 w-4" aria-hidden />
-                  </Link>
-                  <Link href={signupHref(match.slug)} className="btn-secondary">
-                    Save with a free account
-                  </Link>
-                </div>
+                <MatchResultCtas
+                  slug={match.slug}
+                  type={match.claim_action_type}
+                  signupHref={signupHref(match.slug)}
+                />
               </li>
             ))}
           </ul>
+        )}
+
+        {!signedIn && (
+          <div className="mt-6">
+            <GuestMatchShare draft={draft} />
+          </div>
         )}
 
         <div className="mt-8 border-t border-slate-200 pt-6">
@@ -367,5 +372,51 @@ export function MatchPreview({
         </button>
       </div>
     </form>
+  );
+}
+
+function MatchResultCtas({
+  slug,
+  type,
+  signupHref,
+}: {
+  slug: string;
+  type?: ClaimActionType | null;
+  signupHref: string;
+}) {
+  if (hidesFileQualifySignup(type)) {
+    return (
+      <div className="mt-4 space-y-2">
+        {type === 'automatic_payment' ? (
+          <p className="text-sm font-semibold text-ink">{NO_CLAIM_NEEDED_HEADING}</p>
+        ) : null}
+        <Link href={`/lawsuits/${slug}`} className="btn-secondary">
+          Settlement details <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </div>
+    );
+  }
+  const href = cardCtaHref({ type, slug });
+  const label = cardCtaLabel(type);
+  const body = (
+    <>
+      {label} <ArrowRight className="h-4 w-4" aria-hidden />
+    </>
+  );
+  return (
+    <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row">
+      {href.startsWith('http') ? (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="btn-primary">
+          {body}
+        </a>
+      ) : (
+        <Link href={href} className="btn-primary">
+          {body}
+        </Link>
+      )}
+      <Link href={signupHref} className="btn-secondary">
+        Sign in to save
+      </Link>
+    </div>
   );
 }

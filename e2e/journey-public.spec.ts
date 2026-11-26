@@ -32,7 +32,7 @@ test('signup is a free-account form, not a paid checkout', async ({ page }) => {
   expect(text).toMatch(/hello@lawsuitai\.org/i);
 });
 
-test('signed-out onboarding and dashboard land on login; claim asks for signup', async ({ page }) => {
+test('signed-out onboarding and dashboard land on login; claim pages stay public', async ({ page }) => {
   await page.goto('/onboarding');
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/dashboard');
@@ -40,6 +40,6 @@ test('signed-out onboarding and dashboard land on login; claim asks for signup',
   await page.goto('/settings/claim-profile');
   await expect(page).toHaveURL(/\/login/);
   await page.goto('/claim/example-settlement');
-  await expect(page).toHaveURL(/\/signup/);
-  await expect(page.locator('body')).toContainText(/why an account/i);
+  await expect(page).not.toHaveURL(/\/signup/);
+  await expect(page).not.toHaveURL(/\/login/);
 });

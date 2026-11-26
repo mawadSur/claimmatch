@@ -205,6 +205,7 @@ export function claimViewFromFiling(view: ClaimFilingView, current: ClaimView | 
     user_filed_on: current?.user_filed_on ?? null,
     corrective_notice_answered_at: current?.corrective_notice_answered_at ?? null,
     corrective_notice_required: current?.corrective_notice_required ?? false,
+    notice_id: current?.notice_id ?? null,
     created_at: current?.created_at ?? view.claim.updated_at,
   };
 }

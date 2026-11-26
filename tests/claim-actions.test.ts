@@ -5,8 +5,12 @@ import {
   NO_CLAIM_NEEDED_HEADING,
   NOT_OPEN_ALERT,
   SUBMIT_CLAIM_CTA,
+  cardCtaLabel,
   claimActionCta,
+  hidesFileQualifySignup,
   isClaimActionType,
+  signupPromptFor,
+  statusChipLabel,
 } from '@/lib/claim-actions';
 import { CLAIM_ACTION_CATALOG, claimActionOwnerApplyRows } from '@/lib/claim-action-catalog';
 import { claimActionTypesSql } from '../scripts/claim-action-types';
@@ -39,6 +43,19 @@ describe('claim action types', () => {
     expect(desk.badge).toBe(EASY_SUBMIT_BADGE);
     expect(desk.primary?.label).toBe(SUBMIT_CLAIM_CTA);
     expect(desk.hideFileButton).toBe(false);
+  });
+
+  it('routes notice-id and mail-in to the public settlement page, never signup', () => {
+    const notice = claimActionCta({ type: 'needs_notice_id', slug: 'simpluris-example' });
+    expect(notice.primary?.href).toBe('/lawsuits/simpluris-example#notice-id');
+    const mail = claimActionCta({ type: 'mail_in', slug: 'mail-example' });
+    expect(mail.primary?.href).toBe('/lawsuits/mail-example#mail-in');
+    expect(hidesFileQualifySignup('automatic_payment')).toBe(true);
+    expect(hidesFileQualifySignup('online_form')).toBe(false);
+    expect(statusChipLabel('automatic_payment', true).label).toBe('No claim needed');
+    expect(cardCtaLabel('desk_file')).toBe(SUBMIT_CLAIM_CTA);
+    expect(signupPromptFor('automatic_payment')).toBeNull();
+    expect(signupPromptFor('desk_file')?.label).toBe('Sign in to Easy submit');
   });
 });
 

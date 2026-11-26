@@ -161,7 +161,7 @@ describe('the settlement page', () => {
     expect(html).not.toContain('never files');
     expect(html).not.toContain('We file this claim for you');
     expect(html).toContain('We help you file');
-    expect(html).toContain('Create a free account');
+    expect(html).toContain('Sign in to save this claim');
     expect(raw).toContain('/signup?next=');
     expect(html).toContain('Listed payout');
     expect(html).toContain('Proof needed');

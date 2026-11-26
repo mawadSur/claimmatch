@@ -7,6 +7,8 @@ import { closeMissingFeedPatch, keepMissingFeedPatch } from '@/lib/missing-feed-
 import { createServiceClient } from '@/lib/supabase/server';
 import { isThirdPartyFeeStatus } from '@/lib/third-party-fee';
 import { isProofVerified } from '@/lib/verified-fields';
+import { isClaimActionType, type ClaimActionDetails } from '@/lib/claim-actions';
+import { revalidateCatalog } from '@/lib/catalog-cache';
 
 export const runtime = 'nodejs';
 
@@ -36,6 +38,9 @@ const ALLOWED_KEYS = new Set([
   'deadline_override',
   'deadline_override_note',
   'is_test',
+  'claim_action_type',
+  'claim_action',
+  'status',
 ]);
 
 const SingleAction = z.enum([
@@ -161,10 +166,14 @@ export async function PATCH(req: Request) {
     );
   }
 
-  if (shouldNotifyIndexNowForAdminAction(action)) {
-    const slug = data && typeof data === 'object' && typeof (data as { slug?: unknown }).slug === 'string'
+  const slug =
+    data && typeof data === 'object' && typeof (data as { slug?: unknown }).slug === 'string'
       ? (data as { slug: string }).slug
       : null;
+  if (slug && (action === 'update' || action === 'publish' || action === 'reject' || action === 'close_missing' || action === 'keep_missing')) {
+    revalidateCatalog(slug);
+  }
+  if (shouldNotifyIndexNowForAdminAction(action)) {
     if (slug) {
       void notifyIndexNowBestEffort([slug]);
     }
@@ -202,10 +211,11 @@ async function handleBulkAction(
     );
   }
 
+  const slugs = ((updated ?? []) as { slug?: string | null }[])
+    .map((row) => row.slug)
+    .filter((value): value is string => Boolean(value));
+  revalidateCatalog();
   if (shouldNotifyIndexNowForAdminAction(action)) {
-    const slugs = ((updated ?? []) as { slug?: string | null }[])
-      .map((row) => row.slug)
-      .filter((value): value is string => Boolean(value));
     if (slugs.length > 0) {
       void notifyIndexNowBestEffort(slugs);
     }
@@ -286,6 +296,35 @@ function pickAllowedPatch(
     }
     if (key === 'is_test') {
       updates[key] = value === true;
+      continue;
+    }
+    if (key === 'claim_action_type') {
+      if (value == null || value === '') {
+        updates[key] = null;
+        continue;
+      }
+      if (typeof value !== 'string' || !isClaimActionType(value)) {
+        return { updates: {}, error: 'Claim action must be desk_file, online_form, needs_notice_id, mail_in, automatic_payment, or not_open.' };
+      }
+      updates[key] = value;
+      continue;
+    }
+    if (key === 'claim_action') {
+      if (value == null) {
+        updates[key] = {};
+        continue;
+      }
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        return { updates: {}, error: 'Claim action details must be an object.' };
+      }
+      updates[key] = value as ClaimActionDetails;
+      continue;
+    }
+    if (key === 'status') {
+      if (value !== 'open' && value !== 'closed') {
+        return { updates: {}, error: 'Status must be open or closed.' };
+      }
+      updates[key] = value;
       continue;
     }
     updates[key] = value;

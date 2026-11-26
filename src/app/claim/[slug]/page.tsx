@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { AlertCircle, ArrowLeft, ArrowRight, CalendarX2, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { loadClaimScreen } from '@/lib/claim-screen-server';
@@ -8,7 +8,6 @@ import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { isInternalEmail } from '@/lib/internal-users';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
-import { signedOutClaimHref } from '@/lib/signup-context';
 import { hasAppleIdentity, hasGoogleIdentity } from '@/lib/oauth';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
@@ -25,13 +24,14 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 /**
- * The Part A filing flow. Signed-in only (the middleware and this page send
- * signed-out people to log in and back). A settlement the user already tracks
- * stays readable after it closes or leaves the catalog (account-only view);
- * without a claim, unlisted and fictional settlements are a 404, and a closed
- * one still takes "I filed my claim" until 30 days after its deadline. With
- * ONE_CLICK_FILING_ENABLED on, the one-click flow joins it (strong matches on
- * an agent lane, and claims already in a one-click status).
+ * The Part A filing flow. Public to browse: official link, copy-ready details,
+ * steps, and eligibility. Sign-in is required only to save, track, or Easy
+ * submit. A settlement the user already tracks stays readable after it closes
+ * or leaves the catalog; without a claim, unlisted and fictional settlements
+ * are a 404, and a closed one still takes "I filed my claim" until 30 days
+ * after its deadline. With ONE_CLICK_FILING_ENABLED on, the one-click flow
+ * joins it for signed-in users (strong matches on an agent lane, and claims
+ * already in a one-click status).
  */
 export default async function ClaimPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -39,12 +39,12 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(signedOutClaimHref(`/claim/${slug}`));
-  // The one-click test settlement is for INTERNAL_EMAILS testers only (src/lib/test-settlements.ts).
-  if (isTestSettlementSlug(slug) && !isInternalEmail(user.email)) notFound();
+  // Public browse: official link, copy-ready details, steps, eligibility.
+  // Sign-in is required only to save, track, or Easy submit.
+  if (isTestSettlementSlug(slug) && !isInternalEmail(user?.email)) notFound();
 
   const now = new Date();
-  const screen = await loadClaimScreen(supabase, user.id, slug, now);
+  const screen = await loadClaimScreen(supabase, user?.id ?? null, slug, now);
   if (screen.kind === 'load_error') return <LoadError slug={slug} what={screen.what} />;
   if (screen.kind === 'not_found') notFound();
   const { settlement, context, claim } = screen;
@@ -113,19 +113,21 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  // One-click filing: null (nothing read) while ONE_CLICK_FILING_ENABLED is off.
-  const oneClick = await loadOneClickClaimPage({
-    supabase,
-    userId: user.id,
-    accountEmail: user.email ?? null,
-    reauthWithGoogle: flags.oauthSignIn() && hasGoogleIdentity(user),
-    reauthWithApple: flags.appleSignIn() && hasAppleIdentity(user),
-    slug: settlement.slug,
-    lawsuitId: settlement.id,
-    claim,
-    context,
-    now,
-  });
+  // One-click filing: signed-in only. Guests can still read steps and the official link.
+  const oneClick = user
+    ? await loadOneClickClaimPage({
+        supabase,
+        userId: user.id,
+        accountEmail: user.email ?? null,
+        reauthWithGoogle: flags.oauthSignIn() && hasGoogleIdentity(user),
+        reauthWithApple: flags.appleSignIn() && hasAppleIdentity(user),
+        slug: settlement.slug,
+        lawsuitId: settlement.id,
+        claim,
+        context,
+        now,
+      })
+    : null;
   // Checklist item 13: the disclaimer says Lawsuit AI files this claim only when it does (or offers to).
   const filesThisClaim = oneClick
     ? claimFiledByLawsuitAi({
@@ -148,6 +150,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           profile={screen.profile}
           oneClick={oneClick}
           selfFiledReport={screen.selfFiledReport}
+          signedIn={Boolean(user)}
         />
       </div>
       <div className="mt-10">

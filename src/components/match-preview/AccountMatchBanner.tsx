@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Loader2, UserCog } from 'lucide-react';
+import { ArrowRight, UserCog } from 'lucide-react';
 import { MatchPreviewEntry } from './MatchPreviewEntry';
 
 type Summary = {
@@ -17,7 +17,6 @@ type Summary = {
  * (same loader as the dashboard). Signed-out visitors get the preview banner.
  */
 export function AccountMatchBanner() {
-  const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
 
@@ -54,26 +53,12 @@ export function AccountMatchBanner() {
         }
       } catch {
         if (!cancelled) setSignedIn(false);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  if (loading) {
-    return (
-      <div
-        className="flex min-h-[7.5rem] items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 shadow-card"
-        aria-busy="true"
-      >
-        <Loader2 className="h-5 w-5 animate-spin text-brand-700" aria-hidden />
-        <span className="sr-only">Loading your matches</span>
-      </div>
-    );
-  }
 
   if (!signedIn || !summary) {
     return <MatchPreviewEntry variant="banner" />;

@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MATCH_PREVIEW_ATTRIBUTE_KEYS,
   MATCH_PREVIEW_QUESTIONS,
+  draftFromPreviewSearch,
+  matchPreviewSharePath,
   mergePreviewIntoAnswers,
   parseMatchPreviewDraft,
   previewMatchesFor,
@@ -90,6 +92,24 @@ describe('logged-out match preview', () => {
     expect(possible?.typical_payout).toBeNull();
     expect(JSON.stringify(results)).not.toMatch(/you qualify|eligib|% match/i);
     expect(previewProfileFromDraft(draft).attributes.took_medication).toBeUndefined();
+  });
+
+  it('builds a save-by-link that restores the same answers', () => {
+    const draft = {
+      state: 'CA',
+      attributes: { had_data_breach: true, bought_consumer_goods: false },
+    };
+    const href = matchPreviewSharePath(draft);
+    expect(href).toContain('/preview?');
+    expect(href).toContain('state=CA');
+    expect(href).toContain('had_data_breach=1');
+    expect(href).toContain('bought_consumer_goods=0');
+    const restored = draftFromPreviewSearch({
+      state: 'CA',
+      had_data_breach: '1',
+      bought_consumer_goods: '0',
+    });
+    expect(restored).toEqual(draft);
   });
 
   it('scopes results and questions to one settlement’s catalog fields', () => {

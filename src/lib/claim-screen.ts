@@ -40,6 +40,8 @@ export interface ClaimFlowSettlement {
   finalApprovalHearingAt?: string | null;
   /** Listed payment-timing sentence from the settlement record. Never guessed. */
   paymentTimingText?: string | null;
+  /** Claims administrator name, for notice-ID help. */
+  administrator?: string | null;
   /** 0051: public claim CTA. Null keeps Start your claim. */
   claimActionType?: string | null;
   claimAction?: {
@@ -67,6 +69,7 @@ interface ClaimFlowSettlementRow {
   form_field_order?: string[] | null;
   final_approval_hearing_at?: string | null;
   payment_timing_text?: string | null;
+  administrator?: string | null;
   claim_action_type?: string | null;
   claim_action?: ClaimFlowSettlement['claimAction'];
 }
@@ -102,6 +105,7 @@ export function toClaimFlowSettlement(
     selfFiledReportEnabled: opts.selfFiledReportEnabled === true,
     finalApprovalHearingAt: row.final_approval_hearing_at ?? null,
     paymentTimingText: row.payment_timing_text ?? null,
+    administrator: row.administrator ?? null,
     claimActionType: row.claim_action_type ?? null,
     claimAction: row.claim_action ?? null,
   };

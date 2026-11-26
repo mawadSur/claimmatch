@@ -204,7 +204,7 @@ export function lawsuitAiValueLine(mayFile = lawsuitAiMayFile()): string {
 }
 
 export const WHAT_WE_STORE_MINIMAL =
-  'We store your name and email so you can sign in. After onboarding we store the state and answers you give so we can match settlements. No phone. Street address only if a claim form needs it.';
+  'We store your name and email so you can sign in. After onboarding we store the state and answers you give so we can match settlements. Phone is optional — add it in Settings if a claim form needs it; we never ask for it at sign-up. Street address only if a claim form needs it.';
 
 /** Matching never asks for SSN or bank details. Checkable against eligibility.ts and Jev. */
 export const NO_SSN_OR_BANK_TO_MATCH =

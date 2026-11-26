@@ -16,6 +16,7 @@ export function AnswerBlock({
   qualifySlug,
   qualifyLawsuitId,
   checkedOn,
+  hideQualify = false,
 }: {
   facts: AnswerFacts;
   open: boolean;
@@ -28,6 +29,8 @@ export function AnswerBlock({
   qualifyLawsuitId?: string;
   /** Official-notice check date, shown above the fold when a guide exists. */
   checkedOn?: string | null;
+  /** Hide file/qualify CTAs (automatic payment / not open). */
+  hideQualify?: boolean;
 }) {
   const formId = lawsuitId ?? qualifyLawsuitId;
   const formSlug = slug ?? qualifySlug;
@@ -48,8 +51,8 @@ export function AnswerBlock({
       {facts.missing.length > 0 && (
         <MissingDetailsBlock missing={facts.missing} official={official} />
       )}
-      {open && (
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      {open && !hideQualify && (
+        <div className="mt-5 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
           {qualifyHref && qualifySlug && qualifyLawsuitId ? (
             <SettlementQualifyCta
               href={qualifyHref}
@@ -121,9 +124,8 @@ export function MissingDetailsBlock({
             </a>
             )
           </>
-        ) : (
-          '.'
-        )}
+        ) : null}
+        .
       </p>
     </div>
   );
