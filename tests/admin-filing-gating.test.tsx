@@ -273,5 +273,7 @@ describe('overview', () => {
     expect(admin).not.toContain('href="/admin/filing/desk?job=');
     expect(admin).toContain('Your access: Admin');
     expect(admin).toContain('1+');
+    expect(admin).toContain('Recovery fee invoice');
+    expect(agent).not.toContain('Recovery fee invoice');
   });
 });

@@ -41,7 +41,7 @@ const MEMBER_CONTACT = [
   { field: 'address.zip' as const, official_label: 'ZIP code', required: true },
 ];
 
-function sqlString(value: string): string {
+export function sqlString(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 

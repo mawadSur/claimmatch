@@ -128,7 +128,10 @@ export function computeLane(args: {
     logFilingError('chooseLane failed', { code: error instanceof Error ? error.name : null });
     return { ...base, ...selfFile({ policyId: env.policy.settlement_policy_id }, ['not_offered_for_settlement'], deadline) };
   }
-  if (decision.agent && !env.strongMatch) {
+  // Easy submit (`desk_file`) is offered to any signed-in member who can start
+  // the settlement; they still answer eligibility questions and e-sign.
+  // Other settlements still require a strong match (structured who-qualifies).
+  if (decision.agent && !env.strongMatch && env.settlement.claim_action_type !== 'desk_file') {
     return { ...base, ...selfFile(decision, ['not_offered_for_settlement'], deadline) };
   }
   return { ...base, decision, view: viewOf(decision, deadline) };

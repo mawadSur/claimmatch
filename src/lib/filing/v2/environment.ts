@@ -62,6 +62,8 @@ export interface FilingSettlement {
   third_party_fee_status: 'unknown' | 'allowed' | 'barred';
   eligibility: Lawsuit['eligibility'] | null;
   tags: Lawsuit['tags'] | null;
+  /** Easy submit settlements skip the strong-match downgrade in computeLane. */
+  claim_action_type: string | null;
 }
 
 export interface SettlementEnv {
@@ -108,6 +110,7 @@ function toSettlement(row: Record<string, unknown>): FilingSettlement {
     third_party_fee_status: fee === 'allowed' || fee === 'barred' ? fee : 'unknown',
     eligibility: (guided.eligibility as Lawsuit['eligibility'] | null) ?? null,
     tags: (row.tags as Lawsuit['tags']) ?? null,
+    claim_action_type: typeof row.claim_action_type === 'string' ? row.claim_action_type : null,
   };
 }
 

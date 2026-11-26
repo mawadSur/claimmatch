@@ -21,6 +21,11 @@ export function isClaimActionType(value: string | null | undefined): value is Cl
   return typeof value === 'string' && (CLAIM_ACTION_TYPES as readonly string[]).includes(value);
 }
 
+/** Public Easy submit: desk_file with an approved spec + filing_desk policy. */
+export function isEasySubmitType(value: string | null | undefined): boolean {
+  return value === 'desk_file';
+}
+
 /** Extra, optional facts for mail-in / automatic-payment CTAs. Stored as lawsuits.claim_action. */
 export interface ClaimActionDetails {
   form_url?: string | null;

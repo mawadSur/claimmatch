@@ -52,6 +52,7 @@ export const STAFF_AUDIT_ACTIONS = [
   'desk_challenge_rule_set',
   'grant_role',
   'revoke_role',
+  'create_fee_invoice',
 ] as const;
 export type StaffAuditAction = (typeof STAFF_AUDIT_ACTIONS)[number];
 

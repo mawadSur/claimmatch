@@ -77,6 +77,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           accountEmail: user.email ?? null,
           slug: settlement.slug,
           lawsuitId: settlement.id,
+          claimActionType: settlement.claim_action_type,
           claim: screen.claim,
           context,
           now,

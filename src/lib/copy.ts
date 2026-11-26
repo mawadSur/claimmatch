@@ -22,7 +22,9 @@ export const CLAIMMATCH_FEE_RATE = 15;
 export function feeEveryClaimCopy(rate = CLAIMMATCH_FEE_RATE): string {
   return (
     `Lawsuit AI files the claim for you and charges ${rate} percent only if you get paid. ` +
-    'The settlement administrator pays you directly.'
+    'The fee is billed separately by invoice after the settlement administrator pays you. ' +
+    'Matching is free, and filing yourself on the official site is free. If you recover nothing, you owe $0. ' +
+    'Lawsuit AI never holds or redirects settlement funds. The settlement administrator pays you directly.'
   );
 }
 
@@ -88,9 +90,8 @@ export const MAY_FILE_SENTENCE = WE_FILE_SUPPORTED_SENTENCE;
  * for the one-click launch; have counsel review before turning the flags on.
  */
 export const MAY_FILE_LEGAL_SENTENCE =
-  'Where Lawsuit AI offers one-click filing and you review and sign a claim, Lawsuit AI files the claim for you on the official settlement website; otherwise you file every claim yourself. Lawsuit AI never receives or handles settlement payments.';
-export const MAY_FILE_SHORT_SENTENCE =
-  'Where you choose one-click filing and sign the claim, Lawsuit AI files the claim for you; otherwise you file every claim yourself on the official settlement website.';
+  `${FILE_OR_EASY_SUBMIT} Lawsuit AI never receives or handles settlement payments.`;
+export const MAY_FILE_SHORT_SENTENCE = FILE_OR_EASY_SUBMIT;
 
 /** Answer to "Do you file claims for me?" / "Who files my claim?". */
 export function whoFilesAnswer(mayFile = lawsuitAiMayFile()): string {
@@ -143,10 +144,22 @@ export const SETTLEMENT_FILING_COPY = {
       'Lawsuit AI never handles settlement payments',
     ],
   },
+  easy_submit: {
+    step: {
+      title: 'Easy submit',
+      body: `${FILE_OR_EASY_SUBMIT} Lawsuit AI never handles settlement payments.`,
+    },
+    points: [
+      FILE_OR_EASY_SUBMIT,
+      'You can always file on the official site yourself instead',
+      'Lawsuit AI never handles settlement payments',
+    ],
+  },
 } as const;
 
-/** Guide pages: agent lane vs everyone else (including never_files). */
-export function guideFilingCopy(mode: SettlementFilingMode) {
+/** Guide pages: Easy submit (`desk_file`) even before an agent lane is live; else agent vs self-file. */
+export function guideFilingCopy(mode: SettlementFilingMode, deskFile = false) {
+  if (deskFile) return SETTLEMENT_FILING_COPY.easy_submit;
   return mode === 'agent' ? SETTLEMENT_FILING_COPY.agent : SETTLEMENT_FILING_COPY.self_file;
 }
 
@@ -274,6 +287,10 @@ export const CLAIM_AGENT_LEGAL_SENTENCE =
 /** PrefillPacket's lead on a claim Lawsuit AI may file: the details are for filing it yourself instead. */
 export const PREFILL_AGENT_LANE_NOTE =
   'Name, email, phone, address and state you saved. If you would rather file on the official site yourself, edit anything that’s wrong and copy it into the official form. We file this claim for you only after you choose one-click filing and sign it.';
+
+/** PrefillPacket's lead on Easy submit (`desk_file`) when one-click is not yet offering start. */
+export const PREFILL_EASY_SUBMIT_NOTE =
+  'Name, email, phone, address and state you saved. Edit anything that’s wrong. Easy submit uses these details after you e-sign, or copy them into the official form if you file yourself.';
 
 /** The claim page's status note on the self-file lane while one-click filing is on. */
 export const ONE_CLICK_SELF_FILE_NOTE =

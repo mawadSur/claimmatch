@@ -96,6 +96,30 @@ describe('fee copy when FEE_DISCLOSURE_ENABLED=1', () => {
     expectNoBanned(html);
   });
 
+  it('Footer, Terms short summary and FAQ say the recovery-only invoice fee with no leftover $0 cut promise', async () => {
+    process.env.FEE_DISCLOSURE_ENABLED = '1';
+    vi.resetModules();
+    const { Footer } = await import('@/components/Footer');
+    const { default: TermsPage } = await import('@/app/terms/page');
+    const { homeFaqItems } = await import('@/components/home/HomeFaq');
+    const footer = htmlOf(Footer);
+    expect(footer).toContain(`${CLAIMMATCH_FEE_RATE} percent recovery-only fee`);
+    expect(footer).toContain('invoice after payout');
+    expect(footer).not.toContain('Free during beta');
+    expect(footer).not.toContain('15%');
+    const terms = htmlOf(TermsPage);
+    expect(terms).toContain(`${CLAIMMATCH_FEE_RATE} percent recovery-only fee`);
+    expect(terms).toContain('Lawsuit AI submitted for you');
+    expect(terms).not.toContain('never takes a share of it');
+    expect(terms).not.toContain('We never take a share of any settlement payment.');
+    const faq = homeFaqItems(true, true)
+      .map((item) => item.a)
+      .join('\n');
+    expect(faq).toContain(feeEveryClaimCopy());
+    expect(faq).not.toContain('Lawsuit AI never files for you');
+    expect(faq).not.toContain('15%');
+  });
+
   it('HowWeMakeMoney swaps the beta bullets for the paid-if-recovered fee', async () => {
     const { HowWeMakeMoney } = await loadSurfaces(true);
     const html = htmlOf(HowWeMakeMoney);

@@ -120,7 +120,8 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   },
   {
     env: 'FEE_DISCLOSURE_ENABLED',
-    description: 'Public recovery-share fee on every Lawsuit AI claim.',
+    description:
+      'Public recovery-only fee on Easy submit claims Lawsuit AI submitted. Off: free-during-beta copy. Pair with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.',
     read: () => flags.feeDisclosure(),
   },
   {
@@ -307,8 +308,8 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
   {
     env: 'AGENT_AUTH_CURRENT_VERSION',
     description:
-      'Exactly agent-auth-v2: new one-click members sign authorization v2 (a desk agent may complete a CAPTCHA by hand where the settlement rule allows it). Anything else: agent-auth-v1. Set only after the law firm approves v2; existing signatures keep their version.',
-    read: () => flags.agentAuthV2(),
+      'agent-auth-v3: recovery-only fee disclosure (default when FEE_DISCLOSURE_ENABLED is on). agent-auth-v2: desk CAPTCHA by hand. agent-auth-v1 or unset with the fee off: v1. Existing signatures keep their version.',
+    read: () => flags.agentAuthV2() || flags.agentAuthV3(),
   },
   {
     env: 'APPLE_SIGN_IN_ENABLED',

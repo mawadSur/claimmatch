@@ -99,6 +99,8 @@ export function canGrantStaffRole(user: StaffUser, role: StaffRole): boolean {
 }
 /** Read the staff access log. */
 export const canReadFilingAudit: StaffCheck = (user) => user.isAdmin || hasStaffRole(user, 'legal_reviewer');
+/** Record a confirmed payout and send a recovery-only Stripe invoice: admins only. */
+export const canInvoiceFees: StaffCheck = (user) => user.isAdmin;
 
 /** A kill switch goes on from anyone in the console, and off only by a legal_reviewer. */
 export function canSetKillSwitch(user: StaffUser, active: boolean): boolean {

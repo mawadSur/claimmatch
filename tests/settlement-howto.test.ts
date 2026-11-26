@@ -41,4 +41,14 @@ describe('settlement HowTo steps and JSON-LD', () => {
     const never = settlementHowToJsonLd(lawsuit, 'never_files');
     expect(JSON.stringify(never)).not.toMatch(/we file this claim for you/i);
   });
+
+  it('Easy submit (desk_file) uses Easy submit how-to even when the mode is never_files', () => {
+    const steps = settlementHowToSteps('never_files', true);
+    expect(steps[1]?.name).toBe('Easy submit');
+    expect(steps[1]?.text).toMatch(/Easy submit on eligible claims/);
+    expect(`${steps[1]?.name} ${steps[1]?.text}`).not.toMatch(/doesn['’]t file claims for you|never files for you/i);
+    const json = settlementHowToJsonLd(makeLawsuit({}, { slug: 'realpage-rental-software-antitrust-settlement', title: 'RealPage' }), 'never_files', true);
+    expect(JSON.stringify(json)).toContain('Easy submit');
+    expect(JSON.stringify(json)).not.toMatch(/doesn['’]t file claims for you|never files for you/i);
+  });
 });

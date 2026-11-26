@@ -25,7 +25,7 @@ export const store = defineCopy({
   },
   /** MAY_FILE_SHORT_SENTENCE — live /llms.txt and shortDisclaimer(true). */
   mayFile: {
-    text: 'Where you choose one-click filing and sign the claim, Lawsuit AI files the claim for you; otherwise you file every claim yourself on the official settlement website.',
+    text: 'File free on the official site yourself, or use Easy submit on eligible claims and we submit it for you after you e-sign.',
     source: 'src/lib/copy.ts',
   },
   /** OFFICIAL_FILING_IS_FREE. */

@@ -181,9 +181,10 @@ export default async function LawsuitDetailPage({ params }: Params) {
   const payout = lawsuit.typical_payout?.trim() || 'Not stated';
   // Who files. Agent lane: we file this claim; every other guide: we help you file.
   const filingMode = open ? await settlementFilingMode({ lawsuitId: lawsuit.id, viewer: null }) : 'never_files';
+  const deskFile = lawsuit.claim_action_type === 'desk_file';
   const summary = displaySummary(lawsuit) || catalogGuideSummary({ ...lawsuit, summary: null });
   const guideSections = catalogGuideSections(lawsuit, filingMode === 'agent');
-  const filingCopy = guideFilingCopy(filingMode);
+  const filingCopy = guideFilingCopy(filingMode, deskFile);
   // The feed's placeholder ("Open to eligible US residents.") is not a rule.
   const eligibility = displayEligibilityText(lawsuit);
   const verified = showVerifiedBadge(lawsuit);
@@ -230,7 +231,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
       <JsonLd data={faqJsonLd(faqs)} />
       <JsonLd data={settlementArticleJsonLd(lawsuit, filingMode)} />
       <JsonLd data={settlementLegalServiceJsonLd(lawsuit, filingMode)} />
-      {!hideFileCtas && <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode)} />}
+      {!hideFileCtas && <JsonLd data={settlementHowToJsonLd(lawsuit, filingMode, deskFile)} />}
 
       {/* Header ------------------------------------------------------------- */}
       <section className="bg-brand-50">
@@ -483,7 +484,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             <div className="mt-8">
               <h2 className="text-xl font-bold">How to file</h2>
               <ol className="mt-4 space-y-4">
-                {settlementHowToSteps(filingMode).map((step, i) => (
+                {settlementHowToSteps(filingMode, deskFile).map((step, i) => (
                   <li key={step.name} className="flex gap-3">
                     <span
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-700"

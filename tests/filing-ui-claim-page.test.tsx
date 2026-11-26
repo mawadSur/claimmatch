@@ -252,6 +252,35 @@ describe('the claim page with the flag on', () => {
     expect(html).toContain(ONE_CLICK_COPY.entry.start);
     expect(h.preview).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['realpage-rental-software-antitrust-settlement', 'RealPage rental software'],
+    ['john-deere-repair-services-antitrust-settlement', 'John Deere repair services'],
+  ])('Easy submit %s starts without a match-score gate and without leftover self-file copy', async (slug, title) => {
+    h.settlement = settlementRow({ slug, title, claim_action_type: 'desk_file' });
+    h.lawsuit = { ...lawsuitRow(STATE_ONLY), slug, title, claim_action_type: 'desk_file' };
+    h.profileRow = { ...h.profileRow, attributes: {} };
+    const html = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ slug }) }));
+    expect(html).toContain(ONE_CLICK_COPY.entry.start);
+    expect(html).not.toContain(LEGACY_NOTE);
+    expect(html).not.toContain('Lawsuit AI never files for you');
+    expect(html).not.toContain('Where Lawsuit AI offers one-click filing');
+    expect(h.preview).toHaveBeenCalled();
+    expect(h.lookups).toEqual([]);
+  });
+});
+
+describe('Easy submit claim page copy with one-click off', () => {
+  it('hides leftover “doesn’t file claims for you” copy on desk_file settlements', async () => {
+    h.settlement = settlementRow({
+      slug: 'realpage-rental-software-antitrust-settlement',
+      claim_action_type: 'desk_file',
+    });
+    const html = await render();
+    expect(html).not.toContain(LEGACY_NOTE);
+    expect(html).not.toContain('Lawsuit AI never files for you');
+    expect(html).toContain('we submit it to the official claims site for you');
+  });
 });
 
 describe('ClaimFlow with one-click data', () => {

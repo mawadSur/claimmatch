@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FileText, ShieldAlert } from 'lucide-react';
 import { legalDisclaimer } from '@/lib/disclaimer-flags';
-import { MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
+import { CLAIMMATCH_FEE_RATE, MAY_FILE_SHORT_SENTENCE, lawsuitAiMayFile } from '@/lib/copy';
 import { flags } from '@/lib/flags';
 import { legalContact } from '@/lib/legal-contact';
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = publicPageMetadata({
   path: '/terms',
 });
 
-const LAST_UPDATED = 'November 17, 2026';
+const LAST_UPDATED = 'November 26, 2026';
 const LINK = 'font-semibold text-brand-700 underline hover:text-brand-800';
 
 export default function TermsPage() {
@@ -65,7 +65,7 @@ export default function TermsPage() {
             </li>
             <li>
               {disclose
-                ? 'Lawsuit AI never handles settlement money. If a claim is paid, the settlement administrator pays you directly.'
+                ? `Matching is free. Filing yourself on the official site is free. Easy submit claims have a ${CLAIMMATCH_FEE_RATE} percent recovery-only fee, billed by invoice after payout if you recover money from a claim Lawsuit AI submitted for you. If you recover nothing, you owe $0. Lawsuit AI never holds or redirects settlement funds.`
                 : 'Lawsuit AI never handles settlement money and never takes a share of it.'}
             </li>
             <li>Our settlement listings are not verified. The official settlement website is the final word.</li>
@@ -116,8 +116,9 @@ export default function TermsPage() {
                   : 'Lawsuit AI is not your agent or representative. It does not deal with courts or settlement administrators for you.'}
               </li>
               <li>
-                Lawsuit AI never receives, holds or sends settlement payments, and never
-                takes a share of any payment you receive.
+                {disclose
+                  ? `Lawsuit AI never receives, holds or redirects settlement payments. Easy submit claims have a ${CLAIMMATCH_FEE_RATE} percent recovery-only fee, billed separately by invoice after the settlement administrator pays you.`
+                  : 'Lawsuit AI never receives, holds or sends settlement payments, and never takes a share of any payment you receive.'}
               </li>
             </ul>
           </section>
@@ -181,7 +182,9 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-ink">8. Cost</h2>
             <p>
-              Lawsuit AI is free to use. We never take a share of any settlement payment.
+              {disclose
+                ? `Matching on Lawsuit AI is free. Filing yourself on the official settlement website is free. For Easy submit claims that Lawsuit AI submitted for you, Lawsuit AI charges ${CLAIMMATCH_FEE_RATE} percent of what you recover, billed separately by invoice after the settlement administrator pays you. If you recover nothing, you owe $0. Lawsuit AI never holds or redirects settlement funds.`
+                : 'Lawsuit AI is free to use. We never take a share of any settlement payment.'}{' '}
               See our{' '}
               <Link href="/pricing" className={LINK}>
                 Pricing page
@@ -331,9 +334,12 @@ export default function TermsPage() {
             </p>
             <h3 className="text-lg font-semibold text-ink">Fees and payments</h3>
             <p>
-              Lawsuit AI does not charge you a fee when you use one-click filing for a claim. Any payment from the
-              settlement goes to you directly from the settlement administrator, by the payment method you choose. We
-              never receive, hold or redirect settlement money, and we never ask for bank or card account numbers.
+              {disclose
+                ? `If Lawsuit AI submitted this Easy submit claim for you and you recover money from it, Lawsuit AI charges ${CLAIMMATCH_FEE_RATE} percent of that recovery. The fee is billed separately by invoice after the settlement administrator pays you. If you recover nothing, you owe $0. Matching is free, and filing yourself on the official settlement website is free.`
+                : 'Lawsuit AI does not charge you a fee when you use one-click filing for a claim.'}{' '}
+              Any payment from the settlement goes to you directly from the settlement administrator, by the payment
+              method you choose. We never receive, hold or redirect settlement money, and we never ask for bank or card
+              account numbers.
             </p>
             <h3 className="text-lg font-semibold text-ink">Checks on the official site</h3>
             <p>

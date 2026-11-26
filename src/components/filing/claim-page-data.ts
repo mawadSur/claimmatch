@@ -5,10 +5,11 @@
  * (src/lib/filing/v2/view.ts), which never write. Never import this from a
  * client component.
  *
- * The one-click entry ("Lawsuit AI files this claim for you") is offered only
- * on a strong match: the settlement has structured who-qualifies rules and
- * the member's profile meets them (the dashboard's rule). Possible and
- * state-only matches keep the self-file steps.
+ * Easy submit (`desk_file`) skips the match-score gate: any signed-in member
+ * on an Easy submit settlement with an approved spec and policy can start
+ * (they still answer that settlement's eligibility questions and e-sign).
+ * Other settlements still require a strong match (structured who-qualifies
+ * rules and matchProfile at 0.4).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ClaimView, SettlementContext } from '@/lib/claims';
@@ -20,6 +21,7 @@ import { lookupLawsuitBySlug } from '@/lib/lawsuits';
 import { classifyMatch, matchProfile } from '@/lib/matching';
 import { factsFromRows } from '@/lib/profile-facts';
 import type { Profile } from '@/lib/types';
+import { isEasySubmitType } from '@/lib/claim-actions';
 import { isOneClickStatus } from './filing-model';
 import { sessionHasFreshSignIn } from './fresh-sign-in';
 import type { OneClickClaimProps } from './types';
@@ -91,6 +93,8 @@ export async function loadOneClickClaimPage(args: {
   reauthWithApple?: boolean;
   slug: string;
   lawsuitId: string;
+  /** lawsuits.claim_action_type. Easy submit (`desk_file`) skips the match-score gate. */
+  claimActionType?: string | null;
   claim: ClaimView | null;
   context: SettlementContext;
   now: Date;
@@ -101,6 +105,8 @@ export async function loadOneClickClaimPage(args: {
   const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false, reauthWithApple: args.reauthWithApple ?? false };
   // Only a settlement still taking claims can start one-click (the API says so too).
   const startable = context.openForClaims && !context.deadlinePassed && !context.fictional;
+  const skipMatchGate = isEasySubmitType(args.claimActionType);
+  const matchOk = skipMatchGate || (await isStrongMatch(supabase, userId, args.slug, now));
 
   if (claim) {
     const view = await readView(supabase, userId, claim.id, now);
@@ -110,11 +116,11 @@ export async function loadOneClickClaimPage(args: {
       startable &&
       claim.status === 'self_file' &&
       view.lane.agent &&
-      (await isStrongMatch(supabase, userId, args.slug, now));
+      matchOk;
     return { ...base, view, lane: view.lane, canStart };
   }
 
-  if (!startable || !(await isStrongMatch(supabase, userId, args.slug, now))) return base;
+  if (!startable || !matchOk) return base;
   const lane = await previewLane(userId, args.lawsuitId, now);
   return { ...base, lane, canStart: Boolean(lane?.agent) };
 }

@@ -182,8 +182,9 @@ export const flags = {
    */
   payoutReport: () => on('PAYOUT_REPORT_ENABLED'),
   /**
-   * Public 15-percent-of-recovery fee on every Lawsuit AI claim. Off: the
-   * site keeps saying it is free during beta (counsel review still open).
+   * Public recovery-only fee on Easy submit claims Lawsuit AI submitted.
+   * Off: the site keeps saying it is free during beta. Counsel has signed off
+   * on turning this on with AGENT_AUTH_CURRENT_VERSION=agent-auth-v3.
    */
   feeDisclosure: () => on('FEE_DISCLOSURE_ENABLED'),
   /**
@@ -397,16 +398,13 @@ export const flags = {
    */
   oauthSignIn: () => on('OAUTH_SIGN_IN_ENABLED'),
   /**
-   * Founder decision 2026-11-15: which agent authorization new one-click
-   * members sign. Exactly "agent-auth-v2": the v2 text, under which a desk
-   * agent may complete a CAPTCHA by hand where the settlement's rule allows
-   * it. Anything else (the default): agent-auth-v1, where the agent stops at
-   * any robot check. Set it only after the law firm approves v2. Existing
-   * signatures keep the version they were signed under. Read it only through
+   * Which agent authorization new Easy submit members sign. Read only through
    * currentAuthorizationVersion() (src/lib/filing/v2/authorization-text.ts).
-   * Server only (not sent to the app).
+   * Existing signatures keep the version they were signed under. Server only.
    */
+  agentAuthV1: () => equals('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v1'),
   agentAuthV2: () => equals('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v2'),
+  agentAuthV3: () => equals('AGENT_AUTH_CURRENT_VERSION', 'agent-auth-v3'),
   /**
    * "Continue with Apple" on /login and /signup, and Apple as a way to sign in
    * again before e-signing a one-click claim. Web only (the app is on hold).

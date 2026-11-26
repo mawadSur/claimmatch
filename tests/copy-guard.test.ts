@@ -201,6 +201,19 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   { file: 'mobile/src/copy/dashboard.ts', rule: 'we file', reason: 'App dashboard copy while one-click is on.' },
   { file: 'mobile/src/copy/auth.ts', rule: 'we file', reason: 'App signup copy while one-click is on.' },
   { file: 'mobile/src/copy/catalog.ts', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'App catalog intro matches CATALOG_INTRO_MAY_FILE Easy submit line.' },
+  { file: 'mobile/src/copy/store.ts', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'Store listing draft matches MAY_FILE_SHORT_SENTENCE / FILE_OR_EASY_SUBMIT.' },
+  {
+    file: 'src/lib/filing/v2/authorization-text.ts',
+    rule: 'we submit',
+    text: 'Lawsuit AI submitted this claim',
+    reason: 'agent-auth-v3 fee bullet: recovery-only fee only if Lawsuit AI submitted the claim.',
+  },
+  {
+    file: 'src/lib/flag-catalog.ts',
+    rule: 'we submit',
+    text: 'Lawsuit AI submitted',
+    reason: 'FEE_DISCLOSURE_ENABLED catalog description: recovery-only fee on Easy submit claims Lawsuit AI submitted.',
+  },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files the claim for you',
     reason: 'Owner: fee disclosure says Lawsuit AI files the claim, shown only when FEE_DISCLOSURE_ENABLED=1.' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI files this claim for you',
@@ -240,6 +253,12 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     rule: 'you are owed',
     text: 'Signed-in matches dashboard “You might be owed” header from listed settlement payout ranges. Off: hidden.',
     reason: 'Admin /admin/flags description of OWED_ESTIMATE_HEADER_ENABLED, not a public payout promise.',
+  },
+  {
+    file: 'src/app/terms/page.tsx',
+    rule: 'we submit',
+    text: 'Lawsuit AI submitted',
+    reason: 'Counsel 2026-11-26: Terms §8/§14 recovery-only fee applies only to Easy submit claims Lawsuit AI submitted.',
   },
   {
     file: 'src/app/terms/page.tsx',

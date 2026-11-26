@@ -77,8 +77,8 @@ export function DeskChallengeCard({
       {mode !== 'stop' && effectiveDeskChallengeMode(mode, signing) === 'stop' ? (
         <p className="text-xs font-semibold text-ink">
           Not in effect yet: the authorization members sign now ({signing}) says the agent stops at any robot check.
-          This rule applies only to claims signed under {AGENT_AUTH_V2}, which says a desk agent may complete a CAPTCHA
-          by hand. Members sign it once the law firm approves it and AGENT_AUTH_CURRENT_VERSION is set to {AGENT_AUTH_V2}.
+          This rule applies only to claims signed under {AGENT_AUTH_V2} or later, which says a desk agent may complete a
+          CAPTCHA by hand. Members sign it once AGENT_AUTH_CURRENT_VERSION is set to that version.
         </p>
       ) : null}
       {mode !== 'stop' && effectiveDeskChallengeMode(mode, signing) !== 'stop' ? (
