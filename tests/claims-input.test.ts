@@ -149,6 +149,7 @@ describe('content helpers', () => {
         'lawsuit_title',
         'notice_id',
         'reported_filed_at',
+        'requested_notice_at',
         'status',
         'user_filed_on',
       ].sort(),

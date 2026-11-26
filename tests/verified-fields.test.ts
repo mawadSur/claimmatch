@@ -111,7 +111,7 @@ describe('verified-field rules', () => {
       },
     );
     const html = renderToStaticMarkup(createElement(LawsuitCard, { lawsuit }));
-    expect(html).toContain('Unverified: check the official site.');
+    expect(html).not.toContain('Unverified: check the official site.');
     expect(html).not.toContain('Verified on');
     expect(html).not.toContain('Closes in');
   });

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
@@ -26,8 +26,8 @@ import {
 /**
  * The settlement card (server component; brand top border from the original
  * site). It shows the payout as the source states it, the proof rule and the
- * deadline, the D50 "Unverified: check the official site" label with the
- * official link, and "Start your claim" while the settlement is open for
+ * deadline, a Verified chip when the listing is verified, the source link,
+ * and "Start your claim" while the settlement is open for
  * claims. A settlement that is not open shows "Claims closed" and no call to
  * action.
  *
@@ -129,17 +129,18 @@ export function LawsuitCard({
       </dl>
       {missing.length > 0 ? <MissingDetailsBlock missing={missing} official={official} /> : null}
 
-      {!verified && (
-      <p className="mt-3 flex items-start gap-1.5 text-xs text-amber-800">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" aria-hidden="true" />
+      <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-muted">
+        {verified ? (
+          <span className="font-semibold text-success-700">Verified</span>
+        ) : null}
+        {verified ? <span aria-hidden>·</span> : null}
         <span>
-          <span className="font-semibold">Unverified: check the official site.</span>{' '}
           {official ? (
             <a
               href={official.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 rounded font-semibold underline underline-offset-2 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+              className="inline-flex items-center gap-0.5 rounded font-semibold underline underline-offset-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
             >
               {official.label}
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -150,7 +151,6 @@ export function LawsuitCard({
           )}
         </span>
       </p>
-      )}
 
       <div className="mt-auto pt-4">
         {open ? (

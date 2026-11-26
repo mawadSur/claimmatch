@@ -10,6 +10,7 @@ import {
   paginateCatalog,
   parseFileForYou,
   parseHasDeadline,
+  parseOpeningSoon,
   parsePage,
   parseProofFilter,
 } from '@/lib/catalog-page';
@@ -50,6 +51,7 @@ function catalogFilters(params: Record<string, string | string[] | undefined>) {
     hasDeadline: parseHasDeadline(firstParam(params.hasDeadline)),
     proof: parseProofFilter(firstParam(params.proof)),
     fileForYou: parseFileForYou(firstParam(params.fileForYou)),
+    openingSoon: parseOpeningSoon(firstParam(params.openingSoon)),
     page: parsePage(firstParam(params.page)),
   };
 }
@@ -67,6 +69,7 @@ export async function generateMetadata({
     hasDeadline: filters.hasDeadline,
     proof: filters.proof,
     fileForYou: filters.fileForYou,
+    openingSoon: filters.openingSoon,
     page: filters.page,
   });
   const title =
@@ -97,15 +100,17 @@ export async function generateMetadata({
 
 export default async function LawsuitsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const { q, category, hasDeadline, proof, fileForYou, page } = catalogFilters(params);
+  const { q, category, hasDeadline, proof, fileForYou, openingSoon, page } = catalogFilters(params);
 
   // One query for every settlement open for claims; search and category
   // filters run on that list so the category pills always match it. HTML is
-  // sliced 24 per page so the catalog stays cacheable.
+  // sliced per page so the catalog stays cacheable. `not_open` rows live in
+  // openingSoon, not the default list.
   const catalog = await lookupLawsuits();
-  const categories = categoriesOf(catalog.lawsuits);
+  const categories = categoriesOf([...catalog.lawsuits, ...catalog.openingSoon]);
   const fileForYouIds = await oneClickLawsuitIdSet();
-  const filteredList = filterCatalog(catalog.lawsuits, {
+  const sourceList = openingSoon ? catalog.openingSoon : catalog.lawsuits;
+  const filteredList = filterCatalog(sourceList, {
     q,
     category,
     hasDeadline,
@@ -115,17 +120,23 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   });
   const paged = paginateCatalog(filteredList, page, true, LAWSUITS_PAGE_SIZE);
   const count = paged.total;
-  const filtered = Boolean(q || category || hasDeadline || proof || fileForYou);
+  const filtered = Boolean(q || category || hasDeadline || proof || fileForYou || openingSoon);
   const mayFile = lawsuitAiMayFile();
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
+  const openingSoonPreview =
+    !openingSoon && !q && !category && !hasDeadline && !proof && !fileForYou && page <= 1
+      ? catalog.openingSoon.slice(0, 3)
+      : [];
 
   const prevHref =
-    paged.page > 1 ? catalogPath({ q, category, hasDeadline, proof, fileForYou, page: paged.page - 1 }) : null;
+    paged.page > 1
+      ? catalogPath({ q, category, hasDeadline, proof, fileForYou, openingSoon, page: paged.page - 1 })
+      : null;
   const nextHref =
     paged.page < paged.totalPages
-      ? catalogPath({ q, category, hasDeadline, proof, fileForYou, page: paged.page + 1 })
+      ? catalogPath({ q, category, hasDeadline, proof, fileForYou, openingSoon, page: paged.page + 1 })
       : null;
 
   return (
@@ -133,7 +144,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
       <section className="border-b border-slate-200/70 bg-white">
         <div className="container-page py-6 sm:py-14">
           <h1 className="text-3xl font-bold leading-tight sm:text-5xl">
-            Open settlements
+            {openingSoon ? 'Opening soon' : 'Open settlements'}
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-ink-muted">
             {mayFile ? CATALOG_INTRO_MAY_FILE : CATALOG_INTRO_NEVER_FILES}
@@ -166,10 +177,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
           ) : (
             <>
               {count === 0
-                ? 'No open settlements found'
+                ? openingSoon
+                  ? 'No opening-soon settlements found'
+                  : 'No open settlements found'
                 : paged.totalPages > 1
-                  ? `Showing ${rangeStart}–${rangeEnd} of ${count} open ${count === 1 ? 'settlement' : 'settlements'}`
-                  : `Showing ${count} open ${count === 1 ? 'settlement' : 'settlements'}`}
+                  ? `Showing ${rangeStart}–${rangeEnd} of ${count} ${openingSoon ? 'opening-soon' : 'open'} ${count === 1 ? 'settlement' : 'settlements'}`
+                  : `Showing ${count} ${openingSoon ? 'opening-soon' : 'open'} ${count === 1 ? 'settlement' : 'settlements'}`}
               {category ? (
                 <>
                   {' '}in <span className="font-semibold text-ink">{category}</span>
@@ -192,7 +205,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               ) : null}
               {fileForYou ? (
                 <>
-                  {' '}we file for you
+                  {' '}with Easy submit
+                </>
+              ) : null}
+              {openingSoon ? (
+                <>
+                  {' '}not yet open for claims on Lawsuit AI
                 </>
               ) : null}
             </>
@@ -205,7 +223,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
             title="We couldn’t load settlements right now"
             body="This is on our side. Please try again in a few minutes."
             action={
-              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline, proof, fileForYou })}` : '/lawsuits'} className="btn-secondary mt-6">
+              <Link href={filtered ? `/lawsuits?${catalogQueryString({ q, category, hasDeadline, proof, fileForYou, openingSoon })}` : '/lawsuits'} className="btn-secondary mt-6">
                 Try again
               </Link>
             }
@@ -213,7 +231,13 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
         ) : count === 0 ? (
           <EmptyState
             icon={<SearchX className="h-6 w-6" aria-hidden="true" />}
-            title={filtered ? 'No open settlements match your search' : 'No open settlements to show right now'}
+            title={
+              filtered
+                ? openingSoon
+                  ? 'No opening-soon settlements match your search'
+                  : 'No open settlements match your search'
+                : 'No open settlements to show right now'
+            }
             body={
               filtered
                 ? 'Try a different word, or clear your filters to see every open settlement.'
@@ -242,6 +266,30 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               prevHref={prevHref}
               nextHref={nextHref}
             />
+            {openingSoonPreview.length > 0 && (
+              <section className="mt-12 border-t border-slate-200 pt-8" aria-labelledby="opening-soon-heading">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 id="opening-soon-heading" className="text-xl font-bold">
+                      Opening soon
+                    </h2>
+                    <p className="mt-1 text-sm text-ink-muted">
+                      These listings are not taking claims on Lawsuit AI yet.
+                    </p>
+                  </div>
+                  <Link href="/lawsuits?openingSoon=1" className="btn-secondary shrink-0">
+                    See all opening soon
+                  </Link>
+                </div>
+                <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {openingSoonPreview.map((l) => (
+                    <li key={l.id}>
+                      <LawsuitCard lawsuit={l} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <div className="mt-8 max-w-3xl">
               <AccountMatchBanner />
             </div>

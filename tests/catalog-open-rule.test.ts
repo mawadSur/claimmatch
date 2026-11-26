@@ -3,8 +3,10 @@ import {
   categoriesOf,
   cleanSearchTerm,
   displaySummary,
+  excludeNotOpenActions,
   filterOpenForClaims,
   isOpenForClaims,
+  onlyNotOpenActions,
   isPublicLawsuit,
   isSettleSignalRecord,
   officialLinkFor,
@@ -237,6 +239,18 @@ describe('displaySummary', () => {
     expect(
       displaySummary({ title: 'A Settlement', summary: 'People who bought X between 2019 and 2022.', typical_payout: 'Varies' }),
     ).toBe('People who bought X between 2019 and 2022.');
+  });
+});
+
+describe('not_open catalog split', () => {
+  it('drops not_open from the default list and keeps them for Opening soon', () => {
+    const rows = [
+      lawsuit({ slug: 'taking', claim_action_type: 'online_form' }),
+      lawsuit({ slug: 'soon', claim_action_type: 'not_open' }),
+      lawsuit({ slug: 'unset', claim_action_type: null }),
+    ];
+    expect(excludeNotOpenActions(rows).map((r) => r.slug)).toEqual(['taking', 'unset']);
+    expect(onlyNotOpenActions(rows).map((r) => r.slug)).toEqual(['soon']);
   });
 });
 

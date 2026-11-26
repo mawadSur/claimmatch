@@ -32,6 +32,8 @@ export interface ClaimActionDetails {
   notes?: string | null;
 }
 
+import { GET_PAID_AUTOMATICALLY, WE_HELP_YOU_PREPARE } from './copy';
+
 export const EASY_SUBMIT_BADGE = 'Easy submit';
 /** One-line explainer for desk-filed claims. Copy-guard allowlisted. */
 export const EASY_SUBMIT_EXPLAINER =
@@ -114,8 +116,8 @@ export function claimActionCta(input: {
     case 'online_form':
       return {
         type: 'online_form',
-        badge: null,
-        heading: 'File on the official site',
+        badge: WE_HELP_YOU_PREPARE,
+        heading: WE_HELP_YOU_PREPARE,
         body: 'Copy your details into the official form, then submit on the administrator’s site. You do not need a Lawsuit AI account to file.',
         primary: official
           ? { label: FILE_ON_OFFICIAL_CTA, href: official }
@@ -127,8 +129,8 @@ export function claimActionCta(input: {
     case 'needs_notice_id':
       return {
         type: 'needs_notice_id',
-        badge: null,
-        heading: 'You need the ID from your notice',
+        badge: WE_HELP_YOU_PREPARE,
+        heading: WE_HELP_YOU_PREPARE,
         body: NOTICE_ID_WARNING,
         primary: { label: ADD_NOTICE_ID_CTA, href: `${publicPage}#notice-id` },
         secondary: official ? { label: FILE_ON_OFFICIAL_CTA, href: official } : null,
@@ -153,9 +155,9 @@ export function claimActionCta(input: {
     case 'automatic_payment':
       return {
         type: 'automatic_payment',
-        badge: null,
-        heading: NO_CLAIM_NEEDED_HEADING,
-        body: KEEP_ADDRESS_CURRENT,
+        badge: GET_PAID_AUTOMATICALLY,
+        heading: GET_PAID_AUTOMATICALLY,
+        body: `${NO_CLAIM_NEEDED_HEADING} ${KEEP_ADDRESS_CURRENT}`,
         primary: details.address_update_url
           ? { label: 'Update your address with the administrator', href: details.address_update_url }
           : official

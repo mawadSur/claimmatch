@@ -26,7 +26,8 @@ export function VerifiedBadge({
       }
     >
       <BadgeCheck className="h-3 w-3" aria-hidden="true" />
-      {label}
+      Verified
+      {label ? <span className="sr-only"> {label}</span> : null}
     </span>
   );
 }

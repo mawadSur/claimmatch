@@ -12,30 +12,40 @@ import {
 } from '@/lib/notice-id';
 import { SIGN_IN_TO_SAVE } from '@/lib/claim-actions';
 import { claimReturnPath } from '@/lib/signup-context';
+import { NoticeRequestLetter } from './NoticeRequestLetter';
+import {
+  readStoredNoticeRequested,
+  writeStoredNoticeRequested,
+} from '@/lib/notice-request';
 
 export function NoticeIdSection({
   slug,
   lawsuitId,
+  title,
   administrator,
   officialHref,
   officialLookupHref,
   signedIn,
   savedNoticeId = null,
+  savedRequestedNoticeAt = null,
 }: {
   slug: string;
   lawsuitId?: string;
+  title: string;
   administrator: string | null | undefined;
   officialHref?: string | null;
   officialLookupHref?: string | null;
   signedIn: boolean;
   savedNoticeId?: string | null;
+  savedRequestedNoticeAt?: string | null;
 }) {
   const help = noticeIdHelp(administrator);
   const lookup = officialLookupHref || officialHref;
   const [value, setValue] = useState(savedNoticeId ?? '');
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [noNotice, setNoNotice] = useState(false);
+  const [noNotice, setNoNotice] = useState(Boolean(savedRequestedNoticeAt));
+  const [requested, setRequested] = useState(Boolean(savedRequestedNoticeAt));
 
   useEffect(() => {
     if (savedNoticeId) {
@@ -45,6 +55,33 @@ export function NoticeIdSection({
     const stored = readStoredNoticeId(slug);
     if (stored) setValue(stored);
   }, [slug, savedNoticeId]);
+
+  useEffect(() => {
+    if (savedRequestedNoticeAt) {
+      setRequested(true);
+      setNoNotice(true);
+      return;
+    }
+    if (readStoredNoticeRequested(slug)) {
+      setRequested(true);
+      setNoNotice(true);
+    }
+  }, [slug, savedRequestedNoticeAt]);
+
+  async function markRequested() {
+    writeStoredNoticeRequested(slug);
+    setRequested(true);
+    if (!signedIn || !lawsuitId) return;
+    try {
+      await fetch('/api/claims/request-notice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lawsuit_id: lawsuitId }),
+      });
+    } catch {
+      // Guest storage already recorded the step.
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +132,11 @@ export function NoticeIdSection({
         This administrator asks for a notice ID or claim ID from the letter or email they sent.
         Enter that ID here. {NOTICE_PIN_NOT_COLLECTED}
       </p>
+      {requested && (
+        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">
+          You marked that you requested your notice. When the administrator replies, add the ID below.
+        </p>
+      )}
       <form onSubmit={onSubmit} className="space-y-3">
         <label htmlFor={`notice-id-${slug}`} className="field-label">
           Notice ID or claim ID
@@ -150,8 +192,20 @@ export function NoticeIdSection({
           No notice?
         </button>
         {noNotice && (
-          <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
-            <p>{help.noNotice}</p>
+          <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
+            <p>
+              Use this letter to ask {help.administratorLabel} for your notice or claim ID. Send it yourself —
+              Lawsuit AI never emails the administrator for you.
+            </p>
+            <NoticeRequestLetter
+              title={title}
+              slug={slug}
+              administrator={administrator}
+              officialHref={lookup}
+            />
+            <button type="button" className="btn-secondary" onClick={markRequested}>
+              {requested ? 'Request marked' : 'I sent this request'}
+            </button>
             {lookup && (
               <p>
                 <a

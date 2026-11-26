@@ -141,9 +141,14 @@ describe('FAQ', () => {
     expect(shortDisclaimer(false, true)).toBe(SHORT_DISCLAIMER);
     expect(appLegalDisclaimer(false, true)).toBe(APP_LEGAL_DISCLAIMER);
     expect(appShortDisclaimer(false, true)).toBe(APP_SHORT_DISCLAIMER);
-    for (const text of [legalDisclaimer(true, false), shortDisclaimer(true, false), appLegalDisclaimer(true, false), appShortDisclaimer(true, false)]) {
+    for (const text of [legalDisclaimer(true, false), appLegalDisclaimer(true, false)]) {
       expect(text).not.toMatch(/does not file|You file every claim yourself on the official settlement website\.$|free claim assistant/);
       expect(text).toContain('Lawsuit AI files the claim for you');
+      expect(text).toContain('not a law firm');
+    }
+    for (const text of [shortDisclaimer(true, false), appShortDisclaimer(true, false)]) {
+      expect(text).not.toMatch(/does not file|otherwise you file every claim yourself|free claim assistant/);
+      expect(text).toContain('File free on the official site yourself, or use Easy submit on eligible claims and we submit it for you after you e-sign.');
       expect(text).toContain('not a law firm');
     }
     expect(legalDisclaimer(true, true)).toContain('never receives or handles settlement payments');

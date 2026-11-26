@@ -436,6 +436,27 @@ export function omitDismissedClosingUpdates<T extends Pick<PlannedUpdate, 'slug'
   return { remaining, skipped };
 }
 
+/**
+ * Never reopen a row that already has a held_closure_decisions record
+ * (admin approve/dismiss or an auto closeout). Deadline closeouts write that
+ * row so a later feed “open” cannot undo them.
+ */
+export function omitHeldReopenUpdates<T extends Pick<PlannedUpdate, 'slug' | 'reopens'>>(
+  updates: T[],
+  decisions: ReadonlyMap<string, HeldClosureDecisionRef>,
+): { remaining: T[]; skipped: T[] } {
+  const remaining: T[] = [];
+  const skipped: T[] = [];
+  for (const update of updates) {
+    if (update.reopens && decisions.has(update.slug)) {
+      skipped.push(update);
+      continue;
+    }
+    remaining.push(update);
+  }
+  return { remaining, skipped };
+}
+
 export interface HeldClosure {
   source: string;
   slug: string;

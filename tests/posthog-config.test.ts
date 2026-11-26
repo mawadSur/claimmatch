@@ -80,6 +80,8 @@ describe('PostHog App Router wiring', () => {
     expect(read('src/app/scorecard/page.tsx')).toContain('scorecard_viewed');
     expect(read('src/components/claims/ReportFiled.tsx')).toContain('filingConfirmedProperties');
     expect(read('src/lib/analytics/events.ts')).toContain("evidence: 'user_reported_and_saved'");
+    expect(read('src/lib/analytics/events.ts')).toContain('guest_match_saved');
+    expect(read('src/components/match-preview/GuestMatchShare.tsx')).toContain('ANALYTICS_EVENTS.guest_match_saved');
     expect(read('src/lib/match-events-shared.ts')).toContain("return 'match_feedback'");
     expect(read('src/lib/match-events-shared.ts')).not.toContain("return 'match_filed'");
   });

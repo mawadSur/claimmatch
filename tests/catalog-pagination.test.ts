@@ -8,6 +8,7 @@ import {
   paginate,
   paginateCatalog,
   parseHasDeadline,
+  parseOpeningSoon,
   parsePage,
   parseProofFilter,
   sortKnownDeadlineFirst,
@@ -25,13 +26,13 @@ describe('catalog pagination helpers', () => {
     expect(parseHasDeadline('0')).toBe(false);
   });
 
-  it('pages 24 at a time and clamps past the end', () => {
+  it('pages 12 at a time and clamps past the end', () => {
     const items = Array.from({ length: 50 }, (_, i) => i);
     const first = paginate(items, 1);
     expect(first.pageSize).toBe(LAWSUITS_PAGE_SIZE);
-    expect(first.items).toHaveLength(24);
-    expect(first.totalPages).toBe(3);
-    expect(paginate(items, 99).page).toBe(3);
+    expect(first.items).toHaveLength(12);
+    expect(first.totalPages).toBe(5);
+    expect(paginate(items, 99).page).toBe(5);
     expect(paginate([], 1).totalPages).toBe(1);
   });
 
@@ -72,6 +73,10 @@ describe('catalog pagination helpers', () => {
     expect(catalogPath({ page: 1 })).toBe('/lawsuits');
     expect(catalogPath({ q: 'fee', page: 2 })).toBe('/lawsuits?q=fee&page=2');
     expect(catalogPath({ q: 'fee', page: 1 })).toBe('/lawsuits?q=fee');
+    expect(parseOpeningSoon('1')).toBe(true);
+    expect(parseOpeningSoon('0')).toBe(false);
+    expect(catalogQueryString({ openingSoon: true })).toBe('openingSoon=1');
+    expect(catalogPath({ openingSoon: true, page: 2 })).toBe('/lawsuits?openingSoon=1&page=2');
   });
 
   it('paginateCatalog is a no-op when pagination is off', () => {
@@ -81,7 +86,7 @@ describe('catalog pagination helpers', () => {
     expect(all.totalPages).toBe(1);
     expect(all.page).toBe(1);
     const paged = paginateCatalog(items, 2, true);
-    expect(paged.items).toHaveLength(24);
+    expect(paged.items).toHaveLength(12);
     expect(paged.page).toBe(2);
   });
 });

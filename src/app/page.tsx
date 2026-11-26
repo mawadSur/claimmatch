@@ -11,20 +11,22 @@ import {
   ACCOUNT_FOR_SAVE_WHY,
   BROWSE_NO_ACCOUNT,
   OFFICIAL_FILING_IS_FREE,
-  WE_FILE_SUPPORTED,
-  WE_FILE_SUPPORTED_SENTENCE,
   lawsuitAiMayFile,
   publicBetaFeeCopy,
-  whoFilesBullet,
 } from '@/lib/copy';
 import { HomeHero } from '@/components/home/HomeHero';
-import { HowItWorks, type HowStep } from '@/components/home/HowItWorks';
+import dynamic from 'next/dynamic';
+import type { HowStep } from '@/components/home/HowItWorks';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { HomeSettlementList } from '@/components/home/HomeSettlementList';
 import { HomeTrust } from '@/components/home/HomeTrust';
 import { Testimonials } from '@/components/home/Testimonials';
 import { HomeFaq } from '@/components/home/HomeFaq';
 import { HomeFinalCta } from '@/components/home/HomeFinalCta';
+
+const HowItWorks = dynamic(() => import('@/components/home/HowItWorks').then((m) => m.HowItWorks), {
+  ssr: true,
+});
 import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Screen } from '@/components/home/DeviceFrame';
@@ -80,7 +82,7 @@ function howSteps(mayFile: boolean): HowStep[] {
       points: [
         'Search by company or filter by category',
         'Upcoming deadlines flagged',
-        'Unverified listings clearly labeled',
+        'Each listing links to its source',
       ],
       screen: SCREENS.catalog,
     },
@@ -143,16 +145,20 @@ export const metadata: Metadata = {
   title: { absolute: `${SITE.name} — ${SITE.tagline}` },
 };
 
-async function loadHomeCatalog(): Promise<{ lawsuits: Lawsuit[]; failed: boolean }> {
+async function loadHomeCatalog(): Promise<{
+  lawsuits: Lawsuit[];
+  openingSoon: Lawsuit[];
+  failed: boolean;
+}> {
   try {
     // lookupLawsuits() applies the shared open-for-claims rule and reports a
     // failed query (getLawsuits() would turn it into "no settlements"); we
-    // only order.
+    // only order. not_open rows are excluded from lawsuits / home counts.
     const result = await lookupLawsuits();
-    if (result.error) return { lawsuits: [], failed: true };
-    return { lawsuits: result.lawsuits, failed: false };
+    if (result.error) return { lawsuits: [], openingSoon: [], failed: true };
+    return { lawsuits: result.lawsuits, openingSoon: result.openingSoon ?? [], failed: false };
   } catch {
-    return { lawsuits: [], failed: true };
+    return { lawsuits: [], openingSoon: [], failed: true };
   }
 }
 
@@ -186,7 +192,7 @@ export default async function HomePage() {
         primary={primary}
         extra={<MatchPreviewEntry variant="hero" />}
         freeLabel={freeLabel}
-        fileLine={whoFilesBullet(mayFile)}
+        fileLine="File on the official site"
         browseNote={`${BROWSE_NO_ACCOUNT} ${ACCOUNT_FOR_SAVE_WHY}`}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
@@ -278,6 +284,30 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {catalog.openingSoon.length > 0 && (
+        <section className="section-y bg-white" aria-labelledby="opening-soon-home-heading">
+          <div className="container-page">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
+              <div>
+                <p className="eyebrow">Not taking claims yet</p>
+                <h2 id="opening-soon-home-heading" className="mt-3 text-4xl font-medium leading-[1.08] sm:text-5xl">
+                  Opening soon
+                </h2>
+                <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
+                  These listings are published but not open for claims on Lawsuit AI yet.
+                </p>
+              </div>
+              <Link href="/lawsuits?openingSoon=1" className="btn-secondary shrink-0">
+                See opening soon <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+            <div className="mt-8">
+              <HomeSettlementList lawsuits={catalog.openingSoon.slice(0, 3)} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {wedges && (wedges.showBreachPrivacy || wedges.showNoProof) && (
         <HomeNarrowing

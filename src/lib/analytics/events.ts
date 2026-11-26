@@ -51,6 +51,8 @@ export const ANALYTICS_EVENTS = {
   verification_draft_rejected: 'verification_draft_rejected',
   verification_assist_closed: 'verification_assist_closed',
   verification_assist_republished: 'verification_assist_republished',
+  /** Guest saved match results by email or copied share link. Method only — never the email. */
+  guest_match_saved: 'guest_match_saved',
 } as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS];

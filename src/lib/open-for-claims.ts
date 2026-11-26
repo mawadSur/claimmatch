@@ -22,6 +22,22 @@ export interface OpenRuleFields {
   status: string;
   review_status?: string | null;
   deadline?: string | null;
+  claim_action_type?: string | null;
+}
+
+/** Catalog rows that are not taking claims on Lawsuit AI (opening-soon / not a file path). */
+export function isNotOpenAction(type: string | null | undefined): boolean {
+  return type === 'not_open';
+}
+
+/** Drop `not_open` rows from the default open/browse list and home counts. */
+export function excludeNotOpenActions<T extends { claim_action_type?: string | null }>(rows: T[]): T[] {
+  return rows.filter((row) => !isNotOpenAction(row.claim_action_type));
+}
+
+/** Published `not_open` rows for the Opening soon section. */
+export function onlyNotOpenActions<T extends { claim_action_type?: string | null }>(rows: T[]): T[] {
+  return rows.filter((row) => isNotOpenAction(row.claim_action_type));
 }
 
 /** Published and not fictional: the settlement page may be shown to anyone. */

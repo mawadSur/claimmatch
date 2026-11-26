@@ -25,7 +25,6 @@ import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
 import type { SelfFiledReportView } from '@/lib/self-filed-report';
-import { UnverifiedLabel } from './UnverifiedLabel';
 import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { AuthorizeFiling } from './AuthorizeFiling';
 import { ReportPayout } from './ReportPayout';
@@ -208,10 +207,12 @@ export function ClaimFlow({
         <NoticeIdSection
           slug={settlement.slug}
           lawsuitId={settlement.id}
+          title={settlement.title}
           administrator={settlement.administrator}
           officialHref={settlement.officialUrl}
           signedIn={signedIn}
           savedNoticeId={claim?.notice_id ?? null}
+          savedRequestedNoticeAt={claim?.requested_notice_at ?? null}
         />
       )}
       {!signedIn && !hidesFileQualifySignup(actionType) && (
@@ -423,12 +424,9 @@ function FilingSteps({
             mail or email, or see step 2.
           </p>
         )}
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <UnverifiedLabel className="self-start" />
-          <span className="text-xs text-ink-muted">
-            We haven&rsquo;t checked these details. The official site is the final word.
-          </span>
-        </div>
+        <p className="mt-4 text-xs text-ink-muted">
+          Confirm these details on the official site. That page is the final word.
+        </p>
       </Step>
 
       <Step n={2} title={settlement.assistedFilingAllowed ? FILE_FOR_YOU_CTA : (stepTwoTitle ?? 'File on the official site')}>

@@ -12,6 +12,7 @@ import {
   isFeedSourceRow,
   mergeStaleIntoPlan,
   missingFeedCloseAfterFromEnv,
+  DEADLINE_CLOSEOUT_NOTE,
   planDeadlineCloses,
   planFeedPresence,
   wouldCloseFromUpdate,
@@ -47,8 +48,13 @@ describe('deadline closes', () => {
       slug: 'acme-data-breach-settlement',
       reason: 'deadline',
       close: true,
-      patch: { status: 'closed' },
+      patch: {
+        status: 'closed',
+        deadline_override: '2026-10-15',
+        deadline_override_note: DEADLINE_CLOSEOUT_NOTE,
+      },
     });
+    expect(typeof actions[0].patch.closed_at).toBe('string');
   });
 
   it('keeps a row open through the Eastern cutoff on its deadline day', () => {

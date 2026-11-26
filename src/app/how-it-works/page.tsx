@@ -9,12 +9,11 @@ import { LAWSUIT_CATEGORIES } from '@/lib/types';
 import { Disclaimer } from '@/components/Disclaimer';
 import {
   feeEveryClaimCopy,
-  filingFact,
+  FILE_OR_EASY_SUBMIT,
   lawsuitAiMayFile,
   publicBetaFeeCopy,
-  WE_FILE_SUPPORTED,
-  WE_FILE_SUPPORTED_SENTENCE,
 } from '@/lib/copy';
+import { EASY_SUBMIT_BADGE } from '@/lib/claim-actions';
 import { flags } from '@/lib/flags';
 import { publicPageMetadata } from '@/lib/site-metadata';
 
@@ -22,7 +21,7 @@ export function generateMetadata(): Metadata {
   return publicPageMetadata({
     title: 'How it works',
     description: lawsuitAiMayFile()
-      ? `Find a settlement that is open for claims, check who qualifies, and we file claims for you on supported settlements. Keep track of every claim in one place.`
+      ? `Find a settlement that is open for claims, check who qualifies, and use Easy submit on eligible claims after you e-sign. Keep track of every claim in one place.`
       : 'Find a settlement that is open for claims, check who qualifies on the official notice, file through the official settlement site, and keep track of your claim.',
     path: '/how-it-works',
   });
@@ -36,7 +35,7 @@ const STEPS = [
     body: 'Browse settlements that are open for claims. Each listing shows the deadline we have on file and, when our source lists it, a link to the official settlement site.',
     points: [
       'The closest deadlines are easy to spot',
-      'Most listings are unverified, so check the official site',
+      'Listings we have checked show Verified — always confirm on the official site',
     ],
   },
   {
@@ -134,10 +133,10 @@ export default function HowItWorksPage() {
         s.n === '3'
           ? {
               ...s,
-              title: WE_FILE_SUPPORTED,
-              body: filingFact(true).body,
+              title: `${EASY_SUBMIT_BADGE} on eligible claims`,
+              body: FILE_OR_EASY_SUBMIT,
               points: [
-                WE_FILE_SUPPORTED_SENTENCE.split('. ')[0],
+                'Easy submit: a few questions and an e-sign',
                 'You can always file on the official site yourself',
               ],
             }
@@ -156,8 +155,8 @@ export default function HowItWorksPage() {
             <h1 className="mt-5 text-4xl font-extrabold leading-tight sm:text-5xl">
               {mayFile ? (
                 <>
-                  We file claims for you.{' '}
-                  <span className="text-brand-600">On supported settlements.</span>
+                  Easy submit on eligible claims.{' '}
+                  <span className="text-brand-600">You can always file yourself.</span>
                 </>
               ) : (
                 <>
@@ -169,7 +168,7 @@ export default function HowItWorksPage() {
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ink-muted">
               {assistant} We help you find settlements that are open, point you to the official
               notice and claim site, and keep track of your claims.
-              {mayFile ? ` ${WE_FILE_SUPPORTED_SENTENCE}` : ' You always file on the official site yourself.'}
+              {mayFile ? ` ${FILE_OR_EASY_SUBMIT}` : ' You always file on the official site yourself.'}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/lawsuits" className="btn-primary w-full sm:w-auto">
@@ -280,8 +279,9 @@ export default function HowItWorksPage() {
                   SettleSignal
                 </a>
                 , a public settlement data source shared under the CC BY 4.0 license. We
-                haven’t checked most listings ourselves yet. Until we check one, it is
-                labeled “Unverified: check the official site.”
+                haven’t checked most listings ourselves yet. Listings we have checked
+                show Verified. Every listing still links to its source so you can confirm
+                the details.
               </p>
               <p className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-amber-900">
                 <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />

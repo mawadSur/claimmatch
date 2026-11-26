@@ -63,6 +63,7 @@ vi.mock('@/lib/held-closures', () => ({
 
 import { addCalendarDays } from '@/lib/claim-deadlines';
 import { ingestAndExtract } from '@/lib/scraper/pipeline';
+import { DEADLINE_CLOSEOUT_NOTE } from '@/lib/scraper/stale';
 import { getSettlementGuide } from '@/lib/settlement-guides';
 
 const DEERE = 'john-deere-repair-services-antitrust-settlement';
@@ -125,7 +126,16 @@ describe('the ingest’s deadline closes on guided settlements', () => {
   it('closes one whose official deadline has passed, whatever the feed says', async () => {
     const summary = await ingestAndExtract({ now: NOW });
     expect(status('kia')).toBe('closed');
-    expect(db.updates).toContainEqual({ id: 'kia', patch: { status: 'closed' } });
+    expect(db.updates).toContainEqual(
+      expect.objectContaining({
+        id: 'kia',
+        patch: expect.objectContaining({
+          status: 'closed',
+          deadline_override: official(KIA),
+          deadline_override_note: DEADLINE_CLOSEOUT_NOTE,
+        }),
+      }),
+    );
     expect(summary.wouldClose.find((r) => r.slug === KIA)?.changes).toEqual([`official deadline ${official(KIA)} has passed`]);
     // A row without a guide still closes by its own deadline.
     expect(status('plain')).toBe('closed');
@@ -143,11 +153,16 @@ describe('held deadline closes (HELD_AUTO_CLOSE_PAST_DEADLINE)', () => {
     ];
   });
 
-  it('are held for a person while the flag is off', async () => {
+  it('still close past-deadline rows; a guided one whose official deadline is ahead stays open', async () => {
     const summary = await ingestAndExtract({ now: NOW });
-    expect(db.updates).toEqual([]);
-    expect(summary.heldSlugs).toContain(KIA);
+    expect(status('kia')).toBe('closed');
+    expect(status('deere')).toBe('open');
+    expect(db.updates.map((u) => u.id)).toContain('kia');
+    expect(db.updates.map((u) => u.id)).not.toContain('deere');
+    expect(summary.heldSlugs).not.toContain(KIA);
     expect(summary.heldSlugs).not.toContain(DEERE);
+    expect(db.decisions).toContain(KIA);
+    expect(db.decisions).not.toContain(DEERE);
   });
 
   it('close by the official deadline when the flag is on, and a guided one still ahead stays open', async () => {
@@ -155,7 +170,7 @@ describe('held deadline closes (HELD_AUTO_CLOSE_PAST_DEADLINE)', () => {
     const summary = await ingestAndExtract({ now: NOW });
     expect(status('kia')).toBe('closed');
     expect(status('deere')).toBe('open');
-    expect(summary).toMatchObject({ held: 0, autoClosedPastDeadline: 7 });
+    expect(summary.held).toBe(0);
     expect(db.decisions).toContain(KIA);
     expect(db.decisions).not.toContain(DEERE);
   });

@@ -18,7 +18,7 @@ export const catalog = defineCopy({
   },
   /** Flag on: CATALOG_INTRO_MAY_FILE. */
   introMayFile: {
-    text: 'Class action settlements that are taking claims now. Check who qualifies on the official site. We file claims for you on supported settlements. You can always file on the official site yourself instead, where filing is free.',
+    text: 'Class action settlements that are taking claims now. Check who qualifies on the official site. File free on the official site yourself, or use Easy submit on eligible claims and we submit it for you after you e-sign.',
     source: 'src/lib/copy.ts',
   },
 

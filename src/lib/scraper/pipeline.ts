@@ -7,6 +7,7 @@ import { getSourceAdapters, type SourceAdapter } from './sources';
 import {
   applyCloseBreaker,
   omitDismissedClosingUpdates,
+  omitHeldReopenUpdates,
   EXISTING_ROW_COLUMNS,
   EXISTING_ROW_COLUMNS_BASE,
   heldChangeFingerprint,
@@ -373,9 +374,10 @@ async function applyPlanned(
   },
 ): Promise<void> {
   const { summary, adapterSlug, openCount, maxShare, dryRun, extrasById, now } = opts;
-  const closingSlugs = planned.updates.filter((u) => u.closes).map((u) => u.slug);
-  const decisions = await loadHeldClosureDecisions(supabase, closingSlugs);
+  const relevantSlugs = planned.updates.filter((u) => u.closes || u.reopens).map((u) => u.slug);
+  const decisions = await loadHeldClosureDecisions(supabase, relevantSlugs);
   const omitted = omitDismissedClosingUpdates(planned.updates, decisions);
+  const reopenOmitted = omitHeldReopenUpdates(omitted.remaining, decisions);
   if (omitted.skipped.length > 0) {
     summary.skippedDismissed += omitted.skipped.length;
     for (const row of omitted.skipped) {
@@ -390,14 +392,30 @@ async function applyPlanned(
         .join(', ')}`,
     );
   }
+  if (reopenOmitted.skipped.length > 0) {
+    console.log(
+      `[pipeline] ${adapterSlug}: skipped ${reopenOmitted.skipped.length} reopen(s) with held_closure_decisions: ${reopenOmitted.skipped
+        .slice(0, LOG_LIST_LIMIT)
+        .map((row) => row.slug)
+        .join(', ')}`,
+    );
+  }
+  // Deadline closeouts are objective (the window ended yesterday). They skip
+  // the close-share breaker so a busy night still stamps closed_at / override.
+  const deadlineCloses = reopenOmitted.remaining.filter((u) => u.closeReason === 'deadline');
+  const rest = reopenOmitted.remaining.filter((u) => u.closeReason !== 'deadline');
   const broken = applyCloseBreaker(
-    { ...planned, updates: omitted.remaining },
+    { ...planned, updates: rest },
     { openCount, maxShare },
   );
-  let plan = broken.plan;
+  let plan = {
+    ...broken.plan,
+    updates: [...broken.plan.updates, ...deadlineCloses],
+  };
   let held = broken.held;
   const allowed = broken.allowed;
   const autoCloseSlugs = new Set<string>();
+  const deadlineCloseSlugs = new Set(deadlineCloses.map((u) => u.slug));
 
   if (held.length > 0 && flags.heldAutoClosePastDeadline()) {
     const split = partitionHeldPastDeadline(held, extrasById, now);
@@ -475,12 +493,26 @@ async function applyPlanned(
     }
     const results = await Promise.all(
       chunk.map(async (update) => {
-        const { error } = await writeLawsuitRow(supabase, {
+        let { error } = await writeLawsuitRow(supabase, {
           operation: 'update',
           slug: update.slug,
           id: update.id,
           patch: update.patch,
         });
+        if (error?.message && isMissingOverrideColumn(error.message) && 'deadline_override' in update.patch) {
+          const {
+            deadline_override: _o,
+            deadline_override_at: _at,
+            deadline_override_note: _note,
+            ...rest
+          } = update.patch;
+          ({ error } = await writeLawsuitRow(supabase, {
+            operation: 'update',
+            slug: update.slug,
+            id: update.id,
+            patch: rest,
+          }));
+        }
         return { update, error };
       }),
     );
@@ -506,8 +538,8 @@ async function applyPlanned(
         }
         continue;
       }
-      if (autoCloseSlugs.has(update.slug) && !dryRun) {
-        summary.autoClosedPastDeadline += 1;
+      if ((autoCloseSlugs.has(update.slug) || deadlineCloseSlugs.has(update.slug)) && !dryRun) {
+        if (autoCloseSlugs.has(update.slug)) summary.autoClosedPastDeadline += 1;
         await recordHeldClosureDecision({
           slug: update.slug,
           decision: 'auto_closed',

@@ -112,10 +112,35 @@ function lawsuitRow() {
     third_party_fee_status: 'unknown',
     third_party_fee_allowed: false,
     tags: {},
+    claim_action_type: null,
   };
 }
 
-const lawsuits = [lawsuitRow()];
+const lawsuits = [
+  lawsuitRow(),
+  {
+    ...lawsuitRow(),
+    id: '22222222-2222-4222-8222-222222222222',
+    slug: 'isolated-fixture-opening-soon',
+    title: 'Isolated Fixture Opening Soon Settlement',
+    summary: 'Isolated Playwright opening-soon row. Not a real settlement.',
+    claim_action_type: 'not_open',
+    deadline: '2027-06-01',
+    is_featured: false,
+    external_id: 'isolated-fixture-opening-soon',
+  },
+  {
+    ...lawsuitRow(),
+    id: '33333333-3333-4333-8333-333333333333',
+    slug: 'isolated-fixture-notice-id',
+    title: 'Isolated Fixture Notice ID Settlement',
+    summary: 'Isolated Playwright notice-ID row. Not a real settlement.',
+    claim_action_type: 'needs_notice_id',
+    administrator: 'Isolated Fixture Administrator, notices@isolated-admin.claimmatch.test',
+    is_featured: false,
+    external_id: 'isolated-fixture-notice-id',
+  },
+];
 
 function makeUser({ email, password, fullName }) {
   const id = randomUUID();

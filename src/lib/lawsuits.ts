@@ -3,7 +3,14 @@ import { createPublicClient } from '@/lib/supabase/server';
 import type { Lawsuit } from './types';
 import { isFictionalSlug } from './fictional-slugs';
 import { LIST_HIDDEN_SLUGS, rejectPublicTestListings, isPublicTestListing } from './test-settlements';
-import { OPEN_STATUSES, filterOpenForClaims, isOpenForClaims, isPublicLawsuit } from './open-for-claims';
+import {
+  OPEN_STATUSES,
+  excludeNotOpenActions,
+  filterOpenForClaims,
+  isOpenForClaims,
+  isPublicLawsuit,
+  onlyNotOpenActions,
+} from './open-for-claims';
 import {
   applySettlementGuide,
   applySettlementGuides,
@@ -24,7 +31,14 @@ import {
 
 // The open-for-claims rule lives in ./open-for-claims (pure, so the claim flow's
 // client components share it). Re-exported here for server code.
-export { filterOpenForClaims, isOpenForClaims, isPublicLawsuit };
+export {
+  excludeNotOpenActions,
+  filterOpenForClaims,
+  isNotOpenAction,
+  isOpenForClaims,
+  isPublicLawsuit,
+  onlyNotOpenActions,
+} from './open-for-claims';
 
 // Link, summary and search helpers live in ./lawsuit-display (pure, so the
 // native app shares them). Re-exported here so existing imports keep working.
@@ -69,9 +83,14 @@ export interface CatalogQuery {
 
 export interface CatalogResult {
   lawsuits: Lawsuit[];
+  /** Published `not_open` rows still on an open status — Opening soon, not the default list. */
+  openingSoon: Lawsuit[];
   /** True when the database could not be read (as opposed to "nothing open"). */
   error: boolean;
 }
+
+const EMPTY_CATALOG: CatalogResult = { lawsuits: [], openingSoon: [], error: false };
+const FAILED_CATALOG: CatalogResult = { lawsuits: [], openingSoon: [], error: true };
 
 /** Escape LIKE wildcards so a search for "50%" matches the text "50%". */
 function escapeLike(text: string): string {
@@ -86,7 +105,7 @@ export async function lookupLawsuits(
   opts?: CatalogQuery,
   now: Date = new Date(),
 ): Promise<CatalogResult> {
-  if (!supabaseConfigured()) return { lawsuits: [], error: false };
+  if (!supabaseConfigured()) return EMPTY_CATALOG;
   try {
     const supabase = createPublicClient();
     const q = cleanSearchTerm(opts?.q);
@@ -117,19 +136,26 @@ export async function lookupLawsuits(
     }
     if (error) {
       console.error('[lawsuits] catalog query failed:', error.message);
-      return { lawsuits: [], error: true };
+      return FAILED_CATALOG;
     }
     // Official-notice guides overlay a few high-interest rows first, so the
     // open rule and the order read the official deadline (guides never insert
     // listings or change ingest / verified_at). The query already applies the
     // rule; filtering again keeps this list correct even if the query and the
-    // rule ever drift apart. Test/dummy rows never reach a visitor. The limit
-    // applies to that order, so it is taken here rather than in the query.
-    const lawsuits = openGuidedCatalog(rejectPublicTestListings((data ?? []) as Lawsuit[]), now);
-    return { lawsuits: opts?.limit ? lawsuits.slice(0, opts.limit) : lawsuits, error: false };
+    // rule ever drift apart. Test/dummy rows never reach a visitor. `not_open`
+    // rows leave the default list (home counts, matching, /lawsuits) and sit
+    // in openingSoon instead. The limit applies to the taking-claims list.
+    const guided = openGuidedCatalog(rejectPublicTestListings((data ?? []) as Lawsuit[]), now);
+    const taking = excludeNotOpenActions(guided);
+    const openingSoon = onlyNotOpenActions(guided);
+    return {
+      lawsuits: opts?.limit ? taking.slice(0, opts.limit) : taking,
+      openingSoon,
+      error: false,
+    };
   } catch (err) {
     console.error('[lawsuits] catalog query threw:', err instanceof Error ? err.message : err);
-    return { lawsuits: [], error: true };
+    return FAILED_CATALOG;
   }
 }
 
@@ -201,7 +227,7 @@ export async function getCategories(): Promise<string[]> {
  * the recently-closed archive. Never returns sample data.
  */
 export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
-  if (!supabaseConfigured()) return { lawsuits: [], error: false };
+  if (!supabaseConfigured()) return EMPTY_CATALOG;
   try {
     const supabase = createPublicClient();
     const { data, error } = await supabase
@@ -213,7 +239,7 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
       .limit(1000);
     if (error) {
       console.error('[lawsuits] published catalog query failed:', error.message);
-      return { lawsuits: [], error: true };
+      return FAILED_CATALOG;
     }
     // Guides first, then the deadline order, as in lookupLawsuits.
     return {
@@ -222,6 +248,7 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
           rejectPublicTestListings(((data ?? []) as Lawsuit[]).filter(isPublicLawsuit)),
         ),
       ),
+      openingSoon: [],
       error: false,
     };
   } catch (err) {
@@ -229,6 +256,6 @@ export async function lookupPublishedLawsuits(): Promise<CatalogResult> {
       '[lawsuits] published catalog query threw:',
       err instanceof Error ? err.message : err,
     );
-    return { lawsuits: [], error: true };
+    return FAILED_CATALOG;
   }
 }

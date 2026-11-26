@@ -9,8 +9,13 @@ const catalog = vi.hoisted(() => ({ lawsuits: [] as Lawsuit[], error: false }));
 
 vi.mock('@/lib/lawsuits', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/lawsuits')>()),
-  lookupLawsuits: async () => ({ lawsuits: catalog.lawsuits, error: catalog.error }),
+  lookupLawsuits: async () => ({ lawsuits: catalog.lawsuits, openingSoon: [], error: catalog.error }),
 }));
+
+vi.mock('next/dynamic', async () => {
+  const { HowItWorks } = await import('@/components/home/HowItWorks');
+  return { default: () => HowItWorks };
+});
 
 import HomePage from '@/app/page';
 
