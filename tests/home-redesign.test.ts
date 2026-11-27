@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Lawsuit } from '@/lib/types';
+import { HOME_HERO_PRIMARY_CTA } from '@/lib/copy';
 import { makeLawsuit } from './helpers';
 
 const catalog = vi.hoisted(() => ({ lawsuits: [] as Lawsuit[], error: false }));
@@ -86,12 +87,12 @@ describe('home page redesign', () => {
   it('lets visitors see matching settlements before an account', async () => {
     catalog.lawsuits = [makeLawsuit({}, { deadline: '2099-01-10' })];
     const html = await render();
-    expect(html).toContain('See matching settlements');
+    expect(html).toContain(HOME_HERO_PRIMARY_CTA);
     expect(html).toContain('href="/preview"');
     expect(html).toContain('Is Lawsuit AI legit?');
     expect(html).toContain('hello@lawsuitai.org');
     expect(html).not.toMatch(/15\s*%/);
-    const matchAt = html.indexOf('See matching settlements');
+    const matchAt = html.indexOf(HOME_HERO_PRIMARY_CTA);
     const browseAt = html.indexOf('See open settlements');
     expect(matchAt).toBeGreaterThan(-1);
     expect(browseAt).toBeGreaterThan(matchAt);

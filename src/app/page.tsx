@@ -8,14 +8,17 @@ import { pickClosingSoon } from '@/lib/closing-soon';
 import { pickTopPayouts } from '@/lib/top-payouts';
 import { HomeFeatures } from '@/components/home/HomeFeatures';
 import { homeStats } from '@/lib/home-stats';
+import { payoutStats } from '@/lib/payout-stats';
 import {
   BROWSE_NO_ACCOUNT,
+  HOME_HERO_PRIMARY_CTA,
   OFFICIAL_FILING_IS_FREE,
+  homeHeroPriceLine,
   accountGateWhy,
   lawsuitAiMayFile,
   publicBetaFeeCopy,
 } from '@/lib/copy';
-import { HomeHero } from '@/components/home/HomeHero';
+import { HomeHero, type HeroPayout } from '@/components/home/HomeHero';
 import dynamic from 'next/dynamic';
 import type { HowStep } from '@/components/home/how-it-works-types';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
@@ -32,7 +35,6 @@ const HomeTrimCatalog = dynamic(
   () => import('@/components/home/HomeTrimCatalog').then((m) => m.HomeTrimCatalog),
   { ssr: true },
 );
-import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Screen } from '@/components/home/DeviceFrame';
 import { CaptureView } from '@/components/analytics/CaptureView';
@@ -206,17 +208,28 @@ export default async function HomePage() {
   const account = { href: '/signup', label: 'Create a free account' };
   const primary = accountFirst ? account : browse;
   const secondary = accountFirst ? browse : account;
+  // Above the fold there is one primary action: see which settlements fit you.
+  // Browsing and how-it-works are text links inside the hero.
+  const heroPrimary = { href: '/preview', label: HOME_HERO_PRIMARY_CTA };
+  // Payout figures for the hero, counted from the same open rows the cards
+  // below are drawn from. Null when the catalog did not load, so the hero
+  // states no amount rather than an amount that is not true of the listings
+  // beside it; a figure payoutStats could not compute comes through as null
+  // and its line is not rendered. Changes as the catalog does, every load.
+  const heroPayout: HeroPayout | null = payoutFigures(catalog);
 
   return (
     <>
       <CaptureView event="landing_viewed" />
 
       <HomeHero
-        primary={primary}
-        extra={<MatchPreviewEntry variant="hero" />}
+        primary={heroPrimary}
+        browse={browse}
         freeLabel={freeLabel}
         fileLine={fileLine}
         browseNote={`${BROWSE_NO_ACCOUNT} ${accountGateWhy(mayFile, disclose)}`}
+        priceLine={homeHeroPriceLine(mayFile)}
+        payout={heroPayout}
         stats={stats}
         desktop={SCREENS.catalogDesktop}
         phone={SCREENS.dashboard}
@@ -392,4 +405,24 @@ export default async function HomePage() {
       />
     </>
   );
+}
+
+/**
+ * Hero figures from the open catalog. Returns null when the catalog failed or
+ * is empty — the hero then shows no payout block at all — and leaves any
+ * single figure null rather than substituting a stand-in. `closingCount`
+ * counts real deadlines inside the next 30 days, which is what the hero's
+ * line says; nothing here is averaged, rounded up or carried over a load.
+ */
+function payoutFigures(catalog: Awaited<ReturnType<typeof loadHomeCatalog>>): HeroPayout | null {
+  if (catalog.failed || catalog.lawsuits.length === 0) return null;
+  const stats = payoutStats(catalog.lawsuits);
+  return {
+    median: stats.medianPayout,
+    max: stats.topPayout?.amount ?? null,
+    maxTitle: stats.topPayout?.title ?? null,
+    maxSlug: stats.topPayout?.slug ?? null,
+    openCount: stats.open,
+    closingCount: stats.closingSoon,
+  };
 }

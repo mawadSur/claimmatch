@@ -150,7 +150,10 @@ describe('match preview is available without an account', () => {
       readFileSync(fileURLToPath(new URL(`../${rel}`, import.meta.url)), 'utf8');
     expect(read('src/app/preview/page.tsx')).toContain('See matching settlements');
     expect(read('src/app/preview/page.tsx')).not.toContain('notFound()');
-    expect(read('src/app/page.tsx')).toContain('MatchPreviewEntry');
+    // The hero's one primary call to action is the preview, so the home page
+    // reaches it without an account and without a second competing button.
+    expect(read('src/app/page.tsx')).toContain("href: '/preview'");
+    expect(read('src/app/page.tsx')).toContain('HOME_HERO_PRIMARY_CTA');
     expect(read('src/app/page.tsx')).not.toContain('flags.matchPreview()');
     expect(read('src/app/lawsuits/page.tsx')).toContain('AccountMatchBanner');
     expect(read('src/app/lawsuits/page.tsx')).not.toContain('flags.matchPreview()');
