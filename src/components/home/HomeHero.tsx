@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, CalendarClock, CheckCircle2, ExternalLink, HandCoins } from 'lucide-react';
 import type { HomeStats } from '@/lib/home-stats';
 import { CLOSING_SOON_DAYS, formatCount, formatUpdated } from '@/lib/home-stats';
-import { formatOwedUsd } from '@/lib/owed-estimate';
+
 import {
   HOME_HERO_FREE_LINE,
   HOME_HERO_HEADLINE_EMPHASIS,
@@ -12,8 +12,10 @@ import {
   HOME_HERO_PAYOUT_NOTE,
   HOME_HERO_SUBHEAD,
   heroClosingLine,
+  statedAmountLabel,
   heroPayoutHeadline,
   heroPayoutSource,
+  heroPayoutSourceLabel,
   heroPayoutSupport,
   homeHeroPriceLine,
 } from '@/lib/copy';
@@ -38,6 +40,11 @@ export interface HeroPayout {
   maxSlug?: string | null;
   /** Open settlements counted. */
   openCount: number;
+  /**
+   * Of those, how many state a per-person amount. The median is only ever
+   * rendered against this count, never against `openCount`.
+   */
+  statedCount: number;
   /** Of those, how many close inside the current calendar month. */
   closingCount: number;
 }
@@ -81,10 +88,11 @@ export function HomeHero({
   const updated = stats ? formatUpdated(stats.updatedAt) : null;
 
   // One formatted line per figure the caller actually has. No figure, no line.
-  const maxLabel = payout && payout.max !== null ? formatOwedUsd(payout.max) : null;
+  const maxLabel = payout ? statedAmountLabel(payout.max) : null;
   const support = payout
     ? heroPayoutSupport({
-        medianLabel: payout.median !== null ? formatOwedUsd(payout.median) : null,
+        medianLabel: statedAmountLabel(payout.median),
+        statedCount: payout.statedCount,
         openLabel: payout.openCount > 0 ? formatCount(payout.openCount) : null,
       })
     : null;
@@ -101,8 +109,8 @@ export function HomeHero({
 
       <div className="container-page pb-14 pt-8 sm:pt-14 lg:pb-20 lg:pt-20">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] lg:gap-12">
-          <div className="min-w-0 max-w-xl">
-            <div data-hero-reveal className="flex flex-wrap items-center gap-2">
+          <div className="stagger min-w-0 max-w-xl">
+            <div style={{ '--i': 0 } as CSSProperties} className="flex flex-wrap items-center gap-2">
               <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 shadow-sm ring-1 ring-slate-200">
                 <span className="relative flex h-2 w-2" aria-hidden>
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success-500 opacity-60" />
@@ -122,7 +130,7 @@ export function HomeHero({
             </div>
 
             <h1
-              data-hero-reveal
+              style={{ '--i': 1 } as CSSProperties}
               className="mt-5 text-[2.125rem] font-medium leading-[1.06] sm:text-5xl lg:text-[4rem]"
             >
               {HOME_HERO_HEADLINE_LEAD}{' '}
@@ -131,7 +139,7 @@ export function HomeHero({
 
             {maxLabel && (
               <div
-                data-hero-reveal
+                style={{ '--i': 2 } as CSSProperties}
                 className="mt-5 rounded-2xl bg-white p-4 shadow-card ring-1 ring-slate-200 sm:p-5"
               >
                 <p className="text-base font-semibold leading-snug text-ink sm:text-lg">
@@ -140,7 +148,12 @@ export function HomeHero({
                 {payout?.maxTitle && (
                   <p className="mt-1 text-sm leading-snug text-ink-muted">
                     {payout.maxSlug ? (
-                      <Link href={`/lawsuits/${payout.maxSlug}`} className="text-link">
+                      <Link
+                        href={`/lawsuits/${payout.maxSlug}`}
+                        // Negative margin keeps the 44px tap target off the layout.
+                        className="text-link -my-3.5 inline-block py-3.5"
+                        aria-label={heroPayoutSourceLabel(payout.maxTitle)}
+                      >
                         {heroPayoutSource(payout.maxTitle)}
                       </Link>
                     ) : (
@@ -159,7 +172,7 @@ export function HomeHero({
               </div>
             )}
 
-            <div data-hero-reveal className="mt-6 flex min-w-0 flex-col gap-3">
+            <div style={{ '--i': 3 } as CSSProperties} className="mt-6 flex min-w-0 flex-col gap-3">
               <Link
                 data-hero-cta
                 href={primary.href}
@@ -177,11 +190,11 @@ export function HomeHero({
               </p>
             </div>
 
-            <p data-hero-reveal className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
+            <p style={{ '--i': 4 } as CSSProperties} className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
               <span className="font-semibold text-ink">{HOME_HERO_FREE_LINE}</span> {priceLine}
             </p>
 
-            <p data-hero-reveal className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
+            <p style={{ '--i': 5 } as CSSProperties} className="mt-3 max-w-lg text-base leading-relaxed text-ink-muted">
               {HOME_HERO_PAYMENT_CLARITY}
             </p>
 

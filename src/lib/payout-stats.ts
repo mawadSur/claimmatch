@@ -1,5 +1,5 @@
 import { CLOSING_SOON_DAYS } from './home-stats';
-import { perPersonPayout, type PayoutColumns } from './top-payouts';
+import { rankablePayout, type PayoutColumns } from './top-payouts';
 import type { Lawsuit } from './types';
 import { daysLeftToFile } from './utils';
 
@@ -19,6 +19,7 @@ export interface PayoutStats {
   withStatedPayout: number;
   /**
    * Median of those stated per-person payouts, or null when none state one.
+   * Only ever meaningful beside `withStatedPayout`, never beside `open`:
    * With an even count this is the lower of the two middle figures, so the
    * number is always one a real listing states rather than an average of two.
    */
@@ -58,7 +59,12 @@ export function payoutStats(
     const days = daysLeftToFile(row.deadline, now);
     if (days !== null && days <= withinDays) closingSoon += 1;
 
-    const amount = perPersonPayout(row);
+    // rankablePayout, not perPersonPayout: a curated payout_max column on a
+    // listing whose own payout text states no per-person amount must never
+    // become the hero's headline figure. That is the audited symptom this
+    // change exists to remove, and attributing it to a named, linked listing
+    // would make it worse than it was in the module.
+    const amount = rankablePayout(row);
     if (amount == null) continue;
     amounts.push(amount);
     // Ties keep the first listing seen, so the attribution is stable per load.
