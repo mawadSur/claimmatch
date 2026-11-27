@@ -79,7 +79,8 @@ end $$;
 --                     (proof_feedback: 54_proof_feedback.sql;
 --                     match_alert_sends / match_alert_tokens: 74_match_alert_emails.sql;
 --                     the one-click filing tables of 0041: 76_one_click_filing.sql;
---                     self_filed_reports: 82_self_filed_reports.sql).
+--                     self_filed_reports: 82_self_filed_reports.sql;
+--                     official_form_opens: 87_founder_review_followups.sql).
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$
   select array['profiles', 'claims', 'matches', 'beta_feedback',
@@ -104,6 +105,7 @@ language sql immutable as $$
   select array['proof_feedback', 'claim_authorizations', 'filing_jobs',
                'match_events', 'match_feature_snapshots', 'match_labels',
                'profile_facts', 'consent', 'drip_email_sends',
+               'official_form_opens',
                'match_alert_sends', 'match_alert_tokens',
                'staff_roles', 'filing_policies', 'filing_controls', 'filing_specs',
                'claim_packets', 'claim_documents', 'esign_consents', 'claim_signatures',

@@ -132,3 +132,26 @@ begin
       null;
   end;
 end $$;
+
+\echo '  2 API roles cannot access official_form_opens'
+begin;
+set local role anon;
+do $$
+begin
+  if has_table_privilege('anon', 'public.official_form_opens', 'select')
+     or has_table_privilege('anon', 'public.official_form_opens', 'insert') then
+    raise exception '0055: anon must not access official_form_opens';
+  end if;
+end $$;
+reset role;
+
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000055';
+do $$
+begin
+  if has_table_privilege('authenticated', 'public.official_form_opens', 'select')
+     or has_table_privilege('authenticated', 'public.official_form_opens', 'insert') then
+    raise exception '0055: authenticated must not access official_form_opens';
+  end if;
+end $$;
+rollback;
