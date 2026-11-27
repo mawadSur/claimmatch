@@ -218,6 +218,14 @@ export interface ClaimView {
   notice_id?: string | null;
   /** 0053: when the member marked that they requested a notice ID. */
   requested_notice_at?: string | null;
+  /** 0056: member asked Lawsuit AI to email the administrator for a notice ID. */
+  pin_admin_email_requested_at?: string | null;
+  /** 0056: Resend accepted the PIN-gated administrator email. */
+  pin_admin_email_sent_at?: string | null;
+  pin_admin_email_provider_id?: string | null;
+  pin_admin_email_error?: string | null;
+  /** 0056: 7-day paper-form fallback was recorded. */
+  paper_fallback_at?: string | null;
   created_at: string | null;
 }
 
@@ -240,6 +248,11 @@ export function toClaimView(row: Record<string, unknown>): ClaimView {
       row.corrective_notice_required === true || row.filed_at != null || row.authorized_at != null,
     notice_id: str(row.notice_id),
     requested_notice_at: str(row.requested_notice_at),
+    pin_admin_email_requested_at: str(row.pin_admin_email_requested_at),
+    pin_admin_email_sent_at: str(row.pin_admin_email_sent_at),
+    pin_admin_email_provider_id: str(row.pin_admin_email_provider_id),
+    pin_admin_email_error: str(row.pin_admin_email_error),
+    paper_fallback_at: str(row.paper_fallback_at),
     created_at: str(row.created_at),
   };
 }

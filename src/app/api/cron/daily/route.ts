@@ -19,6 +19,8 @@ import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
 import { sendDidYouFile24hEmails } from '@/lib/did-you-file-24h';
+import { sendPaperFallbackReminders } from '@/lib/paper-fallback-reminder';
+import { sendQueuedPinAdminEmails } from '@/lib/pin-admin-email-job';
 import { sendOnboardingDrips } from '@/lib/onboarding-drip';
 import { sendPayoutTrackerEmails } from '@/lib/payout-tracker';
 import { sendMatchAlerts } from '@/lib/match-alert-job';
@@ -28,6 +30,8 @@ import {
   deadlineRemindersGate,
   didYouFile24hGate,
   errorMessage,
+  paperFallbackReminderGate,
+  pinAdminEmailGate,
   heldTriageGate,
   linkCheckGate,
   matchAlertGate,
@@ -174,6 +178,24 @@ async function handle(req: Request) {
       steps.didYouFile24h = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/didYouFile24h', () => sendDidYouFile24hEmails());
+    }
+
+    const pinAdminGate = pinAdminEmailGate(flags.pinAdminEmail());
+    if (!pinAdminGate.run) {
+      steps.pinAdminEmail = pinAdminGate.step;
+    } else {
+      steps.pinAdminEmail = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/pinAdminEmail', () => sendQueuedPinAdminEmails());
+    }
+
+    const paperGate = paperFallbackReminderGate(flags.paperFallbackReminder());
+    if (!paperGate.run) {
+      steps.paperFallbackReminder = paperGate.step;
+    } else {
+      steps.paperFallbackReminder = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/paperFallbackReminder', () => sendPaperFallbackReminders());
     }
 
     const trackerGate = payoutTrackerGate(flags.payoutTrackerEmails());

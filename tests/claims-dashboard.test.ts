@@ -509,3 +509,41 @@ describe('agent-lane statuses (0041) on the dashboard', () => {
     expect(notices).toHaveLength(0);
   });
 });
+
+describe('PIN-gated email and paper fallback on the dashboard', () => {
+  const pinSettlement = (overrides: Partial<DashboardSettlement> = {}) =>
+    settlement({
+      claim_action_type: 'needs_notice_id',
+      claim_action: { form_url: 'https://admin.example/paper.pdf' },
+      ...overrides,
+    });
+
+  it('shows waiting copy after the administrator email went out', () => {
+    const { rows } = row(
+      claim({
+        status: 'self_file',
+        pin_admin_email_requested_at: '2026-10-15T12:00:00Z',
+        pin_admin_email_sent_at: '2026-10-15T12:05:00Z',
+      }),
+      pinSettlement(),
+    );
+    expect(rows[0].nextStep).toContain('Emailed administrator — waiting on reply');
+    expect(rows[0].nextStep).toContain('Oct 15, 2026');
+    expect(rows[0].action).toEqual({ label: 'View', href: '/claim/real-one#notice-id' });
+  });
+
+  it('surfaces the paper-form fallback after 7 days with no notice ID', () => {
+    const { rows } = row(
+      claim({
+        status: 'self_file',
+        pin_admin_email_sent_at: '2026-10-09T12:00:00Z',
+      }),
+      pinSettlement(),
+    );
+    expect(rows[0].nextStep).toContain('Paper form fallback');
+    expect(rows[0].action).toEqual({
+      label: 'Open the paper claim form',
+      href: 'https://admin.example/paper.pdf',
+    });
+  });
+});

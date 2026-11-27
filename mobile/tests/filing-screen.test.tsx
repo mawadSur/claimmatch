@@ -206,7 +206,7 @@ describe('what we still need', () => {
     expect(calls('PATCH', `${VIEW_PATH}/packet`)).toEqual([]);
   });
 
-  it('drops the save button when nothing is left to ask', async () => {
+  it('collapses to 1-tap when every required field is already filled', async () => {
     // Everything settled: member fields, not missing, no issue, not locked.
     const settled = [
       item({ path: 'member.legal_name', kind: 'member', label: 'Full legal name', value: 'Ada Lovelace' }),
@@ -218,14 +218,13 @@ describe('what we still need', () => {
     ];
     reply('GET', VIEW_PATH, [200, { filing: filingView({ items: settled }) }]);
     await show(flow({ canStart: false }, claimRow('preparing')));
-    expect(await screen.findByTestId('filing-from-profile')).toBeTruthy();
-    expect(screen.getByText(filing.nothingToAsk.text)).toBeTruthy();
+    expect(await screen.findByTestId('filing-one-tap')).toBeTruthy();
+    expect(screen.getByText(filing.oneTapTitle.text)).toBeTruthy();
+    expect(screen.getByTestId('filing-one-tap-submit')).toBeTruthy();
+    expect(screen.queryByTestId('filing-step-confirm')).toBeNull();
     expect(screen.queryByTestId('filing-save')).toBeNull();
-    expect(screen.queryByTestId('filing-save-to-profile')).toBeNull();
-    // The steps and the we-file-this-claim card keep their order.
-    expect(screen.getByTestId('filing-step-confirm')).toBeTruthy();
-    expect(screen.getByTestId('filing-step-review')).toBeTruthy();
-    expect(screen.getByTestId('filing-lane')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('filing-one-tap-edit'));
+    expect(await screen.findByTestId('filing-need')).toBeTruthy();
   });
 
   it('puts a typed value it can’t read next to its field, without saving', async () => {

@@ -366,6 +366,18 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.collectAdminPin(),
   },
   {
+    env: 'PIN_ADMIN_EMAIL_ENABLED',
+    description:
+      'Send PIN-gated notice-ID request emails to the settlement administrator. Off: the member’s request is recorded and nothing is sent.',
+    read: () => flags.pinAdminEmail(),
+  },
+  {
+    env: 'PAPER_FALLBACK_REMINDER_ENABLED',
+    description:
+      'Email the paper-form fallback reminder after a PIN-gated administrator email has no reply. Off: the dashboard still shows the fallback; no drip is sent.',
+    read: () => flags.paperFallbackReminder(),
+  },
+  {
     env: 'FUNNEL_EVENTS_ENABLED',
     description:
       'Checkout, trial, Easy submit, e-sign, and official-form funnel events plus cm_traffic_kind tagging (including qa). Off: today’s events stay.',

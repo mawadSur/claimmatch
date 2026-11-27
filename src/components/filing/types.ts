@@ -4,6 +4,7 @@
  * pulling in server code. Shapes come from the member API contract
  * (src/lib/filing/v2/contract.ts).
  */
+import type { NextEasySubmit } from '@/lib/filing/one-tap';
 import type { ClaimFilingSummary, ClaimFilingView, LaneView } from '@/lib/filing/v2/contract';
 
 /**
@@ -40,6 +41,8 @@ export interface OneClickClaimProps {
    * paywall then shows the price on its own rather than guessing a figure.
    */
   payoutLabel?: string | null;
+  /** Another Easy submit claim this member can open after signing this one. */
+  nextEasySubmit?: NextEasySubmit | null;
 }
 
 /** The dashboard's one-click data; null when the flag is off. */

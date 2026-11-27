@@ -328,11 +328,17 @@ describe('claim profile and action CTAs (default on)', () => {
     expect(flags.claimProfile()).toBe(true);
     expect(flags.claimActionCtas()).toBe(true);
     expect(flags.collectAdminPin()).toBe(false);
+    expect(flags.pinAdminEmail()).toBe(false);
+    expect(flags.paperFallbackReminder()).toBe(false);
     vi.stubEnv('CLAIM_PROFILE_ENABLED', '0');
     vi.stubEnv('CLAIM_ACTION_CTAS_ENABLED', '0');
     vi.stubEnv('COLLECT_ADMIN_PIN_ENABLED', '1');
+    vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '1');
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '1');
     expect(flags.claimProfile()).toBe(false);
     expect(flags.claimActionCtas()).toBe(false);
     expect(flags.collectAdminPin()).toBe(true);
+    expect(flags.pinAdminEmail()).toBe(true);
+    expect(flags.paperFallbackReminder()).toBe(true);
   });
 });

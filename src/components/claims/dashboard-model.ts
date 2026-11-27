@@ -35,6 +35,12 @@ import { buildClaimTimeline, type ClaimTimelineView } from '../../lib/claim-time
 import { finitePayoutAmount } from '../../lib/owed-estimate';
 import type { Lawsuit, Match, Profile } from '../../lib/types';
 import { formatDeadline } from '../../lib/utils';
+import {
+  PAPER_FALLBACK_CTA,
+  PAPER_FALLBACK_HEADING,
+  paperFormHref,
+  pinAdminStatus,
+} from '../../lib/pin-admin-email';
 
 const NEW_MATCH_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -46,6 +52,8 @@ export interface DashboardSettlement extends SettlementFacts {
   claim_url: string | null;
   final_approval_hearing_at?: string | null;
   payment_timing_text?: string | null;
+  claim_action_type?: string | null;
+  claim_action?: { form_url?: string | null } | null;
 }
 
 export interface DashboardRow {
@@ -104,6 +112,39 @@ export function deadlineText(deadline: string | null, now: Date): string {
   if (!countdown) return 'No deadline listed';
   if (countdown === 'Deadline passed') return `Deadline was ${formatDeadline(deadline)}`;
   return `Deadline ${formatDeadline(deadline)} · ${countdown}`;
+}
+
+function pinDashboardStep(
+  claim: ClaimView,
+  settlement: DashboardSettlement,
+  href: string | null,
+  now: Date,
+): { nextStep: string; action: DashboardRow['action'] } | null {
+  if (settlement.claim_action_type !== 'needs_notice_id') return null;
+  const status = pinAdminStatus({
+    notice_id: claim.notice_id,
+    pin_admin_email_requested_at: claim.pin_admin_email_requested_at,
+    pin_admin_email_sent_at: claim.pin_admin_email_sent_at,
+    now,
+  });
+  if (status.kind === 'paper_fallback') {
+    const formHref = paperFormHref({
+      formUrl: settlement.claim_action?.form_url,
+      officialHref: settlement.claim_url,
+      slug: settlement.slug,
+    });
+    return {
+      nextStep: `${PAPER_FALLBACK_HEADING}. ${status.headline ?? ''}`.trim(),
+      action: { label: PAPER_FALLBACK_CTA, href: formHref },
+    };
+  }
+  if (status.kind === 'waiting' || status.kind === 'queued') {
+    return {
+      nextStep: status.headline ?? 'Emailed administrator — waiting on reply',
+      action: href ? { label: 'View', href: `${href}#notice-id` } : null,
+    };
+  }
+  return null;
 }
 
 export function buildDashboard(
@@ -173,10 +214,16 @@ export function buildDashboard(
           nextStep = 'Our list marks this settlement closed. Check the official site before you file.';
           action = href ? { label: 'How to file', href } : null;
         } else {
-          nextStep = deadline
-            ? 'If you qualify, file on the official site before the deadline, then tell us.'
-            : 'If you qualify, file on the official site, then tell us.';
-          action = href ? { label: 'How to file', href } : null;
+          const pin = pinDashboardStep(claim, settlement, href, now);
+          if (pin) {
+            nextStep = pin.nextStep;
+            action = pin.action;
+          } else {
+            nextStep = deadline
+              ? 'If you qualify, file on the official site before the deadline, then tell us.'
+              : 'If you qualify, file on the official site, then tell us.';
+            action = href ? { label: 'How to file', href } : null;
+          }
         }
         break;
       case 'reported_filed':
