@@ -15,6 +15,14 @@ export function MailInInstructions({
   profile: ClaimProfile | null;
 }) {
   const current = profile ? currentAddressOf(profile) : null;
+  // A profile can hold city/state/ZIP without a street line, so the parts are
+  // joined only when they are filled in (no stray commas in the printed line).
+  const addressLine = current
+    ? [current.line1, current.line2, current.city, [current.state, current.zip].filter(Boolean).join(' ').trim()]
+        .map((part) => (part ?? '').trim())
+        .filter((part) => part !== '')
+        .join(', ')
+    : '';
   return (
     <section id="mail-in" className="scroll-mt-24 space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
       <h2 className="text-lg font-bold">Print, sign and mail this claim</h2>
@@ -69,7 +77,7 @@ export function MailInInstructions({
 Other names: ${profile.aliases ?? ''}
 Email: ${profile.email ?? ''}
 Phone: ${profile.phone ?? ''}
-Address: ${current ? `${current.line1}${current.line2 ? `, ${current.line2}` : ''}, ${current.city}, ${current.state} ${current.zip}` : ''}
+Address: ${addressLine}
 Payment preference (method name only): ${profile.payout_preference ? PAYOUT_PREFERENCE_LABELS[profile.payout_preference] : ''}
 VIN: ${profile.vehicle_vin ?? ''}
 Account emails: ${profile.account_emails.join(', ')}`}

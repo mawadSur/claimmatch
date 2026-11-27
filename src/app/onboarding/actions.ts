@@ -1,7 +1,9 @@
 'use server';
 
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 import { flags } from '@/lib/flags';
+import { MATCH_PREVIEW_COOKIE } from '@/lib/match-preview';
 import { createClient } from '@/lib/supabase/server';
 import { mergeAttributes, parseAttributeAnswers } from '@/lib/profile-attributes';
 import { recordFactConsent } from '@/lib/consent';
@@ -85,7 +87,21 @@ export async function saveOnboardingProfile(input: {
     await recordFactConsent(supabase, user.id, facts.facts);
   }
 
+  await clearPreviewMirror();
   return { ok: true };
+}
+
+/**
+ * Drops the `cm_preview` mirror once onboarding is done, the way the wizard
+ * drops its localStorage copy. Best effort: a cookie that cannot be written
+ * must never fail a save that already succeeded.
+ */
+async function clearPreviewMirror(): Promise<void> {
+  try {
+    (await cookies()).set(MATCH_PREVIEW_COOKIE, '', { path: '/', maxAge: 0 });
+  } catch {
+    /* read-only cookie store */
+  }
 }
 
 async function replaceOwnFacts(
@@ -118,7 +134,9 @@ async function replaceOwnFacts(
 
 /** "Skip for now": no details saved, and the dashboard stops asking. */
 export async function skipOnboarding(): Promise<OnboardingResult> {
-  return writeProfile({ onboarded: true });
+  const saved = await writeProfile({ onboarded: true });
+  if (saved.ok) await clearPreviewMirror();
+  return saved;
 }
 
 async function writeProfile(
@@ -136,9 +154,23 @@ async function writeProfile(
     userId = user.id;
   }
 
-  const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+  // `.select('id')` so a zero-row update is not read as success: PostgREST
+  // reports no error when nothing matched, and only the handle_new_user trigger
+  // creates the profiles row (client INSERT was revoked in migration 0032), so
+  // a missing row would otherwise make Skip claim it saved while writing
+  // nothing — and the dashboard card and the 24h drip would then contradict it.
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', userId)
+    .select('id');
   if (error) {
     console.error('[onboarding] profile update failed', { code: error.code ?? null });
+    return { ok: false, error: 'We couldn’t save your details. Please try again.' };
+  }
+  if (!data || data.length === 0) {
+    // No user id in the log: the row is missing, which is all we need to know.
+    console.error('[onboarding] profile update matched no row');
     return { ok: false, error: 'We couldn’t save your details. Please try again.' };
   }
   return { ok: true };

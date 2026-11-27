@@ -31,6 +31,9 @@ import { formatDeadline, US_STATES } from '@/lib/utils';
 
 type Step = 'questions' | 'results';
 
+/** Signing up from preview results lands on the dashboard match list. */
+const SIGNUP_FROM_PREVIEW_NEXT = '/dashboard?welcome=1&preview=1';
+
 export interface MatchPreviewScope {
   slug: string;
   title: string;
@@ -66,6 +69,9 @@ export function MatchPreview({
   const [matches, setMatches] = useState<MatchPreviewResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Bumped on every setError so the same message re-focuses on a second tap.
+  const [errorSeq, setErrorSeq] = useState(0);
+  const errorRef = useRef<HTMLParagraphElement | null>(null);
 
   const questions = scope
     ? scopedPreviewQuestions(scope.eligibility)
@@ -98,6 +104,18 @@ export function MatchPreview({
     [index, questions.length],
   );
 
+  // A validation message below the answer buttons is easy to miss on a phone,
+  // so move focus to it: the browser scrolls a focused element into view.
+  useEffect(() => {
+    if (!error) return;
+    errorRef.current?.focus();
+  }, [error, errorSeq]);
+
+  function fail(message: string) {
+    setError(message);
+    setErrorSeq((n) => n + 1);
+  }
+
   function persist(next: MatchPreviewDraft) {
     setDraft(next);
     writeStoredMatchPreview(next);
@@ -116,11 +134,11 @@ export function MatchPreview({
     return !!key && typeof draft.attributes[key] === 'boolean';
   }
 
-  async function finish() {
+  async function finish(source: MatchPreviewDraft = draft) {
     setError('');
     setBusy(true);
     try {
-      const payload = parseMatchPreviewDraft(draft) ?? draft;
+      const payload = parseMatchPreviewDraft(source) ?? source;
       writeStoredMatchPreview(payload);
       const res = await fetch('/api/match-preview', {
         method: 'POST',
@@ -131,7 +149,7 @@ export function MatchPreview({
         | { matches?: MatchPreviewResult[]; error?: string }
         | null;
       if (!res.ok) {
-        setError(json?.error || 'We couldn’t load matches right now. Please try again.');
+        fail(json?.error || 'We couldn’t load matches right now. Please try again.');
         return;
       }
       const rows = json?.matches ?? [];
@@ -139,7 +157,7 @@ export function MatchPreview({
       setStep('results');
       posthog?.capture('match_preview_completed', { match_count: rows.length });
     } catch {
-      setError('We couldn’t reach Lawsuit AI. Check your connection and try again.');
+      fail('We couldn’t reach Lawsuit AI. Check your connection and try again.');
     } finally {
       setBusy(false);
     }
@@ -148,7 +166,7 @@ export function MatchPreview({
   function next(e: React.FormEvent) {
     e.preventDefault();
     if (!currentAnswered()) {
-      setError(current?.type === 'state' ? 'Pick your state to continue.' : 'Choose yes or no to continue.');
+      fail(current?.type === 'state' ? 'Pick your state to continue.' : 'Choose yes or no to continue.');
       return;
     }
     setError('');
@@ -159,13 +177,39 @@ export function MatchPreview({
     setIndex((i) => i + 1);
   }
 
-  function signupHref(slug?: string) {
-    const target = scope?.slug || slug;
-    if ((signupContextEnabled || scope) && target) {
-      const nextPath = claimReturnPath(target);
-      return nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup';
+  /**
+   * One tap per yes/no question: record the answer and move on, instead of
+   * making every question cost a tap plus Continue. Back still undoes a
+   * mis-tap, and the state <select> keeps its explicit Continue so a keyboard
+   * or screen-reader change event never jumps the person forward.
+   */
+  function answer(value: boolean) {
+    if (busy) return;
+    const key = currentKey();
+    if (!key) return;
+    const nextDraft = { ...draft, attributes: { ...draft.attributes, [key]: value } };
+    persist(nextDraft);
+    setError('');
+    if (last) {
+      void finish(nextDraft);
+      return;
     }
-    return '/signup';
+    setIndex((i) => i + 1);
+  }
+
+  /**
+   * Where the account CTAs go. A settlement-scoped preview is about one
+   * settlement, so sign-up keeps going there. Everywhere else people land on
+   * the dashboard, which recomputes this same list from the answers the
+   * handoff carries — instead of a bare /signup with no destination at all, or
+   * a jump into a single settlement they never picked.
+   */
+  function signupHref() {
+    if (scope?.slug && signupContextEnabled) {
+      const nextPath = claimReturnPath(scope.slug);
+      if (nextPath) return `/signup?next=${encodeURIComponent(nextPath)}`;
+    }
+    return `/signup?next=${encodeURIComponent(SIGNUP_FROM_PREVIEW_NEXT)}`;
   }
 
   if (step === 'results') {
@@ -201,7 +245,7 @@ export function MatchPreview({
               These answers did not produce a match for this listing. That is
               not a decision that you qualify. The official notice has the rules.
             </p>
-            <MatchResultCtas slug={scope.slug} type={scope.claim_action_type} signupHref={signupHref(scope.slug)} />
+            <MatchResultCtas slug={scope.slug} type={scope.claim_action_type} signupHref={signupHref()} />
           </div>
         ) : (
           <ul className="mt-6 space-y-4">
@@ -245,7 +289,7 @@ export function MatchPreview({
                 <MatchResultCtas
                   slug={match.slug}
                   type={match.claim_action_type}
-                  signupHref={signupHref(match.slug)}
+                  signupHref={signupHref()}
                 />
               </li>
             ))}
@@ -283,7 +327,11 @@ export function MatchPreview({
   const selected = currentKey() ? draft.attributes[currentKey()!] : undefined;
 
   return (
-    <form onSubmit={next} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
+    <form
+      onSubmit={next}
+      aria-busy={busy}
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8"
+    >
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
         Question {progress}
       </p>
@@ -313,20 +361,16 @@ export function MatchPreview({
             <button
               type="button"
               className={selected === true ? 'btn-primary justify-center' : 'btn-secondary justify-center'}
-              onClick={() => {
-                const key = currentKey();
-                if (key) persist({ ...draft, attributes: { ...draft.attributes, [key]: true } });
-              }}
+              onClick={() => answer(true)}
+              disabled={busy}
             >
               Yes
             </button>
             <button
               type="button"
               className={selected === false ? 'btn-primary justify-center' : 'btn-secondary justify-center'}
-              onClick={() => {
-                const key = currentKey();
-                if (key) persist({ ...draft, attributes: { ...draft.attributes, [key]: false } });
-              }}
+              onClick={() => answer(false)}
+              disabled={busy}
             >
               No
             </button>
@@ -335,7 +379,13 @@ export function MatchPreview({
       </div>
 
       {error && (
-        <p role="alert" className="mt-5 flex items-start gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700">
+        <p
+          ref={errorRef}
+          id="match-preview-error"
+          role="alert"
+          tabIndex={-1}
+          className="mt-5 flex items-start gap-2 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700 outline-none"
+        >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           {error}
         </p>

@@ -43,8 +43,9 @@ export const common = defineCopy({
     text: 'Unverified: check the official site',
     source: 'src/components/claims/UnverifiedLabel.tsx',
   },
+  /** CATALOG_SOURCE_NOTE: true of every listing, so it never denies a checked one. */
   unverifiedNoticeBody: {
-    text: 'These listings come from public sources, and we haven’t checked them against the official notices yet. Each one links to the official site, or to where we found it. Confirm the details there before you file.',
+    text: 'These listings come from public sources. Each one links to the official site, or to where we found it. Confirm the details there before you file.',
     source: 'src/app/lawsuits/page.tsx',
   },
   logIn: {

@@ -34,6 +34,12 @@ export interface OneClickClaimProps {
   reauthWithGoogle?: boolean;
   /** Offer Apple for that sign-in: the account has an Apple identity and APPLE_SIGN_IN_ENABLED is on. */
   reauthWithApple?: boolean;
+  /**
+   * The settlement listing's own stated payout range, already formatted
+   * ("$50", "$10–$40"). Null when the listing states no numeric amount; the
+   * paywall then shows the price on its own rather than guessing a figure.
+   */
+  payoutLabel?: string | null;
 }
 
 /** The dashboard's one-click data; null when the flag is off. */

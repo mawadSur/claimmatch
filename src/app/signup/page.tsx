@@ -71,7 +71,7 @@ export default function SignupPage() {
           <BetaInviteCapture />
         </Suspense>
       ) : null}
-      <div className="container-narrow py-14 sm:py-20">
+      <div className="container-narrow py-10 sm:py-16">
         <div className="mx-auto max-w-md">
           <div className="text-center">
             <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
@@ -82,18 +82,10 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <ul className="mx-auto mt-6 max-w-sm space-y-2.5">
-            {bullets.map((t) => (
-              <li key={t} className="flex items-center gap-2.5 text-sm text-ink-muted">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-success-600" aria-hidden />
-                {t}
-              </li>
-            ))}
-          </ul>
-
-          <WhyAccountExplainer className="mt-6" />
-
-          <div className="mt-8">
+          {/* The form comes first so Continue with Apple/Google and the email
+              field are on the first screen at 390px. Everything that explains
+              the account follows it; nothing was dropped. */}
+          <div className="mt-6">
             <Suspense fallback={<AuthFormFallback />}>
               <AuthForm
                 mode="signup"
@@ -103,6 +95,17 @@ export default function SignupPage() {
               />
             </Suspense>
           </div>
+
+          <ul className="mx-auto mt-8 max-w-sm space-y-2.5">
+            {bullets.map((t) => (
+              <li key={t} className="flex items-center gap-2.5 text-sm text-ink-muted">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-success-600" aria-hidden />
+                {t}
+              </li>
+            ))}
+          </ul>
+
+          <WhyAccountExplainer className="mt-6" />
 
           <div className="mt-8">
             <PublicTrustBlock compact />

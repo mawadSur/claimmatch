@@ -30,5 +30,13 @@ export const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy-Report-Only', value: CONTENT_SECURITY_POLICY_REPORT_ONLY },
 ];
 
-/** Public catalog list: no per-user content, safe to CDN-cache. */
+/**
+ * Public catalog list: no per-user *data*, safe to CDN-cache.
+ *
+ * The response does carry per-user nav chrome (Dashboard/Sign out vs Log in/
+ * Get started, and since the Settlements tab is public-only, whether that tab
+ * is present). That variance predates this header and is chrome, not data, so
+ * the shared cache is still correct — but the comment used to claim "no
+ * per-user content", which was not accurate.
+ */
 export const LAWSUITS_CACHE_CONTROL = 'public, s-maxage=900, stale-while-revalidate=86400';

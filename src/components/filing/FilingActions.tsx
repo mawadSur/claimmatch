@@ -26,10 +26,18 @@ export function FilingActions({
   view,
   busy,
   onView,
+  hideSelfFile = false,
 }: {
   view: ClaimFilingView;
   busy: boolean;
   onView: (view: ClaimFilingView, message: string) => void;
+  /**
+   * Drop the "finish on the official site instead" control. Set on the intake
+   * branch, where SelfFileLaneStep already offers the same action: two controls
+   * for one action read as a duplicate submit. The status-card branch leaves it
+   * on, so a filing_rejected claim still offers the way out.
+   */
+  hideSelfFile?: boolean;
 }) {
   const [pending, setPending] = useState<Pending>(null);
   const [working, setWorking] = useState(false);
@@ -86,7 +94,8 @@ export function FilingActions({
     </div>
   );
 
-  const any = actions.can_self_file || actions.can_reopen || actions.can_withdraw || actions.can_add_confirmation;
+  const showSelfFile = actions.can_self_file && !hideSelfFile;
+  const any = showSelfFile || actions.can_reopen || actions.can_withdraw || actions.can_add_confirmation;
   if (!any) return null;
 
   return (
@@ -126,7 +135,7 @@ export function FilingActions({
             {COPY.reopen}
           </button>
         )}
-        {actions.can_self_file && (
+        {showSelfFile && (
           <button type="button" className="btn-secondary !py-2 text-sm" onClick={() => setPending('self_file')} disabled={off}>
             {COPY.selfFile}
           </button>

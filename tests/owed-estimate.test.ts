@@ -4,6 +4,7 @@ import {
   finitePayoutAmount,
   formatOwedUsd,
   owedRangeLabel,
+  statedPayoutLabel,
   statedPayoutRange,
   unstatedPayoutCopy,
   visibleOwedEstimate,
@@ -69,5 +70,22 @@ describe('owed estimate sum', () => {
     expect(formatOwedUsd(25.4)).toBe('$25');
     expect(owedRangeLabel({ statedCount: 2, unstatedCount: 0, low: 10, high: 40 })).toBe('$10–$40');
     expect(owedRangeLabel({ statedCount: 1, unstatedCount: 0, low: 50, high: 50 })).toBe('$50');
+  });
+});
+
+describe('single settlement payout label', () => {
+  it('formats one listing’s own range exactly as the dashboard header does', () => {
+    expect(statedPayoutLabel({ payoutMin: 25, payoutMax: 75 })).toBe('$25–$75');
+    expect(statedPayoutLabel({ payoutMin: null, payoutMax: 40 })).toBe('$40');
+    expect(statedPayoutLabel({ payoutMin: 50, payoutMax: 50 })).toBe('$50');
+    // Numeric columns can arrive as strings.
+    expect(statedPayoutLabel({ payoutMin: '10', payoutMax: '40' })).toBe('$10–$40');
+  });
+
+  it('is null when the listing states no numeric payout, including typical_payout-only rows', () => {
+    expect(statedPayoutLabel({ payoutMin: null, payoutMax: null })).toBeNull();
+    expect(statedPayoutLabel({})).toBeNull();
+    // "Up to $100" lives in typical_payout, which this module never parses.
+    expect(statedPayoutLabel({ payoutMin: 'Up to $100', payoutMax: undefined })).toBeNull();
   });
 });

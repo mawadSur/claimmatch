@@ -1,4 +1,4 @@
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, ExternalLink } from 'lucide-react';
 import type { CatalogLink } from '@/lib/lawsuits';
 import type { Lawsuit } from '@/lib/types';
 import { showVerifiedBadge, verifiedOnLabel } from '@/lib/verified-fields';
@@ -7,12 +7,16 @@ import { noticeCheckedOnLabel } from '@/lib/settlement-guides';
 /**
  * Per-listing verification, not a site-wide banner. Compact so it does not
  * push the first settlement off a phone screen.
+ *
+ * `linkTitle` names the settlement for a screen reader. The catalog card sets
+ * it because a page of cards would otherwise repeat a bare "Official site".
  */
 export function ListingVerification({
   lawsuit,
   official,
   compact = false,
   open = true,
+  linkTitle,
 }: {
   lawsuit: Pick<
     Lawsuit,
@@ -29,21 +33,31 @@ export function ListingVerification({
   official: CatalogLink | null;
   compact?: boolean;
   open?: boolean;
+  linkTitle?: string;
 }) {
   const verified = showVerifiedBadge(lawsuit);
   const checked = noticeCheckedOnLabel(lawsuit.slug);
+  const link = (href: string, label: string) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rounded font-semibold underline underline-offset-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+    >
+      {label}
+      {linkTitle ? (
+        <>
+          <ExternalLink className="ml-0.5 inline h-3 w-3" aria-hidden="true" />
+          <span className="sr-only"> for {linkTitle} (opens in a new tab)</span>
+        </>
+      ) : null}
+    </a>
+  );
   const source =
     official?.kind === 'official' ? (
-      <a
-        href={official.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-semibold underline underline-offset-2 hover:text-ink"
-      >
-        {official.label}
-      </a>
+      link(official.href, official.label)
     ) : official ? (
-      <>Source: {official.label}. We don’t have the official site’s link yet.</>
+      <>Source: {link(official.href, official.label)}. We don’t have the official site’s link yet.</>
     ) : (
       'We don’t have its link yet.'
     );

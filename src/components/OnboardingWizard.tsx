@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 import { profileCompletedProperties } from '@/lib/analytics/events';
@@ -65,7 +65,6 @@ export function OnboardingWizard({
   const [previewHydrated, setPreviewHydrated] = useState(false);
   const [error, setError] = useState<{ message: string; field?: OnboardingField } | null>(null);
   const [action, setAction] = useState<null | 'save' | 'skip'>(null);
-  const [, startTransition] = useTransition();
   const busy = action !== null;
 
   useEffect(() => {
@@ -101,10 +100,11 @@ export function OnboardingWizard({
       if (props) posthog?.capture('profile_completed', props);
     }
     clearStoredMatchPreview();
-    startTransition(() => {
-      router.push(safeNextOr(next, '/dashboard?welcome=1'));
-      router.refresh();
-    });
+    // Leave this page with a full navigation, the way AuthForm does: a soft
+    // router.push waits on the force-dynamic dashboard RSC, so the first tap
+    // looks dead and the second one is swallowed by disabled={busy}. `action`
+    // stays set so the control is still disabled while the browser leaves.
+    window.location.assign(safeNextOr(next, '/dashboard?welcome=1'));
   }
 
   async function run(kind: 'save' | 'skip') {
@@ -113,7 +113,10 @@ export function OnboardingWizard({
     try {
       const preview = readStoredMatchPreview();
       const merged = mergePreviewIntoAnswers(answers, preview);
-      const savedProfile = kind === 'save' || Boolean(preview);
+      // A skip is always a skip. Routing it through saveOnboardingProfile just
+      // because a preview draft exists made Skip fail on a field the person
+      // never filled in, and counted as profile_completed.
+      const savedProfile = kind === 'save';
       const hasName = Boolean(fullName.trim());
       const hasState = Boolean((state || preview?.state || '').trim());
       finish(
@@ -157,6 +160,7 @@ export function OnboardingWizard({
     <form
       onSubmit={step === 1 ? continueToQuestions : step === 2 && profileV2 ? continueToFacts : save}
       noValidate
+      aria-busy={busy}
       className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card sm:p-8"
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
@@ -286,16 +290,24 @@ export function OnboardingWizard({
             </>
           )}
         </button>
+        <button
+          type="button"
+          onClick={() => void run('skip')}
+          disabled={busy}
+          className="btn-ghost"
+        >
+          {action === 'skip' ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Skipping…
+            </>
+          ) : (
+            <>Skip for now</>
+          )}
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => void run('skip')}
-        disabled={busy}
-        className="text-link mt-3 inline-flex min-h-tap items-center gap-1.5 text-sm"
-      >
-        {action === 'skip' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-        Skip for now — I’ll finish this later
-      </button>
+      <p className="mt-3 text-sm text-ink-muted">
+        You can finish this later in Settings.
+      </p>
     </form>
   );
 }

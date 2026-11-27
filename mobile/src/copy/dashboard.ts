@@ -200,6 +200,10 @@ export const dashboard = defineCopy({
     text: 'If the official notice describes you, file on the official site before the deadline.',
     source: 'src/components/claims/ClaimList.tsx',
   },
+  hintInProcess: {
+    text: 'Signed and on its way. Nothing for you to do right now.',
+    source: 'src/components/claims/ClaimList.tsx',
+  },
   hintReported: {
     text: 'You told us you filed. Add the confirmation number when you get it.',
     source: 'src/components/claims/ClaimList.tsx',
@@ -300,6 +304,8 @@ export function groupHint(group: ClaimGroup): string {
   switch (group) {
     case 'needs_filing':
       return dashboard.hintNeedsFiling.text;
+    case 'in_process':
+      return dashboard.hintInProcess.text;
     case 'reported':
       return dashboard.hintReported.text;
     case 'submitted':

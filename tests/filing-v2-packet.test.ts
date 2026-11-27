@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { memberPrefillFromClaimProfile, mergeClaimProfile } from '@/lib/claim-profile';
 import { checkAnswerShape, mergeMemberSnapshot, validateAnswer } from '@/lib/filing/v2/answers';
 import { agentAuthorizationText, AGENT_AUTH_V1, authorizationTextFor } from '@/lib/filing/v2/authorization-text';
 import { evaluateCondition, questionVisible, type ConditionContext } from '@/lib/filing/v2/conditions';
@@ -179,6 +180,27 @@ describe('buildPacketDraft', () => {
     expect(buildPacketDraft(input({ benefit_tier: 'basic' }, { documents: docs })).documents).toEqual([]);
     const draft = buildPacketDraft(input({ benefit_tier: 'documented' }, { documents: docs }));
     expect(draft.documents.map((d) => d.id)).toEqual([second.id, RECEIPT.id]);
+  });
+
+  it('keeps city, state and ZIP from a profile that has no street line', () => {
+    // The live prefill path: derivePacketState feeds buildPacketDraft the
+    // merged claim profile. PR #82 dropped all three here whenever
+    // address_line1 was blank, which also blanked the member state that
+    // computeLane reads, so Easy submit could silently become unavailable.
+    const profile = memberPrefillFromClaimProfile(
+      mergeClaimProfile(null, {
+        full_name: 'Ada Lovelace',
+        email: 'ada@example.test',
+        address_line1: null,
+        address_line2: null,
+        city: 'Springfield',
+        state: 'CA',
+        zip: '94110',
+      }),
+    );
+    const draft = buildPacketDraft(input({}, { profile }));
+    expect(draft.member.address).toEqual({ line1: null, line2: null, city: 'Springfield', state: 'CA', zip: '94110' });
+    expect(draft.member.legal_name).toBe('Ada Lovelace');
   });
 
   it('has no spec hashes and no answers without a spec', () => {

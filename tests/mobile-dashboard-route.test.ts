@@ -285,6 +285,9 @@ describe('GET /api/mobile/dashboard: the response', () => {
 
     const json = JSON.stringify(data);
     expect(json).not.toMatch(/"score"/);
+    // The no-PIN ranking fields stay server-side (src/lib/mobile-contract.ts).
+    expect(json).not.toMatch(/"claimActionType"/);
+    expect(json).not.toMatch(/"category"/);
     expect(json).not.toMatch(/attributes|had_data_breach|Lovelace/);
   });
 

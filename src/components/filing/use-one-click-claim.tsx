@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import type { ClaimTone, ClaimView } from '@/lib/claims';
 import { ONE_CLICK_COPY, ONE_CLICK_SELF_FILE_TITLE } from '@/lib/copy';
@@ -20,6 +21,9 @@ import { OneClickEntry } from './OneClickEntry';
 import { OneClickFiling } from './OneClickFiling';
 import { PreparedAnswers } from './PreparedAnswers';
 import type { OneClickClaimProps } from './types';
+
+/** How long to wait before refreshing the server components after a status change. */
+const REFRESH_DELAY_MS = 1500;
 
 /** What ClaimFlow shows for one-click filing; null when ONE_CLICK_FILING_ENABLED is off. */
 export interface OneClickClaimParts {
@@ -66,13 +70,34 @@ export function useOneClickClaim({
   announce: (message: string) => void;
 }): OneClickClaimParts | null {
   const [filing, setFiling] = useState<ClaimFilingView | null>(oneClick?.view ?? null);
+  const router = useRouter();
+  const lastStatus = useRef<string | null>(oneClick?.view?.claim.status ?? null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    [],
+  );
   const onFilingChange = useCallback(
     (view: ClaimFilingView, message: string) => {
       setFiling(view);
       setClaim((current) => claimViewFromFiling(view, current));
       if (message) announce(message);
+      // Refresh the server components so /dashboard and the status panel show the
+      // new state at once instead of after a manual reload. Gated on a *status*
+      // change: this callback also fires on every packet save, and an ungated
+      // refresh would fight PacketItemsStep's in-progress state. Both pages are
+      // force-dynamic, so there is no server cache to bust — the stale copy is
+      // the client Router Cache, which only router.refresh() clears.
+      const next = view.claim.status;
+      if (next !== lastStatus.current) {
+        lastStatus.current = next;
+        if (refreshTimer.current) clearTimeout(refreshTimer.current);
+        refreshTimer.current = setTimeout(() => router.refresh(), REFRESH_DELAY_MS);
+      }
     },
-    [setClaim, announce],
+    [setClaim, announce, router],
   );
   if (!oneClick) return null;
 
@@ -100,7 +125,7 @@ export function useOneClickClaim({
     ),
     entry:
       oneClick.needsMembership && lane ? (
-        <MembershipGate returnTo={claimPath ?? '/settings'} />
+        <MembershipGate returnTo={claimPath ?? '/settings'} payoutLabel={oneClick.payoutLabel ?? null} />
       ) : offerStart && lane ? (
         <OneClickEntry lane={lane} lawsuitId={lawsuitId} onStarted={onFilingChange} />
       ) : null,

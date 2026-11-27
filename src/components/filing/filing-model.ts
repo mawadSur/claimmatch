@@ -256,6 +256,22 @@ export function oneClickSummaries(items: readonly ClaimFilingSummary[]): ClaimFi
   return items.filter((item) => isOneClickStatus(item.status));
 }
 
+/**
+ * The claim ids the dashboard's "Filing status" section will actually render.
+ * "Your claims" hides exactly these and nothing more.
+ *
+ * Keyed off the summaries rather than off the claim rows on purpose: the two
+ * come from different queries, and `summaries: []` is truthy. Testing the
+ * array for truthiness instead hid every agent-status claim from "Your claims"
+ * even when "Filing status" rendered nothing, so a just-signed claim showed up
+ * on neither list and looked deleted.
+ */
+export function filingStatusClaimIds(
+  summaries: readonly ClaimFilingSummary[] | null | undefined,
+): Set<string> {
+  return new Set(oneClickSummaries(summaries ?? []).map((item) => item.claim_id));
+}
+
 /** "Ready to file" and "needs your attention" counts for the dashboard. */
 export function summaryCounts(items: readonly ClaimFilingSummary[]): { ready: number; needsYou: number } {
   return {

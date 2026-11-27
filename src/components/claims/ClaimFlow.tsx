@@ -31,7 +31,7 @@ import { CorrectiveNotice, FictionalNotice } from './CorrectiveNotice';
 import { PrefillPacket } from './PrefillPacket';
 import { ReportFiled } from './ReportFiled';
 import type { SelfFiledReportView } from '@/lib/self-filed-report';
-import { FILE_FOR_YOU_CTA, SELF_FILE_SECONDARY } from '@/lib/copy';
+import { FILE_FOR_YOU_CTA, ONE_CLICK_SELF_FILE_NOTE, SELF_FILE_SECONDARY } from '@/lib/copy';
 import { AuthorizeFiling } from './AuthorizeFiling';
 import { ReportPayout } from './ReportPayout';
 import { Announcement, ExternalTextLink } from '@/components/filing/claim-flow-parts';
@@ -197,13 +197,18 @@ export function ClaimFlow({
 
   return (
     <div className="space-y-6">
-      {flags.claimActionCtas() && actionType && (
+      {/* Not shown once the member is inside the filing steps (same rule as
+          NoticeIdSection below): re-advertising "Easy submit" above a live
+          "File my claim" is the duplication subscribers reported. selfHref
+          drops any button that would just navigate back to this page. */}
+      {flags.claimActionCtas() && actionType && !oc?.active && (
         <ClaimActionCta
           slug={settlement.slug}
           claimActionType={actionType}
           claimAction={actionDetails}
           officialHref={settlement.officialUrl}
           deskEligible={Boolean(oc?.filesForMember)}
+          selfHref={`/claim/${settlement.slug}`}
         />
       )}
       {flags.claimActionCtas() && actionType === 'mail_in' && (
@@ -266,7 +271,7 @@ function StatusPanel({
   badge?: { label: string; tone: ClaimTone } | null;
   /** One-click filing on: the lane's note replaces the general one. */
   note?: string;
-  /** Easy submit settlements never show the leftover “doesn’t file claims for you” copy. */
+  /** Easy submit settlements show EASY_SUBMIT_EXPLAINER, not the self-file note. */
   easySubmit?: boolean;
 }) {
   if (fictional) {
@@ -326,11 +331,9 @@ function StatusPanel({
             deadline time.
           </span>
         ) : (
-          <span>
-            Lawsuit AI doesn&rsquo;t file claims for you. You file on the official site,
-            then tell us here so we can keep track. Check the official site for the
-            exact deadline time.
-          </span>
+          // Scoped to this claim: Easy submit exists on eligible claims, so a
+          // site-wide "doesn't file claims for you" would contradict the footer.
+          <span>{ONE_CLICK_SELF_FILE_NOTE}</span>
         )}
       </p>
     </section>
@@ -419,7 +422,7 @@ function FilingSteps({
   prepared?: React.ReactNode;
   /** Lawsuit AI files (or offers to file) this claim: PrefillPacket's lead says so. */
   agentLane?: boolean;
-  /** Easy submit (`desk_file`): never the leftover “never files for you” packet note. */
+  /** Easy submit (`desk_file`): PREFILL_EASY_SUBMIT_NOTE, not the self-file packet note. */
   easySubmit?: boolean;
   selfFiledReport?: SelfFiledReportView | null;
   signedIn?: boolean;

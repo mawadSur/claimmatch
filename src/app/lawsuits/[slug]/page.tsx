@@ -604,7 +604,13 @@ export default async function LawsuitDetailPage({ params }: Params) {
                           : 'Confirm who qualifies on the official notice, then file there. You do not need an account to file.'}
                 </p>
                 {flags.claimActionCtas() && lawsuit.claim_action_type ? (
-                  <div className="mt-5">
+                  // Desktop only: on phones the same CTA already renders above
+                  // the fold (the lg:hidden block earlier in the page), and two
+                  // identical "Submit a claim" buttons on one screen is the
+                  // duplication subscribers reported. The rest of this sidebar
+                  // (official-site link, signup CTA, filing points) still shows
+                  // at every width.
+                  <div className="mt-5 hidden lg:block">
                     <ClaimActionCta
                       slug={lawsuit.slug}
                       claimActionType={lawsuit.claim_action_type}

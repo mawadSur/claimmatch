@@ -363,16 +363,23 @@ export function mergeClaimProfile(
 ): ClaimProfile {
   const base = emptyClaimProfile();
   const row = stored ?? {};
+  // Any one address line on `profiles` is enough to synthesize the current
+  // address. Keying this on address_line1 alone dropped city/state/zip from the
+  // packet prefill for a member who had only those, and because the packet's
+  // member state feeds computeLane it could also push them off the agent lane.
+  const fromAccount = [account?.address_line1, account?.city, account?.state, account?.zip].some(
+    (value) => typeof value === 'string' && value.trim() !== '',
+  );
   const current =
     row.addresses?.find((a) => a.kind === 'current') ??
-    (account?.address_line1
+    (fromAccount
       ? {
           kind: 'current' as const,
-          line1: account.address_line1,
-          line2: account.address_line2 ?? null,
-          city: account.city ?? '',
-          state: account.state ?? '',
-          zip: account.zip ?? '',
+          line1: account?.address_line1 ?? '',
+          line2: account?.address_line2 ?? null,
+          city: account?.city ?? '',
+          state: account?.state ?? '',
+          zip: account?.zip ?? '',
           lived_from: null,
           lived_to: null,
         }

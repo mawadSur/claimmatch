@@ -65,6 +65,7 @@ describe('brief 3 feature flags', () => {
     expect(flags.verifyAssist()).toBe(false);
     expect(flags.owedEstimateHeader()).toBe(false);
     expect(flags.selfFiledReport()).toBe(false);
+    expect(flags.noPinBreachPriority()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');

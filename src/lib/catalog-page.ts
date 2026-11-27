@@ -1,4 +1,5 @@
 import { eligibilitySummary } from './claim-input';
+import { noPinBreachRank } from './claim-priority';
 import { flags } from './flags';
 import { cleanSearchTerm, searchCatalog } from './lawsuit-display';
 import { proofStatus } from './proof';
@@ -112,6 +113,36 @@ export function sortCatalogValueFirst<T extends ValueRankRow>(rows: T[]): T[] {
   });
 }
 
+type NoPinRankRow = Pick<Lawsuit, 'deadline'> &
+  Partial<Pick<Lawsuit, 'claim_action_type' | 'category' | 'title' | 'summary'>>;
+
+/**
+ * NO_PIN_BREACH_PRIORITY_ENABLED: settlements whose official path needs no
+ * mailed notice ID first (breach classes first of all), then the default
+ * known-deadline order. Ordering only: no card copy asserts that a settlement
+ * needs no ID, because some audited desk_file paths still ask for one.
+ *
+ * A row with no known claim_action_type ranks last in the no-PIN key, so this
+ * degrades to sortKnownDeadlineFirst before migration 0051 is applied.
+ */
+export function sortNoPinBreachFirst<T extends NoPinRankRow>(rows: T[]): T[] {
+  return sortKnownDeadlineFirst(rows).sort(
+    (a, b) =>
+      noPinBreachRank({
+        claim_action_type: a.claim_action_type,
+        category: a.category,
+        title: a.title,
+        summary: a.summary,
+      }) -
+      noPinBreachRank({
+        claim_action_type: b.claim_action_type,
+        category: b.category,
+        title: b.title,
+        summary: b.summary,
+      }),
+  );
+}
+
 export function paginate<T>(
   items: T[],
   page: number,
@@ -136,7 +167,7 @@ export function paginate<T>(
  */
 export function filterCatalog<
   T extends Pick<Lawsuit, 'title' | 'summary' | 'category' | 'deadline'> &
-    Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text' | 'payout_min' | 'payout_max' | 'typical_payout'>>,
+    Partial<Pick<Lawsuit, 'proof_required' | 'eligibility' | 'proof_verified' | 'verified_at' | 'eligibility_verified' | 'administrator' | 'eligibility_text' | 'payout_min' | 'payout_max' | 'typical_payout' | 'claim_action_type'>>,
 >(
   lawsuits: T[],
   opts: {
@@ -164,6 +195,9 @@ export function filterCatalog<
       eligibility_text: l.eligibility_text ?? null,
     }) === 'no');
   }
+  // Precedence when both ordering flags are on: no-PIN breach wins, because it
+  // is about whether a person can finish the claim at all.
+  if (flags.noPinBreachPriority()) return sortNoPinBreachFirst(rows);
   if (flags.catalogValueRank()) return sortCatalogValueFirst(rows);
   return sortKnownDeadlineFirst(rows);
 }

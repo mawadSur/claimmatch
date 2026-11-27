@@ -12,7 +12,7 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { FilingSummaryList } from '@/components/filing/FilingSummaryList';
 import { loadOneClickDashboard } from '@/components/filing/dashboard-data';
-import { isOneClickStatus } from '@/components/filing/filing-model';
+import { filingStatusClaimIds } from '@/components/filing/filing-model';
 import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
 import { lawsuitAiMayFile, ONE_CLICK_COPY, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
 import { flags } from '@/lib/flags';
@@ -25,6 +25,8 @@ import {
 } from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { BetaFeedbackPrompt } from '@/components/dashboard/BetaFeedbackPrompt';
+import { ValueSummary } from '@/components/dashboard/ValueSummary';
+import { buildDashboardValue } from '@/lib/dashboard-value';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
 import type { BetaFeedbackTrigger } from '@/lib/analytics/events';
 
@@ -45,7 +47,12 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string; denied?: string; password?: string }>;
+  searchParams: Promise<{
+    welcome?: string;
+    denied?: string;
+    password?: string;
+    preview?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
@@ -53,7 +60,7 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/dashboard');
 
-  const { welcome, denied, password } = await searchParams;
+  const { welcome, denied, password, preview } = await searchParams;
   const now = new Date();
 
   const {
@@ -68,7 +75,25 @@ export default async function DashboardPage({
     matches,
     needsProfile,
     firstName,
+    payouts,
+    membership,
   } = await loadDashboardData(supabase, user.id, now);
+  // DASHBOARD_VALUE_ENABLED: what the membership has been worth, from records
+  // already on file. Web only. `payouts` / `membership` are empty while the
+  // flag is off, and may be absent entirely when a test fakes the loader.
+  const value = flags.dashboardValue()
+    ? buildDashboardValue({
+        matches,
+        claims: claims.items.map((item) => ({
+          id: item.claim.id,
+          status: item.claim.status,
+          confirmation_number: item.claim.confirmation_number,
+        })),
+        payouts: payouts ?? [],
+        membership: membership ?? null,
+        now,
+      })
+    : null;
   // Web only (the app's dashboard endpoint does not send it yet).
   const completeness =
     flags.profileCompleteness() && !catalog.error
@@ -90,12 +115,19 @@ export default async function DashboardPage({
     now,
     strongMatchIds: matches.filter((row) => row.strength === 'strong').map((row) => row.id),
   });
-  // One-click claims show under "Filing status"; "Your claims" keeps the self-file ones
-  // (and all of them when the filing list could not be read, so none disappears).
-  const oneClickClaimIds = new Set(
-    oneClick?.summaries ? claims.items.filter((item) => isOneClickStatus(item.claim.status)).map((item) => item.claim.id) : [],
-  );
-  const claimRows = rows.filter((row) => !oneClickClaimIds.has(row.claimId));
+  // One-click claims show under "Filing status"; "Your claims" keeps the self-file ones.
+  //
+  // Key the removal off the rows "Filing status" will actually render, never off
+  // claims.items. The two come from different queries (loadUserClaims uses the
+  // service role; listClaimFilingSummaries uses the member's own RLS client and
+  // skips any claim whose settlement env is missing), and `summaries: []` is
+  // truthy — so the old `oneClick?.summaries ? ...` test hid every agent-status
+  // claim from "Your claims" even when "Filing status" was going to render
+  // nothing at all. A just-signed claim then appeared on neither list and
+  // looked deleted. Double-rendering is impossible because the summary list is
+  // the only producer of Filing status rows.
+  const shownInFilingStatus = filingStatusClaimIds(oneClick?.summaries);
+  const claimRows = rows.filter((row) => !shownInFilingStatus.has(row.claimId));
   const hasReportedFiling = claims.items.some(
     (item) => item.claim.status === 'reported_filed' || item.claim.status === 'submitted',
   );
@@ -171,12 +203,35 @@ export default async function DashboardPage({
 
         {welcome === '1' && <WelcomeCard oneClick={Boolean(oneClick)} />}
 
+        {preview === '1' && (
+          <p
+            role="status"
+            className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm leading-relaxed text-ink-muted"
+          >
+            <span className="font-semibold text-ink">Your preview answers are here.</span>{' '}
+            These settlements come from the answers you gave in the free preview.
+            Each one is a possible match, and the official notice has the rules.
+            Update your answers anytime under Settings → My profile.
+          </p>
+        )}
+
         {/* Always rendered (it shows nothing without notices) so its answers stay
             on screen after router.refresh() drops the answered rows. */}
         <CorrectiveNoticeList items={notices} />
 
         {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
         {betaFeedbackTrigger ? <BetaFeedbackPrompt trigger={betaFeedbackTrigger} /> : null}
+
+        {value ? <ValueSummary value={value} /> : null}
+
+        {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
+
+        {flags.assistedFiling() && (
+          <FilingStatusList
+            jobs={filingJobs}
+            titles={Object.fromEntries(catalog.lawsuits.map((l) => [l.id, l.title]))}
+          />
+        )}
 
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
@@ -199,6 +254,9 @@ export default async function DashboardPage({
           </div>
         )}
 
+        {/* owedEstimateEnabled: the value panel already carries the
+            potential-earnings tile, so the in-matches header would otherwise
+            show the same figure twice. */}
         <YourMatches
           items={matches}
           failed={catalog.error}
@@ -208,18 +266,9 @@ export default async function DashboardPage({
           oneClickLanes={oneClick?.lanes ?? null}
           canDismiss={flags.matchStore()}
           matchReasonEnabled={flags.matchReason()}
-          owedEstimateEnabled={flags.owedEstimateHeader()}
+          owedEstimateEnabled={flags.owedEstimateHeader() && !value?.potential}
           selfFiledReportEnabled={flags.selfFiledReport()}
         />
-
-        {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
-
-        {flags.assistedFiling() && (
-          <FilingStatusList
-            jobs={filingJobs}
-            titles={Object.fromEntries(catalog.lawsuits.map((l) => [l.id, l.title]))}
-          />
-        )}
 
         <section aria-labelledby="your-claims-title">
           <h2 id="your-claims-title" className="text-2xl font-extrabold">

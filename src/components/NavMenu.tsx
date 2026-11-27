@@ -12,6 +12,17 @@ const LINKS = [
   { href: '/faq', label: 'FAQ' },
 ] as const;
 
+/**
+ * Tabs that only make sense before sign-in. The catalog is a public-funnel
+ * entry point; once you have an account the dashboard is the anchor, and
+ * /lawsuits stays reachable from the dashboard CTAs and the footer.
+ *
+ * Filtered at render time rather than removed from LINKS, because
+ * mobile/src/copy/app.ts points tabSettlements at this file and
+ * tests/mobile-copy-parity.test.ts asserts the literal still lives here.
+ */
+const PUBLIC_ONLY_HREFS = new Set<string>(['/lawsuits']);
+
 export function NavMenu({
   signedIn,
   isAdmin,
@@ -23,6 +34,7 @@ export function NavMenu({
 }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const links = signedIn ? LINKS.filter((link) => !PUBLIC_ONLY_HREFS.has(link.href)) : LINKS;
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +53,7 @@ export function NavMenu({
   return (
     <>
       <div className="hidden items-center gap-8 md:flex">
-        {LINKS.map((link) => (
+        {links.map((link) => (
           <Link key={link.href} href={link.href} className="nav-link">
             {link.label}
           </Link>
@@ -74,7 +86,7 @@ export function NavMenu({
           className="absolute inset-x-0 top-full z-40 border-b border-slate-200 bg-white shadow-card md:hidden"
         >
           <nav className="container-page flex flex-col gap-1 py-4" aria-label="Mobile">
-            {LINKS.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

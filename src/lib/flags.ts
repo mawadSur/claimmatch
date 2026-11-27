@@ -145,6 +145,24 @@ export const flags = {
    */
   stateOnlyCap: () => on('MATCH_STATE_ONLY_CAP_ENABLED'),
   /**
+   * An employer- or role-bounded class (an hourly non-exempt class at a named
+   * employer) needs a corroborating, in-period employer fact before it can
+   * match, and a date-bounded class cannot read as a Strong match for a
+   * profile with no dated facts. Also requires word boundaries and a minimum
+   * length when a fact is matched against a brand/employer tag. Default on:
+   * this is a correctness fix. Set MATCH_SPECIFICITY_GATE_ENABLED=0 to roll
+   * back to keyword/single-signal overlap without a deploy.
+   */
+  matchSpecificityGate: () => onUnlessOff('MATCH_SPECIFICITY_GATE_ENABLED'),
+  /**
+   * Rank eligible no-PIN (desk_file / online_form) data-breach settlements
+   * first within a strength band on the dashboard, the logged-out preview and
+   * the catalog. Off: today's score / deadline order stays. Ordering only — no
+   * new copy and no change to any match score. Inert until lawsuits
+   * .claim_action_type exists and is populated (migration 0051 + owner-apply).
+   */
+  noPinBreachPriority: () => on('NO_PIN_BREACH_PRIORITY_ENABLED'),
+  /**
    * Legacy assisted-filing scaffolding (0015). Keep off: one-click filing
    * (ONE_CLICK_FILING_ENABLED) replaces it. Even on, a settlement is offered
    * only where its own assisted_filing_allowed marker is true.
@@ -421,6 +439,15 @@ export const flags = {
    * payout_min / payout_max on each open match's settlement record. Off: hidden.
    */
   owedEstimateHeader: () => on('OWED_ESTIMATE_HEADER_ENABLED'),
+  /**
+   * Signed-in dashboard "What your membership has done so far" panel: listed
+   * potential ranges, the payouts the member reported (count and amount kept
+   * separate), claims submitted, estimated time saved, and a labelled estimate
+   * against the monthly list price. Reads public.recoveries and
+   * public.subscriptions with the member's own client. Off: nothing is read and
+   * the panel is hidden.
+   */
+  dashboardValue: () => on('DASHBOARD_VALUE_ENABLED'),
   /**
    * "I filed this myself" self-report: mark a match/claim as filed on the
    * official site, with optional confirmation number and screenshot. Off: the

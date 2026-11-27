@@ -105,6 +105,41 @@ describe('LawsuitCard', () => {
     expectHonest(html);
   });
 
+  // Fix 9a: the card states what is true of ITS listing, so /lawsuits never
+  // needs a page-wide claim about what has or has not been checked.
+  it('says a guided listing was read against the official notice, with the date', () => {
+    const html = render({
+      lawsuit: lawsuit({ slug: 'toyota-airbag-control-unit-zf-trw-settlement', title: 'Toyota Airbag Control Unit ZF-TRW Settlement' }),
+    });
+    expect(html).toContain('Checked against the official notice on Nov 10, 2026');
+    expect(html).not.toContain('we haven’t checked them against the official notices yet');
+  });
+
+  it('says Verified on a stamped row once the flag is on, and never both labels', () => {
+    vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
+    const html = render({
+      lawsuit: lawsuit({
+        verified_at: '2026-10-20',
+        verified_by: 'admin',
+        eligibility_verified: 'Open to eligible US residents.',
+      }),
+    });
+    expect(html).toContain('Verified');
+    expect(html).not.toContain('Checked against the official notice on');
+    expect(html).not.toContain('Unverified: check the official site');
+  });
+
+  it('a bare listing claims neither label and still links to the official site', () => {
+    const html = render({ lawsuit: lawsuit() });
+    expect(html).not.toContain('Checked against the official notice on');
+    expect(html).not.toContain('Verified on');
+    expect(html).not.toContain('Unverified: check the official site');
+    expect(html).toContain('href="https://www.returnsettlement.com/submit-claim"');
+    // Compact: the "confirm on the official site" sentence lives on the page,
+    // not on every card, so a card stays short on a phone.
+    expect(html).not.toContain('Confirm the deadline, who qualifies');
+  });
+
   it('hides Easy submit on desk_file until the spec is approved', () => {
     const draft = render({ lawsuit: lawsuit({ claim_action_type: 'desk_file' }) });
     expect(draft).not.toContain('Easy submit');
@@ -372,6 +407,30 @@ describe('catalog page', () => {
     expect(html).toContain('Amazon Return Policy Settlement');
     expect(html).not.toContain('Fake');
     expect(html).toContain('CC BY 4.0');
+    expectHonest(html);
+  });
+
+  // Fix 9a: the hero paragraph must never deny a row the same page calls checked.
+  it('never denies a guide-checked listing it is showing', async () => {
+    db.list = {
+      data: [lawsuit({ slug: 'toyota-airbag-control-unit-zf-trw-settlement', title: 'Toyota Airbag Control Unit ZF-TRW Settlement' })],
+      error: null,
+    };
+    const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
+    expect(html).toContain('Checked against the official notice on Nov 10, 2026');
+    expect(html).not.toContain('we haven’t checked them against the official notices yet');
+    expect(html).toContain('The ones we have checked against the official notice say so on the listing');
+    expectHonest(html);
+  });
+
+  it('with nothing checked it still says to confirm on the official site, and claims no checking', async () => {
+    db.list = { data: [lawsuit()], error: null };
+    const html = renderToStaticMarkup(await LawsuitsPage(searchParams({})));
+    expect(html).toContain('These listings come from public sources.');
+    expect(html).toContain('Confirm the details there before you file.');
+    expect(html).not.toContain('we haven’t checked them against the official notices yet');
+    expect(html).not.toContain('The ones we have checked against the official notice say so');
+    expect(html).not.toContain('Unverified: check the official site');
     expectHonest(html);
   });
 

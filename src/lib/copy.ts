@@ -38,6 +38,20 @@ export function membershipCopy(
   );
 }
 
+/**
+ * The settlement's own listed payout, shown beside the membership price so the
+ * cost sits next to the figure the listing states. `label` comes from
+ * `statedPayoutLabel` (src/lib/owed-estimate.ts) and is always the listing's
+ * own payout_min / payout_max — never estimated, rounded or promised. Callers
+ * render nothing at all when the listing states no amount.
+ */
+export function listedPayoutBesidePriceCopy(label: string): string {
+  return (
+    `This settlement lists ${label} per eligible person. ` +
+    `That is the listing’s own figure, not a prediction of what you will receive.`
+  );
+}
+
 export function startTrialCtaLabel(
   trialDays = CLAIMMATCH_TRIAL_DAYS,
   price = membershipPriceCopy(),
@@ -351,6 +365,14 @@ export const PREFILL_AGENT_LANE_NOTE =
 export const PREFILL_EASY_SUBMIT_NOTE =
   'Name, email, phone, address and state you saved. Edit anything that’s wrong. Easy submit uses these details after you e-sign, or copy them into the official form if you file yourself.';
 
+/**
+ * PrefillPacket's lead on a claim Lawsuit AI does not file. Scoped to the
+ * claim on screen: Easy submit exists on eligible claims (SHORT_DISCLAIMER),
+ * so a site-wide "never files for you" here would contradict the footer.
+ */
+export const PREFILL_SELF_FILE_NOTE =
+  'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI doesn’t file this claim for you.';
+
 /** The claim page's status note on the self-file lane while one-click filing is on. */
 export const ONE_CLICK_SELF_FILE_NOTE =
   'Lawsuit AI doesn’t file this claim for you. You finish it on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.';
@@ -582,12 +604,14 @@ export const ONE_CLICK_COPY = {
   signedBy: (name: string, when: string) => `Signed by ${name} on ${when}`,
   loadFailed: 'We couldn’t load this claim’s filing details. Please refresh the page.',
   network: 'We couldn’t reach Lawsuit AI. Check your connection and try again.',
+  historyToggle: 'Show or hide the history',
   dashboard: {
     title: 'Filing status',
     intro: 'Claims you started with Lawsuit AI, and where each one stands.',
     ready: 'Ready to file',
     needsYou: 'Need your attention',
     open: 'Open',
+    showList: 'Show or hide your claims',
     failed: 'We couldn’t load your filing status right now. Please refresh the page in a minute.',
   },
   dashboardIntro: `Track your claims and what happens next. ${WE_FILE_SUPPORTED}. Lawsuit AI never handles settlement payments.`,
@@ -632,4 +656,43 @@ export const OAUTH_COPY = {
   privacy: 'Privacy Policy',
   /** Google sign-in came back without signing the person in (canceled, or Google said no). */
   failed: 'Google sign-in didn’t finish. Try again, or use your email and password.',
+} as const;
+
+/**
+ * Dashboard value counter (DASHBOARD_VALUE_ENABLED). Every figure on this panel
+ * is either a count of records on file for this member or an estimate that
+ * prints its own assumption. Nothing here is a payout promise: potential comes
+ * from listed settlement ranges, actual comes only from amounts the member
+ * typed in themselves, and the two never merge into one headline.
+ */
+export const DASHBOARD_VALUE_COPY = {
+  title: 'What your membership has done so far',
+  intro:
+    'Counts of what is on file for you, plus estimates that each state the assumption behind them. A potential figure is not money received, and Lawsuit AI does not confirm reported payouts with the administrator.',
+  /** Prefix for every estimated figure's assumption line. */
+  estimateWord: 'Estimate.',
+  potentialLabel: 'Potential earnings (estimate)',
+  potentialPrefix: 'Estimated',
+  payoutCountLabel: 'Payouts you reported',
+  payoutCountNote:
+    'Each one is a payout you told us you received. Kept separate from the amount, because a report can arrive without a dollar amount.',
+  payoutTotalLabel: 'Amount you reported receiving',
+  payoutTotalNote:
+    'The amounts you typed in, added up. Self-reported: Lawsuit AI does not check them with the administrator.',
+  payoutNoAmount:
+    'No amount recorded yet. You reported a payout without a dollar amount, so there is no total to show.',
+  submittedLabel: 'Claims submitted',
+  submittedNote:
+    'Claims recorded as having reached an administrator. A claim marked submitted without a confirmation number is not counted.',
+  timeSavedLabel: 'Estimated time saved',
+  comparisonLabel: 'Estimated value vs membership',
+  comparisonActualNote: 'What you reported receiving, measured against the assumed membership cost.',
+  comparisonPotentialNote:
+    'Measured from the listed potential ranges, not from money received: you have reported no payout amount yet.',
+  comparisonNoStart:
+    'We have no membership start date on file for you, so there is nothing to compare yet.',
+  comparisonInTrial:
+    'You are inside the free trial, so membership has cost you nothing so far and there is nothing to compare yet.',
+  comparisonNothingToCompare:
+    'No payout amount on file, and no match has a listed payout range, so there is nothing to compare yet.',
 } as const;

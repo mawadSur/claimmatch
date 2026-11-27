@@ -60,9 +60,10 @@ export const claim = defineCopy({
   yourClaim: { text: 'Your claim', source: FLOW },
   notTrackingYet: { text: 'Not tracking yet', source: FLOW },
   deadline: { text: 'Deadline', source: FLOW },
+  /** ONE_CLICK_SELF_FILE_NOTE: scoped to this claim, because Easy submit files eligible ones. */
   statusNote: {
-    text: 'Lawsuit AI doesn’t file claims for you. You file on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.',
-    source: FLOW,
+    text: 'Lawsuit AI doesn’t file this claim for you. You finish it on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.',
+    source: 'src/lib/copy.ts',
   },
   caveatClosedWithDeadline: {
     text: "Our list marks this settlement as closed, but its deadline hasn't passed. We're re-checking it. Check the official site before you file.",
@@ -255,9 +256,10 @@ export const claim = defineCopy({
 
   // PrefillPacket.tsx -----------------------------------------------------------------------
   packetTitle: { text: 'Copy-ready details from your profile', source: PACKET },
+  /** PREFILL_SELF_FILE_NOTE: scoped to this claim, not a site-wide "never files" promise. */
   packetNote: {
-    text: 'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI never files for you.',
-    source: PACKET,
+    text: 'Name, email, phone, address and state you saved. Edit anything that’s wrong, then copy into the official form. Lawsuit AI doesn’t file this claim for you.',
+    source: 'src/lib/copy.ts',
   },
   /** PREFILL_AGENT_LANE_NOTE: only while this claim is an agent lane (web PrefillPacket agentLane). */
   packetNoteAgent: {

@@ -10,6 +10,16 @@ const m = vi.hoisted(() => ({
   previewLaneFor: vi.fn(),
   user: null as { id: string; email: string } | null,
   lawsuit: null as unknown,
+  // /onboarding reads the cm_preview handoff cookie; renderToStaticMarkup has
+  // no request scope, so the store is faked.
+  cookies: {} as Record<string, string>,
+}));
+
+vi.mock('next/headers', () => ({
+  cookies: async () => ({
+    get: (name: string) => (name in m.cookies ? { name, value: m.cookies[name] } : undefined),
+    set: () => undefined,
+  }),
 }));
 
 vi.mock('@/lib/filing/v2/environment', async (importOriginal) => ({
@@ -52,6 +62,7 @@ import LawsuitDetailPage from '@/app/lawsuits/[slug]/page';
 import InvitePage from '@/app/invite/page';
 import OnboardingPage from '@/app/onboarding/page';
 import { MAY_FILE_PAGE_COPY, SETTLEMENT_FILING_COPY } from '@/lib/copy';
+import { MATCH_PREVIEW_COOKIE, previewCookieValue } from '@/lib/match-preview';
 import { settlementFilingMode, viewerMayFile } from '@/lib/filing/public-filing';
 import { makeLawsuit } from './helpers';
 
@@ -74,6 +85,7 @@ beforeEach(() => {
   m.previewLaneFor.mockReset();
   m.user = null;
   m.lawsuit = null;
+  m.cookies = {};
   vi.stubEnv('INTERNAL_EMAILS', TESTER);
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://127.0.0.1:54321');
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon');
@@ -242,5 +254,23 @@ describe('invite and onboarding', () => {
     const tester = await render();
     expect(tester).toContain(MAY_FILE_PAGE_COPY.onboardingIntro);
     expect(tester).not.toContain('never files');
+  });
+
+  it('prefills onboarding from the cm_preview cookie, so another browser still has the answers', async () => {
+    setMode('test');
+    m.user = { id: 'u3', email: 'someone@example.com' };
+    const html = async () =>
+      renderToStaticMarkup(await OnboardingPage({ searchParams: Promise.resolve({}) }));
+
+    // No cookie: nothing is chosen in the state select.
+    expect(await html()).toContain('<option value="" selected="">');
+
+    m.cookies[MATCH_PREVIEW_COOKIE] = previewCookieValue({
+      state: 'CA',
+      attributes: { had_data_breach: true },
+    });
+    const prefilled = await html();
+    expect(prefilled).toContain('<option value="CA" selected="">');
+    expect(prefilled).not.toContain('<option value="" selected="">');
   });
 });

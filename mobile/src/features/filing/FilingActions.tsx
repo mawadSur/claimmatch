@@ -26,7 +26,18 @@ const REASONS = Object.keys(WITHDRAW_REASON_COPY) as WithdrawReason[];
  * site instead, make a change (cancels the signature), withdraw, or add the
  * administrator's confirmation number. Only what the server's actions allow.
  */
-export function FilingActions({ view, busy, onView }: { view: ClaimFilingView; busy: boolean; onView: OnFilingView }) {
+export function FilingActions({
+  view,
+  busy,
+  onView,
+  hideSelfFile = false,
+}: {
+  view: ClaimFilingView;
+  busy: boolean;
+  onView: OnFilingView;
+  /** Mirrors the web prop: drop this control where SelfFileLaneStep already offers it. */
+  hideSelfFile?: boolean;
+}) {
   const [pending, setPending] = useState<Pending>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +69,8 @@ export function FilingActions({ view, busy, onView }: { view: ClaimFilingView; b
     onView(r.data, copy.confirmationDone.text);
   }
 
-  const any = actions.can_self_file || actions.can_reopen || actions.can_withdraw || actions.can_add_confirmation;
+  const showSelfFile = actions.can_self_file && !hideSelfFile;
+  const any = showSelfFile || actions.can_reopen || actions.can_withdraw || actions.can_add_confirmation;
   if (!any) return null;
 
   const confirmBox = (text: string, yes: string, act: () => void, extra?: React.ReactNode) => (
@@ -97,7 +109,7 @@ export function FilingActions({ view, busy, onView }: { view: ClaimFilingView; b
         {actions.can_reopen ? (
           <Button variant="secondary" label={copy.reopen.text} disabled={off} onPress={() => setPending('reopen')} testID="filing-reopen" />
         ) : null}
-        {actions.can_self_file ? (
+        {showSelfFile ? (
           <Button variant="secondary" label={copy.selfFile.text} disabled={off} onPress={() => setPending('self_file')} testID="filing-self-file" />
         ) : null}
         {actions.can_withdraw ? (

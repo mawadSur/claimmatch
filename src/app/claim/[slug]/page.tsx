@@ -8,6 +8,7 @@ import { formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { isInternalEmail } from '@/lib/internal-users';
 import { isTestSettlementSlug } from '@/lib/test-settlements';
+import { statedPayoutLabel } from '@/lib/owed-estimate';
 import { hasAppleIdentity, hasGoogleIdentity } from '@/lib/oauth';
 import { ClaimFlow } from '@/components/claims/ClaimFlow';
 import { loadOneClickClaimPage } from '@/components/filing/claim-page-data';
@@ -124,6 +125,12 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
         slug: settlement.slug,
         lawsuitId: settlement.id,
         claimActionType: settlement.claim_action_type,
+        // The listing's own payout range, so the paywall can show it beside the
+        // membership price. Null when the listing states no numeric amount.
+        payoutLabel: statedPayoutLabel({
+          payoutMin: settlement.payout_min ?? null,
+          payoutMax: settlement.payout_max ?? null,
+        }),
         claim,
         context,
         now,

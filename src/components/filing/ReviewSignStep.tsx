@@ -76,6 +76,7 @@ export function ReviewSignStep({
   const changeHref = (path: string) => (fromProfile.has(path) ? '#filing-profile-title' : `#${itemDomId(path)}`);
 
   async function file() {
+    if (signing) return;
     setGeneral(null);
     setIssues([]);
     const found: Partial<Record<SignField, string>> = {};
@@ -266,7 +267,8 @@ export function ReviewSignStep({
           type="button"
           className="btn-primary w-full sm:w-auto"
           onClick={file}
-          disabled={off || !readiness.canSign || needsReauth || view.actions.needs_esign_consent}
+          disabled={signing || off || !readiness.canSign || needsReauth || view.actions.needs_esign_consent}
+          aria-busy={signing}
         >
           <PenLine className="h-4 w-4" aria-hidden />
           {signing ? COPY.signing : COPY.fileButton}

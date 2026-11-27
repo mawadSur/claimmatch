@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { extractLawsuitTags, lawsuitHasStructuredTags, normalizeLawsuitTags } from '@/lib/lawsuit-tags';
+import {
+  employersFromLawsuit,
+  extractLawsuitTags,
+  lawsuitHasStructuredTags,
+  normalizeLawsuitTags,
+} from '@/lib/lawsuit-tags';
 
 describe('extractLawsuitTags', () => {
   it('copies structured states and dateRange, and leaves unknown fields null', () => {
@@ -60,5 +65,41 @@ describe('normalizeLawsuitTags', () => {
   it('treats structured brand/employer tags as rule-like', () => {
     expect(lawsuitHasStructuredTags({ brands: ['Toyota'] })).toBe(true);
     expect(lawsuitHasStructuredTags({ states: ['CA'] })).toBe(false);
+  });
+});
+
+describe('employersFromLawsuit', () => {
+  it('prefers the stored tags when ingest wrote them', () => {
+    expect(
+      employersFromLawsuit({
+        tags: { employers: ['Acme Logistics'] },
+        eligibility_text: 'Hourly employees of Other Co.',
+      }),
+    ).toEqual(['Acme Logistics']);
+  });
+
+  it('falls back to the listing text when tags are null or empty', () => {
+    // An eligibility draft approved after ingest writes `eligibility` only, so
+    // a row can carry `requires` with no employer tag at all.
+    expect(
+      employersFromLawsuit({
+        tags: null,
+        title: 'Acme Logistics Unpaid Overtime Settlement',
+        eligibility_text: 'Hourly non-exempt employees of Acme Logistics who worked in California.',
+      }),
+    ).toEqual(['Acme Logistics']);
+    expect(employersFromLawsuit({ tags: { employers: [] }, eligibility_text: 'employees of Acme Logistics.' })).toEqual(
+      ['Acme Logistics'],
+    );
+  });
+
+  it('is null when nothing names an employer', () => {
+    expect(employersFromLawsuit({})).toBeNull();
+    expect(
+      employersFromLawsuit({
+        title: 'Nationwide Hourly Wage Settlement',
+        eligibility_text: 'All current and former non-exempt employees nationwide.',
+      }),
+    ).toBeNull();
   });
 });

@@ -20,7 +20,12 @@ describe('FLAG_CATALOG', () => {
     expect(status.some((row) => row.env === 'LLMS_TXT_ENABLED')).toBe(true);
     expect(status.some((row) => row.env === 'INDEXNOW_ENABLED')).toBe(true);
     expect(status.some((row) => row.env === 'AI_REFERRER_ATTRIBUTION_ENABLED')).toBe(true);
-    const defaultOn = new Set(['CLAIM_PROFILE_ENABLED', 'CLAIM_ACTION_CTAS_ENABLED']);
+    const defaultOn = new Set([
+      'CLAIM_PROFILE_ENABLED',
+      'CLAIM_ACTION_CTAS_ENABLED',
+      // Correctness fix, default on: MATCH_SPECIFICITY_GATE_ENABLED=0 rolls it back.
+      'MATCH_SPECIFICITY_GATE_ENABLED',
+    ]);
     for (const row of status) {
       expect(typeof row.enabled).toBe('boolean');
       expect(row.enabled).toBe(defaultOn.has(row.env));

@@ -250,6 +250,15 @@ describe('GET /api/mobile/claim/[slug] (the app claim screen) uses the same gate
     expect(await loadOneClickClaimPage(args(TESTER))).toMatchObject({ canStart: false, accountEmail: TESTER });
   });
 
+  it('carries the settlement listing’s payout label through, and null when it states none', async () => {
+    setMode('live');
+    expect(await loadOneClickClaimPage({ ...args(MEMBER), payoutLabel: '$25–$75' })).toMatchObject({
+      payoutLabel: '$25–$75',
+    });
+    // No label argument at all means the paywall shows the price on its own.
+    expect(await loadOneClickClaimPage(args(MEMBER))).toMatchObject({ payoutLabel: null });
+  });
+
   it('off: nobody; live: everyone', async () => {
     setMode('off');
     expect(await loadOneClickClaimPage(args(TESTER))).toBeNull();

@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  currentAddressOf,
   mergeClaimProfile,
   type ClaimProfile,
   type ClaimProfileAddress,
@@ -166,8 +167,21 @@ export function packetSeedFromClaimProfile(
   put('former_name', profile.aliases);
   put('date_of_birth', profile.date_of_birth);
   put('dob', profile.date_of_birth);
-  put('account_email', profile.account_emails[0]);
-  put('subscription_email', profile.account_emails[0]);
+  // The explicitly-entered account email wins; the sign-in email is the
+  // fallback so a member whose subscription email IS their account email is
+  // not asked for it again. Every seed merges UNDER a stored answer and still
+  // renders as a visible, editable field, so a wrong guess is correctable.
+  put('account_email', profile.account_emails[0] ?? profile.email);
+  put('subscription_email', profile.account_emails[0] ?? profile.email);
+  // Contact facts already on file, asked by a spec under their own key. Kept
+  // to keys whose meaning on a claim form is not in doubt: `city` and
+  // `address_line1` are left out on purpose, because a seeded answer ends up
+  // in the canonical packet the member signs, so a guess must not go in.
+  put('email', profile.email);
+  put('phone', profile.phone);
+  const current = currentAddressOf(profile);
+  put('state', current?.state);
+  put('zip', current?.zip);
   const payout =
     profile.payout_preference && payoutOptions.includes(profile.payout_preference)
       ? profile.payout_preference

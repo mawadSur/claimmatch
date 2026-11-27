@@ -95,7 +95,7 @@ function verifySteps(disclose: boolean): string[] {
   return [
     VERIFY_STEPS[0],
     VERIFY_STEPS[1],
-    `Official filing is free. We never ask for a bank account or Social Security number. A card is used only if you start the optional ${CLAIMMATCH_TRIAL_DAYS}-day free trial (${membershipPriceCopy()}/mo after).`,
+    `Official filing is free. We never ask for a bank account or Social Security number. The optional ${CLAIMMATCH_TRIAL_DAYS}-day free trial starts with no card at all; add one only if you want to keep the membership at ${membershipPriceCopy()}/mo.`,
   ];
 }
 

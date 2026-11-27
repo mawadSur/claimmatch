@@ -35,6 +35,7 @@ export function ClaimActionCta({
   officialHref,
   deskEligible = false,
   compact = false,
+  selfHref,
 }: {
   slug: string;
   claimActionType?: string | null;
@@ -42,6 +43,14 @@ export function ClaimActionCta({
   officialHref?: string | null;
   deskEligible?: boolean;
   compact?: boolean;
+  /**
+   * The path this CTA is being rendered on. Any button that would navigate
+   * here is dropped: on /claim/[slug] the desk_file primary ("Submit a claim")
+   * and the unapproved-draft secondary ("View claim details") both point at
+   * /claim/[slug] itself, so they rendered as a second submit button that did
+   * nothing while the real one sat further down the same page.
+   */
+  selfHref?: string | null;
 }) {
   if (!flags.claimActionCtas()) return null;
   const { type, details } = claimActionOf({
@@ -56,6 +65,9 @@ export function ClaimActionCta({
     details,
     deskEligible,
   });
+  // claimActionCta stays pure; the self-link is dropped here at render time.
+  const primary = model.primary && model.primary.href !== selfHref ? model.primary : null;
+  const secondary = model.secondary && model.secondary.href !== selfHref ? model.secondary : null;
 
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'} data-claim-action={type}>
@@ -70,24 +82,24 @@ export function ClaimActionCta({
         <p className="mt-1 text-sm text-ink-muted">{model.body}</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {model.primary &&
-          (model.primary.href.startsWith('/') ? (
-            <Link href={model.primary.href} className="btn-primary grow basis-40 px-3">
-              {model.primary.label} <ArrowRight className="h-4 w-4" aria-hidden />
+        {primary &&
+          (primary.href.startsWith('/') ? (
+            <Link href={primary.href} className="btn-primary grow basis-40 px-3">
+              {primary.label} <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           ) : (
-            <a href={model.primary.href} target="_blank" rel="noopener noreferrer" className="btn-primary grow basis-40 px-3">
-              {model.primary.label} <ExternalLink className="h-4 w-4" aria-hidden />
+            <a href={primary.href} target="_blank" rel="noopener noreferrer" className="btn-primary grow basis-40 px-3">
+              {primary.label} <ExternalLink className="h-4 w-4" aria-hidden />
             </a>
           ))}
-        {model.secondary &&
-          (model.secondary.href.startsWith('/') ? (
-            <Link href={model.secondary.href} className="btn-secondary grow basis-20 px-3">
-              {model.secondary.label}
+        {secondary &&
+          (secondary.href.startsWith('/') ? (
+            <Link href={secondary.href} className="btn-secondary grow basis-20 px-3">
+              {secondary.label}
             </Link>
           ) : (
-            <a href={model.secondary.href} target="_blank" rel="noopener noreferrer" className="btn-secondary grow basis-20 px-3">
-              {model.secondary.label} <ExternalLink className="h-4 w-4" aria-hidden />
+            <a href={secondary.href} target="_blank" rel="noopener noreferrer" className="btn-secondary grow basis-20 px-3">
+              {secondary.label} <ExternalLink className="h-4 w-4" aria-hidden />
             </a>
           ))}
       </div>

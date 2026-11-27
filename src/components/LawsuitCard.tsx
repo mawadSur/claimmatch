@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { ArrowRight, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Clock, ShieldCheck } from 'lucide-react';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
-import { showVerifiedBadge } from '@/lib/verified-fields';
 import {
   catalogCardDeadlineLabel,
   catalogCardMissing,
@@ -13,6 +12,7 @@ import {
 } from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
 import { VerifiedBadge } from '@/components/settlement/VerifiedBadge';
+import { ListingVerification } from '@/components/settlement/ListingVerification';
 import { MissingDetailsBlock } from '@/components/settlement/AnswerBlock';
 import { EasySubmitBadge, shouldHideFileButton } from '@/components/claims/ClaimActionCta';
 import {
@@ -26,7 +26,9 @@ import {
 /**
  * The settlement card (server component; brand top border from the original
  * site). It shows the payout as the source states it, the proof rule and the
- * deadline, a Verified chip when the listing is verified, the source link,
+ * deadline, a Verified chip when the listing is verified, the per-listing
+ * verification line (ListingVerification — verified, checked against the
+ * official notice, or neither, never a blanket claim about the whole page),
  * and "Start your claim" while the settlement is open for
  * claims. A settlement that is not open shows "Claims closed" and no call to
  * action.
@@ -56,7 +58,6 @@ export function LawsuitCard({
   const official = officialLinkFor(lawsuit);
   const summary = displaySummary(lawsuit);
   const shownBadge = badge && isAllowedBadge(badge.label) ? badge : undefined;
-  const verified = showVerifiedBadge(lawsuit);
   const proofShown = catalogCardProof(lawsuit);
   const payoutShown = catalogCardPayout(lawsuit.typical_payout);
   const deadlineShown = catalogCardDeadlineLabel(
@@ -129,28 +130,15 @@ export function LawsuitCard({
       </dl>
       {missing.length > 0 ? <MissingDetailsBlock missing={missing} official={official} /> : null}
 
-      <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-muted">
-        {verified ? (
-          <span className="font-semibold text-success-700">Verified</span>
-        ) : null}
-        {verified ? <span aria-hidden>·</span> : null}
-        <span>
-          {official ? (
-            <a
-              href={official.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-0.5 rounded font-semibold underline underline-offset-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-            >
-              {official.label}
-              <ExternalLink className="h-3 w-3" aria-hidden="true" />
-              <span className="sr-only"> for {lawsuit.title} (opens in a new tab)</span>
-            </a>
-          ) : (
-            'We don’t have its link yet.'
-          )}
-        </span>
-      </p>
+      <div className="mt-3">
+        <ListingVerification
+          lawsuit={lawsuit}
+          official={official}
+          compact
+          open={open}
+          linkTitle={lawsuit.title}
+        />
+      </div>
 
       <div className="mt-auto pt-4">
         {open ? (
