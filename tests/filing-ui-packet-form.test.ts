@@ -143,6 +143,30 @@ describe('the PATCH body', () => {
   it('sends nothing when nothing changed', () => {
     expect(buildPacketPatch({ items, drafts: draftsFromItems(items), saveToProfile: false })).toEqual({ ok: true, changed: [], body: {} });
   });
+
+  it('builds the same body from one item alone, so a field can save itself', () => {
+    // Step 2 saves each field as the member settles it, by building a patch
+    // from that one item. It has to come out identical to the whole-form
+    // patch for that field, and empty when the field did not change.
+    const drafts = { ...draftsFromItems(items), 'answers.widget_count': '3' };
+    const one = items.filter((i) => i.path === 'answers.widget_count');
+    expect(buildPacketPatch({ items: one, drafts, saveToProfile: false })).toEqual({
+      ok: true,
+      changed: ['answers.widget_count'],
+      body: { answers: { widget_count: 3 } },
+    });
+    const untouched = items.filter((i) => i.path === 'answers.bought_online');
+    expect(buildPacketPatch({ items: untouched, drafts, saveToProfile: false })).toEqual({ ok: true, changed: [], body: {} });
+  });
+
+  it('reports one field’s own error without touching the others', () => {
+    const drafts = { ...draftsFromItems(items), 'member.address.zip': '12' };
+    const one = items.filter((i) => i.path === 'member.address.zip');
+    expect(buildPacketPatch({ items: one, drafts, saveToProfile: false })).toEqual({
+      ok: false,
+      errors: { 'member.address.zip': COPY.invalidZip },
+    });
+  });
 });
 
 describe('errors next to their fields', () => {

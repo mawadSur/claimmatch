@@ -14,6 +14,7 @@ import {
   dashboardNeedsProfile,
 } from '@/components/claims/dashboard-model';
 import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
+import type { MembershipStart, ReportedPayoutRow } from '@/lib/dashboard-value';
 import { listUserFilingJobs } from '@/lib/filing/queue';
 import { flags } from '@/lib/flags';
 import { lookupLawsuits } from '@/lib/lawsuits';
@@ -22,7 +23,7 @@ import { applySettlementGuide } from '@/lib/settlement-guides';
 import type { Lawsuit, Match, Profile } from '@/lib/types';
 
 export async function loadDashboardData(supabase: SupabaseClient, userId: string, now: Date) {
-  const [{ data: profile }, claims, catalog, filingJobs, factRes, storedRes] = await Promise.all([
+  const [{ data: profile }, claims, catalog, filingJobs, factRes, storedRes, payoutRes, subRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('full_name, onboarded, state, attributes')
@@ -47,6 +48,25 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
           .eq('user_id', userId)
           .eq('dismissed', false)
           .order('score', { ascending: false })
+      : Promise.resolve({ data: null, error: null }),
+    // DASHBOARD_VALUE_ENABLED: the member's own user-reported payouts and
+    // membership start, for the value panel. Read with the caller's client
+    // (RLS: "own recoveries read" / "own subscriptions read"), never the
+    // service role. Off: nothing is read, so a fake client in the route tests
+    // is never asked for a chain it does not implement.
+    flags.dashboardValue()
+      ? supabase
+          .from('recoveries')
+          .select('gross_amount')
+          .eq('user_id', userId)
+          .eq('source', 'user_reported')
+      : Promise.resolve({ data: [], error: null }),
+    flags.dashboardValue()
+      ? supabase
+          .from('subscriptions')
+          .select('created_at, trial_end')
+          .eq('user_id', userId)
+          .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);
 
@@ -86,6 +106,14 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
 
+  // A read error falls back to "nothing on file" so a missing table or a denied
+  // row never takes the whole dashboard down (same posture as beta_feedback).
+  const payouts = (payoutRes.data as ReportedPayoutRow[] | null) ?? [];
+  const subRow = (subRes.data as { created_at?: string | null; trial_end?: string | null } | null) ?? null;
+  const membership: MembershipStart | null = subRow
+    ? { createdAt: subRow.created_at ?? null, trialEnd: subRow.trial_end ?? null }
+    : null;
+
   return {
     profile,
     claims,
@@ -98,5 +126,7 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
     matches,
     needsProfile,
     firstName,
+    payouts,
+    membership,
   };
 }

@@ -35,12 +35,19 @@ export function PacketFieldInput({
   item,
   draft,
   onChange,
+  onCommit,
   error,
   disabled,
 }: {
   item: PacketItemView;
   draft: FieldDraft;
   onChange: (draft: FieldDraft) => void;
+  /**
+   * Called when the value is settled rather than mid-edit: as soon as an
+   * option is picked, and when a typed field loses focus. The step saves it
+   * there and then, so no separate "Save my answers" tap is needed.
+   */
+  onCommit?: (draft: FieldDraft) => void;
   error: string | null;
   disabled: boolean;
 }) {
@@ -84,6 +91,7 @@ export function PacketFieldInput({
                 if (on) next.add(choice.value);
                 else next.delete(choice.value);
                 onChange([...next]);
+                onCommit?.([...next]);
               }}
               testID={`${testID}-${choice.value}`}
             />
@@ -98,7 +106,10 @@ export function PacketFieldInput({
                 disabled={off}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: text === choice.value, disabled: off }}
-                onPress={() => onChange(choice.value)}
+                onPress={() => {
+                  onChange(choice.value);
+                  onCommit?.(choice.value);
+                }}
                 testID={`${testID}-${choice.value}`}
               />
             ))}
@@ -116,7 +127,10 @@ export function PacketFieldInput({
         <StatePickerField
           label={`${item.label} ${suffix(item)}`}
           value={text}
-          onChange={onChange}
+          onChange={(next) => {
+            onChange(next);
+            onCommit?.(next);
+          }}
           placeholder={copy.choose.text}
           hint={item.help ?? undefined}
           disabled={off}
@@ -138,6 +152,7 @@ export function PacketFieldInput({
         hint={item.type === 'date' ? [item.help, DATE_FORMAT].filter(Boolean).join(' ') : (item.help ?? undefined)}
         value={text}
         onChangeText={onChange}
+        onBlur={() => onCommit?.(draft)}
         error={error}
         disabled={off}
         multiline={item.type === 'long_text'}

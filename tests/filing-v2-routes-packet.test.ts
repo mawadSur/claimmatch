@@ -108,6 +108,21 @@ describe('PATCH .../packet', () => {
     expect(back.packet).toMatchObject({ revision: 3, complete: false, packet_hash: null });
   });
 
+  it('the eligibility tick alone makes an otherwise complete packet sign-ready', async () => {
+    // The Easy-submit tap count rests on this: once every field is in — from
+    // the profile prefill or a save — ticking "This describes me" is the only
+    // PATCH left before "File my claim", with no separate save in between.
+    const id = await startClaim();
+    const filled = (await json(await patch(id, { revision: 1, answers: COMPLETE.answers, benefit_tier: COMPLETE.benefit_tier, payout_method: COMPLETE.payout_method }), 200)).filing;
+    expect(filled.claim.status).toBe('preparing');
+    expect(filled.actions.can_sign).toBe(false);
+
+    const ready = (await json(await patch(id, { revision: filled.packet.revision, class_definition_confirmed: true }), 200)).filing;
+    expect(ready.claim.status).toBe('ready');
+    expect(ready.actions.can_sign).toBe(true);
+    expect(ready.packet.complete).toBe(true);
+  });
+
   it('checks answers at the boundary and refuses what Lawsuit AI never stores', async () => {
     const id = await startClaim();
     const bad = await json(await patch(id, { revision: 1, answers: { purchase_count: 'two' } }), 400);

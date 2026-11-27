@@ -39,7 +39,12 @@ import DashboardPage from '@/app/dashboard/page';
 import { YourMatches } from '@/components/claims/YourMatches';
 import type { DashboardMatch, DashboardRow } from '@/components/claims/dashboard-model';
 import { FilingSummaryList } from '@/components/filing/FilingSummaryList';
-import { ONE_CLICK_AGENT_TITLE, ONE_CLICK_COPY, ONE_CLICK_FILED_LABEL } from '@/lib/copy';
+import {
+  DASHBOARD_VALUE_COPY,
+  ONE_CLICK_AGENT_TITLE,
+  ONE_CLICK_COPY,
+  ONE_CLICK_FILED_LABEL,
+} from '@/lib/copy';
 import { DESK_LANE, SELF_FILE_LANE } from './filing-ui-fixtures';
 
 const STRONG_ID = '00000000-0000-4000-8000-0000000000a1';
@@ -181,6 +186,10 @@ describe('the dashboard page', () => {
       matches: MATCHES,
       needsProfile: false,
       firstName: 'Ada',
+      // DASHBOARD_VALUE_ENABLED keys. The mock replaces loadDashboardData
+      // wholesale, so a key the page destructures is undefined without them.
+      payouts: [],
+      membership: null,
     };
     h.summaries.mockReset();
     h.preview.mockReset();
@@ -219,6 +228,41 @@ describe('the dashboard page', () => {
     expect(yourClaims).toContain('Tracked self-file');
     expect(yourClaims).not.toContain('Tracked one-click');
     expect(html.slice(0, html.indexOf('id="your-claims-title"'))).toContain('Tracked one-click');
+  });
+
+  it('DASHBOARD_VALUE_ENABLED off: no value panel, and nothing new is rendered', async () => {
+    const html = await render();
+    expect(html).not.toContain('data-testid="dashboard-value"');
+    expect(html).not.toContain(DASHBOARD_VALUE_COPY.title);
+  });
+
+  it('DASHBOARD_VALUE_ENABLED on: the value panel sits above the matches', async () => {
+    vi.stubEnv('DASHBOARD_VALUE_ENABLED', '1');
+    h.data = {
+      ...h.data,
+      claims: {
+        items: [
+          claimItem('self-1', 'self_file'),
+          { claim: { id: 'done-1', status: 'reported_filed', lawsuit_id: STRONG_ID }, settlement: null },
+        ],
+        failed: false,
+      },
+      payouts: [{ gross_amount: 0 }],
+      membership: { createdAt: '2026-08-01T00:00:00Z', trialEnd: '2026-08-08T00:00:00Z' },
+    };
+    const html = await render();
+    expect(html).toContain('data-testid="dashboard-value"');
+    expect(html).toContain(DASHBOARD_VALUE_COPY.title);
+    // Above the match list, so the value story comes first.
+    expect(html.indexOf('data-testid="dashboard-value"')).toBeLessThan(
+      html.indexOf('id="your-matches-title"'),
+    );
+    // One payout reported with no amount: the count and a sentence, never "$0".
+    expect(html).toContain(DASHBOARD_VALUE_COPY.payoutNoAmount);
+    expect(html).not.toContain('$0');
+    // The assumptions are on screen, not in a tooltip.
+    expect(html).toContain('Assumes 20 minutes per claim');
+    expect(html).toContain('$19.99 a month');
   });
 
   it('flag on: a failed filing list shows an error and the rest of the dashboard stays', async () => {

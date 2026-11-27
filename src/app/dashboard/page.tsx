@@ -25,6 +25,8 @@ import {
 } from '@/lib/analytics/events';
 import { ProfileCompletenessCard } from '@/components/dashboard/ProfileCompletenessCard';
 import { BetaFeedbackPrompt } from '@/components/dashboard/BetaFeedbackPrompt';
+import { ValueSummary } from '@/components/dashboard/ValueSummary';
+import { buildDashboardValue } from '@/lib/dashboard-value';
 import { profileCompleteness, shouldShowCompletenessCard } from '@/lib/profile-completeness';
 import type { BetaFeedbackTrigger } from '@/lib/analytics/events';
 
@@ -73,7 +75,25 @@ export default async function DashboardPage({
     matches,
     needsProfile,
     firstName,
+    payouts,
+    membership,
   } = await loadDashboardData(supabase, user.id, now);
+  // DASHBOARD_VALUE_ENABLED: what the membership has been worth, from records
+  // already on file. Web only. `payouts` / `membership` are empty while the
+  // flag is off, and may be absent entirely when a test fakes the loader.
+  const value = flags.dashboardValue()
+    ? buildDashboardValue({
+        matches,
+        claims: claims.items.map((item) => ({
+          id: item.claim.id,
+          status: item.claim.status,
+          confirmation_number: item.claim.confirmation_number,
+        })),
+        payouts: payouts ?? [],
+        membership: membership ?? null,
+        now,
+      })
+    : null;
   // Web only (the app's dashboard endpoint does not send it yet).
   const completeness =
     flags.profileCompleteness() && !catalog.error
@@ -202,6 +222,8 @@ export default async function DashboardPage({
         {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
         {betaFeedbackTrigger ? <BetaFeedbackPrompt trigger={betaFeedbackTrigger} /> : null}
 
+        {value ? <ValueSummary value={value} /> : null}
+
         {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
 
         {flags.assistedFiling() && (
@@ -232,6 +254,9 @@ export default async function DashboardPage({
           </div>
         )}
 
+        {/* owedEstimateEnabled: the value panel already carries the
+            potential-earnings tile, so the in-matches header would otherwise
+            show the same figure twice. */}
         <YourMatches
           items={matches}
           failed={catalog.error}
@@ -241,7 +266,7 @@ export default async function DashboardPage({
           oneClickLanes={oneClick?.lanes ?? null}
           canDismiss={flags.matchStore()}
           matchReasonEnabled={flags.matchReason()}
-          owedEstimateEnabled={flags.owedEstimateHeader()}
+          owedEstimateEnabled={flags.owedEstimateHeader() && !value?.potential}
           selfFiledReportEnabled={flags.selfFiledReport()}
         />
 

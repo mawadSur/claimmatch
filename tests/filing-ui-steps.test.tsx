@@ -364,3 +364,56 @@ describe('tap targets', () => {
     for (const box of boxes) expect(box).toContain('min-h-tap');
   });
 });
+
+describe('step 2 when everything is already on file', () => {
+  /** Every item settled: a member field, not missing, no issue, not locked. */
+  const settled = [
+    item({ path: 'member.legal_name', kind: 'member', label: 'Full legal name', value: 'Ada Lovelace' }),
+    item({ path: 'member.email', kind: 'member', label: 'Email address', type: 'email', value: 'ada@example.com' }),
+    item({ path: 'member.address.line1', kind: 'member', label: 'Street address', value: '1 Main St' }),
+    item({ path: 'member.address.city', kind: 'member', label: 'City', value: 'Springfield' }),
+    item({ path: 'member.address.state', kind: 'member', label: 'State', type: 'us_state', value: 'CA' }),
+    item({ path: 'member.address.zip', kind: 'member', label: 'ZIP Code', type: 'zip', value: '94110' }),
+  ];
+  const html = render(filingView({ items: settled }));
+
+  it('drops the save that would do nothing, and the tick that needs it', () => {
+    expect(html).not.toContain(ONE_CLICK_COPY.need.save);
+    expect(html).not.toContain('filing-save-to-profile');
+    expect(html).toContain(ONE_CLICK_COPY.need.nothingToAsk);
+  });
+
+  it('still shows what is on file and the way to change it, with the id step 3 links to', () => {
+    expect(html).toContain(ONE_CLICK_COPY.need.fromProfile);
+    expect(html).toContain('id="filing-profile-title"');
+    expect(html).toContain(ONE_CLICK_COPY.need.change);
+    expect(text(html)).toContain('Full legal name Ada Lovelace');
+    expect(html).toContain('href="#filing-profile-title"');
+  });
+
+  it('is still numbered step 2, with the we-file-this-claim card last', () => {
+    const t = text(html);
+    const at = (s: string) => t.indexOf(s);
+    expect(at('Step 1: Confirm this describes you')).toBeGreaterThan(-1);
+    expect(at('Step 2: What we still need')).toBeGreaterThan(at('Step 1:'));
+    expect(at('Step 3: Review and sign')).toBeGreaterThan(at('Step 2:'));
+    expect(at(ONE_CLICK_AGENT_TITLE)).toBeGreaterThan(at('Step 3: Review and sign'));
+  });
+
+  it('brings the save back as soon as one question is still asked', () => {
+    const asked = [
+      ...settled,
+      item({ path: 'answers.class_member', label: 'I am a member of the Settlement Class.', type: 'yes_no' }),
+    ];
+    const withQuestion = render(filingView({ items: asked }));
+    expect(withQuestion).toContain(ONE_CLICK_COPY.need.save);
+    expect(withQuestion).toContain('filing-save-to-profile');
+  });
+
+  it('keeps the save while health consent is still outstanding', () => {
+    const withHealth = render(
+      filingView({ items: settled, packet: { health_consent_text: 'I agree to share my health information.' } }),
+    );
+    expect(withHealth).toContain(ONE_CLICK_COPY.need.save);
+  });
+});

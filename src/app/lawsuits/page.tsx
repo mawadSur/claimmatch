@@ -31,9 +31,21 @@ import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 import { CATALOG_INTRO_MAY_FILE, CATALOG_INTRO_NEVER_FILES, lawsuitAiMayFile } from '@/lib/copy';
 import { oneClickLawsuitIdSet } from '@/lib/one-click-listings';
+import { showVerifiedBadge } from '@/lib/verified-fields';
+import { noticeCheckedOnLabel } from '@/lib/settlement-guides';
 
 const DESCRIPTION =
-  'Class action settlements that are taking claims now, each with a link to its official site. Listings are not yet verified by Lawsuit AI, so check the official site before you file. Filing is free.';
+  'Class action settlements that are taking claims now, each with a link to its official site. The listings we have checked against the official notice say so, with the date. Check the official site before you file. Filing is free.';
+
+/**
+ * The catalog's sourcing line. Per-listing verification lives on each card
+ * (ListingVerification), so this paragraph must never deny the rows that say
+ * they were read against the official notice; CATALOG_SOURCE_CHECKED is used
+ * as soon as one shown listing is verified or guide-checked.
+ */
+const CATALOG_SOURCE_NOTE =
+  'These listings come from public sources. Each one links to the official site, or to where we found it. Confirm the details there before you file.';
+const CATALOG_SOURCE_CHECKED = `${CATALOG_SOURCE_NOTE} The ones we have checked against the official notice say so on the listing, with the date.`;
 
 /** Public catalog: no per-user content. CDN / ISR cache for 15 minutes. */
 export const revalidate = 900;
@@ -123,6 +135,12 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
   const filtered = Boolean(q || category || hasDeadline || proof || fileForYou || openingSoon);
   const mayFile = lawsuitAiMayFile();
   const showsSettleSignal = paged.items.some(isSettleSignalRecord);
+  // Truth about the rows on this page, not about the catalog: a shown listing
+  // is "checked" when an admin verified it or a curated guide was read against
+  // the official notice. Both predicates are pure, so ISR is unaffected.
+  const anyChecked = paged.items.some(
+    (l) => showVerifiedBadge(l) || noticeCheckedOnLabel(l.slug) !== null,
+  );
   const rangeStart = count === 0 ? 0 : (paged.page - 1) * paged.pageSize + 1;
   const rangeEnd = Math.min(count, paged.page * paged.pageSize);
   const openingSoonPreview =
@@ -153,7 +171,7 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
               : ''}
           </p>
           <p className="mt-3 max-w-2xl text-sm text-ink-muted">
-            These listings come from public sources, and we haven’t checked them against the official notices yet. Each one links to the official site, or to where we found it. Confirm the details there before you file.
+            {anyChecked ? CATALOG_SOURCE_CHECKED : CATALOG_SOURCE_NOTE}
           </p>
 
           <div className="mt-6">

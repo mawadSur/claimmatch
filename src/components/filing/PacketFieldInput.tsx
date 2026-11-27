@@ -26,12 +26,19 @@ export function PacketFieldInput({
   item,
   draft,
   onChange,
+  onCommit,
   error,
   disabled,
 }: {
   item: PacketItemView;
   draft: FieldDraft;
   onChange: (draft: FieldDraft) => void;
+  /**
+   * Called when the value is settled rather than mid-edit: as soon as an
+   * option is picked, and when a typed field loses focus. The step saves it
+   * there and then, so no separate "Save my answers" tap is needed.
+   */
+  onCommit?: (draft: FieldDraft) => void;
   error: string | null;
   disabled: boolean;
 }) {
@@ -97,11 +104,16 @@ export function PacketFieldInput({
                   checked={checked}
                   disabled={off}
                   onChange={(e) => {
-                    if (!multi) return onChange(choice.value);
+                    if (!multi) {
+                      onChange(choice.value);
+                      onCommit?.(choice.value);
+                      return;
+                    }
                     const next = new Set(Array.isArray(draft) ? draft : []);
                     if (e.target.checked) next.add(choice.value);
                     else next.delete(choice.value);
                     onChange([...next]);
+                    onCommit?.([...next]);
                   }}
                 />
                 <span>{choice.label}</span>
@@ -139,7 +151,10 @@ export function PacketFieldInput({
           className="field-input"
           value={text}
           autoComplete={MEMBER_AUTOCOMPLETE[item.path] ?? 'off'}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            onCommit?.(e.target.value);
+          }}
         >
           <option value="">{COPY.choose}</option>
           {list.map((option) => (
@@ -158,7 +173,14 @@ export function PacketFieldInput({
       <div>
         {label}
         {help}
-        <textarea {...common} className="field-input min-h-[7rem]" value={text} maxLength={2000} onChange={(e) => onChange(e.target.value)} />
+        <textarea
+          {...common}
+          className="field-input min-h-[7rem]"
+          value={text}
+          maxLength={2000}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={() => onCommit?.(draft)}
+        />
         {footer}
       </div>
     );
@@ -196,6 +218,7 @@ export function PacketFieldInput({
           autoCapitalize={code ? 'characters' : undefined}
           spellCheck={code ? false : undefined}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={() => onCommit?.(draft)}
         />
       </div>
       {footer}

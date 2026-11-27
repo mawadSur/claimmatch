@@ -336,6 +336,12 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.owedEstimateHeader(),
   },
   {
+    env: 'DASHBOARD_VALUE_ENABLED',
+    description:
+      'Signed-in dashboard “What your membership has done so far” panel: listed potential ranges, reported payouts (count and amount as separate facts), claims submitted, estimated time saved, and a labelled estimate against the monthly list price. Off: nothing is read and the panel is hidden.',
+    read: () => flags.dashboardValue(),
+  },
+  {
     env: 'SELF_FILED_REPORT_ENABLED',
     description:
       '“I filed this myself” self-report on a match/claim, with optional confirmation number and private screenshot. Off: new routes 404.',

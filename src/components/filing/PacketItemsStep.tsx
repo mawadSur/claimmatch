@@ -14,6 +14,7 @@ import {
   draftsFromItems,
   errorsByField,
   firstErrorPath,
+  isEditable,
   itemDomId,
   splitItems,
   unplacedIssues,
@@ -58,6 +59,13 @@ export function PacketItemsStep({
   const [focusPath, setFocusPath] = useState<string | null>(null);
   const [health, setHealth] = useState(packet?.choices.health_consent === true);
   const generalRef = useRef<HTMLDivElement>(null);
+  /**
+   * One auto-save at a time. Every PATCH bumps the packet revision, and this
+   * step holds the revision of the view it last rendered, so two overlapping
+   * saves would race into a revision conflict. Disabling a focused input also
+   * fires blur, so without this guard a save would immediately re-fire.
+   */
+  const committing = useRef(false);
 
   // A save or an upload brings a new view: take the server's value for every field the member hasn't touched.
   useEffect(() => {
@@ -88,6 +96,8 @@ export function PacketItemsStep({
   const shown = editProfile ? items : ask;
   const off = busy || saving || packet.status !== 'open' || !view.actions.can_edit;
   const loose = unplacedIssues(packet.jev?.issues ?? [], items);
+  /** Everything is already in: no field to fill, no consent to give, so nothing to submit. */
+  const nothingToAsk = shown.length === 0 && !packet.health_consent_text;
 
   function change(path: string, draft: FieldDraft) {
     dirty.current.add(path);
@@ -100,6 +110,39 @@ export function PacketItemsStep({
         return next;
       });
     }
+  }
+
+  /**
+   * Saves one field the moment the member settles it — an option picked, a
+   * typed field left — so answering a question is the whole interaction and
+   * "Save my answers" is only a fallback. Nothing to send is a no-op.
+   */
+  async function commit(item: PacketItemView, draft: FieldDraft) {
+    if (committing.current || off || !isEditable(item)) return;
+    const built = buildPacketPatch({ items: [item], drafts: { [item.path]: draft }, saveToProfile: false });
+    if (!built.ok) {
+      setErrors((current) => ({ ...current, ...built.errors }));
+      return;
+    }
+    if (built.changed.length === 0) return;
+    committing.current = true;
+    setSaving(true);
+    const result = await save(built.body);
+    setSaving(false);
+    committing.current = false;
+    if (!result.ok) {
+      const placed = errorsByField(result.error, items);
+      setErrors((current) => ({ ...current, ...placed.byPath }));
+      setGeneral(placed.general);
+      return;
+    }
+    dirty.current.delete(item.path);
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[item.path];
+      return next;
+    });
+    setSaved(COPY.saved);
   }
 
   async function giveHealthConsent(next: boolean) {
@@ -152,6 +195,7 @@ export function PacketItemsStep({
         item={item}
         draft={drafts[item.path] ?? draftFromValue(item)}
         onChange={(draft) => change(item.path, draft)}
+        onCommit={(draft) => void commit(item, draft)}
         error={errors[item.path] ?? null}
         disabled={off}
       />
@@ -212,16 +256,22 @@ export function PacketItemsStep({
 
       {shown.length === 0 ? <p className="text-sm text-ink-muted">{COPY.nothingToAsk}</p> : shown.map(field)}
 
-      {packet.save_member_to_profile_available && (
+      {/* Nothing is left to ask, so there is nothing to save: a submit button
+          here only short-circuits to "Your answers are saved." The profile
+          summary and "Change these details" stay, and opening them brings the
+          form, the save-to-profile tick and the button back. */}
+      {!nothingToAsk && packet.save_member_to_profile_available && (
         <TickBox id="filing-save-to-profile" checked={saveToProfile} onChange={setSaveToProfile} disabled={off}>
           {COPY.saveToProfile}
         </TickBox>
       )}
 
       <div>
-        <button type="submit" className="btn-primary w-full sm:w-auto" disabled={off}>
-          {saving ? COPY.saving : COPY.save}
-        </button>
+        {!nothingToAsk && (
+          <button type="submit" className="btn-primary w-full sm:w-auto" disabled={off}>
+            {saving ? COPY.saving : COPY.save}
+          </button>
+        )}
         {saved && <FormMessage tone="success">{saved}</FormMessage>}
       </div>
     </form>

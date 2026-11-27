@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { claim as claimCopy } from '@/copy/claim';
 import { filing } from '@/copy/filing';
 
-import { CLAIM_ID, DOC_ID, LAWSUIT_ID, SELF_FILE_LANE, filingView } from './filing-fixtures';
+import { CLAIM_ID, DOC_ID, LAWSUIT_ID, SELF_FILE_LANE, filingView, item } from './filing-fixtures';
 import { calls, claimRow, client, filingCalls, flow, reply, resetHarness, show } from './filing-harness';
 
 jest.mock('@/lib/api', () => {
@@ -166,14 +166,66 @@ describe('what we still need', () => {
 
     await fireEvent.changeText(screen.getByTestId('filing-field-member.address.zip-input'), '94110');
     await fireEvent.changeText(screen.getByTestId('filing-field-answers.widget_count-input'), '3');
-    await fireEvent.press(screen.getByTestId('filing-field-answers.bought_online-yes'));
     await fireEvent.press(screen.getByTestId('filing-save'));
     expect(await screen.findByTestId('filing-saved')).toBeTruthy();
     expect(calls('PATCH', `${VIEW_PATH}/packet`)[0].body).toEqual({
       revision: 3,
-      answers: { widget_count: 3, bought_online: true },
+      answers: { widget_count: 3 },
       member: { address: { zip: '94110' } },
     });
+  });
+
+  it('saves a picked option on the spot, so answering it is the whole interaction', async () => {
+    reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
+    reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: filingView() }]);
+    await show(flow({ canStart: false }, claimRow('preparing')));
+    await screen.findByTestId('filing-need');
+    await fireEvent.press(screen.getByTestId('filing-field-answers.bought_online-yes'));
+    await waitFor(() => expect(calls('PATCH', `${VIEW_PATH}/packet`)).toHaveLength(1));
+    expect(calls('PATCH', `${VIEW_PATH}/packet`)[0].body).toEqual({ revision: 3, answers: { bought_online: true } });
+  });
+
+  it('saves a typed field when the member leaves it', async () => {
+    reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
+    reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: filingView() }]);
+    await show(flow({ canStart: false }, claimRow('preparing')));
+    await screen.findByTestId('filing-need');
+    const zip = screen.getByTestId('filing-field-member.address.zip-input');
+    await fireEvent.changeText(zip, '94110');
+    expect(calls('PATCH', `${VIEW_PATH}/packet`)).toEqual([]);
+    await fireEvent(zip, 'blur');
+    await waitFor(() => expect(calls('PATCH', `${VIEW_PATH}/packet`)).toHaveLength(1));
+    expect(calls('PATCH', `${VIEW_PATH}/packet`)[0].body).toEqual({ revision: 3, member: { address: { zip: '94110' } } });
+  });
+
+  it('leaving an untouched field saves nothing', async () => {
+    reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
+    await show(flow({ canStart: false }, claimRow('preparing')));
+    await screen.findByTestId('filing-need');
+    await fireEvent(screen.getByTestId('filing-field-member.address.zip-input'), 'blur');
+    expect(calls('PATCH', `${VIEW_PATH}/packet`)).toEqual([]);
+  });
+
+  it('drops the save button when nothing is left to ask', async () => {
+    // Everything settled: member fields, not missing, no issue, not locked.
+    const settled = [
+      item({ path: 'member.legal_name', kind: 'member', label: 'Full legal name', value: 'Ada Lovelace' }),
+      item({ path: 'member.email', kind: 'member', label: 'Email address', type: 'email', value: 'ada@example.com' }),
+      item({ path: 'member.address.line1', kind: 'member', label: 'Street address', value: '1 Main St' }),
+      item({ path: 'member.address.city', kind: 'member', label: 'City', value: 'Springfield' }),
+      item({ path: 'member.address.state', kind: 'member', label: 'State', type: 'us_state', value: 'CA' }),
+      item({ path: 'member.address.zip', kind: 'member', label: 'ZIP Code', type: 'zip', value: '94110' }),
+    ];
+    reply('GET', VIEW_PATH, [200, { filing: filingView({ items: settled }) }]);
+    await show(flow({ canStart: false }, claimRow('preparing')));
+    expect(await screen.findByTestId('filing-from-profile')).toBeTruthy();
+    expect(screen.getByText(filing.nothingToAsk.text)).toBeTruthy();
+    expect(screen.queryByTestId('filing-save')).toBeNull();
+    expect(screen.queryByTestId('filing-save-to-profile')).toBeNull();
+    // The steps and the we-file-this-claim card keep their order.
+    expect(screen.getByTestId('filing-step-confirm')).toBeTruthy();
+    expect(screen.getByTestId('filing-step-review')).toBeTruthy();
+    expect(screen.getByTestId('filing-lane')).toBeTruthy();
   });
 
   it('puts a typed value it can’t read next to its field, without saving', async () => {

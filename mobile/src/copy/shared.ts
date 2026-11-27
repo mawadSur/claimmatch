@@ -37,7 +37,7 @@ export const shared = defineCopy({
   },
   noLinkYet: {
     text: 'We don’t have its link yet.',
-    source: 'src/components/LawsuitCard.tsx',
+    source: 'src/components/settlement/ListingVerification.tsx',
   },
   /** Screen-reader name of the card's link: "{label} for {title}" (the web's sr-only " for {title}"). */
   linkForTitle: {

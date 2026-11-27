@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  currentAddressOf,
   parseClaimProfileInput,
   secretsError,
   emptyClaimProfile,
@@ -8,6 +9,7 @@ import {
   profileValueForSpecPath,
   splitLegalName,
 } from '@/lib/claim-profile';
+import { packetSeedFromClaimProfile } from '@/lib/claim-profile-server';
 import { missingFieldsForSpec } from '@/lib/filing/v2/missing-fields';
 import type { FilingSpecContent } from '@/lib/filing/v2/contract-spec';
 
@@ -139,5 +141,91 @@ describe('memberPrefillFromClaimProfile', () => {
     });
     expect(memberPrefillFromClaimProfile(emptyClaimProfile()).phone).toBeNull();
     expect(memberPrefillFromClaimProfile(emptyClaimProfile()).full_name).toBeNull();
+  });
+});
+
+describe('mergeClaimProfile synthesizes the current address', () => {
+  const partial = { full_name: 'Ada Lovelace', email: 'ada@example.test', city: 'Springfield', state: 'CA', zip: '94110' };
+
+  it('keeps city, state and ZIP when the street line is blank', () => {
+    // PR #82 keyed this on address_line1 alone, so a profile holding only
+    // city/state/ZIP lost all three from the packet prefill — and because the
+    // packet's member state feeds computeLane, that could also move the member
+    // off the Easy-submit lane.
+    const profile = mergeClaimProfile(null, { ...partial, address_line1: null, address_line2: null });
+    expect(currentAddressOf(profile)).not.toBeNull();
+    expect(memberPrefillFromClaimProfile(profile)).toMatchObject({
+      address_line1: null,
+      city: 'Springfield',
+      state: 'CA',
+      zip: '94110',
+    });
+  });
+
+  it('treats an all-whitespace street line the same way', () => {
+    const profile = mergeClaimProfile(null, { ...partial, address_line1: '   ' });
+    expect(memberPrefillFromClaimProfile(profile)).toMatchObject({ address_line1: null, state: 'CA', zip: '94110' });
+  });
+
+  it('synthesizes nothing when every address part is empty', () => {
+    const profile = mergeClaimProfile(null, { full_name: 'Ada Lovelace', address_line1: null, city: '', state: null, zip: '  ' });
+    expect(currentAddressOf(profile)).toBeNull();
+    expect(profile.addresses).toEqual([]);
+    expect(memberPrefillFromClaimProfile(profile)).toMatchObject({ address_line1: null, city: null, state: null, zip: null });
+  });
+
+  it('still prefers a stored current address over the profiles row', () => {
+    const profile = mergeClaimProfile(
+      {
+        addresses: [
+          { kind: 'current', line1: '9 Stored Rd', line2: null, city: 'Austin', state: 'TX', zip: '78701', lived_from: null, lived_to: null },
+        ],
+      },
+      { ...partial, address_line1: null },
+    );
+    expect(memberPrefillFromClaimProfile(profile)).toMatchObject({ address_line1: '9 Stored Rd', city: 'Austin', state: 'TX', zip: '78701' });
+  });
+});
+
+describe('packetSeedFromClaimProfile', () => {
+  const profile = mergeClaimProfile(
+    { legal_name: 'Ada Lovelace', email: 'ada@example.test', phone: '555-0100', vehicle_vin: '1HGCM82633A004352' },
+    { city: 'Springfield', state: 'CA', zip: '94110', address_line1: null },
+  );
+
+  it('seeds a contact fact only when the spec asks a question under that key', () => {
+    const keys = ['email', 'phone', 'zip', 'state', 'vin'];
+    expect(packetSeedFromClaimProfile(profile, keys, []).answers).toEqual({
+      email: 'ada@example.test',
+      phone: '555-0100',
+      zip: '94110',
+      state: 'CA',
+      vin: '1HGCM82633A004352',
+    });
+    // Nothing leaks into a spec that never asks for it.
+    expect(packetSeedFromClaimProfile(profile, ['notice_id'], []).answers).toEqual({});
+  });
+
+  it('leaves the keys whose meaning on a form is ambiguous alone', () => {
+    // A seeded answer is signed with the packet, so city/street are only ever
+    // filled in by the member (member_fields still prefill them as before).
+    expect(packetSeedFromClaimProfile(profile, ['city', 'address_line1'], []).answers).toEqual({});
+  });
+
+  it('falls back to the sign-in email for an account or subscription email', () => {
+    const keys = ['account_email', 'subscription_email'];
+    expect(packetSeedFromClaimProfile(profile, keys, []).answers).toEqual({
+      account_email: 'ada@example.test',
+      subscription_email: 'ada@example.test',
+    });
+    const withAccountEmails = { ...profile, account_emails: ['reader@example.test'] };
+    expect(packetSeedFromClaimProfile(withAccountEmails, keys, []).answers).toEqual({
+      account_email: 'reader@example.test',
+      subscription_email: 'reader@example.test',
+    });
+  });
+
+  it('never invents an attestation: class_member is not seedable', () => {
+    expect(packetSeedFromClaimProfile(profile, ['class_member'], []).answers).toEqual({});
   });
 });

@@ -440,6 +440,15 @@ export const flags = {
    */
   owedEstimateHeader: () => on('OWED_ESTIMATE_HEADER_ENABLED'),
   /**
+   * Signed-in dashboard "What your membership has done so far" panel: listed
+   * potential ranges, the payouts the member reported (count and amount kept
+   * separate), claims submitted, estimated time saved, and a labelled estimate
+   * against the monthly list price. Reads public.recoveries and
+   * public.subscriptions with the member's own client. Off: nothing is read and
+   * the panel is hidden.
+   */
+  dashboardValue: () => on('DASHBOARD_VALUE_ENABLED'),
+  /**
    * "I filed this myself" self-report: mark a match/claim as filed on the
    * official site, with optional confirmation number and screenshot. Off: the
    * existing "I filed my claim" form stays as it is; new routes 404.

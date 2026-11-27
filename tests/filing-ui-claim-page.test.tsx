@@ -83,7 +83,7 @@ import {
   ONE_CLICK_SELF_FILE_NOTE,
 } from '@/lib/copy';
 import { CLAIM_ID, DESK_LANE, LAWSUIT_ID, SELF_FILE_LANE, filingView, readyView } from './filing-ui-fixtures';
-import { CLAIM_AGENT_LEGAL_SENTENCE, PREFILL_AGENT_LANE_NOTE } from '@/lib/copy';
+import { CLAIM_AGENT_LEGAL_SENTENCE, PREFILL_AGENT_LANE_NOTE, PREFILL_SELF_FILE_NOTE } from '@/lib/copy';
 import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
 import { claimLegalDisclaimer, legalDisclaimer } from '@/lib/disclaimer-flags';
 import { claimFiledByLawsuitAi } from '@/components/filing/filing-model';
@@ -91,7 +91,11 @@ import { SUBMIT_CLAIM_CTA } from '@/lib/claim-actions';
 
 const NOW = new Date('2026-11-12T15:00:00Z');
 const OFFICIAL = 'https://www.widget-admin.com/claim';
-const LEGACY_NOTE = 'Lawsuit AI doesn’t file claims for you';
+/** The absolutes this page must never print again: both deny Easy submit site-wide. */
+const ABSOLUTE_STATUS_NOTE = 'Lawsuit AI doesn’t file claims for you';
+const ABSOLUTE_PACKET_NOTE = 'Lawsuit AI never files for you';
+/** What a self-file claim says instead: true of that claim, and of this one only. */
+const SELF_FILE_NOTE = 'Lawsuit AI doesn’t file this claim for you';
 const escape = (s: string) => s.replace(/&/g, '&amp;');
 const escapeQuotes = (s: string) => escape(s).replace(/'/g, '&#x27;');
 
@@ -159,7 +163,9 @@ describe('the claim page with the flag off', () => {
     const html = await render();
     expect(html).toContain('Open the official claim form');
     expect(html).toContain('File on the official site');
-    expect(html).toContain(LEGACY_NOTE);
+    expect(html).toContain(SELF_FILE_NOTE);
+    expect(html).not.toContain(ABSOLUTE_STATUS_NOTE);
+    expect(html).not.toContain(ABSOLUTE_PACKET_NOTE);
     expect(html).not.toContain(ONE_CLICK_AGENT_TITLE);
     expect(h.loadView).not.toHaveBeenCalled();
     expect(h.preview).not.toHaveBeenCalled();
@@ -263,8 +269,8 @@ describe('the claim page with the flag on', () => {
     h.profileRow = { ...h.profileRow, attributes: {} };
     const html = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ slug }) }));
     expect(html).toContain(ONE_CLICK_COPY.entry.start);
-    expect(html).not.toContain(LEGACY_NOTE);
-    expect(html).not.toContain('Lawsuit AI never files for you');
+    expect(html).not.toContain(ABSOLUTE_STATUS_NOTE);
+    expect(html).not.toContain(ABSOLUTE_PACKET_NOTE);
     expect(html).not.toContain('Where Lawsuit AI offers one-click filing');
     expect(h.preview).toHaveBeenCalled();
     expect(h.lookups).toEqual([]);
@@ -292,8 +298,8 @@ describe('Easy submit claim page copy with one-click off', () => {
       claim_action_type: 'desk_file',
     });
     const html = await render();
-    expect(html).not.toContain(LEGACY_NOTE);
-    expect(html).not.toContain('Lawsuit AI never files for you');
+    expect(html).not.toContain(ABSOLUTE_STATUS_NOTE);
+    expect(html).not.toContain(ABSOLUTE_PACKET_NOTE);
     expect(html).toContain('we submit it to the official claims site for you');
   });
 });
@@ -320,7 +326,8 @@ describe('ClaimFlow with one-click data', () => {
   it('without one-click data it is the page as before, retired assisted filing included', () => {
     const html = flow(null);
     expect(html).toContain('id="authorize"');
-    expect(html).toContain(LEGACY_NOTE);
+    expect(html).toContain(SELF_FILE_NOTE);
+    expect(html).not.toContain(ABSOLUTE_STATUS_NOTE);
   });
 
   it('unsigned draft desk_file does not show Sign in to Easy submit', () => {
@@ -388,7 +395,7 @@ describe('ClaimFlow with one-click data', () => {
 });
 
 describe('per-claim disclaimers (go-live checklist item 13)', () => {
-  const SELF_FILE_PACKET_NOTE = 'Lawsuit AI never files for you.';
+  const SELF_FILE_PACKET_NOTE = PREFILL_SELF_FILE_NOTE;
 
   it('flag off: the site-wide disclaimer and packet note, word for word', async () => {
     const html = await render();
@@ -413,6 +420,18 @@ describe('per-claim disclaimers (go-live checklist item 13)', () => {
     expect(html).not.toContain(CLAIM_AGENT_LEGAL_SENTENCE);
     expect(html).toContain(escapeQuotes(legalDisclaimer()));
     expect(html).toContain(SELF_FILE_PACKET_NOTE);
+  });
+
+  it('a self-file action type says what is true of that claim, not of every claim', async () => {
+    h.settlement = settlementRow({ claim_action_type: 'online_form' });
+    h.lawsuit = { ...lawsuitRow(STATE_ONLY), claim_action_type: 'online_form' };
+    const html = await render();
+    expect(html).toContain(ONE_CLICK_SELF_FILE_NOTE);
+    expect(html).toContain(PREFILL_SELF_FILE_NOTE);
+    // SHORT_DISCLAIMER in the global footer offers Easy submit on eligible
+    // claims, so an absolute denial on this page would contradict it.
+    expect(html).not.toContain(ABSOLUTE_STATUS_NOTE);
+    expect(html).not.toContain(ABSOLUTE_PACKET_NOTE);
   });
 
   it('claimLegalDisclaimer swaps only the filing sentence, only with the flag on', () => {
