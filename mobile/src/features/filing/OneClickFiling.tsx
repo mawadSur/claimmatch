@@ -16,9 +16,11 @@ import { FilingActions } from './FilingActions';
 import { FilingPath, FilingTimeline } from './FilingTimeline';
 import type { PacketPatch } from './form';
 import { filingStatusDisplay, formatEventTime, isIntakeStatus, laneReasonLines, laneTiming, laneTitle, lastDayLine } from './model';
+import { NextEasySubmitCta, OneTapSubmit } from './OneTapSubmit';
 import { PacketItemsStep } from './PacketItemsStep';
 import { Message, Muted } from './parts';
 import { ReviewSignStep } from './ReviewSignStep';
+import { oneTapReady, showNextEasySubmitCta, type NextEasySubmit } from '@shared/lib/filing/one-tap';
 import type { OnFilingView } from './use-one-click';
 
 /** The lane below the steps: "We file this claim for you" and what happens next, or why it can't. */
@@ -74,7 +76,19 @@ function SelfFileLaneStep({ view, busy, onView }: { view: ClaimFilingView; busy:
 }
 
 /** After signing (and for closed claims): the status, what happens next, the actions left and the timeline. */
-export function FilingStatusCard({ view, busy, onView, message = null }: { view: ClaimFilingView; busy: boolean; onView: OnFilingView; message?: string | null }) {
+export function FilingStatusCard({
+  view,
+  busy,
+  onView,
+  message = null,
+  nextEasySubmit = null,
+}: {
+  view: ClaimFilingView;
+  busy: boolean;
+  onView: OnFilingView;
+  message?: string | null;
+  nextEasySubmit?: NextEasySubmit | null;
+}) {
   const status = view.claim.status;
   const display = filingStatusDisplay(status, view.claim.confirmation_number);
   const timing = status === 'signed' || status === 'queued' ? laneTiming(view.lane) : null;
@@ -89,6 +103,7 @@ export function FilingStatusCard({ view, busy, onView, message = null }: { view:
       {view.signature ? <Muted>{signedByText(view.signature.typed_name, formatEventTime(view.signature.signed_at))}</Muted> : null}
       <FilingPath status={status} />
       <Message tone="error" text={message} />
+      {nextEasySubmit && showNextEasySubmitCta(status) ? <NextEasySubmitCta next={nextEasySubmit} /> : null}
       <FilingActions view={view} busy={busy} onView={onView} />
       <FilingTimeline entries={view.timeline} />
     </Card>
@@ -103,7 +118,15 @@ export function FilingStatusCard({ view, busy, onView, message = null }: { view:
  * through the member API; the new view comes back through onView. Renders
  * the scroll content's children directly.
  */
-export function OneClickFiling({ view, onView }: { view: ClaimFilingView; onView: OnFilingView }) {
+export function OneClickFiling({
+  view,
+  onView,
+  nextEasySubmit = null,
+}: {
+  view: ClaimFilingView;
+  onView: OnFilingView;
+  nextEasySubmit?: NextEasySubmit | null;
+}) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const targets = useFlowTargetsApi();
@@ -135,7 +158,22 @@ export function OneClickFiling({ view, onView }: { view: ClaimFilingView; onView
 
   const packet = view.packet;
   if (!packet || packet.status !== 'open' || !isIntakeStatus(view.claim.status)) {
-    return <FilingStatusCard view={view} busy={busy} onView={onView} message={message} />;
+    return (
+      <FilingStatusCard view={view} busy={busy} onView={onView} message={message} nextEasySubmit={nextEasySubmit} />
+    );
+  }
+  if (oneTapReady(view)) {
+    return (
+      <>
+        <OneTapSubmit view={view} busy={busy} save={save} refresh={refresh} onView={onView} />
+        <Card style={styles.card} testID="filing-footer">
+          <Message tone="error" text={message} />
+          <FilingActions view={view} busy={busy} onView={onView} hideSelfFile={!view.lane.agent} />
+          <FilingTimeline entries={view.timeline} />
+        </Card>
+        <LaneCard view={view} />
+      </>
+    );
   }
   const n = packet.spec ? 1 : 0;
 

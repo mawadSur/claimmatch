@@ -81,6 +81,9 @@ end $$;
 --                     the one-click filing tables of 0041: 76_one_click_filing.sql;
 --                     self_filed_reports: 82_self_filed_reports.sql;
 --                     official_form_opens: 87_founder_review_followups.sql).
+-- 0056 adds PIN-gated email and paper-fallback columns on claims (no new
+-- tables). Writes stay on service-role RPCs; probes live in
+-- 88_pin_admin_email.sql.
 create function pg_temp.user_tables() returns text[]
 language sql immutable as $$
   select array['profiles', 'claims', 'matches', 'beta_feedback',

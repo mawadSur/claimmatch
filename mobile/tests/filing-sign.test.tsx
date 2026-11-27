@@ -83,12 +83,6 @@ beforeEach(() => {
 });
 afterEach(() => client.clear());
 
-async function fillSignature(name = 'Ada Lovelace') {
-  await fireEvent.press(await screen.findByTestId('filing-statement'));
-  await fireEvent.press(screen.getByTestId('filing-authorization'));
-  await fireEvent.changeText(screen.getByTestId('filing-typed-name'), name);
-}
-
 describe('review and sign', () => {
   it('shows Jev results and keeps "File my claim" off until the packet is ready', async () => {
     reply('GET', VIEW_PATH, [200, { filing: filingView() }]);
@@ -96,15 +90,18 @@ describe('review and sign', () => {
     expect(await screen.findByTestId('filing-jev-results')).toBeTruthy();
     expect(screen.getByText(filing.reviewNotReady.text)).toBeTruthy();
     expect(screen.getByTestId('filing-file').props.accessibilityState?.disabled).toBe(true);
+    expect(screen.queryByTestId('filing-one-tap-submit')).toBeNull();
   });
 
-  it('signs the exact packet with the typed name and an Idempotency-Key, then shows the status', async () => {
+  it('1-tap submits the prefilled packet with the legal name and an Idempotency-Key', async () => {
     reply('GET', VIEW_PATH, [200, { filing: readyView() }]);
+    reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: readyView() }]);
     reply('POST', `${VIEW_PATH}/sign`, [200, { filing: queued() }]);
     await show(flow({ canStart: false }, claimRow('ready')));
-    expect(screen.queryByTestId('filing-jev-results')).toBeNull();
-    await fillSignature();
-    await fireEvent.press(screen.getByTestId('filing-file'));
+    expect(await screen.findByTestId('filing-one-tap')).toBeTruthy();
+    expect(screen.getByText(filing.oneTapTitle.text)).toBeTruthy();
+    expect(screen.queryByTestId('filing-typed-name')).toBeNull();
+    await fireEvent.press(screen.getByTestId('filing-one-tap-submit'));
     expect(await screen.findByTestId('filing-status')).toBeTruthy();
     const [sent] = calls('POST', `${VIEW_PATH}/sign`);
     expect(sent.headers['Idempotency-Key']).toBe('44444444-4444-4444-8444-444444444444');
@@ -125,24 +122,13 @@ describe('review and sign', () => {
     expect(screen.getByText('Put in line to be filed')).toBeTruthy();
   });
 
-  it('checks the boxes and the typed name before sending anything', async () => {
-    reply('GET', VIEW_PATH, [200, { filing: readyView() }]);
-    await show(flow({ canStart: false }, claimRow('ready')));
-    await fireEvent.changeText(await screen.findByTestId('filing-typed-name'), 'Someone Else');
-    await fireEvent.press(screen.getByTestId('filing-file'));
-    expect(await screen.findByText(filing.tickStatement.text)).toBeTruthy();
-    expect(screen.getByText(filing.tickAuthorization.text)).toBeTruthy();
-    expect(screen.getByText(filing.typedNameMismatch.text)).toBeTruthy();
-    expect(calls('POST', `${VIEW_PATH}/sign`)).toEqual([]);
-  });
-
   it('asks to sign in again with the password when the sign-in is older than 15 minutes', async () => {
     reply('GET', VIEW_PATH, [200, { filing: readyView({ actions: { needs_fresh_sign_in: true } }) }]);
     reply('GET', VIEW_PATH, [200, { filing: readyView() }]);
     mockSignIn.mockResolvedValue({ data: {}, error: null });
     await show(flow({ canStart: false }, claimRow('ready')));
     expect(await screen.findByTestId('filing-reauth')).toBeTruthy();
-    expect(screen.getByTestId('filing-file').props.accessibilityState?.disabled).toBe(true);
+    expect(screen.getByTestId('filing-one-tap-submit').props.accessibilityState?.disabled).toBe(true);
 
     await fireEvent.press(screen.getByTestId('filing-reauth-submit'));
     expect(await screen.findByText(filing.reauthEnter.text)).toBeTruthy();
@@ -153,7 +139,7 @@ describe('review and sign', () => {
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith('ada@example.com', 'correct horse'));
     await waitFor(() => expect(screen.queryByTestId('filing-reauth')).toBeNull());
     // The view is read again with the new session: no sign-in needed now.
-    await waitFor(() => expect(screen.getByTestId('filing-file').props.accessibilityState?.disabled).toBe(false));
+    await waitFor(() => expect(screen.getByTestId('filing-one-tap-submit').props.accessibilityState?.disabled).toBe(false));
     expect(filingCalls().filter((p) => p === VIEW_PATH)).toHaveLength(2);
   });
 
@@ -168,10 +154,10 @@ describe('review and sign', () => {
 
   it('opens the sign-in prompt when the server says reauth_required', async () => {
     reply('GET', VIEW_PATH, [200, { filing: readyView() }]);
+    reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: readyView() }]);
     reply('POST', `${VIEW_PATH}/sign`, [403, { error: 'Sign in again to file this claim.', code: 'reauth_required' }]);
     await show(flow({ canStart: false }, claimRow('ready')));
-    await fillSignature();
-    await fireEvent.press(screen.getByTestId('filing-file'));
+    await fireEvent.press(await screen.findByTestId('filing-one-tap-submit'));
     expect(await screen.findByTestId('filing-reauth')).toBeTruthy();
     expect(screen.getByText('Sign in again to file this claim.')).toBeTruthy();
   });
@@ -179,22 +165,20 @@ describe('review and sign', () => {
   it('asks for E-SIGN consent first, only after the member ticks it', async () => {
     const needs = readyView({ esignConsented: false, actions: { needs_esign_consent: true } });
     reply('GET', VIEW_PATH, [200, { filing: needs }]);
+    reply('PATCH', `${VIEW_PATH}/packet`, [200, { filing: needs }]);
     reply('GET', VIEW_PATH, [200, { filing: readyView() }]);
     reply('POST', `${VIEW_PATH}/esign-consent`, [
       200,
       { consent: { id: SIGNATURE_ID, text_version: 'esign-v1', consented_at: '2026-11-12T15:00:00Z', withdrawn_at: null } },
     ]);
+    reply('POST', `${VIEW_PATH}/sign`, [200, { filing: queued() }]);
     await show(flow({ canStart: false }, claimRow('ready')));
-    expect(await screen.findByTestId('filing-esign')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('filing-esign-agree'));
-    expect(await screen.findByText(filing.esignTick.text)).toBeTruthy();
-    expect(calls('POST', `${VIEW_PATH}/esign-consent`)).toEqual([]);
-
-    await fireEvent.press(screen.getByTestId('filing-esign-checkbox'));
-    await fireEvent.press(screen.getByTestId('filing-esign-agree'));
+    expect(await screen.findByTestId('filing-one-tap-submit')).toBeTruthy();
+    expect(screen.queryByTestId('filing-esign')).toBeNull();
+    await fireEvent.press(screen.getByTestId('filing-one-tap-submit'));
     await waitFor(() => expect(calls('POST', `${VIEW_PATH}/esign-consent`)).toHaveLength(1));
     expect(calls('POST', `${VIEW_PATH}/esign-consent`)[0].body).toEqual({ accepted: true, text_version: 'esign-v1' });
-    await waitFor(() => expect(screen.queryByTestId('filing-esign')).toBeNull());
+    await waitFor(() => expect(calls('POST', `${VIEW_PATH}/sign`)).toHaveLength(1));
   });
 });
 

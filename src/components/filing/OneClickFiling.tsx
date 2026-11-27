@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { ONE_CLICK_COPY, ONE_CLICK_SELF_FILE_TITLE, ONE_CLICK_STATUS } from '@/lib/copy';
+import { oneTapReady, showNextEasySubmitCta, type NextEasySubmit } from '@/lib/filing/one-tap';
 import type { ClaimFilingView } from '@/lib/filing/v2/contract';
 import { ClaimStatusBadge } from '@/components/claims/ClaimStatusBadge';
 import { FilingStep } from './claim-flow-parts';
@@ -20,6 +21,7 @@ import {
   timelineRows,
 } from './filing-model';
 import { FilingPath, FilingTimeline } from './FilingTimeline';
+import { NextEasySubmitCta, OneTapSubmit } from './OneTapSubmit';
 import { PacketItemsStep } from './PacketItemsStep';
 import type { PacketPatch } from './packet-form';
 import { ReviewSignStep } from './ReviewSignStep';
@@ -39,12 +41,14 @@ export function OneClickFiling({
   accountEmail,
   reauthWithGoogle = false,
   reauthWithApple = false,
+  nextEasySubmit = null,
   onChange,
 }: {
   view: ClaimFilingView;
   accountEmail: string | null;
   reauthWithGoogle?: boolean;
   reauthWithApple?: boolean;
+  nextEasySubmit?: NextEasySubmit | null;
   onChange: OnView;
 }) {
   const [busy, setBusy] = useState(false);
@@ -78,7 +82,37 @@ export function OneClickFiling({
   const status = view.claim.status;
   const packet = view.packet;
   if (!packet || packet.status !== 'open' || !isIntakeStatus(status)) {
-    return <FilingStatusCard view={view} busy={busy} onView={onChange} message={message} />;
+    return (
+      <FilingStatusCard
+        view={view}
+        busy={busy}
+        onView={onChange}
+        message={message}
+        nextEasySubmit={nextEasySubmit}
+      />
+    );
+  }
+  if (oneTapReady(view)) {
+    return (
+      <div className="space-y-5">
+        <OneTapSubmit
+          view={view}
+          accountEmail={accountEmail}
+          reauthWithGoogle={reauthWithGoogle}
+          reauthWithApple={reauthWithApple}
+          busy={busy}
+          save={save}
+          refresh={refresh}
+          onView={onChange}
+        />
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
+          {message && <FormMessage tone="error">{message}</FormMessage>}
+          <FilingActions view={view} busy={busy} onView={onChange} hideSelfFile={!view.lane.agent} />
+          <HistoryDisclosure entries={view.timeline} />
+        </div>
+        <LaneCard view={view} />
+      </div>
+    );
   }
   const n = packet.spec ? 1 : 0;
   const steps = ONE_CLICK_COPY.steps;
@@ -197,11 +231,13 @@ export function FilingStatusCard({
   busy,
   onView,
   message = null,
+  nextEasySubmit = null,
 }: {
   view: ClaimFilingView;
   busy: boolean;
   onView: OnView;
   message?: string | null;
+  nextEasySubmit?: NextEasySubmit | null;
 }) {
   const status = view.claim.status;
   const display = filingStatusDisplay(status, view.claim.confirmation_number);
@@ -227,6 +263,7 @@ export function FilingStatusCard({
       )}
       <FilingPath status={status} />
       {message && <FormMessage tone="error">{message}</FormMessage>}
+      {nextEasySubmit && showNextEasySubmitCta(status) && <NextEasySubmitCta next={nextEasySubmit} />}
       <FilingActions view={view} busy={busy} onView={onView} />
       <HistoryDisclosure entries={view.timeline} />
     </section>

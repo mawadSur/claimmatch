@@ -19,6 +19,8 @@ const m = vi.hoisted(() => {
     sendPayoutTrackerEmails: vi.fn(),
     sendMatchAlerts: vi.fn(),
     persistVerificationDrafts: vi.fn(),
+    sendQueuedPinAdminEmails: vi.fn(),
+    sendPaperFallbackReminders: vi.fn(),
     runOfficialLinkCheck: vi.fn(),
     notifyNewMatches: vi.fn(),
     claimDue: vi.fn(),
@@ -42,6 +44,8 @@ vi.mock('@/lib/match-store', () => ({ persistStoredMatches: m.persistStoredMatch
 vi.mock('@/lib/payout-tracker', () => ({ sendPayoutTrackerEmails: m.sendPayoutTrackerEmails }));
 vi.mock('@/lib/match-alert-job', () => ({ sendMatchAlerts: m.sendMatchAlerts }));
 vi.mock('@/lib/verification-drafts-store', () => ({ persistVerificationDrafts: m.persistVerificationDrafts }));
+vi.mock('@/lib/pin-admin-email-job', () => ({ sendQueuedPinAdminEmails: m.sendQueuedPinAdminEmails }));
+vi.mock('@/lib/paper-fallback-reminder', () => ({ sendPaperFallbackReminders: m.sendPaperFallbackReminders }));
 vi.mock('@/lib/link-check', () => ({ runOfficialLinkCheck: m.runOfficialLinkCheck }));
 vi.mock('@/lib/notifications', () => ({ notifyNewMatches: m.notifyNewMatches }));
 vi.mock('@/lib/jobs', () => ({
@@ -95,6 +99,8 @@ beforeEach(() => {
   m.sendPayoutTrackerEmails.mockResolvedValue({ candidates: 0, emailed: 0, skipped: null });
   m.sendMatchAlerts.mockResolvedValue({ considered: 0, planned: 0, emailed: 0, skipped: 'flag_off', dryRun: false, plans: [] });
   m.persistVerificationDrafts.mockResolvedValue({ considered: 0, drafted: 0, failed: 0, skipped: 0, skippedReason: null });
+  m.sendQueuedPinAdminEmails.mockResolvedValue({ candidates: 0, sent: 0, queued: 0, failed: 0 });
+  m.sendPaperFallbackReminders.mockResolvedValue({ candidates: 0, emailed: 0, skipped: null });
   m.runOfficialLinkCheck.mockResolvedValue({ checked: 0, broken: 0, ok: 0, remaining: 0, batchSize: 25 });
   m.claimDue.mockResolvedValue([]);
   m.startIngestRun.mockResolvedValue('job-daily');
@@ -136,6 +142,8 @@ describe('/api/cron/daily', () => {
         'deadlineReminders',
         'onboardingDrip',
         'didYouFile24h',
+        'pinAdminEmail',
+        'paperFallbackReminder',
         'payoutTracker',
         'verifyAssist',
         'matchAlerts',
@@ -150,6 +158,8 @@ describe('/api/cron/daily', () => {
         deadlineReminders: { status: 'skipped', reason: 'paused (deadline reminders)' },
         onboardingDrip: { status: 'skipped', reason: 'paused (onboarding drip)' },
         didYouFile24h: { status: 'skipped', reason: 'paused (did-you-file 24h)' },
+        pinAdminEmail: { status: 'skipped', reason: 'paused (pin admin email)' },
+        paperFallbackReminder: { status: 'skipped', reason: 'paused (paper fallback reminder)' },
         payoutTracker: { status: 'skipped', reason: 'paused (payout tracker emails)' },
         verifyAssist: { status: 'skipped', reason: 'paused (verification drafts)' },
         matchAlerts: { status: 'skipped', reason: 'paused (match alerts)' },
@@ -209,6 +219,24 @@ describe('/api/cron/daily', () => {
     expect(status).toBe(200);
     expect(m.sendMatchAlerts).toHaveBeenCalledOnce();
     expect(body.ranSteps).toEqual(['ingest', 'matchAlerts']);
+  });
+
+  it('runs PIN-gated administrator emails only when PIN_ADMIN_EMAIL_ENABLED=1', async () => {
+    expect(m.sendQueuedPinAdminEmails).not.toHaveBeenCalled();
+    vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '1');
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.sendQueuedPinAdminEmails).toHaveBeenCalledOnce();
+    expect(body.ranSteps).toEqual(['ingest', 'pinAdminEmail']);
+  });
+
+  it('runs paper-fallback reminders only when PAPER_FALLBACK_REMINDER_ENABLED=1', async () => {
+    expect(m.sendPaperFallbackReminders).not.toHaveBeenCalled();
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '1');
+    const { status, body } = await call(daily.GET, '/api/cron/daily');
+    expect(status).toBe(200);
+    expect(m.sendPaperFallbackReminders).toHaveBeenCalledOnce();
+    expect(body.ranSteps).toEqual(['ingest', 'paperFallbackReminder']);
   });
 
   it('runs the daily batched link check only when LINK_CHECK_ENABLED=1', async () => {

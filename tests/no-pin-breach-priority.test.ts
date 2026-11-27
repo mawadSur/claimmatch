@@ -56,7 +56,7 @@ describe('compareDashboardMatches', () => {
     ...overrides,
   });
 
-  it('never lets an easy-to-file possible match jump above a strong match', () => {
+  it('puts every Easy submit (desk_file) match above self-file, including a possible above a strong self-file', () => {
     const easyPossible = match({
       slug: 'easy',
       strength: 'possible',
@@ -74,7 +74,28 @@ describe('compareDashboardMatches', () => {
     const sorted = [easyPossible, hardStrong].sort((a, b) =>
       compareDashboardMatches(a, b, { noPinBreachFirst: true }),
     );
-    expect(sorted.map((m) => m.slug)).toEqual(['hard', 'easy']);
+    expect(sorted.map((m) => m.slug)).toEqual(['easy', 'hard']);
+  });
+
+  it('does not let a possible online_form (no-PIN, not Easy submit) jump above a strong match', () => {
+    const easyPossible = match({
+      slug: 'online',
+      strength: 'possible',
+      score: 0.4,
+      claimActionType: 'online_form',
+      category: 'Data Breach',
+    });
+    const hardStrong = match({
+      slug: 'hard',
+      strength: 'strong',
+      score: 1,
+      claimActionType: 'needs_notice_id',
+      category: 'Employment',
+    });
+    const sorted = [easyPossible, hardStrong].sort((a, b) =>
+      compareDashboardMatches(a, b, { noPinBreachFirst: true }),
+    );
+    expect(sorted.map((m) => m.slug)).toEqual(['hard', 'online']);
   });
 
   it('puts a lower-scoring no-PIN breach row ahead inside one strength band', () => {
@@ -86,11 +107,11 @@ describe('compareDashboardMatches', () => {
     expect(
       [...rows].sort((a, b) => compareDashboardMatches(a, b, { noPinBreachFirst: true })).map((m) => m.slug),
     ).toEqual(['nopin-low', 'nopin-notbreach', 'pin-high']);
-    // Off: score order, unchanged.
+    // Easy submit still leads when the no-PIN flag is off; remaining rows stay in score order.
     expect([...rows].sort((a, b) => compareDashboardMatches(a, b)).map((m) => m.slug)).toEqual([
+      'nopin-low',
       'pin-high',
       'nopin-notbreach',
-      'nopin-low',
     ]);
   });
 

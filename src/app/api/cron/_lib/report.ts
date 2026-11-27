@@ -151,6 +151,34 @@ export function verifyAssistGate(enabled: boolean): Gate {
       };
 }
 
+/** PIN-gated administrator emails queued while PIN_ADMIN_EMAIL_ENABLED was off. */
+export function pinAdminEmailGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (pin admin email)',
+          resume: 'Set PIN_ADMIN_EMAIL_ENABLED=1 to email settlement administrators for notice-ID requests.',
+        },
+      };
+}
+
+/** 7-day paper-form fallback reminder after a PIN-gated administrator email. */
+export function paperFallbackReminderGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (paper fallback reminder)',
+          resume: 'Set PAPER_FALLBACK_REMINDER_ENABLED=1 to email the paper-form fallback after 7 days with no reply.',
+        },
+      };
+}
+
 /** 24-hour “Did you file?” after official_form_opened. Independent of the 3-day drip. */
 export function didYouFile24hGate(enabled: boolean): Gate {
   return enabled

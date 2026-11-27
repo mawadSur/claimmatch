@@ -9,6 +9,7 @@
  * `isFilingOff` tells the screens to keep today's self-file steps.
  */
 import {
+  ClaimFilingListResponseSchema,
   ClaimFilingResponseSchema,
   DocumentResponseSchema,
   DocumentSlotResponseSchema,
@@ -94,6 +95,11 @@ const docPath = (claimId: string, documentId: string, rest = '') =>
 
 export function getFiling(claimId: string) {
   return view(call(ClaimFilingResponseSchema, 'GET', claimPath(claimId)));
+}
+
+/** The member's one-click claims (GET /api/filing/claims). Fail-soft at the caller. */
+export function listFilingClaims() {
+  return call(ClaimFilingListResponseSchema, 'GET', '');
 }
 
 /** The lane this member would get on a settlement today (writes nothing). */

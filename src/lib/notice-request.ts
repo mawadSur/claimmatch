@@ -1,6 +1,7 @@
 /**
  * Pre-filled letter a visitor copies or downloads to ask the administrator
- * for a notice or claim ID. Lawsuit AI never sends this email.
+ * for a notice or claim ID. Lawsuit AI does not send this DIY letter; the
+ * optional PIN-gated administrator email is a separate path.
  */
 
 export const NOTICE_REQUESTED_STORAGE_PREFIX = 'cm_notice_requested:';

@@ -135,7 +135,7 @@ export function ClaimFlow({ data, claimAtLoad }: ClaimFlowProps) {
     );
   } else if (oc?.active) {
     body = oc.view ? (
-      <OneClickFiling view={oc.view} onView={oc.onView} />
+      <OneClickFiling view={oc.view} onView={oc.onView} nextEasySubmit={oc.nextEasySubmit} />
     ) : oc.loadFailed ? (
       <Notice tone="error" body={filingCopy.loadFailed.text} testID="filing-load-failed" />
     ) : (

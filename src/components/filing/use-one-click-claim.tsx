@@ -115,6 +115,7 @@ export function useOneClickClaim({
         accountEmail={oneClick.accountEmail}
         reauthWithGoogle={oneClick.reauthWithGoogle}
         reauthWithApple={oneClick.reauthWithApple}
+        nextEasySubmit={oneClick.nextEasySubmit ?? null}
         onChange={onFilingChange}
       />
     ) : (
