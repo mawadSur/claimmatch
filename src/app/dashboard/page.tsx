@@ -185,6 +185,15 @@ export default async function DashboardPage({
         {showCompleteness && completeness && <ProfileCompletenessCard result={completeness} />}
         {betaFeedbackTrigger ? <BetaFeedbackPrompt trigger={betaFeedbackTrigger} /> : null}
 
+        {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
+
+        {flags.assistedFiling() && (
+          <FilingStatusList
+            jobs={filingJobs}
+            titles={Object.fromEntries(catalog.lawsuits.map((l) => [l.id, l.title]))}
+          />
+        )}
+
         {!profile?.onboarded && (
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-brand-200 bg-brand-50 p-5 sm:flex-row sm:items-center">
             <div className="flex items-start gap-3">
@@ -218,15 +227,6 @@ export default async function DashboardPage({
           owedEstimateEnabled={flags.owedEstimateHeader()}
           selfFiledReportEnabled={flags.selfFiledReport()}
         />
-
-        {oneClick ? <FilingSummaryList items={oneClick.summaries} /> : null}
-
-        {flags.assistedFiling() && (
-          <FilingStatusList
-            jobs={filingJobs}
-            titles={Object.fromEntries(catalog.lawsuits.map((l) => [l.id, l.title]))}
-          />
-        )}
 
         <section aria-labelledby="your-claims-title">
           <h2 id="your-claims-title" className="text-2xl font-extrabold">

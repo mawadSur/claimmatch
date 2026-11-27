@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { ONE_CLICK_COPY, ONE_CLICK_SELF_FILE_TITLE, ONE_CLICK_STATUS } from '@/lib/copy';
 import type { ClaimFilingView } from '@/lib/filing/v2/contract';
 import { ClaimStatusBadge } from '@/components/claims/ClaimStatusBadge';
@@ -16,6 +17,7 @@ import {
   laneTiming,
   laneTitle,
   lastDayLine,
+  timelineRows,
 } from './filing-model';
 import { FilingPath, FilingTimeline } from './FilingTimeline';
 import { PacketItemsStep } from './PacketItemsStep';
@@ -83,6 +85,9 @@ export function OneClickFiling({
 
   return (
     <div id="one-click" className="scroll-mt-24 space-y-5">
+      {/* Where the claim stands, before the forms. filingPath returns steps for
+          the intake statuses, so a member mid-packet can see their position. */}
+      <FilingPath status={view.claim.status} />
       <ol className="space-y-5" aria-label={ONE_CLICK_COPY.stepsLabel}>
         {packet.spec && (
           <FilingStep n={1} title={steps.confirm}>
@@ -105,7 +110,7 @@ export function OneClickFiling({
         {/* On the self-file lane, step 3 above is SelfFileLaneStep, which already
             offers this exact action — so drop the duplicate control here. */}
         <FilingActions view={view} busy={busy} onView={onChange} hideSelfFile={!view.lane.agent} />
-        <FilingTimeline entries={view.timeline} />
+        <HistoryDisclosure entries={view.timeline} />
       </div>
       <LaneCard view={view} />
     </div>
@@ -113,6 +118,24 @@ export function OneClickFiling({
 }
 
 /** The lane at the bottom of the steps: "We file this claim for you" and what happens next, or why it can't. */
+/**
+ * Filing history, collapsed. It is a log, not a next step, so it must not push
+ * the live status and the steps down the page. Both call sites share this so
+ * the disclosure classes are written once.
+ */
+function HistoryDisclosure({ entries }: { entries: ClaimFilingView['timeline'] }) {
+  if (timelineRows(entries).length === 0) return null;
+  return (
+    <details className="group mt-5" id="filing-history">
+      <summary className="flex min-h-tap cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+        {ONE_CLICK_COPY.historyToggle}
+        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <FilingTimeline entries={entries} />
+    </details>
+  );
+}
+
 function LaneCard({ view }: { view: ClaimFilingView }) {
   const timing = laneTiming(view.lane);
   const lastDay = lastDayLine(view.lane);
@@ -205,7 +228,7 @@ export function FilingStatusCard({
       <FilingPath status={status} />
       {message && <FormMessage tone="error">{message}</FormMessage>}
       <FilingActions view={view} busy={busy} onView={onView} />
-      <FilingTimeline entries={view.timeline} />
+      <HistoryDisclosure entries={view.timeline} />
     </section>
   );
 }

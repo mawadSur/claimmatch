@@ -125,6 +125,30 @@ describe('filing status on the dashboard', () => {
     expect(html).not.toContain('Claim self_file');
   });
 
+  it('keeps the heading and counts outside the disclosure, and the rows inside it', () => {
+    const html = renderToStaticMarkup(
+      createElement(FilingSummaryList, { items: [summary('c1', 'ready')] }),
+    );
+    const [beforeDetails, afterDetails] = html.split('<details');
+    // Status at a glance without expanding: heading + counts stay above.
+    expect(beforeDetails).toContain(ONE_CLICK_COPY.dashboard.title);
+    expect(beforeDetails).toContain(ONE_CLICK_COPY.dashboard.ready);
+    // The per-claim rows are the collapsible part.
+    expect(afterDetails).toContain('<ul');
+    expect(afterDetails).toContain(ONE_CLICK_COPY.dashboard.open);
+  });
+
+  it('never leaves a claim that needs attention collapsed', () => {
+    const needs = [...Array(6)].map((_, i) => summary(`c${i}`, 'ready'));
+    // A long list with nothing to do may start collapsed...
+    expect(renderToStaticMarkup(createElement(FilingSummaryList, { items: needs }))).not.toContain('<details class="group mt-4" open');
+    // ...but one needs_you claim forces it open.
+    const html = renderToStaticMarkup(
+      createElement(FilingSummaryList, { items: [...needs, summary('cx', 'needs_you')] }),
+    );
+    expect(html).toContain('open=""');
+  });
+
   it('shows an error when the list can’t be read, and nothing when there are no one-click claims', () => {
     expect(renderToStaticMarkup(createElement(FilingSummaryList, { items: null }))).toContain(ONE_CLICK_COPY.dashboard.failed);
     expect(renderToStaticMarkup(createElement(FilingSummaryList, { items: [summary('c5', 'self_file')] }))).toBe('');

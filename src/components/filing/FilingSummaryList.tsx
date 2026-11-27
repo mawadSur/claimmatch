@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, CalendarClock } from 'lucide-react';
+import { AlertCircle, ArrowRight, CalendarClock, ChevronDown } from 'lucide-react';
 import { ONE_CLICK_COPY } from '@/lib/copy';
 import type { ClaimFilingSummary } from '@/lib/filing/v2/contract';
 import { formatDeadline } from '@/lib/utils';
@@ -25,6 +25,9 @@ export function FilingSummaryList({ items }: { items: readonly ClaimFilingSummar
   const list = oneClickSummaries(items);
   if (list.length === 0) return null;
   const counts = summaryCounts(list);
+  // Open unless the list is long and nothing needs the member: a collapsed
+  // needs_you claim would hide the one state that requires them to act.
+  const shouldOpen = counts.needsYou > 0 || list.length <= 3;
   return (
     <section aria-labelledby="filing-summary-title">
       <h2 id="filing-summary-title" className="text-2xl font-extrabold">
@@ -43,32 +46,38 @@ export function FilingSummaryList({ items }: { items: readonly ClaimFilingSummar
           </div>
         )}
       </dl>
-      <ul className="mt-4 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
-        {list.map((item) => {
-          const display = filingStatusDisplay(item.status, item.confirmation_number);
-          return (
-            <li key={item.claim_id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-              <div className="min-w-0">
-                <ClaimStatusBadge label={display.label} tone={display.tone} />
-                <p className="mt-2 font-semibold text-ink">{item.title}</p>
-                {item.deadline && (
-                  <p className="mt-1.5 flex items-center gap-1.5 text-sm text-ink-muted">
-                    <CalendarClock className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
-                    {formatDeadline(item.deadline)}
-                  </p>
-                )}
-              </div>
-              <Link
-                href={`/claim/${item.slug}#one-click`}
-                className={`${item.needs_action ? 'btn-primary' : 'btn-secondary'} shrink-0 !px-4 !py-2 text-sm`}
-                aria-label={`${COPY.open}: ${item.title}`}
-              >
-                {COPY.open} <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <details className="group mt-4" open={shouldOpen}>
+        <summary className="flex min-h-tap cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 [&::-webkit-details-marker]:hidden">
+          {COPY.showList}
+          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <ul className="mt-3 divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
+          {list.map((item) => {
+            const display = filingStatusDisplay(item.status, item.confirmation_number);
+            return (
+              <li key={item.claim_id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
+                <div className="min-w-0">
+                  <ClaimStatusBadge label={display.label} tone={display.tone} />
+                  <p className="mt-2 font-semibold text-ink">{item.title}</p>
+                  {item.deadline && (
+                    <p className="mt-1.5 flex items-center gap-1.5 text-sm text-ink-muted">
+                      <CalendarClock className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+                      {formatDeadline(item.deadline)}
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href={`/claim/${item.slug}#one-click`}
+                  className={`${item.needs_action ? 'btn-primary' : 'btn-secondary'} shrink-0 !px-4 !py-2 text-sm`}
+                  aria-label={`${COPY.open}: ${item.title}`}
+                >
+                  {COPY.open} <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
     </section>
   );
 }
