@@ -87,6 +87,7 @@ import { CLAIM_AGENT_LEGAL_SENTENCE, PREFILL_AGENT_LANE_NOTE } from '@/lib/copy'
 import { LEGAL_DISCLAIMER } from '@/lib/disclaimer';
 import { claimLegalDisclaimer, legalDisclaimer } from '@/lib/disclaimer-flags';
 import { claimFiledByLawsuitAi } from '@/components/filing/filing-model';
+import { SUBMIT_CLAIM_CTA } from '@/lib/claim-actions';
 
 const NOW = new Date('2026-11-12T15:00:00Z');
 const OFFICIAL = 'https://www.widget-admin.com/claim';
@@ -267,6 +268,20 @@ describe('the claim page with the flag on', () => {
     expect(html).not.toContain('Where Lawsuit AI offers one-click filing');
     expect(h.preview).toHaveBeenCalled();
     expect(h.lookups).toEqual([]);
+  });
+
+  it('offers exactly one submit action: no self-linking "Submit a claim" beside "Start my claim"', async () => {
+    // The dead button: claimActionCta's desk_file primary points at
+    // /claim/[slug], which is this page, so it navigated nowhere while the
+    // real submit sat further down. Same for the unapproved-draft secondary.
+    const slug = 'realpage-rental-software-antitrust-settlement';
+    h.settlement = settlementRow({ slug, claim_action_type: 'desk_file' });
+    h.lawsuit = { ...lawsuitRow(STATE_ONLY), slug, claim_action_type: 'desk_file' };
+    const html = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ slug }) }));
+    expect(html).not.toContain(`href="/claim/${slug}"`);
+    expect(html).not.toContain(SUBMIT_CLAIM_CTA);
+    expect(html).not.toContain('View claim details');
+    expect(html.match(new RegExp(ONE_CLICK_COPY.entry.start, 'g')) ?? []).toHaveLength(1);
   });
 });
 

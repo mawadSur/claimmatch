@@ -197,13 +197,18 @@ export function ClaimFlow({
 
   return (
     <div className="space-y-6">
-      {flags.claimActionCtas() && actionType && (
+      {/* Not shown once the member is inside the filing steps (same rule as
+          NoticeIdSection below): re-advertising "Easy submit" above a live
+          "File my claim" is the duplication subscribers reported. selfHref
+          drops any button that would just navigate back to this page. */}
+      {flags.claimActionCtas() && actionType && !oc?.active && (
         <ClaimActionCta
           slug={settlement.slug}
           claimActionType={actionType}
           claimAction={actionDetails}
           officialHref={settlement.officialUrl}
           deskEligible={Boolean(oc?.filesForMember)}
+          selfHref={`/claim/${settlement.slug}`}
         />
       )}
       {flags.claimActionCtas() && actionType === 'mail_in' && (

@@ -203,7 +203,7 @@ const dashboardRowSchema = z.object({
   label: z.string(),
   // Presentation only: an unknown tone or group shows as neutral "Status unavailable".
   tone: z.enum(['amber', 'brand', 'green', 'gray', 'red']).catch('gray'),
-  group: z.enum(['needs_filing', 'reported', 'submitted', 'closed', 'other']).catch('other'),
+  group: z.enum(['needs_filing', 'in_process', 'reported', 'submitted', 'closed', 'other']).catch('other'),
   deadlineText: z.string(),
   nextStep: z.string(),
   // The router opens other URLs outside the app: only "/claim/{slug}" keeps its button.

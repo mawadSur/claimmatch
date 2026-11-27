@@ -97,7 +97,7 @@ export function needsCorrectiveNotice(claim: ClaimFields): boolean {
 /* -------------------------------------------------------------------------- */
 
 export type ClaimTone = 'amber' | 'brand' | 'green' | 'gray' | 'red';
-export type ClaimGroup = 'needs_filing' | 'reported' | 'submitted' | 'closed' | 'other';
+export type ClaimGroup = 'needs_filing' | 'in_process' | 'reported' | 'submitted' | 'closed' | 'other';
 export type ClaimKind =
   | 'self_file'
   | 'reported_filed'
@@ -107,6 +107,16 @@ export type ClaimKind =
   | 'legacy_not_filed'
   | 'legacy_unconfirmed'
   | 'fictional'
+  // The 0041 agent-lane statuses. Without these a just-signed claim fell to
+  // 'unknown' and read "Status unavailable" on every surface.
+  | 'preparing'
+  | 'ready'
+  | 'needs_you'
+  | 'signed'
+  | 'queued'
+  | 'filing'
+  | 'filed_by_claimmatch'
+  | 'filing_rejected'
   | 'unknown';
 
 export interface ClaimDisplay {
@@ -122,6 +132,7 @@ export interface ClaimDisplay {
 
 export const CLAIM_GROUP_LABELS: Record<ClaimGroup, string> = {
   needs_filing: 'Needs filing',
+  in_process: 'In process',
   reported: 'Reported filed',
   submitted: 'Submitted',
   closed: 'Closed',
@@ -149,6 +160,30 @@ export function displayClaimStatus(
     tone: passed ? 'gray' : tone,
     group: passed ? 'closed' : 'needs_filing',
     showNotice: notice,
+  });
+  /**
+   * An agent-lane status the member still has to act on. A passed deadline
+   * still greys it, but the corrective notice never applies: that is a
+   * legacy-row concern, so showNotice stays false.
+   */
+  const agentOpen = (kind: ClaimKind, label: string, tone: ClaimTone): ClaimDisplay => ({
+    ...base,
+    kind,
+    label,
+    tone: passed ? 'gray' : tone,
+    group: passed ? 'closed' : 'needs_filing',
+  });
+  /**
+   * An agent-lane status Lawsuit AI is actively working. Deliberately ignores
+   * a passed deadline: a claim already signed and in line must never flip to
+   * "Closed" underneath the member while it is being filed.
+   */
+  const agentInProcess = (kind: ClaimKind, label: string): ClaimDisplay => ({
+    ...base,
+    kind,
+    label,
+    tone: 'brand',
+    group: 'in_process',
   });
 
   if (settlement?.fictional) {
@@ -196,6 +231,26 @@ export function displayClaimStatus(
       };
     case 'withdrawn':
       return { ...base, kind: 'withdrawn', label: 'Withdrawn by you', tone: 'gray', group: 'closed' };
+    /* The 0041 agent-lane statuses. Labels mirror ONE_CLICK_STATUS in
+       src/lib/copy.ts so the dashboard and the claim page read identically;
+       copy.ts cannot be imported here because this file is shared with the
+       native app in place (mobile/shared.json) and copy.ts is not. */
+    case 'preparing':
+      return agentOpen('preparing', 'Preparing your claim', 'amber');
+    case 'ready':
+      return agentOpen('ready', 'Ready to file', 'brand');
+    case 'needs_you':
+      return agentOpen('needs_you', 'Needs your attention', 'red');
+    case 'filing_rejected':
+      return agentOpen('filing_rejected', 'Not accepted by the administrator', 'red');
+    case 'signed':
+      return agentInProcess('signed', 'Pending · signed by you');
+    case 'queued':
+      return agentInProcess('queued', 'In line to be filed');
+    case 'filing':
+      return agentInProcess('filing', 'Filing in progress');
+    case 'filed_by_claimmatch':
+      return agentInProcess('filed_by_claimmatch', 'Filed by Lawsuit AI · waiting for the confirmation number');
     default:
       return { ...base, kind: 'unknown', label: 'Status unavailable', tone: 'gray', group: 'other' };
   }

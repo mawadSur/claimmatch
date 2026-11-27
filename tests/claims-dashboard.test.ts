@@ -456,3 +456,56 @@ describe('official links never point at a SettleSignal listing', () => {
     expect(toClaimFlowSettlement({ ...record, claim_url: OFFICIAL }, opts).officialUrl).toBe(OFFICIAL);
   });
 });
+
+describe('agent-lane statuses (0041) on the dashboard', () => {
+  const IN_PROCESS = ['signed', 'queued', 'filing', 'filed_by_claimmatch'] as const;
+  const NEEDS_YOU = ['preparing', 'ready', 'needs_you', 'filing_rejected'] as const;
+
+  it.each([...IN_PROCESS, ...NEEDS_YOU])('gives %s a real label instead of "Status unavailable"', (status) => {
+    const { rows } = row(claim({ status }), settlement());
+    expect(rows[0].label).not.toBe('Status unavailable');
+    expect(rows[0].group).not.toBe('other');
+    expect(rows[0].nextStep).not.toBe("We can't show this claim's status right now.");
+  });
+
+  it.each(IN_PROCESS)('groups %s under "In process" so it never looks deleted', (status) => {
+    const { rows } = row(claim({ status }), settlement());
+    expect(rows[0].group).toBe('in_process');
+  });
+
+  it.each(NEEDS_YOU)('keeps %s in needs_filing, where the member can act', (status) => {
+    const { rows } = row(claim({ status }), settlement());
+    expect(rows[0].group).toBe('needs_filing');
+  });
+
+  it('shows a signed claim as Pending and points at the filing block, never at "Tell us"', () => {
+    const { rows } = row(claim({ status: 'signed' }), settlement());
+    expect(rows[0]).toMatchObject({
+      label: 'Pending · signed by you',
+      group: 'in_process',
+      action: { label: 'View', href: '/claim/real-one#one-click' },
+    });
+    expect(rows[0].nextStep).toContain('in line to be filed');
+  });
+
+  it('never flips an in-flight claim to Closed when the deadline passes', () => {
+    // The member signed in time; filing is Lawsuit AI's job now, so a passed
+    // deadline must not grey the claim out underneath them.
+    const past = settlement({ deadline: '2026-01-01' });
+    for (const status of IN_PROCESS) {
+      const { rows } = row(claim({ status }), past);
+      expect(rows[0].group).toBe('in_process');
+    }
+  });
+
+  it('still greys an unsigned agent claim once the deadline passes', () => {
+    const past = settlement({ deadline: '2026-01-01' });
+    const { rows } = row(claim({ status: 'preparing' }), past);
+    expect(rows[0].group).toBe('closed');
+  });
+
+  it('raises no corrective notice for an agent-lane claim', () => {
+    const { notices } = row(claim({ status: 'signed', corrective_notice_required: true }), settlement());
+    expect(notices).toHaveLength(0);
+  });
+});

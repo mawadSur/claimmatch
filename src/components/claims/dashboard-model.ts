@@ -71,7 +71,7 @@ export interface NoticeItem {
   officialUrl: string | null;
 }
 
-export const GROUP_ORDER: ClaimGroup[] = ['needs_filing', 'reported', 'submitted', 'closed', 'other'];
+export const GROUP_ORDER: ClaimGroup[] = ['needs_filing', 'in_process', 'reported', 'submitted', 'closed', 'other'];
 
 const FILING_ORDER: Record<LegacyFilingState, number> = {
   open: 0,
@@ -188,6 +188,42 @@ export function buildDashboard(
         break;
       case 'withdrawn':
         nextStep = 'You stopped tracking this claim.';
+        break;
+      /* The 0041 agent-lane statuses. Each names what happens next so a
+         just-submitted claim never reads "We can't show this claim's status".
+         The action always points at the filing block, never at "Tell us":
+         /api/claims/[id] refuses a self-file report for these statuses. */
+      case 'preparing':
+        nextStep = 'Add what’s missing and answer the settlement’s questions, then sign.';
+        action = href ? { label: 'Finish', href: `${href}#one-click` } : null;
+        break;
+      case 'ready':
+        nextStep = 'Everything is in. Review your claim and sign it.';
+        action = href ? { label: 'Review and sign', href: `${href}#one-click` } : null;
+        break;
+      case 'needs_you':
+        nextStep = 'Lawsuit AI needs something from you before this claim can go ahead.';
+        action = href ? { label: 'Fix', href: `${href}#one-click` } : null;
+        break;
+      case 'signed':
+        nextStep = 'You signed this. It is being put in line to be filed.';
+        action = href ? { label: 'View', href: `${href}#one-click` } : null;
+        break;
+      case 'queued':
+        nextStep = 'Your signed claim is in line. You can still change or withdraw it until filing starts.';
+        action = href ? { label: 'View', href: `${href}#one-click` } : null;
+        break;
+      case 'filing':
+        nextStep = 'Filing has started. The confirmation number shows here when the administrator sends it.';
+        action = href ? { label: 'View', href: `${href}#one-click` } : null;
+        break;
+      case 'filed_by_claimmatch':
+        nextStep = 'Filed. Waiting for the administrator to send a confirmation number.';
+        action = href ? { label: 'View', href: `${href}#one-click` } : null;
+        break;
+      case 'filing_rejected':
+        nextStep = 'The administrator did not accept this claim. You can still finish it yourself before the deadline.';
+        action = href ? { label: 'See options', href: `${href}#one-click` } : null;
         break;
       default:
         nextStep = "We can't show this claim's status right now.";

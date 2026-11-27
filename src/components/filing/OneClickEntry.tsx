@@ -29,6 +29,7 @@ export function OneClickEntry({
   const lastDay = lastDayLine(lane);
 
   async function start() {
+    if (starting) return;
     setStarting(true);
     setError(null);
     const result = await startFiling(lawsuitId);
@@ -50,7 +51,13 @@ export function OneClickEntry({
       {timing && <p className="mt-2 text-sm leading-relaxed text-ink">{timing}</p>}
       {lastDay && <p className="mt-1 text-sm leading-relaxed text-ink">{lastDay}</p>}
       <p className="mt-1 text-sm leading-relaxed text-ink-muted">{ONE_CLICK_COPY.payout}</p>
-      <button type="button" className="btn-primary mt-4 w-full sm:w-auto" onClick={start} disabled={starting}>
+      <button
+        type="button"
+        className="btn-primary mt-4 w-full sm:w-auto"
+        onClick={start}
+        disabled={starting}
+        aria-busy={starting}
+      >
         {starting ? ONE_CLICK_COPY.entry.starting : ONE_CLICK_COPY.entry.start}
         <ArrowRight className="h-4 w-4" aria-hidden />
       </button>

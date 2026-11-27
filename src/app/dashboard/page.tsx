@@ -12,7 +12,7 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { FilingStatusList } from '@/components/claims/FilingStatus';
 import { FilingSummaryList } from '@/components/filing/FilingSummaryList';
 import { loadOneClickDashboard } from '@/components/filing/dashboard-data';
-import { isOneClickStatus } from '@/components/filing/filing-model';
+import { filingStatusClaimIds } from '@/components/filing/filing-model';
 import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
 import { lawsuitAiMayFile, ONE_CLICK_COPY, WE_FILE_SUPPORTED_SENTENCE } from '@/lib/copy';
 import { flags } from '@/lib/flags';
@@ -90,12 +90,19 @@ export default async function DashboardPage({
     now,
     strongMatchIds: matches.filter((row) => row.strength === 'strong').map((row) => row.id),
   });
-  // One-click claims show under "Filing status"; "Your claims" keeps the self-file ones
-  // (and all of them when the filing list could not be read, so none disappears).
-  const oneClickClaimIds = new Set(
-    oneClick?.summaries ? claims.items.filter((item) => isOneClickStatus(item.claim.status)).map((item) => item.claim.id) : [],
-  );
-  const claimRows = rows.filter((row) => !oneClickClaimIds.has(row.claimId));
+  // One-click claims show under "Filing status"; "Your claims" keeps the self-file ones.
+  //
+  // Key the removal off the rows "Filing status" will actually render, never off
+  // claims.items. The two come from different queries (loadUserClaims uses the
+  // service role; listClaimFilingSummaries uses the member's own RLS client and
+  // skips any claim whose settlement env is missing), and `summaries: []` is
+  // truthy — so the old `oneClick?.summaries ? ...` test hid every agent-status
+  // claim from "Your claims" even when "Filing status" was going to render
+  // nothing at all. A just-signed claim then appeared on neither list and
+  // looked deleted. Double-rendering is impossible because the summary list is
+  // the only producer of Filing status rows.
+  const shownInFilingStatus = filingStatusClaimIds(oneClick?.summaries);
+  const claimRows = rows.filter((row) => !shownInFilingStatus.has(row.claimId));
   const hasReportedFiling = claims.items.some(
     (item) => item.claim.status === 'reported_filed' || item.claim.status === 'submitted',
   );

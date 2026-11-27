@@ -102,7 +102,9 @@ export function OneClickFiling({
       </ol>
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-card sm:p-6">
         {message && <FormMessage tone="error">{message}</FormMessage>}
-        <FilingActions view={view} busy={busy} onView={onChange} />
+        {/* On the self-file lane, step 3 above is SelfFileLaneStep, which already
+            offers this exact action — so drop the duplicate control here. */}
+        <FilingActions view={view} busy={busy} onView={onChange} hideSelfFile={!view.lane.agent} />
         <FilingTimeline entries={view.timeline} />
       </div>
       <LaneCard view={view} />

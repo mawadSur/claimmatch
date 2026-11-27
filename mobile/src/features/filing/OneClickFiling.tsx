@@ -160,7 +160,7 @@ export function OneClickFiling({ view, onView }: { view: ClaimFilingView; onView
       </NumberedStep>
       <Card style={styles.card} testID="filing-footer">
         <Message tone="error" text={message} />
-        <FilingActions view={view} busy={busy} onView={onView} />
+        <FilingActions view={view} busy={busy} onView={onView} hideSelfFile={!view.lane.agent} />
         <FilingTimeline entries={view.timeline} />
       </Card>
       <LaneCard view={view} />

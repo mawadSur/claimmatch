@@ -208,6 +208,8 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'Legal/disclaimer sentences that still name Lawsuit AI as the filer (MAY_FILE_LEGAL_SENTENCE, CLAIM_AGENT_LEGAL_SENTENCE).' },
   { file: 'src/lib/copy.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
     reason: 'One-click filing: the filed_by_claimmatch status, true for that claim; it never reads “Submitted” until the administrator’s number arrives.' },
+  { file: 'src/lib/claims.ts', rule: 'filed by claimmatch', text: 'Filed by Lawsuit AI · waiting for the confirmation number',
+    reason: 'displayClaimStatus’s filed_by_claimmatch arm: the same true statement as ONE_CLICK_STATUS above, inlined because claims.ts is shared with the native app in place (mobile/shared.json) and cannot import copy.ts.' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI can file your claim with the settlement administrator after you review and sign it',
     reason: 'Issue #53: the settlement page’s filing step, shown only when one-click is on for the viewer and this settlement has an agent lane the law firm enabled (SETTLEMENT_FILING_COPY.agent).' },
   { file: 'src/lib/copy.ts', rule: 'we submit', text: 'Lawsuit AI can file this claim for you after you review and sign it',

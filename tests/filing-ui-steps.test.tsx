@@ -205,6 +205,14 @@ describe('the self-file lane', () => {
     expect(html).not.toContain(AUTH_TEXT);
     expect(text(html)).toContain(`Step 3: ${ONE_CLICK_SELF_FILE_TITLE}`);
   });
+
+  it('offers the self-file action once: step 3 keeps it, FilingActions drops its duplicate', () => {
+    // Two controls for one action read as a second submit button. Step 3 is
+    // SelfFileLaneStep, so FilingActions hides its own copy on this lane.
+    const html = render(filingView({ lane: SELF_FILE_LANE, authorization: null, actions: { can_self_file: true } }));
+    expect(html).toContain(ONE_CLICK_SELF_FILE_TITLE);
+    expect(html).not.toContain(ONE_CLICK_COPY.actions.selfFile);
+  });
 });
 
 describe('health information', () => {

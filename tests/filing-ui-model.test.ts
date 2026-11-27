@@ -22,6 +22,7 @@ import {
   laneTiming,
   laneTitle,
   lastDayLine,
+  filingStatusClaimIds,
   oneClickSummaries,
   packetLegalName,
   signReadiness,
@@ -210,6 +211,33 @@ describe('dashboard summaries', () => {
     const mine = oneClickSummaries(items);
     expect(mine.map((i) => i.status)).toEqual(['ready', 'ready', 'queued', 'needs_you']);
     expect(summaryCounts(mine)).toEqual({ ready: 2, needsYou: 1 });
+  });
+
+  describe('filingStatusClaimIds — what "Your claims" may hide', () => {
+    it('hides nothing when Filing status will render nothing', () => {
+      // The regression: `summaries: []` is truthy, so testing the array itself
+      // hid every agent-status claim from "Your claims" while Filing status
+      // rendered nothing. The claim then appeared on neither list.
+      expect(filingStatusClaimIds([]).size).toBe(0);
+    });
+
+    it('hides nothing when the filing list could not be read', () => {
+      expect(filingStatusClaimIds(null).size).toBe(0);
+      expect(filingStatusClaimIds(undefined).size).toBe(0);
+    });
+
+    it('hides exactly the claims Filing status renders, and no self-file ones', () => {
+      // Distinct ids: the shared `summary` fixture reuses one CLAIM_ID.
+      const items = ['ready', 'queued', 'self_file', 'submitted'].map((status, i) => ({
+        ...summary(status),
+        claim_id: `00000000-0000-4000-8000-00000000000${i}`,
+      }));
+      const ids = filingStatusClaimIds(items);
+      expect(ids.size).toBe(2);
+      for (const item of items) {
+        expect(ids.has(item.claim_id)).toBe(isOneClickStatus(item.status));
+      }
+    });
   });
 });
 
