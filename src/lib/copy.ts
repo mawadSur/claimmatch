@@ -52,6 +52,109 @@ export function listedPayoutBesidePriceCopy(label: string): string {
   );
 }
 
+/* ---------------------------------------------------------------------------
+   Home hero, above the fold.
+
+   Every figure in these strings is interpolated from a number the caller
+   computed from the catalog at render time. Nothing here is averaged across
+   settlements, rounded up, or promised: when the caller has no figure it
+   renders nothing in that figure's place. The administrator decides who is
+   paid and how much, so no sentence here may say a visitor will receive money.
+   --------------------------------------------------------------------------- */
+
+/**
+ * The hero headline, in two parts so the hero can italicise the second half
+ * without a second copy of the words living in the component.
+ */
+export const HOME_HERO_HEADLINE_LEAD = 'Find the settlements';
+export const HOME_HERO_HEADLINE_EMPHASIS = 'that are actually yours.';
+export const HOME_HERO_HEADLINE = `${HOME_HERO_HEADLINE_LEAD} ${HOME_HERO_HEADLINE_EMPHASIS}`;
+
+/** Sits under the price block, not under the headline: the payout line is the hook. */
+export const HOME_HERO_SUBHEAD =
+  'Search open US class-action settlements, read who qualifies on the official notice, and keep every claim and deadline in one list.';
+
+/**
+ * "Open now: settlements listing up to $5,000 per person". `label` is one
+ * settlement's own stated maximum, already formatted; the caller names the
+ * listing beside it so the figure is checkable rather than asserted.
+ */
+export function heroPayoutHeadline(label: string): string {
+  return `Open now: settlements listing up to ${label} per person`;
+}
+
+/** "the highest is Acme Data Breach" — attribution for the figure above. */
+export function heroPayoutSource(title: string): string {
+  return `the highest is ${title}`;
+}
+
+/**
+ * "median listed payout $99 · 98 open · updated monthly". Each part appears
+ * only when the caller has it; null when it would have nothing to say.
+ */
+export function heroPayoutSupport(parts: {
+  medianLabel?: string | null;
+  openLabel?: string | null;
+}): string | null {
+  const bits: string[] = [];
+  if (parts.medianLabel) bits.push(`median listed payout ${parts.medianLabel}`);
+  if (parts.openLabel) bits.push(`${parts.openLabel} open`);
+  if (bits.length === 0) return null;
+  return [...bits, 'updated monthly'].join(' · ');
+}
+
+/**
+ * Real scarcity, counted from deadlines. Never shown when the count is zero.
+ *
+ * It says "in the next 30 days" because that is the window the caller counts
+ * (CLOSING_SOON_DAYS). "This month" would be a calendar claim the count does
+ * not support: a 30-day window crosses into the following month.
+ */
+export function heroClosingLine(count: number): string {
+  return count === 1
+    ? '1 settlement closes in the next 30 days'
+    : `${count} settlements close in the next 30 days`;
+}
+
+/**
+ * How payment reaches the member. True and load-bearing: administrators pay
+ * the member directly and many offer Zelle, PayPal or Venmo as an option on
+ * their own form (see PAYOUT_PREFERENCE_LABELS in src/lib/claim-profile.ts and
+ * the payout-options editor). Method names only — no brand marks, which would
+ * imply an affiliation that does not exist.
+ */
+export const HOME_HERO_PAYMENT_CLARITY =
+  'The administrator pays you directly — many let you choose Zelle, PayPal, Venmo or a check. We never see your account details.';
+
+export const HOME_HERO_FREE_LINE = 'Free to search and track.';
+
+/**
+ * The membership price, above the fold. "No card to start" is true: the trial
+ * checkout runs with payment_method_collection 'if_required'.
+ *
+ * The filing clause is named only when `mayFile` is true. Easy submit is
+ * gated by lawsuitAiMayFile() (FEE_DISCLOSURE / ONE_CLICK_FILING), and
+ * advertising it while that gate is shut is the exact claim #80 removed from
+ * the public pages — so with the gate shut the line prices the membership by
+ * what it does do instead of by filing.
+ */
+export function homeHeroPriceLine(
+  mayFile = lawsuitAiMayFile(),
+  trialDays = CLAIMMATCH_TRIAL_DAYS,
+  price = membershipPriceCopy(),
+): string {
+  const what = mayFile
+    ? 'Easy submit — we prepare and file it for you'
+    : 'Membership — new-claim alerts and every deadline tracked';
+  return `${what} — is ${price}/mo after a ${trialDays}-day free trial, no card to start.`;
+}
+
+export const HOME_HERO_PRIMARY_CTA = 'See which settlements fit you';
+
+/** Who sets the amount. Sits with the payout figures so they are never read as an offer. */
+export const HOME_HERO_PAYOUT_NOTE =
+  'Amounts are what each listing states. The settlement administrator decides who is paid and how much.';
+
 export function startTrialCtaLabel(
   trialDays = CLAIMMATCH_TRIAL_DAYS,
   price = membershipPriceCopy(),

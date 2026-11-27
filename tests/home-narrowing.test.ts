@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
 import { homeWedgeAvailability } from '@/lib/home-wedges';
+import { HOME_HERO_PRIMARY_CTA } from '@/lib/copy';
 import type { Lawsuit } from '@/lib/types';
 import { makeLawsuit } from './helpers';
 
@@ -45,7 +46,7 @@ describe('C17 home narrowing', () => {
     expect(on).toContain('Start with a type of settlement');
     expect(on).toContain('No proof required');
     expect(on).toContain('Data breach');
-    expect(on).toContain('See matching settlements');
+    expect(on).toContain(HOME_HERO_PRIMARY_CTA);
   });
 
   it('only offers filters the catalog can honestly fill', () => {

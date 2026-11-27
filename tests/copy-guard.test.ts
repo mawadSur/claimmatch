@@ -650,7 +650,9 @@ describe('copy guard', () => {
   });
 
   // Fails until every Phase 0 branch that owns the remaining surfaces merges.
+  // 5s is vitest's default and this walks every .ts/.tsx in src and mobile/src
+  // (~5-7s on a warm cache), so it needs its own budget or it flakes in CI.
   it('no banned phrase anywhere in src or the native app (mobile/src)', () => {
     expect(scanFiles([...sourceFiles('src'), ...sourceFiles('mobile/src')])).toEqual([]);
-  });
+  }, 30_000);
 });
