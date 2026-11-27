@@ -19,7 +19,6 @@ import { HomeHero } from '@/components/home/HomeHero';
 import dynamic from 'next/dynamic';
 import type { HowStep } from '@/components/home/how-it-works-types';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
-import { HomeTrimCatalog } from '@/components/home/HomeTrimCatalog';
 import { HomeSettlementList } from '@/components/home/HomeSettlementList';
 import { HomeTrust } from '@/components/home/HomeTrust';
 import { Testimonials } from '@/components/home/Testimonials';
@@ -29,6 +28,10 @@ import { HomeFinalCta } from '@/components/home/HomeFinalCta';
 const HowItWorks = dynamic(() => import('@/components/home/HowItWorks').then((m) => m.HowItWorks), {
   ssr: true,
 });
+const HomeTrimCatalog = dynamic(
+  () => import('@/components/home/HomeTrimCatalog').then((m) => m.HomeTrimCatalog),
+  { ssr: true },
+);
 import { MatchPreviewEntry } from '@/components/match-preview/MatchPreviewEntry';
 import { PublicTrustBlock } from '@/components/PublicTrustBlock';
 import type { Screen } from '@/components/home/DeviceFrame';

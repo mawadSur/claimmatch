@@ -49,6 +49,7 @@ describe('HOME_HTML_TRIM_ENABLED', () => {
     expect(page).toContain('HomeTrimCatalog');
     expect(page).not.toContain('HOME_HTML_MEASURE_CARDS');
     expect(page).toContain("dynamic(() => import('@/components/home/HowItWorks')");
+    expect(page).toContain("import('@/components/home/HomeTrimCatalog')");
     expect(page).toContain('HOME_CATALOG_COLUMNS');
     expect(page).toContain("path: '/'");
     expect(read('src/components/home/HomeTrimCatalog.tsx')).toContain("'use client'");
