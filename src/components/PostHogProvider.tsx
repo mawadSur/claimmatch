@@ -18,6 +18,7 @@ import {
 } from '@/lib/attribution';
 import {
   detectTrafficKindFromBrowser,
+  persistQaCookieFromLocation,
   shouldCapturePageview,
   TRAFFIC_PROPERTY,
 } from '@/lib/analytics/traffic';
@@ -91,6 +92,7 @@ function AttributionSync() {
   const posted = useRef(false);
 
   useEffect(() => {
+    persistQaCookieFromLocation();
     const incoming = parseAttribution(searchParams);
     const fromDocument = documentReferrerAttribution(window.location.origin);
     const merged = firstTouch(firstTouch(readBrowserCookies(), incoming), fromDocument);

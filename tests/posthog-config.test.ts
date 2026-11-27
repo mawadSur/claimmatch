@@ -45,7 +45,7 @@ describe('PostHog App Router wiring', () => {
     const report = read('src/components/claims/ReportFiled.tsx');
     const admin = read('src/components/admin/ShareLinksManager.tsx');
     expect(flow).toContain("capture('match_viewed'");
-    expect(flow).toContain("capture('official_form_opened'");
+    expect(flow).toContain('ANALYTICS_EVENTS.official_form_opened');
     expect(read('src/components/settlement/OfficialFormLink.tsx')).toContain('ANALYTICS_EVENTS.official_form_opened');
     expect(read('src/components/settlement/SettlementEligibilityQuiz.tsx')).toContain('eligibility_quiz_started');
     expect(read('src/components/settlement/SettlementEligibilityQuiz.tsx')).toContain('eligibility_quiz_completed');

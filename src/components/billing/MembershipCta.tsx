@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { ArrowRight, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { clientFunnelEnabled } from '@/lib/analytics/funnel-events';
 import { startTrialCtaLabel } from '@/lib/copy';
+import { withFunnelAttribution } from '@/lib/funnel';
 
 /** Starts Stripe Checkout for the signed-in member. */
 export function MembershipCta({
@@ -12,6 +16,7 @@ export function MembershipCta({
   returnTo?: string;
   className?: string;
 }) {
+  const posthog = usePostHog();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +34,12 @@ export function MembershipCta({
         setError(json.error || 'We couldn’t start checkout. Please try again.');
         setBusy(false);
         return;
+      }
+      if (clientFunnelEnabled()) {
+        posthog?.capture(
+          ANALYTICS_EVENTS.checkout_started,
+          withFunnelAttribution({ source: 'membership_cta' }),
+        );
       }
       window.location.href = json.url;
     } catch {

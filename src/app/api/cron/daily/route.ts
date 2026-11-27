@@ -18,6 +18,7 @@ import { persistVerificationDrafts } from '@/lib/verification-drafts-store';
 import { runOfficialLinkCheck } from '@/lib/link-check';
 import { runHeldClosureSiteChecks } from '@/lib/held-closure-site-checks';
 import { sendDeadlineReminders } from '@/lib/deadline-reminders';
+import { sendDidYouFile24hEmails } from '@/lib/did-you-file-24h';
 import { sendOnboardingDrips } from '@/lib/onboarding-drip';
 import { sendPayoutTrackerEmails } from '@/lib/payout-tracker';
 import { sendMatchAlerts } from '@/lib/match-alert-job';
@@ -25,6 +26,7 @@ import {
   buildReport,
   checkIngestStep,
   deadlineRemindersGate,
+  didYouFile24hGate,
   errorMessage,
   heldTriageGate,
   linkCheckGate,
@@ -163,6 +165,15 @@ async function handle(req: Request) {
       steps.onboardingDrip = configProblem
         ? missingConfigStep(configProblem, production)
         : await runStep('daily/onboardingDrip', () => sendOnboardingDrips());
+    }
+
+    const didYouFileGate = didYouFile24hGate(flags.didYouFileEmail());
+    if (!didYouFileGate.run) {
+      steps.didYouFile24h = didYouFileGate.step;
+    } else {
+      steps.didYouFile24h = configProblem
+        ? missingConfigStep(configProblem, production)
+        : await runStep('daily/didYouFile24h', () => sendDidYouFile24hEmails());
     }
 
     const trackerGate = payoutTrackerGate(flags.payoutTrackerEmails());

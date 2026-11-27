@@ -1,8 +1,7 @@
 import { BadgeCheck, ExternalLink } from 'lucide-react';
-import type { CatalogLink } from '@/lib/lawsuits';
+import type { CatalogLink } from '@/lib/lawsuit-display';
 import type { Lawsuit } from '@/lib/types';
 import { showVerifiedBadge, verifiedOnLabel } from '@/lib/verified-fields';
-import { noticeCheckedOnLabel } from '@/lib/settlement-guides';
 
 /**
  * Per-listing verification, not a site-wide banner. Compact so it does not
@@ -17,6 +16,8 @@ export function ListingVerification({
   compact = false,
   open = true,
   linkTitle,
+  verifiedFields,
+  checkedLabel,
 }: {
   lawsuit: Pick<
     Lawsuit,
@@ -34,9 +35,17 @@ export function ListingVerification({
   compact?: boolean;
   open?: boolean;
   linkTitle?: string;
+  /** Server-passed flag so a client island hydrates the same as SSR. */
+  verifiedFields?: boolean;
+  /**
+   * "Checked against the official notice on {date}", computed on the server
+   * via noticeCheckedOnLabel. Passing it keeps settlement-guides out of client
+   * islands (homepage HTML trim).
+   */
+  checkedLabel?: string | null;
 }) {
-  const verified = showVerifiedBadge(lawsuit);
-  const checked = noticeCheckedOnLabel(lawsuit.slug);
+  const verified = showVerifiedBadge(lawsuit, verifiedFields);
+  const checked = checkedLabel ?? null;
   const link = (href: string, label: string) => (
     <a
       href={href}

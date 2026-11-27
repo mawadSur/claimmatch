@@ -7,6 +7,8 @@
  * (self_file -> preparing; the packet then moves to the approved spec).
  * Claims already reported or filed are never started again. Server only.
  */
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { captureFunnelServerEvent } from '@/lib/analytics/funnel-events';
 import { isEasySubmitType } from '@/lib/claim-actions';
 import { serviceRoleConfigured } from '@/lib/claims-server';
 import { isInternalEmail } from '@/lib/internal-users';
@@ -89,6 +91,16 @@ export async function startFiling(caller: FilingCaller, lawsuitId: string, req: 
     }
     claim = toClaimRecord(result.claim);
     created = Boolean(result.created);
+  }
+  if (startingEasySubmit) {
+    await captureFunnelServerEvent({
+      event: ANALYTICS_EVENTS.easy_submit_started,
+      distinctId: user.id,
+      email: user.email ?? null,
+      settlementSlug: env.settlement.slug,
+      claimActionType: env.settlement.claim_action_type,
+      extra: { created },
+    });
   }
   if (!open || !PACKET_STATUSES_OK.has(claim.status)) return { ok: true, claimId: claim.id, created };
 

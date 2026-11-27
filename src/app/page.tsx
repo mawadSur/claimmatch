@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import type { Lawsuit } from '@/lib/types';
 import { lookupLawsuits } from '@/lib/lawsuits';
+import { HOME_CATALOG_COLUMNS, slimHomeCards } from '@/lib/home-catalog';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { pickTopPayouts } from '@/lib/top-payouts';
 import { HomeFeatures } from '@/components/home/HomeFeatures';
@@ -16,8 +17,9 @@ import {
 } from '@/lib/copy';
 import { HomeHero } from '@/components/home/HomeHero';
 import dynamic from 'next/dynamic';
-import type { HowStep } from '@/components/home/HowItWorks';
+import type { HowStep } from '@/components/home/how-it-works-types';
 import { HomeNarrowing } from '@/components/home/HomeNarrowing';
+import { HomeTrimCatalog } from '@/components/home/HomeTrimCatalog';
 import { HomeSettlementList } from '@/components/home/HomeSettlementList';
 import { HomeTrust } from '@/components/home/HomeTrust';
 import { Testimonials } from '@/components/home/Testimonials';
@@ -34,6 +36,7 @@ import { CaptureView } from '@/components/analytics/CaptureView';
 import { flags } from '@/lib/flags';
 import { homeWedgeAvailability, homeWedgesEnabled } from '@/lib/home-wedges';
 import { oneClickLawsuitIdSet } from '@/lib/one-click-listings';
+import { noticeCheckedOnLabel } from '@/lib/settlement-guides';
 import { publicPageMetadata } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 
@@ -155,7 +158,9 @@ async function loadHomeCatalog(): Promise<{
     // lookupLawsuits() applies the shared open-for-claims rule and reports a
     // failed query (getLawsuits() would turn it into "no settlements"); we
     // only order. not_open rows are excluded from lawsuits / home counts.
-    const result = await lookupLawsuits();
+    const result = await lookupLawsuits(
+      flags.homeHtmlTrim() ? { columns: HOME_CATALOG_COLUMNS } : undefined,
+    );
     if (result.error) return { lawsuits: [], openingSoon: [], failed: true };
     return { lawsuits: result.lawsuits, openingSoon: result.openingSoon ?? [], failed: false };
   } catch {
@@ -167,15 +172,27 @@ export default async function HomePage() {
   const catalog = await loadHomeCatalog();
   // "Closing soon" always gets the nearest deadlines; the top-payout list picks
   // from the rest so no row shows twice and no urgent deadline is hidden.
+  const trim = flags.homeHtmlTrim();
   const closing = { rows: pickClosingSoon(catalog.lawsuits, 5), failed: catalog.failed };
   const closingIds = new Set(closing.rows.map((row) => row.id));
   const top = catalog.failed
     ? []
     : pickTopPayouts(catalog.lawsuits.filter((row) => !closingIds.has(row.id)), 5);
+  const closingCards = trim ? slimHomeCards(closing.rows) : closing.rows;
+  const topCards = trim ? slimHomeCards(top) : top;
+  const openingSoonCards = trim
+    ? slimHomeCards(catalog.openingSoon.slice(0, 3))
+    : catalog.openingSoon.slice(0, 3);
   const wedges = homeWedgesEnabled() ? homeWedgeAvailability(catalog.lawsuits) : null;
   const disclose = flags.feeDisclosure();
   const mayFile = lawsuitAiMayFile();
   const easySubmitIds = await oneClickLawsuitIdSet();
+  const noticeChecked = Object.fromEntries(
+    [...topCards, ...closingCards, ...openingSoonCards].map((row) => [
+      row.slug,
+      noticeCheckedOnLabel(row.slug),
+    ]),
+  );
   const accountFirst = flags.homeAccountFirstCta();
   // Live counts only when the catalog really loaded; never a made-up number.
   const stats = !catalog.failed && catalog.lawsuits.length > 0 ? homeStats(catalog.lawsuits) : null;
@@ -208,6 +225,21 @@ export default async function HomePage() {
         caption="Real screens from Lawsuit AI. The settlements shown are real catalog listings; the account details are a sample."
       />
 
+      {trim ? (
+        <HomeTrimCatalog
+          top={topCards}
+          closing={closingCards}
+          closingFailed={catalog.failed}
+          openingSoon={openingSoonCards}
+          easySubmitIds={[...easySubmitIds]}
+          closesInChips={flags.closesInChips()}
+          claimActionCtas={flags.claimActionCtas()}
+          verifiedFields={flags.verifiedFields()}
+          catalogHideUnknowns={flags.catalogHideUnknowns()}
+          noticeChecked={noticeChecked}
+        />
+      ) : (
+        <>
       {top.length > 0 && (
         <section className="section-y bg-brand-50" aria-labelledby="top-heading">
           <div className="container-page">
@@ -230,7 +262,11 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-8">
-              <HomeSettlementList lawsuits={top} easySubmitIds={easySubmitIds} />
+              <HomeSettlementList
+                lawsuits={topCards}
+                easySubmitIds={easySubmitIds}
+                noticeChecked={noticeChecked}
+              />
             </div>
           </div>
         </section>
@@ -282,7 +318,11 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="mt-6">
-              <HomeSettlementList lawsuits={closing.rows} easySubmitIds={easySubmitIds} />
+              <HomeSettlementList
+                lawsuits={closingCards}
+                easySubmitIds={easySubmitIds}
+                noticeChecked={noticeChecked}
+              />
             </div>
           )}
         </div>
@@ -306,10 +346,16 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="mt-8">
-              <HomeSettlementList lawsuits={catalog.openingSoon.slice(0, 3)} easySubmitIds={easySubmitIds} />
+              <HomeSettlementList
+                lawsuits={openingSoonCards}
+                easySubmitIds={easySubmitIds}
+                noticeChecked={noticeChecked}
+              />
             </div>
           </div>
         </section>
+      )}
+        </>
       )}
 
       {wedges && (wedges.showBreachPrivacy || wedges.showNoProof) && (

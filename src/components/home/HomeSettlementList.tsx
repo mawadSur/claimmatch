@@ -1,9 +1,11 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, ExternalLink } from 'lucide-react';
+import type { HomeSettlementCard } from '@/lib/home-catalog';
 import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
-import { isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
+import { isOpenForClaims } from '@/lib/open-for-claims';
+import { officialLinkFor } from '@/lib/lawsuit-display';
 import { flags } from '@/lib/flags';
 import { catalogCardDeadlineLabel, catalogCardPayout } from '@/lib/catalog-unknowns';
 import { ClosesInChip } from '@/components/settlement/ClosesInChip';
@@ -28,24 +30,42 @@ function badgeParts(deadline: string | null): { month: string; day: string } | n
   };
 }
 
+function idSet(ids?: ReadonlySet<string> | readonly string[]): ReadonlySet<string> | undefined {
+  if (!ids) return undefined;
+  return ids instanceof Set ? ids : new Set(ids);
+}
+
 export function HomeSettlementList({
   lawsuits,
   easySubmitIds,
+  closesInChips = flags.closesInChips(),
+  claimActionCtas = flags.claimActionCtas(),
+  verifiedFields = flags.verifiedFields(),
+  catalogHideUnknowns = flags.catalogHideUnknowns(),
+  noticeChecked,
 }: {
-  lawsuits: Lawsuit[];
+  lawsuits: Array<Lawsuit | HomeSettlementCard>;
   /** Approved filing spec + policy IDs (oneClickLawsuitIdSet). */
-  easySubmitIds?: ReadonlySet<string>;
+  easySubmitIds?: ReadonlySet<string> | readonly string[];
+  closesInChips?: boolean;
+  claimActionCtas?: boolean;
+  verifiedFields?: boolean;
+  catalogHideUnknowns?: boolean;
+  /** Server-computed noticeCheckedOnLabel by slug (keeps guides off the client). */
+  noticeChecked?: Readonly<Record<string, string | null>>;
 }) {
+  const approvedIds = idSet(easySubmitIds);
   return (
     <ul className="divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
       {lawsuits.map((lawsuit, i) => {
         const open = isOpenForClaims(lawsuit);
         const urgency = open ? deadlineUrgencyLabel(lawsuit.deadline) : null;
         const badge = badgeParts(lawsuit.deadline);
-        const payoutShown = catalogCardPayout(lawsuit.typical_payout);
+        const payoutShown = catalogCardPayout(lawsuit.typical_payout, catalogHideUnknowns);
         const deadlineShown = catalogCardDeadlineLabel(
           lawsuit.deadline,
           lawsuit.deadline ? formatDeadline(lawsuit.deadline) : null,
+          catalogHideUnknowns,
         );
         return (
           <li
@@ -75,11 +95,12 @@ export function HomeSettlementList({
                   </span>
                   <EasySubmitBadge
                     type={lawsuit.claim_action_type}
-                    approved={easySubmitIds?.has(lawsuit.id) ?? false}
+                    approved={approvedIds?.has(lawsuit.id) ?? false}
+                    enabled={claimActionCtas}
                   />
-                  <VerifiedBadge lawsuit={lawsuit} />
-                  <ClosesInChip deadline={lawsuit.deadline} />
-                  {!flags.closesInChips() && urgency && (
+                  <VerifiedBadge lawsuit={lawsuit} enabled={verifiedFields} />
+                  <ClosesInChip deadline={lawsuit.deadline} enabled={closesInChips} />
+                  {!closesInChips && urgency && (
                     <span className="badge-red gap-1">
                       <Clock className="h-3 w-3" aria-hidden /> {urgency}
                     </span>
@@ -96,6 +117,8 @@ export function HomeSettlementList({
                   official={officialLinkFor(lawsuit)}
                   compact
                   open={open}
+                  verifiedFields={verifiedFields}
+                  checkedLabel={noticeChecked?.[lawsuit.slug] ?? null}
                 />
                 <dl className="mt-2.5 grid gap-1.5 text-sm sm:grid-cols-[minmax(0,1fr)_11.5rem] sm:gap-x-8">
                   {payoutShown ? (
@@ -116,7 +139,7 @@ export function HomeSettlementList({
               </div>
             </div>
             <div className="flex min-w-0 shrink-0 flex-col gap-1 sm:items-end">
-              {open && shouldHideFileButton(lawsuit.claim_action_type) ? (
+              {open && shouldHideFileButton(lawsuit.claim_action_type, claimActionCtas) ? (
                 <p className="max-w-[16rem] rounded-lg bg-brand-50 px-3 py-2 text-center text-sm font-semibold text-ink">
                   {lawsuit.claim_action_type === 'automatic_payment'
                     ? NO_CLAIM_NEEDED_HEADING
@@ -125,7 +148,8 @@ export function HomeSettlementList({
               ) : open ? (
                 <HomeRowCta
                   lawsuit={lawsuit}
-                  approved={easySubmitIds?.has(lawsuit.id) ?? false}
+                  approved={approvedIds?.has(lawsuit.id) ?? false}
+                  claimActionCtas={claimActionCtas}
                 />
               ) : (
                 <p className="rounded-lg bg-slate-100 px-3 py-2 text-center text-sm font-semibold text-ink-muted">
@@ -150,12 +174,14 @@ export function HomeSettlementList({
 function HomeRowCta({
   lawsuit,
   approved = false,
+  claimActionCtas = flags.claimActionCtas(),
 }: {
-  lawsuit: Lawsuit;
+  lawsuit: Lawsuit | HomeSettlementCard;
   approved?: boolean;
+  claimActionCtas?: boolean;
 }) {
   const official = officialLinkFor(lawsuit);
-  const href = flags.claimActionCtas()
+  const href = claimActionCtas
     ? cardCtaHref({
         type: lawsuit.claim_action_type,
         slug: lawsuit.slug,
@@ -163,7 +189,7 @@ function HomeRowCta({
         approved,
       })
     : `/claim/${lawsuit.slug}`;
-  const label = flags.claimActionCtas() ? cardCtaLabel(lawsuit.claim_action_type, approved) : START_CLAIM_CTA;
+  const label = claimActionCtas ? cardCtaLabel(lawsuit.claim_action_type, approved) : START_CLAIM_CTA;
   const className = 'btn-primary w-full !py-2.5 sm:w-auto';
   const body = (
     <>

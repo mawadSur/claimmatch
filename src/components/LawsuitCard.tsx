@@ -4,6 +4,7 @@ import type { Lawsuit } from '@/lib/types';
 import { deadlineUrgencyLabel, formatDeadline } from '@/lib/utils';
 import { flags } from '@/lib/flags';
 import { displaySummary, isOpenForClaims, officialLinkFor } from '@/lib/lawsuits';
+import { noticeCheckedOnLabel } from '@/lib/settlement-guides';
 import {
   catalogCardDeadlineLabel,
   catalogCardMissing,
@@ -137,6 +138,7 @@ export function LawsuitCard({
           compact
           open={open}
           linkTitle={lawsuit.title}
+          checkedLabel={noticeCheckedOnLabel(lawsuit.slug)}
         />
       </div>
 

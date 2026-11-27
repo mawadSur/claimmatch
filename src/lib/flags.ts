@@ -455,6 +455,30 @@ export const flags = {
    */
   selfFiledReport: () => on('SELF_FILED_REPORT_ENABLED'),
   /**
+   * Extra PostHog funnel events (checkout_started, trial_started,
+   * easy_submit_started, esign_completed) plus settlement_slug /
+   * claim_action_type / cm_traffic_kind=qa tagging. Off: today's events stay.
+   * official_form_opened still fires either way.
+   */
+  funnelEvents: () => on('FUNNEL_EVENTS_ENABLED'),
+  /**
+   * Slim the homepage HTML (narrow catalog columns, catalog lists as a client
+   * island). Off: current home markup stays. Visible copy and SEO metadata
+   * do not change.
+   */
+  homeHtmlTrim: () => on('HOME_HTML_TRIM_ENABLED'),
+  /**
+   * 24-hour "Did you file?" email after a signed-in self-filer opens the
+   * official form. Off: the daily cron skips the step and opens are not
+   * persisted. Independent of ONBOARDING_DRIP_ENABLED (the 3-day drip).
+   */
+  didYouFileEmail: () => on('DID_YOU_FILE_EMAIL_ENABLED'),
+  /**
+   * Stripe customer.subscription.trial_will_end reminder email. Off: that
+   * webhook is ignored. Idempotent per Stripe subscription.
+   */
+  trialWillEndEmail: () => on('TRIAL_WILL_END_EMAIL_ENABLED'),
+  /**
    * Shared “Build your claim profile” on /settings/claim-profile and prefill
    * from those extras. Default on. Set CLAIM_PROFILE_ENABLED=0 to hide.
    */

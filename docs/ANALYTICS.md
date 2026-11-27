@@ -52,7 +52,9 @@ not replace that filter with a project-wide drop.
 
 Preserve first-touch UTMs (`utm_source`, `utm_medium`, `utm_campaign`,
 `utm_content`, `ref`). `cm_traffic` is a closed query param (`test` |
-`internal` | `bot`) and never overwrites campaign tags.
+`internal` | `bot` | `qa`) and never overwrites campaign tags. `?cm_qa=1`
+(when `FUNNEL_EVENTS_ENABLED=1`) also tags `qa` and sets a 30-day `cm_qa`
+cookie. Stripe test promo codes in `QA_PROMO_CODES` tag server events as `qa`.
 
 ## Dedup
 
@@ -73,6 +75,7 @@ Preserve first-touch UTMs (`utm_source`, `utm_medium`, `utm_campaign`,
 | `test` | Synthetic / Playwright | UA `ClaimMatchSmoke`, Playwright, `navigator.webdriver`, `?cm_traffic=test` |
 | `bot` | Agents, crawlers, curl | UA markers (claude-code, Perplexity, curl, …), `?cm_traffic=bot` |
 | `internal` | Tester allowlist | `INTERNAL_EMAILS` / `profiles.is_internal` after identify |
+| `qa` | Preview / QA sessions | `?cm_qa=1` or `?cm_traffic=qa` (funnel flag on), `cm_qa` cookie, `QA_PROMO_CODES` on Stripe |
 
 PostHog also sets `$virt_is_bot` / `$virt_traffic_type`. Use both: our tag
 catches smoke tests PostHog may call Regular; theirs catches IPs and lists we
@@ -95,7 +98,11 @@ form click is not a filing.
 | `profile_completed` | Onboarding **save** succeeded with name and/or state | `evidence=onboarding_saved`, `has_name`, `has_state`, `onboarded=true` | Skip onboarding; empty save |
 | `matches_viewed` | Dashboard rendered ≥1 matcher row | `match_count` ≥ 1, `strong_count`, `possible_count` | Empty / failed catalog |
 | `match_viewed` | Claim flow mounted | `lawsuit_id`, `slug`, `source=claim_flow` | “You qualify” |
-| `official_form_opened` | Click on the official claim-form link (claim flow or signed-out settlement page) | `lawsuit_id`, `slug`, `intent=official_form`, `is_filing=false`; settlement-page clicks also send `source=settlement_page` | Filed |
+| `official_form_opened` | Click on the official claim-form link (claim flow or signed-out settlement page) | `lawsuit_id`, `slug`, `intent=official_form`, `is_filing=false`; settlement-page clicks also send `source=settlement_page`. When `FUNNEL_EVENTS_ENABLED=1`, also `settlement_slug` and `claim_action_type` | Filed |
+| `checkout_started` | Client: Stripe Checkout URL received (`FUNNEL_EVENTS_ENABLED=1`) | `source=membership_cta`, `cm_traffic_kind` | Portal / manage billing |
+| `trial_started` | Server: `customer.subscription.created` with `status=trialing` (`FUNNEL_EVENTS_ENABLED=1`) | `cm_traffic_kind`, `stripe_status=trialing` | `checkout_started`; active (paid) subscriptions |
+| `easy_submit_started` | Server: Easy submit start succeeded (`FUNNEL_EVENTS_ENABLED=1`) | `settlement_slug`, `claim_action_type`, `cm_traffic_kind` | Self-file start |
+| `esign_completed` | Server: first successful Easy submit e-sign, not a replay (`FUNNEL_EVENTS_ENABLED=1`) | `settlement_slug`, `claim_action_type`, `cm_traffic_kind` | Replay / idempotent retry |
 | `eligibility_quiz_started` | First answer on the signed-out settlement checklist | `lawsuit_id`, `slug`, `prompt_count`, `signed_out=true` | A qualify verdict |
 | `eligibility_quiz_completed` | User submitted the checklist | `lawsuit_id`, `slug`, `checks_yes`, `checks_no`, `checks_total`, `is_filing=false`, `is_qualify_verdict=false` | “You qualify” |
 | `prefill_opened` | Prefill packet mounted | `lawsuit_id`, `slug` | Filed |

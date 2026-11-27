@@ -32,6 +32,7 @@ describe('traffic kind', () => {
     expect(parseTrafficQuery('test')).toBe('test');
     expect(parseTrafficQuery('internal')).toBe('internal');
     expect(parseTrafficQuery('bot')).toBe('bot');
+    expect(parseTrafficQuery('qa')).toBe('qa');
     expect(parseTrafficQuery('product')).toBeNull();
     expect(parseTrafficQuery('google')).toBeNull();
     expect(detectTrafficKind({ searchParam: 'test', userAgent: 'Safari' })).toBe('test');
@@ -40,6 +41,14 @@ describe('traffic kind', () => {
 
   it('lets internal win over user agent', () => {
     expect(detectTrafficKind({ internal: true, userAgent: 'ClaimMatchSmoke/1.0' })).toBe('internal');
+  });
+
+  it('tags qa from query, cookie, or promo without renaming product (real) traffic', () => {
+    expect(detectTrafficKind({ qaParam: true, userAgent: 'Safari' })).toBe('qa');
+    expect(detectTrafficKind({ qaCookie: true, userAgent: 'Safari' })).toBe('qa');
+    expect(detectTrafficKind({ qaPromo: true, userAgent: 'Safari' })).toBe('qa');
+    expect(detectTrafficKind({ internal: true, qaParam: true })).toBe('internal');
+    expect(detectTrafficKind({ userAgent: 'Safari' })).toBe('product');
   });
 });
 
