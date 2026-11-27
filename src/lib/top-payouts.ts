@@ -29,7 +29,7 @@ const DOLLAR = /\$\s*([\d,]+(?:\.\d+)?)(\s*(?:million|billion|mil|bn|[mb])\b)?/g
  * plaintiff, not to the class).
  */
 const FUND_AFTER =
-  /^[\s,.:;)]*(?:(?:gross|net|qualified|common|fair|damages|guaranteed\s+payments)\s+)*(?:settlement\s+)?(?:civil\s+money\s+penalty|settlement\s+amount|settlement\s+for\b|service\s+award|incentive\s+award|in\s+cash\s+and\s+credits|in\s+payments\b|funds?\b|penalty\b|pools?\b)/i;
+  /^[\s,.:;)]*(?:(?:gross|net|qualified|common|fair|damages|reserve|escrow|guaranteed\s+payments)\s+)*(?:settlement\s+)?(?:civil\s+money\s+penalty|settlement\s+amount|settlement\s+for\b|(?:service|incentive|case\s+contribution|cy\s+pres)\s+awards?|in\s+attorneys|in\s+cash\s+and\s+credits|in\s+payments\b|funds?\b|penalty\b|pools?\b|escrow\b|reserve\b|settlement\s+will\s+be\s+(?:divided|allocated|distributed)|will\s+be\s+(?:divided|allocated|distributed)\s+among)/i;
 
 /**
  * Phrases that have to sit immediately before an amount for it to be a pot:
@@ -39,7 +39,7 @@ const FUND_AFTER =
  * product" the $0.50 is still read as the real payout.
  */
 const FUND_BEFORE =
-  /(?:\b(?:funds?|penalty|settlement\s+amount|settlement|value|total)\s+of|\bagreed\s+to\s+pay|\bordered|\bshare\s+of|\bprovides)(?:\s+up\s+to)?\s+(?:an?|the)?\s*$/i;
+  /(?:\b(?:funds?|penalty|pools?|escrow|reserve|settlement\s+amount|settlement|value|total)\s+of|\bshare\s+of)(?:\s+up\s+to)?\s+(?:an?|the)?\s*$/i;
 
 /**
  * Largest per-person dollar amount stated in the payout text a card shows, or

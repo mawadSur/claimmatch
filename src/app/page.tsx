@@ -423,6 +423,9 @@ function payoutFigures(catalog: Awaited<ReturnType<typeof loadHomeCatalog>>): He
     maxTitle: stats.topPayout?.title ?? null,
     maxSlug: stats.topPayout?.slug ?? null,
     openCount: stats.open,
+    // The median's own denominator. Most open listings state no per-person
+    // amount, so the hero must never print the median beside openCount alone.
+    statedCount: stats.withStatedPayout,
     closingCount: stats.closingSoon,
   };
 }

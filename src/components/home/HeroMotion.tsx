@@ -1,22 +1,26 @@
 'use client';
 
 import { useEffect } from 'react';
-import { animate, stagger } from 'motion';
+import { animate } from 'motion';
 
 /**
- * Motion for the hero (motion.dev), applied to markup the server already
- * rendered in its finished state.
+ * Motion for the hero (motion.dev).
  *
- * Two things move, and only transform and opacity:
- *   1. the hero's text blocks rise in on a short stagger, once, on first load;
- *   2. the one primary button dips a little while it is pressed.
+ * It animates the one thing that cannot be done at first paint: feedback while
+ * the primary call to action is actually being pressed. The hero's entrance is
+ * pure CSS (`.stagger` + `--i` in globals.css), which runs as part of the first
+ * paint and so cannot blank out content the browser has already shown.
  *
- * Nothing here can shift layout, and nothing here is needed to read the page:
- * the HTML ships complete, so a visitor without JavaScript, with JavaScript
- * still loading, or with `prefers-reduced-motion: reduce` sees the final
- * state with no movement at all. The reduced-motion check runs before any
- * animation starts, and the entrance is skipped entirely when hydration
- * arrives late, so a slow connection never gets a late flash.
+ * An earlier version ran the entrance here, from an effect, animating
+ * `opacity: [0, 1]` against server HTML that ships fully visible. That hid and
+ * re-revealed the headline, the payout card and the CTA for roughly 440ms
+ * after hydration — worst in the common case, where hydration lands a few
+ * hundred milliseconds after paint. Entrances belong in CSS; interaction
+ * belongs here.
+ *
+ * Only `transform` moves, so nothing can shift layout. The reduced-motion
+ * check runs before anything animates, and globals.css additionally collapses
+ * every animation duration under `prefers-reduced-motion: reduce`.
  */
 export function HeroMotion({ rootId }: { rootId: string }) {
   useEffect(() => {
@@ -24,42 +28,23 @@ export function HeroMotion({ rootId }: { rootId: string }) {
     if (!root) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const stops: Array<() => void> = [];
-
-    // Entrance: only on a fresh load, so a late hydration does not re-reveal
-    // content the visitor is already reading.
-    const reveals = [...root.querySelectorAll<HTMLElement>('[data-hero-reveal]')];
-    if (reveals.length > 0 && performance.now() < 1200) {
-      const entrance = animate(
-        reveals,
-        { opacity: [0, 1], y: [14, 0] },
-        { duration: 0.28, ease: 'easeOut', delay: stagger(0.04) },
-      );
-      stops.push(() => entrance.stop());
-    }
-
-    // Press feedback on the single primary call to action.
     const cta = root.querySelector<HTMLElement>('[data-hero-cta]');
-    if (cta) {
-      const to = (scale: number) => {
-        animate(cta, { scale }, { duration: 0.14, ease: 'easeOut' });
-      };
-      const down = () => to(0.97);
-      const up = () => to(1);
-      cta.addEventListener('pointerdown', down);
-      cta.addEventListener('pointerup', up);
-      cta.addEventListener('pointercancel', up);
-      cta.addEventListener('pointerleave', up);
-      stops.push(() => {
-        cta.removeEventListener('pointerdown', down);
-        cta.removeEventListener('pointerup', up);
-        cta.removeEventListener('pointercancel', up);
-        cta.removeEventListener('pointerleave', up);
-      });
-    }
+    if (!cta) return;
 
+    const to = (scale: number) => {
+      animate(cta, { scale }, { duration: 0.14, ease: 'easeOut' });
+    };
+    const down = () => to(0.97);
+    const up = () => to(1);
+    const events: Array<[string, () => void]> = [
+      ['pointerdown', down],
+      ['pointerup', up],
+      ['pointercancel', up],
+      ['pointerleave', up],
+    ];
+    for (const [name, handler] of events) cta.addEventListener(name, handler);
     return () => {
-      for (const stop of stops) stop();
+      for (const [name, handler] of events) cta.removeEventListener(name, handler);
     };
   }, [rootId]);
 

@@ -172,10 +172,12 @@ describe('mobile/shared.json', () => {
     expect(problems).toEqual([]);
   });
 
+  // Walks the whole mobile/src + src/ import graph; ~1.3s alone but it has
+  // exceeded vitest's 5s default under full-suite worker contention.
   it('lists exactly the src/ files the app imports, directly or through other shared files', () => {
     const app = appImports();
     expect(app.problems).toEqual([]);
     expect(app.files.length).toBeGreaterThan(0);
     expect(walk(app.files).files).toEqual([...shared.entries].sort());
-  });
+  }, 30_000);
 });

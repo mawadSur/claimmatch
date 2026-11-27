@@ -67,7 +67,7 @@ export function listedPayoutBesidePriceCopy(label: string): string {
  * without a second copy of the words living in the component.
  */
 export const HOME_HERO_HEADLINE_LEAD = 'Find the settlements';
-export const HOME_HERO_HEADLINE_EMPHASIS = 'that are actually yours.';
+export const HOME_HERO_HEADLINE_EMPHASIS = 'that may be yours.';
 export const HOME_HERO_HEADLINE = `${HOME_HERO_HEADLINE_LEAD} ${HOME_HERO_HEADLINE_EMPHASIS}`;
 
 /** Sits under the price block, not under the headline: the payout line is the hook. */
@@ -89,18 +89,42 @@ export function heroPayoutSource(title: string): string {
 }
 
 /**
- * "median listed payout $99 · 98 open · updated monthly". Each part appears
- * only when the caller has it; null when it would have nothing to say.
+ * The same attribution as an accessible name. "the highest is Acme" does not
+ * tell a screen-reader user that the link opens that settlement, and this is
+ * the only route by which a reader can check the headline figure.
+ */
+export function heroPayoutSourceLabel(title: string): string {
+  return `${title} — the listing stating the highest amount`;
+}
+
+/**
+ * "median $250 of the 22 settlements that list an amount · 98 open now".
+ *
+ * The median is never printed beside the open count alone. Most open listings
+ * state no per-person amount at all, so "median $250 · 98 open" reads as the
+ * typical open settlement paying $250 — which the catalog does not support.
+ * The median therefore carries its own denominator or is not shown.
+ *
+ * There is no cadence claim here. The catalog ingest runs daily
+ * (vercel.json: /api/cron/daily), and the hero already prints the real
+ * refresh timestamp in the badge above, so a second hardcoded "updated
+ * monthly" was both false and redundant.
  */
 export function heroPayoutSupport(parts: {
   medianLabel?: string | null;
+  statedCount?: number | null;
   openLabel?: string | null;
 }): string | null {
   const bits: string[] = [];
-  if (parts.medianLabel) bits.push(`median listed payout ${parts.medianLabel}`);
-  if (parts.openLabel) bits.push(`${parts.openLabel} open`);
-  if (bits.length === 0) return null;
-  return [...bits, 'updated monthly'].join(' · ');
+  if (parts.medianLabel && parts.statedCount && parts.statedCount > 0) {
+    bits.push(
+      parts.statedCount === 1
+        ? `the one settlement that lists an amount lists ${parts.medianLabel}`
+        : `median ${parts.medianLabel} of the ${parts.statedCount.toLocaleString('en-US')} settlements that list an amount`,
+    );
+  }
+  if (parts.openLabel) bits.push(`${parts.openLabel} open now`);
+  return bits.length ? bits.join(' · ') : null;
 }
 
 /**
@@ -147,6 +171,29 @@ export function homeHeroPriceLine(
     ? 'Easy submit — we prepare and file it for you'
     : 'Membership — new-claim alerts and every deadline tracked';
   return `${what} — is ${price}/mo after a ${trialDays}-day free trial, no card to start.`;
+}
+
+/**
+ * A stated payout, formatted for display without rounding it into a figure no
+ * listing states. formatOwedUsd rounds to whole dollars, which turns a stated
+ * $12.50 cap into "$13" and a stated $0.50 into "$1" — directly under a note
+ * reading "Amounts are what each listing states". Cents are kept whenever the
+ * amount has them, and an amount that would render as nothing returns null so
+ * the caller drops the line instead of printing "$0".
+ */
+export function statedAmountLabel(amount: number | null | undefined): string | null {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return null;
+  const totalCents = Math.round(amount * 100);
+  // Below half a cent there is no figure to show; "$0" under "Amounts are
+  // what each listing states" is worse than showing nothing.
+  if (totalCents === 0) return null;
+  const hasCents = totalCents % 100 !== 0;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(amount);
 }
 
 export const HOME_HERO_PRIMARY_CTA = 'See which settlements fit you';
