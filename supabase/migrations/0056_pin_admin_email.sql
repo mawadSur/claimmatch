@@ -217,7 +217,7 @@ begin
 
   if v_claim.pin_admin_email_sent_at is not null then
     insert into public.claim_events (claim_id, user_id, from_status, to_status, actor, detail)
-    values (v_claim.id, v_claim.user_id, v_claim.status::text, v_claim.status::text, 'claimmatch',
+    values (v_claim.id, v_claim.user_id, v_claim.status::text, v_claim.status::text, 'system',
             jsonb_build_object('pin_admin_email_sent', true));
   end if;
 
@@ -260,7 +260,7 @@ begin
   returning * into v_claim;
 
   insert into public.claim_events (claim_id, user_id, from_status, to_status, actor, detail)
-  values (v_claim.id, v_claim.user_id, v_claim.status::text, v_claim.status::text, 'claimmatch',
+  values (v_claim.id, v_claim.user_id, v_claim.status::text, v_claim.status::text, 'system',
           jsonb_build_object('paper_fallback', true));
 
   return to_jsonb(v_claim);
