@@ -1,4 +1,5 @@
 import type { ClaimFilingView, LaneView } from '@shared/lib/filing/v2/contract';
+import { pickNextEasySubmit, type NextEasySubmit } from '@shared/lib/filing/one-tap';
 import type { ClaimTone } from '@shared/lib/claims';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
@@ -8,7 +9,7 @@ import type { ClaimScreenResult, FlowClaimScreen } from '@/data/claims';
 import { refreshDashboardSoon } from '@/data/dashboard';
 import { dataKeys } from '@/data/keys';
 
-import { getFiling, getLanePreview, isFilingOff } from './api';
+import { getFiling, getLanePreview, isFilingOff, listFilingClaims } from './api';
 import { claimNote, claimViewFromFiling, filingStatusDisplay, isOneClickStatus, laneReasonLines } from './model';
 
 export type OnFilingView = (view: ClaimFilingView, message: string) => void;
@@ -34,6 +35,8 @@ export interface OneClickState {
   badge: { label: string; tone: ClaimTone } | null;
   note: string;
   onView: OnFilingView;
+  /** Another Easy submit claim this member can open after signing. */
+  nextEasySubmit: NextEasySubmit | null;
 }
 
 const filingKey = (slug: string, claimId: string | null) => [...dataKeys.claim(slug), 'filing', claimId ?? 'none'] as const;
@@ -99,6 +102,22 @@ export function useOneClick(data: FlowClaimScreen, announce: (message: string) =
     [client, data.slug, announce],
   );
 
+  const nextQuery = useQuery({
+    queryKey: [...dataKeys.claim(data.slug), 'filing-next', claimId ?? 'none'] as const,
+    queryFn: async (): Promise<NextEasySubmit | null> => {
+      try {
+        const result = await listFilingClaims();
+        if (!result.ok) return null;
+        return pickNextEasySubmit(result.data.items, claimId);
+      } catch {
+        return null;
+      }
+    },
+    enabled,
+    staleTime: 0,
+    retry: false,
+  });
+
   if (!data.oneClick) return null;
   const view = claimId ? (query.data ?? null) : null;
   const active = Boolean(claim && isOneClickStatus(claim.status));
@@ -117,5 +136,6 @@ export function useOneClick(data: FlowClaimScreen, announce: (message: string) =
     note: offerStart && !lane ? copy.agentNote.text : claimNote({ status: claim?.status ?? null, lane, offerStart }),
     lane,
     onView,
+    nextEasySubmit: nextQuery.data ?? null,
   };
 }

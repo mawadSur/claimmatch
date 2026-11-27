@@ -21,7 +21,7 @@ import {
   type IsFictional,
   type SettlementFacts,
 } from '../../lib/claims';
-import { noPinBreachRank } from '../../lib/claim-priority';
+import { isWeFileClaimAction, noPinBreachRank } from '../../lib/claim-priority';
 import { pickClosingSoon } from '../../lib/closing-soon';
 import { officialSiteUrl } from '../../lib/lawsuit-display';
 import {
@@ -35,6 +35,12 @@ import { buildClaimTimeline, type ClaimTimelineView } from '../../lib/claim-time
 import { finitePayoutAmount } from '../../lib/owed-estimate';
 import type { Lawsuit, Match, Profile } from '../../lib/types';
 import { formatDeadline } from '../../lib/utils';
+import {
+  PAPER_FALLBACK_CTA,
+  PAPER_FALLBACK_HEADING,
+  paperFormHref,
+  pinAdminStatus,
+} from '../../lib/pin-admin-email';
 
 const NEW_MATCH_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -46,6 +52,8 @@ export interface DashboardSettlement extends SettlementFacts {
   claim_url: string | null;
   final_approval_hearing_at?: string | null;
   payment_timing_text?: string | null;
+  claim_action_type?: string | null;
+  claim_action?: { form_url?: string | null } | null;
 }
 
 export interface DashboardRow {
@@ -59,6 +67,12 @@ export interface DashboardRow {
   action: { label: string; href: string } | null;
   /** Present when the user marked the claim submitted. UI gates on CLAIM_TIMELINE_ENABLED. */
   timeline?: ClaimTimelineView | null;
+  /**
+   * Easy submit (`desk_file`): “We file this claim for you”. Sorted above
+   * self-file rows inside each group. Absent/false when the settlement could
+   * not be read or the type is missing.
+   */
+  weFile?: boolean;
 }
 
 export interface NoticeItem {
@@ -98,12 +112,60 @@ export function sortNotices(notices: NoticeItem[]): NoticeItem[] {
     .map((x) => x.n);
 }
 
+/**
+ * Easy submit / desk_file rows first, original order otherwise. ClaimList still
+ * groups by next step; within a group the we-file cards sit at the top.
+ */
+export function sortWeFileFirst<T extends { weFile?: boolean }>(rows: readonly T[]): T[] {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => {
+      const aWe = a.row.weFile === true ? 0 : 1;
+      const bWe = b.row.weFile === true ? 0 : 1;
+      return aWe - bWe || a.index - b.index;
+    })
+    .map((entry) => entry.row);
+}
+
 export function deadlineText(deadline: string | null, now: Date): string {
   if (!deadline) return 'No deadline listed';
   const countdown = deadlineCountdown(deadline, now);
   if (!countdown) return 'No deadline listed';
   if (countdown === 'Deadline passed') return `Deadline was ${formatDeadline(deadline)}`;
   return `Deadline ${formatDeadline(deadline)} · ${countdown}`;
+}
+
+function pinDashboardStep(
+  claim: ClaimView,
+  settlement: DashboardSettlement,
+  href: string | null,
+  now: Date,
+): { nextStep: string; action: DashboardRow['action'] } | null {
+  if (settlement.claim_action_type !== 'needs_notice_id') return null;
+  const status = pinAdminStatus({
+    notice_id: claim.notice_id,
+    pin_admin_email_requested_at: claim.pin_admin_email_requested_at,
+    pin_admin_email_sent_at: claim.pin_admin_email_sent_at,
+    now,
+  });
+  if (status.kind === 'paper_fallback') {
+    const formHref = paperFormHref({
+      formUrl: settlement.claim_action?.form_url,
+      officialHref: settlement.claim_url,
+      slug: settlement.slug,
+    });
+    return {
+      nextStep: `${PAPER_FALLBACK_HEADING}. ${status.headline ?? ''}`.trim(),
+      action: { label: PAPER_FALLBACK_CTA, href: formHref },
+    };
+  }
+  if (status.kind === 'waiting' || status.kind === 'queued') {
+    return {
+      nextStep: status.headline ?? 'Emailed administrator — waiting on reply',
+      action: href ? { label: 'View', href: `${href}#notice-id` } : null,
+    };
+  }
+  return null;
 }
 
 export function buildDashboard(
@@ -131,6 +193,7 @@ export function buildDashboard(
         nextStep: "We couldn't load this settlement's details. Refresh the page in a minute.",
         action: null,
         timeline: null,
+        weFile: false,
       });
       continue;
     }
@@ -173,10 +236,16 @@ export function buildDashboard(
           nextStep = 'Our list marks this settlement closed. Check the official site before you file.';
           action = href ? { label: 'How to file', href } : null;
         } else {
-          nextStep = deadline
-            ? 'If you qualify, file on the official site before the deadline, then tell us.'
-            : 'If you qualify, file on the official site, then tell us.';
-          action = href ? { label: 'How to file', href } : null;
+          const pin = pinDashboardStep(claim, settlement, href, now);
+          if (pin) {
+            nextStep = pin.nextStep;
+            action = pin.action;
+          } else {
+            nextStep = deadline
+              ? 'If you qualify, file on the official site before the deadline, then tell us.'
+              : 'If you qualify, file on the official site, then tell us.';
+            action = href ? { label: 'How to file', href } : null;
+          }
         }
         break;
       case 'reported_filed':
@@ -248,6 +317,7 @@ export function buildDashboard(
         final_approval_hearing_at: settlement.final_approval_hearing_at ?? null,
         payment_timing_text: settlement.payment_timing_text ?? null,
       }),
+      weFile: isWeFileClaimAction(settlement.claim_action_type),
     });
 
     if (display.showNotice) {
@@ -262,7 +332,7 @@ export function buildDashboard(
       });
     }
   }
-  return { rows, notices: sortNotices(notices) };
+  return { rows: sortWeFileFirst(rows), notices: sortNotices(notices) };
 }
 
 export interface DashboardMatch {
@@ -311,6 +381,9 @@ export function compareDashboardMatches(
   b: DashboardMatch,
   opts: DashboardMatchOptions = {},
 ): number {
+  const aWe = isWeFileClaimAction(a.claimActionType) ? 0 : 1;
+  const bWe = isWeFileClaimAction(b.claimActionType) ? 0 : 1;
+  if (aWe !== bWe) return aWe - bWe;
   if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
   if (opts.noPinBreachFirst) {
     const rankA = noPinBreachRank({
@@ -345,13 +418,37 @@ export function groupDashboardMatches(
   items: DashboardMatch[],
   possibleCap = POSSIBLE_MATCH_CAP,
 ): GroupedDashboardMatches {
-  const strong = items.filter((item) => item.strength === 'strong');
-  const possibleAll = items.filter((item) => item.strength !== 'strong');
+  const weFile = items.filter((item) => isWeFileClaimAction(item.claimActionType));
+  const rest = items.filter((item) => !isWeFileClaimAction(item.claimActionType));
+  const strongRest = rest.filter((item) => item.strength === 'strong');
+  const possibleAll = rest.filter((item) => item.strength !== 'strong');
   return {
-    strong,
+    strong: [...weFile, ...strongRest],
     possible: possibleAll.slice(0, possibleCap),
     possibleHidden: Math.max(0, possibleAll.length - possibleCap),
   };
+}
+
+/**
+ * Lawsuit ids already on the dashboard as a tracked claim or a visible match.
+ * Closing soon drops these so the same card never appears twice. Hidden
+ * possible matches (past POSSIBLE_MATCH_CAP) can still appear in Closing soon.
+ */
+export function lawsuitIdsAlreadyOnDashboard(
+  trackedLawsuitIds: Iterable<string>,
+  matches: readonly Pick<DashboardMatch, 'id' | 'claimActionType' | 'strength'>[],
+  possibleCap = POSSIBLE_MATCH_CAP,
+): Set<string> {
+  const ids = new Set(trackedLawsuitIds);
+  const weFile = matches.filter((item) => isWeFileClaimAction(item.claimActionType));
+  const rest = matches.filter((item) => !isWeFileClaimAction(item.claimActionType));
+  const visible = [
+    ...weFile,
+    ...rest.filter((item) => item.strength === 'strong'),
+    ...rest.filter((item) => item.strength !== 'strong').slice(0, possibleCap),
+  ];
+  for (const item of visible) ids.add(item.id);
+  return ids;
 }
 
 export interface ClosingSoonItem {
@@ -460,8 +557,8 @@ export function dashboardNeedsProfile(
 /**
  * Open settlements with the nearest deadlines. Only real rows (UUID ids, so a
  * code-only sample can never appear), open for claims, with a deadline, and
- * not already tracked by the user. Ordered and trimmed by pickClosingSoon, the
- * same helper the home page's "Closing soon" module uses.
+ * not already shown as a tracked claim or a visible match. Ordered and trimmed
+ * by pickClosingSoon, the same helper the home page's "Closing soon" module uses.
  */
 export function buildClosingSoon(
   lawsuits: DashboardSettlement[],

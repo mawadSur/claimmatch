@@ -114,6 +114,9 @@ export function resetHarness() {
   mockFetch.mockImplementation(async (url: string, init: RequestInit) => {
     const key = `${init.method} ${url.replace('https://api.test', '')}`;
     const next = replies.get(key)?.shift() ?? lastReplies.get(key);
+    if (!next && key === 'GET /api/filing/claims') {
+      return { ok: true, status: 200, text: async () => JSON.stringify({ items: [] }) } as unknown as Response;
+    }
     if (!next) throw new TypeError('Network request failed');
     lastReplies.set(key, next);
     const [status, body] = next;

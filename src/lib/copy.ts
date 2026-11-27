@@ -615,6 +615,20 @@ export const ONE_CLICK_COPY = {
     full: 'You’ve added as many files as this item takes.',
     file: (n: number, size: string) => `File ${n} (${size})`,
   },
+  oneTap: {
+    title: 'Your details are ready',
+    intro:
+      'Lawsuit AI already has what this claim needs from your profile. Check the summary, then submit.',
+    edit: 'Edit details',
+    hide: 'Hide details',
+    submit: 'Submit this claim',
+    submitting: 'Submitting…',
+    disclosure: (name: string) =>
+      `By submitting, you confirm this class describes you, the official statement is true for you, you authorize Lawsuit AI for this one claim, and you sign as ${name}.`,
+    classTitle: 'Who this settlement includes',
+    next: 'Submit next claim',
+    nextHint: (title: string) => `Next eligible claim: ${title}`,
+  },
   review: {
     intro: 'Check everything below. It is what Lawsuit AI sends, in the official form’s order.',
     change: 'Change',

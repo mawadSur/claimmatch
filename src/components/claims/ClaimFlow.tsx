@@ -252,6 +252,9 @@ export function ClaimFlow({
           signedIn={signedIn}
           savedNoticeId={claim?.notice_id ?? null}
           savedRequestedNoticeAt={claim?.requested_notice_at ?? null}
+          pinAdminRequestedAt={claim?.pin_admin_email_requested_at ?? null}
+          pinAdminSentAt={claim?.pin_admin_email_sent_at ?? null}
+          formUrl={actionDetails.form_url ?? null}
         />
       )}
       {!signedIn && !hidesFileQualifySignup(actionType) && (

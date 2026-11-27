@@ -4,6 +4,8 @@ import {
   buildReport,
   deadlineRemindersGate,
   didYouFile24hGate,
+  paperFallbackReminderGate,
+  pinAdminEmailGate,
   onboardingDripGate,
   payoutTrackerGate,
   matchAlertGate,
@@ -137,6 +139,24 @@ describe('D50 gates', () => {
       },
     });
     expect(didYouFile24hGate(true)).toEqual({ run: true });
+    expect(pinAdminEmailGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (pin admin email)',
+        resume: expect.stringContaining('PIN_ADMIN_EMAIL_ENABLED=1'),
+      },
+    });
+    expect(pinAdminEmailGate(true)).toEqual({ run: true });
+    expect(paperFallbackReminderGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (paper fallback reminder)',
+        resume: expect.stringContaining('PAPER_FALLBACK_REMINDER_ENABLED=1'),
+      },
+    });
+    expect(paperFallbackReminderGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

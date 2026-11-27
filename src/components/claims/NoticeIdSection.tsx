@@ -11,12 +11,22 @@ import {
   noticeIdHelp,
 } from '@/lib/notice-id';
 import { SIGN_IN_TO_SAVE } from '@/lib/claim-actions';
-import { claimReturnPath } from '@/lib/signup-context';
-import { NoticeRequestLetter } from './NoticeRequestLetter';
 import {
+  extractAdminEmail,
   readStoredNoticeRequested,
   writeStoredNoticeRequested,
 } from '@/lib/notice-request';
+import {
+  PIN_ADMIN_EMAIL_CTA,
+  PIN_ADMIN_EMAIL_NO_ADDRESS,
+  PIN_ADMIN_EMAIL_SENDING,
+  PIN_ADMIN_EMAIL_SIGN_IN,
+  paperFormHref,
+  pinAdminStatus,
+} from '@/lib/pin-admin-email';
+import { claimReturnPath } from '@/lib/signup-context';
+import { NoticeRequestLetter } from './NoticeRequestLetter';
+import { PaperFallbackCard } from './PaperFallbackCard';
 
 export function NoticeIdSection({
   slug,
@@ -28,6 +38,9 @@ export function NoticeIdSection({
   signedIn,
   savedNoticeId = null,
   savedRequestedNoticeAt = null,
+  pinAdminRequestedAt = null,
+  pinAdminSentAt = null,
+  formUrl = null,
 }: {
   slug: string;
   lawsuitId?: string;
@@ -38,14 +51,29 @@ export function NoticeIdSection({
   signedIn: boolean;
   savedNoticeId?: string | null;
   savedRequestedNoticeAt?: string | null;
+  pinAdminRequestedAt?: string | null;
+  pinAdminSentAt?: string | null;
+  formUrl?: string | null;
 }) {
   const help = noticeIdHelp(administrator);
   const lookup = officialLookupHref || officialHref;
   const [value, setValue] = useState(savedNoticeId ?? '');
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [noNotice, setNoNotice] = useState(Boolean(savedRequestedNoticeAt));
-  const [requested, setRequested] = useState(Boolean(savedRequestedNoticeAt));
+  const [noNotice, setNoNotice] = useState(Boolean(savedRequestedNoticeAt || pinAdminRequestedAt));
+  const [requested, setRequested] = useState(Boolean(savedRequestedNoticeAt || pinAdminRequestedAt));
+  const [emailing, setEmailing] = useState(false);
+  const [emailMessage, setEmailMessage] = useState('');
+  const [pinRequestedAt, setPinRequestedAt] = useState(pinAdminRequestedAt);
+  const [pinSentAt, setPinSentAt] = useState(pinAdminSentAt);
+  const adminStatus = pinAdminStatus({
+    notice_id: savedNoticeId,
+    pin_admin_email_requested_at: pinRequestedAt,
+    pin_admin_email_sent_at: pinSentAt,
+    now: new Date(),
+  });
+  const paperHref = paperFormHref({ formUrl, officialHref: lookup, slug });
+  const hasAdminEmail = Boolean(extractAdminEmail(administrator));
 
   useEffect(() => {
     if (savedNoticeId) {
@@ -132,10 +160,16 @@ export function NoticeIdSection({
         This administrator asks for a notice ID or claim ID from the letter or email they sent.
         Enter that ID here. {NOTICE_PIN_NOT_COLLECTED}
       </p>
-      {requested && (
+      {adminStatus.headline && (
+        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">{adminStatus.headline}</p>
+      )}
+      {adminStatus.kind === 'idle' && requested && (
         <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">
           You marked that you requested your notice. When the administrator replies, add the ID below.
         </p>
+      )}
+      {adminStatus.kind === 'paper_fallback' && (
+        <PaperFallbackCard formHref={paperHref} officialHref={lookup} />
       )}
       <form onSubmit={onSubmit} className="space-y-3">
         <label htmlFor={`notice-id-${slug}`} className="field-label">
@@ -194,9 +228,53 @@ export function NoticeIdSection({
         {noNotice && (
           <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
             <p>
-              Use this letter to ask {help.administratorLabel} for your notice or claim ID. Send it yourself —
-              Lawsuit AI never emails the administrator for you.
+              Use this letter to ask {help.administratorLabel} for your notice or claim ID, or ask Lawsuit AI
+              to email them for you.
             </p>
+            {signedIn && lawsuitId ? (
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={emailing || adminStatus.kind === 'waiting' || adminStatus.kind === 'queued'}
+                onClick={async () => {
+                  setEmailing(true);
+                  setEmailMessage('');
+                  try {
+                    const res = await fetch('/api/claims/pin-admin-email', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ lawsuit_id: lawsuitId }),
+                    });
+                    const json = (await res.json().catch(() => null)) as {
+                      claim?: {
+                        pin_admin_email_requested_at?: string | null;
+                        pin_admin_email_sent_at?: string | null;
+                      };
+                      send?: string;
+                      error?: string;
+                    } | null;
+                    if (!res.ok) {
+                      setEmailMessage(json?.error || 'We could not save that request. Try again.');
+                      return;
+                    }
+                    setPinRequestedAt(json?.claim?.pin_admin_email_requested_at ?? new Date().toISOString());
+                    setPinSentAt(json?.claim?.pin_admin_email_sent_at ?? null);
+                    setRequested(true);
+                    if (json?.send === 'no_address') setEmailMessage(PIN_ADMIN_EMAIL_NO_ADDRESS);
+                  } catch {
+                    setEmailMessage('We could not reach Lawsuit AI. Check your connection and try again.');
+                  } finally {
+                    setEmailing(false);
+                  }
+                }}
+              >
+                {emailing ? PIN_ADMIN_EMAIL_SENDING : PIN_ADMIN_EMAIL_CTA}
+              </button>
+            ) : (
+              <p className="text-sm text-ink-muted">{PIN_ADMIN_EMAIL_SIGN_IN}</p>
+            )}
+            {emailMessage && <p className="text-sm text-ink-muted">{emailMessage}</p>}
+            {!hasAdminEmail && signedIn && <p className="text-sm text-ink-muted">{PIN_ADMIN_EMAIL_NO_ADDRESS}</p>}
             <NoticeRequestLetter
               title={title}
               slug={slug}

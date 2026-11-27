@@ -150,6 +150,23 @@ export const filing = defineCopy({
   signing: { text: 'Signing…', source: COPY },
   signed: { text: 'You signed your claim.', source: COPY },
 
+  oneTapTitle: { text: 'Your details are ready', source: COPY },
+  oneTapIntro: {
+    text: 'Lawsuit AI already has what this claim needs from your profile. Check the summary, then submit.',
+    source: COPY,
+  },
+  oneTapEdit: { text: 'Edit details', source: COPY },
+  oneTapHide: { text: 'Hide details', source: COPY },
+  oneTapSubmit: { text: 'Submit this claim', source: COPY },
+  oneTapSubmitting: { text: 'Submitting…', source: COPY },
+  oneTapDisclosureLead: {
+    text: 'By submitting, you confirm this class describes you, the official statement is true for you, you authorize Lawsuit AI for this one claim, and you sign as',
+    source: COPY,
+  },
+  oneTapClassTitle: { text: 'Who this settlement includes', source: COPY },
+  oneTapNext: { text: 'Submit next claim', source: COPY },
+  oneTapNextHint: { text: 'Next eligible claim:', source: COPY },
+
   esignTitle: { text: 'Before you sign electronically', source: COPY },
   esignCheckbox: { text: 'I have read this and agree to use electronic records and signatures.', source: COPY },
   esignAgree: { text: 'Agree and continue', source: COPY },
@@ -329,3 +346,5 @@ export const preparedFilesText = (n: number) =>
   n === 1 ? filing.preparedOneFile.text : `${n} ${filing.preparedFiles.text}`;
 export const signedByText = (name: string, when: string) =>
   `${filing.signedByLead.text} ${name} ${filing.signedByOn.text} ${when}`;
+export const oneTapDisclosureText = (name: string) => `${filing.oneTapDisclosureLead.text} ${name}.`;
+export const oneTapNextHintText = (title: string) => `${filing.oneTapNextHint.text} ${title}`;

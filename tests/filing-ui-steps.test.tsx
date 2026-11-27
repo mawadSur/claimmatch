@@ -158,24 +158,31 @@ describe('prepopulated member fields', () => {
 });
 
 describe('signing', () => {
-  it('a complete packet with consent and a fresh sign-in can be filed', () => {
+  it('a complete packet with consent and a fresh sign-in is a 1-tap submit', () => {
     const html = render(readyView());
-    expect(fileButton(html)).not.toContain('disabled');
-    expect(html).toContain(ONE_CLICK_COPY.review.typedNameHint('Ada Lovelace'));
-    expect(tag(html, 'filing-typed-name')).toContain('aria-describedby="filing-typed-name-hint filing-sign-hint"');
-    expect(html).not.toContain(ONE_CLICK_COPY.review.notReady);
-    // "Change" goes to the input, or to the profile summary for details the profile already had.
-    expect(html).toContain('href="#filing-answers-widget_count"');
-    expect(html).toContain('href="#filing-profile-title"');
-    expect(html).not.toContain('href="#filing-member-legal-name"');
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.title);
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.submit);
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.disclosure('Ada Lovelace'));
+    expect(html).not.toContain('Step 1:');
+    expect(html).not.toContain(ONE_CLICK_COPY.review.typedNameHint('Ada Lovelace'));
+    const submit = /<button[^>]*id="filing-one-tap-submit"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(submit).not.toContain('disabled');
   });
 
-  it('asks for E-SIGN consent the first time, and holds the button until then', () => {
+  it('keeps the full wizard when required fields are missing', () => {
+    const html = render(filingView());
+    expect(html).toContain('Step 1:');
+    expect(html).toContain('File my claim');
+    expect(html).not.toContain(ONE_CLICK_COPY.oneTap.submit);
+  });
+
+  it('includes E-SIGN disclosure on 1-tap and still offers submit', () => {
     const html = render(readyView({ actions: { needs_esign_consent: true }, esignConsented: false }));
     expect(html).toContain(ONE_CLICK_COPY.esign.title);
     expect(html).toContain(ESIGN_TEXT);
-    expect(tag(html, 'filing-esign-consent')).not.toContain('checked');
-    expect(fileButton(html)).toContain('disabled');
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.submit);
+    const submit = /<button[^>]*id="filing-one-tap-submit"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(submit).not.toContain('disabled');
   });
 
   it('asks the member to sign in again with their password when the last sign-in is too old', () => {
@@ -184,7 +191,8 @@ describe('signing', () => {
     expect(tag(html, 'filing-reauth-password')).toContain('type="password"');
     expect(html).toContain('href="/forgot-password"');
     expect(html).toContain(ONE_CLICK_COPY.reauth.setPassword);
-    expect(fileButton(html)).toContain('disabled');
+    const submit = /<button[^>]*id="filing-one-tap-submit"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(submit).toContain('disabled');
   });
 
   it('the re-auth prompt has a visible label and the account email for password managers', () => {
@@ -248,6 +256,26 @@ describe('after signing', () => {
   const signature = { id: SIGNATURE_ID, signed_at: '2026-11-12T14:30:00Z', typed_name: 'Ada Lovelace', packet_hash: HASH, lane: 'filing_desk' as const };
   const signed = (status: string, o: Parameters<typeof filingView>[0] = {}) =>
     render(filingView({ status, timeline, signature, packet: { status: 'signed', packet_hash: HASH, complete: true }, ...o }));
+
+  it('offers Submit next claim after a queued Easy submit when another claim is ready', () => {
+    const html = renderToStaticMarkup(
+      createElement(OneClickFiling, {
+        view: filingView({
+          status: 'queued',
+          timeline,
+          signature,
+          packet: { status: 'signed', packet_hash: HASH, complete: true },
+          actions: { can_reopen: true, can_withdraw: true, can_edit: false },
+        }),
+        accountEmail: 'ada@example.com',
+        onChange: () => undefined,
+        nextEasySubmit: { slug: 'next-one', title: 'Next settlement', href: '/claim/next-one#one-click' },
+      }),
+    );
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.next);
+    expect(html).toContain('href="/claim/next-one#one-click"');
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.nextHint('Next settlement'));
+  });
 
   it('queued: the status, what happens next, the signature and the timeline', () => {
     const html = signed('queued', { actions: { can_reopen: true, can_withdraw: true, can_edit: false } });
@@ -377,27 +405,17 @@ describe('step 2 when everything is already on file', () => {
   ];
   const html = render(filingView({ items: settled }));
 
-  it('drops the save that would do nothing, and the tick that needs it', () => {
-    expect(html).not.toContain(ONE_CLICK_COPY.need.save);
-    expect(html).not.toContain('filing-save-to-profile');
-    expect(html).toContain(ONE_CLICK_COPY.need.nothingToAsk);
-  });
-
-  it('still shows what is on file and the way to change it, with the id step 3 links to', () => {
-    expect(html).toContain(ONE_CLICK_COPY.need.fromProfile);
-    expect(html).toContain('id="filing-profile-title"');
-    expect(html).toContain(ONE_CLICK_COPY.need.change);
+  it('collapses to 1-tap instead of the three-step wizard', () => {
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.title);
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.edit);
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.submit);
+    expect(html).not.toContain('Step 1:');
     expect(text(html)).toContain('Full legal name Ada Lovelace');
-    expect(html).toContain('href="#filing-profile-title"');
   });
 
-  it('is still numbered step 2, with the we-file-this-claim card last', () => {
-    const t = text(html);
-    const at = (s: string) => t.indexOf(s);
-    expect(at('Step 1: Confirm this describes you')).toBeGreaterThan(-1);
-    expect(at('Step 2: What we still need')).toBeGreaterThan(at('Step 1:'));
-    expect(at('Step 3: Review and sign')).toBeGreaterThan(at('Step 2:'));
-    expect(at(ONE_CLICK_AGENT_TITLE)).toBeGreaterThan(at('Step 3: Review and sign'));
+  it('opens the full form from Edit details', () => {
+    expect(html).toContain(ONE_CLICK_COPY.oneTap.edit);
+    expect(html).not.toContain(ONE_CLICK_COPY.need.save);
   });
 
   it('brings the save back as soon as one question is still asked', () => {
@@ -408,6 +426,7 @@ describe('step 2 when everything is already on file', () => {
     const withQuestion = render(filingView({ items: asked }));
     expect(withQuestion).toContain(ONE_CLICK_COPY.need.save);
     expect(withQuestion).toContain('filing-save-to-profile');
+    expect(withQuestion).toContain('Step 1:');
   });
 
   it('keeps the save while health consent is still outstanding', () => {

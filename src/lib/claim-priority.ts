@@ -30,6 +30,15 @@ export function isNoPinClaimAction(type: string | null | undefined): boolean {
 }
 
 /**
+ * Easy submit / “We file this claim for you”: lawsuits.claim_action_type is
+ * `desk_file`. Public pages still require an approved spec + policy; ranking
+ * only uses the stored type so a dashboard sort cannot depend on a spec read.
+ */
+export function isWeFileClaimAction(type: string | null | undefined): boolean {
+  return type === 'desk_file';
+}
+
+/**
  * Category slugs that carry breach classes. `lawsuits.category` is free text
  * with no DB constraint, and breach cases are filed under 'Data Breach' and
  * 'Privacy' (which src/lib/matching.ts also maps to `had_data_breach`), so

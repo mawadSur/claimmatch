@@ -15,7 +15,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ClaimView, SettlementContext } from '@/lib/claims';
 import { flags } from '@/lib/flags';
 import { oneClickEnabledFor } from '@/lib/filing/one-click-access';
-import { loadClaimFilingView, previewLanes } from '@/lib/filing/v2/view';
+import { pickNextEasySubmit } from '@/lib/filing/one-tap';
+import { listClaimFilingSummaries, loadClaimFilingView, previewLanes } from '@/lib/filing/v2/view';
 import type { ClaimFilingView, LaneView } from '@/lib/filing/v2/contract';
 import { lookupLawsuitBySlug } from '@/lib/lawsuits';
 import { classifyMatch, matchProfile } from '@/lib/matching';
@@ -118,9 +119,11 @@ export async function loadOneClickClaimPage(args: {
     : true;
   const needsMembership = skipMatchGate && !membershipOk;
 
+  const nextEasySubmit = await readNextEasySubmit(supabase, userId, claim?.id ?? null, now);
+
   if (claim) {
     const view = await readView(supabase, userId, claim.id, now);
-    if (!view) return { ...base, loadFailed: isOneClickStatus(claim.status) };
+    if (!view) return { ...base, loadFailed: isOneClickStatus(claim.status), nextEasySubmit };
     // A saved self-file claim can move to one-click once its settlement has an agent lane.
     const eligible =
       startable &&
@@ -133,10 +136,11 @@ export async function loadOneClickClaimPage(args: {
       lane: view.lane,
       canStart: eligible && !needsMembership,
       needsMembership: eligible && needsMembership,
+      nextEasySubmit,
     };
   }
 
-  if (!startable || !matchOk) return base;
+  if (!startable || !matchOk) return { ...base, nextEasySubmit };
   const lane = await previewLane(userId, args.lawsuitId, now);
   const eligible = Boolean(lane?.agent);
   return {
@@ -144,5 +148,22 @@ export async function loadOneClickClaimPage(args: {
     lane,
     canStart: eligible && !needsMembership,
     needsMembership: eligible && needsMembership,
+    nextEasySubmit,
   };
+}
+
+async function readNextEasySubmit(
+  supabase: SupabaseClient,
+  userId: string,
+  exceptClaimId: string | null,
+  now: Date,
+) {
+  try {
+    const list = await listClaimFilingSummaries({ supabase, userId, now });
+    if (!list.ok) return null;
+    return pickNextEasySubmit(list.items, exceptClaimId);
+  } catch (err) {
+    logFilingError('next easy submit lookup failed', err);
+    return null;
+  }
 }

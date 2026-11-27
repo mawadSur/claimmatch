@@ -526,6 +526,70 @@ export function renderDidYouFile24hEmail(opts: DidYouFile24hEmailOpts): string {
 </html>`;
 }
 
+export interface PaperFallbackEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  days: number;
+  formUrl: string;
+  claimUrl: string;
+  to?: string;
+}
+
+export function renderPaperFallbackEmail(opts: PaperFallbackEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Paper form fallback</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(PUBLIC_BRAND)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Paper form fallback</h1>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} Lawsuit AI emailed the administrator about ${esc(opts.title)} ${opts.days} days ago and has not recorded a notice ID yet. You can print the paper claim form and mail it instead of waiting.</p>
+          <div>
+            <a href="${esc(opts.formUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 20px;border-radius:8px;">Open the paper claim form →</a>
+          </div>
+          <p style="margin:16px 0 0 0;font-size:13px;"><a href="${esc(opts.claimUrl)}" style="color:${BRAND};text-decoration:underline;">View this claim</a></p>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${PUBLIC_BRAND} and asked Lawsuit AI to email a settlement administrator.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendPaperFallbackEmail(to: string, opts: PaperFallbackEmailOpts): Promise<boolean> {
+  if (!to || !opts?.formUrl || !opts.title) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] paper-fallback email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping paper-fallback email.');
+    return false;
+  }
+  try {
+    await resend.emails.send({
+      ...resendEnvelope(),
+      to,
+      subject: `Paper form fallback for ${opts.title}`,
+      html: renderPaperFallbackEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send paper-fallback email:', err);
+    return false;
+  }
+}
+
 export async function sendDidYouFile24hEmail(to: string, opts: DidYouFile24hEmailOpts): Promise<boolean> {
   if (!to || !opts?.filedUrl || !opts.title) return false;
   const gate = commercialEmailPrereqs();
