@@ -8,6 +8,7 @@ import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
 import { PostHogProvider } from '@/components/PostHogProvider';
+import { flags } from '@/lib/flags';
 
 // Trust & Authority pairing (UI UX Pro Max): Newsreader, an editorial serif, for
 // page and section headlines (h1/h2); Source Sans 3 for body and all app UI.
@@ -80,7 +81,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable}`}
+      {...(flags.funnelEvents() ? { 'data-cm-funnel': '1' } : {})}
+      {...(flags.didYouFileEmail() ? { 'data-cm-did-you-file': '1' } : {})}
+    >
       <body className="flex min-h-screen flex-col bg-brand-50">
         <script
           type="application/ld+json"

@@ -365,6 +365,30 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
       'Collect an official-site login PIN or password. Off until counsel and security approve. Specs still must not list PIN fields.',
     read: () => flags.collectAdminPin(),
   },
+  {
+    env: 'FUNNEL_EVENTS_ENABLED',
+    description:
+      'Checkout, trial, Easy submit, e-sign, and official-form funnel events plus cm_traffic_kind tagging (including qa). Off: today’s events stay.',
+    read: () => flags.funnelEvents(),
+  },
+  {
+    env: 'HOME_HTML_TRIM_ENABLED',
+    description:
+      'Slim homepage HTML (narrow catalog columns, catalog lists as a client island). Off: current home markup stays. Copy and SEO metadata do not change.',
+    read: () => flags.homeHtmlTrim(),
+  },
+  {
+    env: 'DID_YOU_FILE_EMAIL_ENABLED',
+    description:
+      '24-hour “Did you file?” email after a signed-in self-filer opens the official form. Independent of the 3-day onboarding drip. Off: cron skips it.',
+    read: () => flags.didYouFileEmail(),
+  },
+  {
+    env: 'TRIAL_WILL_END_EMAIL_ENABLED',
+    description:
+      'Stripe trial_will_end reminder email (trial end date, $19.99/month, billing portal). Off: that webhook is ignored.',
+    read: () => flags.trialWillEndEmail(),
+  },
 ];
 
 export function listFlagStatus(): FlagStatus[] {

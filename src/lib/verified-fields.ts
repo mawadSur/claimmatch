@@ -45,8 +45,11 @@ export function isVerifiedRecord(row: VerifiedFieldSource): boolean {
 }
 
 /** Public badge: flag on, stamp set, and verified fields are non-empty. */
-export function showVerifiedBadge(row: VerifiedFieldSource): boolean {
-  return flags.verifiedFields() && isVerifiedRecord(row);
+export function showVerifiedBadge(
+  row: VerifiedFieldSource,
+  enabled = flags.verifiedFields(),
+): boolean {
+  return enabled && isVerifiedRecord(row);
 }
 
 /** "Verified on Oct 27, 2026", or null when the stamp is unreadable. */

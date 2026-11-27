@@ -276,7 +276,12 @@ export default async function LawsuitDetailPage({ params }: Params) {
           <p className="mt-3 max-w-2xl text-sm text-ink-muted">
             {BROWSE_NO_ACCOUNT} {accountGateWhy()}
           </p>
-          <ListingVerification lawsuit={lawsuit} official={official} open={open} />
+          <ListingVerification
+            lawsuit={lawsuit}
+            official={official}
+            open={open}
+            checkedLabel={noticeCheckedOnLabel(lawsuit.slug)}
+          />
 
           <AnswerBlock
             facts={facts}

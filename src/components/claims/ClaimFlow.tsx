@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CalendarClock, ExternalLink, ShieldCheck } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { clientDidYouFileEnabled, clientFunnelEnabled } from '@/lib/analytics/funnel-events';
+import { withFunnelAttribution } from '@/lib/funnel';
 import {
   canReportWithoutClaim, claimActionAvailability, daysUntilDeadline, deadlineCountdown, displayClaimStatus,
   lateReportLastDay, legacyFilingState, reportByDay,
@@ -114,12 +117,29 @@ export function ClaimFlow({
   // rules, and may find they don't qualify. The claim is saved when they tell
   // us they filed, or choose "Not yet: save to my claims".
   function openedOfficialForm() {
-    posthog?.capture('official_form_opened', {
-      lawsuit_id: settlement.id,
-      slug: settlement.slug,
-      intent: 'official_form',
-      is_filing: false,
-    });
+    const extra = clientFunnelEnabled()
+      ? {
+          lawsuit_id: settlement.id,
+          slug: settlement.slug,
+          settlement_slug: settlement.slug,
+          claim_action_type: settlement.claimActionType ?? null,
+          intent: 'official_form',
+          is_filing: false,
+        }
+      : {
+          lawsuit_id: settlement.id,
+          slug: settlement.slug,
+          intent: 'official_form',
+          is_filing: false,
+        };
+    posthog?.capture(ANALYTICS_EVENTS.official_form_opened, withFunnelAttribution(extra));
+    if (clientDidYouFileEnabled()) {
+      void fetch('/api/official-form-opens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lawsuit_id: settlement.id }),
+      }).catch(() => {});
+    }
   }
 
   let body: React.ReactNode;

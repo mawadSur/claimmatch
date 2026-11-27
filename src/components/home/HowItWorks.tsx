@@ -4,14 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PhoneFrame, type Screen } from './DeviceFrame';
+import { PhoneFrame } from './DeviceFrame';
+import type { HowStep } from './how-it-works-types';
 
-export interface HowStep {
-  title: string;
-  body: string;
-  points: string[];
-  screen: Screen;
-}
+export type { HowStep };
 
 /**
  * "How it works" as a scroll story. On large screens a phone stays pinned

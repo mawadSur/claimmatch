@@ -10,11 +10,19 @@ import {
   STRIPE_NOT_CONFIGURED,
   STRIPE_WEBHOOK_NOT_CONFIGURED,
 } from '@/lib/stripe';
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import {
+  captureFunnelServerEvent,
+  shouldCaptureTrialStarted,
+  stripePromoCodes,
+} from '@/lib/analytics/funnel-events';
+import { createServiceClient } from '@/lib/supabase/server';
 import {
   upsertFromStripeSubscription,
   upsertSubscription,
   userIdFromStripeCustomer,
 } from '@/lib/subscriptions';
+import { sendTrialWillEndReminder } from '@/lib/trial-will-end';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +32,7 @@ const HANDLED = new Set([
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'customer.subscription.trial_will_end',
   'invoice.payment_failed',
 ]);
 
@@ -91,7 +100,21 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<boolean
         (customerId ? await userIdFromStripeCustomer(customerId) : null);
       if (!userId) return true;
       const status = event.type === 'customer.subscription.deleted' ? { ...sub, status: 'canceled' as const } : sub;
-      return upsertFromStripeSubscription({ userId, customerId, subscription: status });
+      const ok = await upsertFromStripeSubscription({ userId, customerId, subscription: status });
+      if (ok && event.type === 'customer.subscription.created') {
+        await maybeCaptureTrialStarted(userId, sub);
+      }
+      return ok;
+    }
+    case 'customer.subscription.trial_will_end': {
+      const sub = event.data.object as Stripe.Subscription;
+      const customerId = customerIdOf(sub.customer);
+      const userId =
+        (typeof sub.metadata?.user_id === 'string' && sub.metadata.user_id) ||
+        (customerId ? await userIdFromStripeCustomer(customerId) : null);
+      if (!userId) return true;
+      await sendTrialWillEndReminder({ userId, customerId, subscription: sub });
+      return true;
     }
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice;
@@ -120,6 +143,24 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<boolean
     default:
       return true;
   }
+}
+
+async function maybeCaptureTrialStarted(userId: string, sub: Stripe.Subscription): Promise<void> {
+  if (!shouldCaptureTrialStarted({ status: sub.status })) return;
+  let email: string | null = null;
+  try {
+    const { data } = await createServiceClient().from('profiles').select('email').eq('id', userId).maybeSingle();
+    email = typeof data?.email === 'string' ? data.email : null;
+  } catch {
+    email = null;
+  }
+  await captureFunnelServerEvent({
+    event: ANALYTICS_EVENTS.trial_started,
+    distinctId: userId,
+    email,
+    promoCodes: stripePromoCodes(sub),
+    extra: { stripe_status: sub.status },
+  });
 }
 
 function customerIdOf(value: unknown): string | null {

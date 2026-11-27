@@ -66,6 +66,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.owedEstimateHeader()).toBe(false);
     expect(flags.selfFiledReport()).toBe(false);
     expect(flags.noPinBreachPriority()).toBe(false);
+    expect(flags.funnelEvents()).toBe(false);
+    expect(flags.homeHtmlTrim()).toBe(false);
+    expect(flags.didYouFileEmail()).toBe(false);
+    expect(flags.trialWillEndEmail()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', 'true');
     vi.stubEnv('CALENDAR_ICS_ENABLED', 'yes');
@@ -125,6 +129,10 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('VERIFY_ASSIST_ENABLED', 'true');
     vi.stubEnv('OWED_ESTIMATE_HEADER_ENABLED', 'true');
     vi.stubEnv('SELF_FILED_REPORT_ENABLED', 'yes');
+    vi.stubEnv('FUNNEL_EVENTS_ENABLED', 'true');
+    vi.stubEnv('HOME_HTML_TRIM_ENABLED', 'yes');
+    vi.stubEnv('DID_YOU_FILE_EMAIL_ENABLED', 'on');
+    vi.stubEnv('TRIAL_WILL_END_EMAIL_ENABLED', 'true');
     expect(flags.verifiedFields()).toBe(false);
     expect(flags.calendarIcs()).toBe(false);
     expect(flags.closesInChips()).toBe(false);
@@ -183,6 +191,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.verifyAssist()).toBe(false);
     expect(flags.owedEstimateHeader()).toBe(false);
     expect(flags.selfFiledReport()).toBe(false);
+    expect(flags.funnelEvents()).toBe(false);
+    expect(flags.homeHtmlTrim()).toBe(false);
+    expect(flags.didYouFileEmail()).toBe(false);
+    expect(flags.trialWillEndEmail()).toBe(false);
 
     vi.stubEnv('VERIFIED_FIELDS_ENABLED', '1');
     vi.stubEnv('CALENDAR_ICS_ENABLED', '1');
@@ -242,6 +254,10 @@ describe('brief 3 feature flags', () => {
     vi.stubEnv('VERIFY_ASSIST_ENABLED', '1');
     vi.stubEnv('OWED_ESTIMATE_HEADER_ENABLED', '1');
     vi.stubEnv('SELF_FILED_REPORT_ENABLED', '1');
+    vi.stubEnv('FUNNEL_EVENTS_ENABLED', '1');
+    vi.stubEnv('HOME_HTML_TRIM_ENABLED', '1');
+    vi.stubEnv('DID_YOU_FILE_EMAIL_ENABLED', '1');
+    vi.stubEnv('TRIAL_WILL_END_EMAIL_ENABLED', '1');
     expect(flags.verifiedFields()).toBe(true);
     expect(flags.calendarIcs()).toBe(true);
     expect(flags.closesInChips()).toBe(true);
@@ -300,6 +316,10 @@ describe('brief 3 feature flags', () => {
     expect(flags.verifyAssist()).toBe(true);
     expect(flags.owedEstimateHeader()).toBe(true);
     expect(flags.selfFiledReport()).toBe(true);
+    expect(flags.funnelEvents()).toBe(true);
+    expect(flags.homeHtmlTrim()).toBe(true);
+    expect(flags.didYouFileEmail()).toBe(true);
+    expect(flags.trialWillEndEmail()).toBe(true);
   });
 });
 

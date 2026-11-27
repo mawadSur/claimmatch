@@ -42,6 +42,7 @@ describe('checkRequiredSchema', () => {
     expect(result.present).toContain('held_closure_site_checks');
     expect(result.present).toContain('claim_reminder_sends');
     expect(result.present).toContain('drip_email_sends');
+    expect(result.present).toContain('official_form_opens');
     expect(result.present).toContain('payout_tracker_sends');
     expect(result.present).toContain('match_alert_sends');
     expect(result.present).toContain('match_alert_tokens');

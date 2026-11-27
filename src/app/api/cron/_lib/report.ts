@@ -151,6 +151,20 @@ export function verifyAssistGate(enabled: boolean): Gate {
       };
 }
 
+/** 24-hour “Did you file?” after official_form_opened. Independent of the 3-day drip. */
+export function didYouFile24hGate(enabled: boolean): Gate {
+  return enabled
+    ? { run: true }
+    : {
+        run: false,
+        step: {
+          status: 'skipped',
+          reason: 'paused (did-you-file 24h)',
+          resume: 'Set DID_YOU_FILE_EMAIL_ENABLED=1 to email opted-in self-filers 24 hours after they open the official form.',
+        },
+      };
+}
+
 /** Opt-in new-match alerts with one-click start. Independent of D50 match emails. */
 export function matchAlertGate(enabled: boolean): Gate {
   return enabled

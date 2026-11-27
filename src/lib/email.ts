@@ -480,6 +480,142 @@ export async function sendIncompleteOnboardingEmail(
  * "Did you file?" drip. Returns true only when Resend accepted the send.
  * Deep-links to the claim page. Same sender/postal refuse as closing-soon.
  */
+export interface DidYouFile24hEmailOpts {
+  name?: string;
+  title: string;
+  slug: string;
+  filedUrl: string;
+  to?: string;
+}
+
+export function renderDidYouFile24hEmail(opts: DidYouFile24hEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const reviewHref = claimPageUrl(opts.slug);
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Did you file this settlement claim?</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(PUBLIC_BRAND)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Did you file this claim?</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} yesterday you opened the official claim form for a settlement you are tracking. If you already submitted it on the official site, you can mark it filed here. Filing on the official site is always free.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #ece7f6;border-radius:12px;background:#ffffff;">
+            <tr>
+              <td style="padding:20px 22px;">
+                <div style="font-size:17px;font-weight:700;color:#171326;line-height:1.35;font-family:Georgia,'Times New Roman',serif;">${esc(opts.title)}</div>
+                <div style="margin-top:16px;">
+                  <a href="${esc(opts.filedUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;">I filed this claim →</a>
+                </div>
+                <div style="margin-top:12px;">
+                  <a href="${reviewHref}" style="color:${BRAND};font-size:13px;text-decoration:underline;">Review this settlement</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        ${footerNote(`You're receiving this because you opted in to emails from ${PUBLIC_BRAND} and opened an official claim form.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendDidYouFile24hEmail(to: string, opts: DidYouFile24hEmailOpts): Promise<boolean> {
+  if (!to || !opts?.filedUrl || !opts.title) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] did-you-file-24h email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping did-you-file-24h email.');
+    return false;
+  }
+  try {
+    await resend.emails.send({
+      ...resendEnvelope(),
+      to,
+      subject: `Did you file your ${opts.title} claim?`,
+      html: renderDidYouFile24hEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send did-you-file-24h email:', err);
+    return false;
+  }
+}
+
+export interface TrialWillEndEmailOpts {
+  name?: string;
+  trialEndLabel: string | null;
+  priceCopy: string;
+  manageUrl: string;
+  to?: string;
+}
+
+export function renderTrialWillEndEmail(opts: TrialWillEndEmailOpts): string {
+  const greeting = opts.name ? `Hi ${esc(opts.name)},` : 'Hi there,';
+  const when = opts.trialEndLabel
+    ? `Your ${esc(PUBLIC_BRAND)} membership trial ends on ${esc(opts.trialEndLabel)}.`
+    : `Your ${esc(PUBLIC_BRAND)} membership trial is ending.`;
+  return `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your trial is ending</title></head>
+<body style="margin:0;padding:0;background:#f6f4fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4fb;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr><td style="padding:0 4px 20px 4px;">
+          <span style="font-size:22px;font-weight:800;color:${BRAND};font-family:Georgia,'Times New Roman',serif;letter-spacing:-0.3px;">${esc(PUBLIC_BRAND)}</span>
+        </td></tr>
+        <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
+          <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Your trial is ending</h1>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} ${when} After that, membership is ${esc(opts.priceCopy)}/month unless you cancel. Manage or cancel in the Stripe billing portal.</p>
+          <div>
+            <a href="${esc(opts.manageUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 20px;border-radius:8px;">Manage billing →</a>
+          </div>
+        </td></tr>
+        ${footerNote(`You're receiving this because you started a ${PUBLIC_BRAND} membership trial and opted in to email.`, opts.to)}
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendTrialWillEndEmail(to: string, opts: TrialWillEndEmailOpts): Promise<boolean> {
+  if (!to || !opts?.manageUrl || !opts.priceCopy) return false;
+  const gate = commercialEmailPrereqs();
+  if (!gate.ok) {
+    console.log(`[email] trial-will-end email refused (${gate.reason})`);
+    return false;
+  }
+  const resend = getResend();
+  if (!resend) {
+    console.log('[email] RESEND_API_KEY not set — skipping trial-will-end email.');
+    return false;
+  }
+  try {
+    await resend.emails.send({
+      ...resendEnvelope(),
+      to,
+      subject: `Your ${PUBLIC_BRAND} trial is ending`,
+      html: renderTrialWillEndEmail({ ...opts, to }),
+    });
+    return true;
+  } catch (err) {
+    console.error('[email] Failed to send trial-will-end email:', err);
+    return false;
+  }
+}
+
 export async function sendDidYouFileEmail(to: string, opts: DidYouFileEmailOpts): Promise<boolean> {
   if (!to || !opts?.slug) return false;
   const gate = commercialEmailPrereqs();

@@ -15,12 +15,15 @@ import { flags } from '@/lib/flags';
 export function EasySubmitBadge({
   type,
   approved = false,
+  enabled = flags.claimActionCtas(),
 }: {
   type: ClaimActionType | null | undefined;
   /** Approved filing spec + policy. Draft desk_file rows stay hidden. */
   approved?: boolean;
+  /** Server-passed flag so a client island hydrates the same as SSR. */
+  enabled?: boolean;
 }) {
-  if (!flags.claimActionCtas() || !isPublicEasySubmit(type, approved)) return null;
+  if (!enabled || !isPublicEasySubmit(type, approved)) return null;
   return (
     <span className="badge-green shrink-0 gap-1" title={EASY_SUBMIT_EXPLAINER}>
       <Sparkles className="h-3 w-3" aria-hidden="true" /> {EASY_SUBMIT_BADGE}
@@ -107,7 +110,10 @@ export function ClaimActionCta({
   );
 }
 
-export function shouldHideFileButton(claimActionType?: string | null): boolean {
-  if (!flags.claimActionCtas()) return false;
+export function shouldHideFileButton(
+  claimActionType?: string | null,
+  enabled = flags.claimActionCtas(),
+): boolean {
+  if (!enabled) return false;
   return hidesFileQualifySignup(claimActionType);
 }

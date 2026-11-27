@@ -3,6 +3,7 @@ import {
   D50_PAUSED,
   buildReport,
   deadlineRemindersGate,
+  didYouFile24hGate,
   onboardingDripGate,
   payoutTrackerGate,
   matchAlertGate,
@@ -127,6 +128,15 @@ describe('D50 gates', () => {
       },
     });
     expect(linkCheckGate(true)).toEqual({ run: true });
+    expect(didYouFile24hGate(false)).toEqual({
+      run: false,
+      step: {
+        status: 'skipped',
+        reason: 'paused (did-you-file 24h)',
+        resume: expect.stringContaining('DID_YOU_FILE_EMAIL_ENABLED=1'),
+      },
+    });
+    expect(didYouFile24hGate(true)).toEqual({ run: true });
   });
 
   it('pauses the match store unless MATCH_STORE_ENABLED=1', () => {

@@ -22,6 +22,14 @@ export const ANALYTICS_EVENTS = {
   matches_viewed: 'matches_viewed',
   match_viewed: 'match_viewed',
   official_form_opened: 'official_form_opened',
+  /** Client: Stripe Checkout URL received and the browser is about to leave. */
+  checkout_started: 'checkout_started',
+  /** Server: Stripe customer.subscription.created with status=trialing. */
+  trial_started: 'trial_started',
+  /** Server: Easy submit start succeeded on an eligible settlement. */
+  easy_submit_started: 'easy_submit_started',
+  /** Server: first successful e-sign of an Easy submit packet (not a replay). */
+  esign_completed: 'esign_completed',
   eligibility_quiz_started: 'eligibility_quiz_started',
   eligibility_quiz_completed: 'eligibility_quiz_completed',
   prefill_opened: 'prefill_opened',

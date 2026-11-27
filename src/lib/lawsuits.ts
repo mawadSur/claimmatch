@@ -79,6 +79,8 @@ export interface CatalogQuery {
   q?: string;
   featured?: boolean;
   limit?: number;
+  /** PostgREST column list. Default `*` (current behavior). */
+  columns?: string;
 }
 
 export interface CatalogResult {
@@ -113,7 +115,7 @@ export async function lookupLawsuits(
     const run = async (includeOverride: boolean) => {
       let query = supabase
         .from('lawsuits')
-        .select('*')
+        .select(opts?.columns ?? '*')
         .eq('review_status', 'published')
         .in('status', [...OPEN_STATUSES])
         // Also every guided slug, whatever its feed deadline says: the official

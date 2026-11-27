@@ -10,11 +10,14 @@ import { showVerifiedBadge, verifiedOnLabel } from '@/lib/verified-fields';
 export function VerifiedBadge({
   lawsuit,
   className,
+  enabled,
 }: {
   lawsuit: VerifiedFieldSource;
   className?: string;
+  /** Server-passed flag so a client island hydrates the same as SSR. */
+  enabled?: boolean;
 }) {
-  if (!showVerifiedBadge(lawsuit)) return null;
+  if (!showVerifiedBadge(lawsuit, enabled)) return null;
   const label = verifiedOnLabel(lawsuit.verified_at);
   if (!label) return null;
 

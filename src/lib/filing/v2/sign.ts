@@ -9,6 +9,8 @@
  * filing_sign_packet stores the signature and enqueueFiling queues it. A
  * retry with the same key returns the first signature. Server only.
  */
+import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
+import { captureFunnelServerEvent } from '@/lib/analytics/funnel-events';
 import { createServiceClient } from '@/lib/supabase/server';
 import { requestIpForRecord } from '@/lib/staff-roles';
 import { enqueueFiling } from './jobs';
@@ -166,6 +168,13 @@ export async function signClaim(args: { caller: FilingCaller; req: Request; clai
   const signed = data as { signature?: { id?: unknown; lane?: unknown } } | null;
   if (typeof signed?.signature?.id === 'string' && signed.signature.lane === lane) {
     await queue(signed.signature.id, state.lane.decision, now);
+    await captureFunnelServerEvent({
+      event: ANALYTICS_EVENTS.esign_completed,
+      distinctId: caller.user.id,
+      email: caller.user.email ?? null,
+      settlementSlug: ctx.env.settlement.slug,
+      claimActionType: ctx.env.settlement.claim_action_type,
+    });
   }
   return viewResponse({ caller, req, claimId });
 }
