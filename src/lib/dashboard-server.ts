@@ -12,6 +12,7 @@ import {
   buildDashboardMatches,
   buildDashboardMatchesFromStored,
   dashboardNeedsProfile,
+  lawsuitIdsAlreadyOnDashboard,
 } from '@/components/claims/dashboard-model';
 import { isFictionalSettlementSlug, loadUserClaims } from '@/lib/claims-server';
 import type { MembershipStart, ReportedPayoutRow } from '@/lib/dashboard-value';
@@ -71,8 +72,6 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
   ]);
 
   const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
-  const tracked = new Set(claims.items.map((i) => i.claim.lawsuit_id));
-  const closingSoon = buildClosingSoon(catalog.lawsuits, tracked, now, isFictionalSettlementSlug);
   const matchProfile = {
     state: (profile?.state as string | null) ?? null,
     attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],
@@ -102,6 +101,17 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
     : storedMatches.length > 0
       ? storedMatches
       : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug, matchOpts);
+  // Closing soon drops tracked claims and visible matches so a card is never
+  // listed twice. Easy submit matches stay in Your matches (at the top).
+  const closingSoon = buildClosingSoon(
+    catalog.lawsuits,
+    lawsuitIdsAlreadyOnDashboard(
+      claims.items.map((item) => item.claim.lawsuit_id),
+      matches,
+    ),
+    now,
+    isFictionalSettlementSlug,
+  );
   const needsProfile = dashboardNeedsProfile(matchProfile);
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';

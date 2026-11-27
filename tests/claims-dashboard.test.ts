@@ -6,7 +6,10 @@ import {
   buildDashboardMatches,
   buildDashboardMatchesFromStored,
   dashboardNeedsProfile,
+  compareDashboardMatches,
   groupDashboardMatches,
+  lawsuitIdsAlreadyOnDashboard,
+  type DashboardMatch,
   type DashboardSettlement,
 } from '@/components/claims/dashboard-model';
 import { toClaimFlowSettlement } from '@/lib/claim-screen';
@@ -507,6 +510,79 @@ describe('agent-lane statuses (0041) on the dashboard', () => {
   it('raises no corrective notice for an agent-lane claim', () => {
     const { notices } = row(claim({ status: 'signed', corrective_notice_required: true }), settlement());
     expect(notices).toHaveLength(0);
+  });
+});
+
+describe('Easy submit first and Closing soon dedupe', () => {
+  it('pushes desk_file (“We file this claim for you”) claims above self-file in the same group', () => {
+    const selfSoon = settlement({ slug: 'self-soon', title: 'Self soon', deadline: '2026-10-20', claim_action_type: 'online_form' });
+    const weFileLater = settlement({
+      slug: 'we-file-later',
+      title: 'We file later',
+      deadline: '2026-12-01',
+      claim_action_type: 'desk_file',
+    });
+    const selfLater = settlement({ slug: 'self-later', title: 'Self later', deadline: '2026-11-30', claim_action_type: 'needs_notice_id' });
+    const weFileSoon = settlement({
+      slug: 'we-file-soon',
+      title: 'We file soon',
+      deadline: '2026-10-25',
+      claim_action_type: 'desk_file',
+    });
+    const { rows } = buildDashboard(
+      [
+        { claim: claim({ lawsuit_title: selfSoon.title }), settlement: selfSoon },
+        { claim: claim({ lawsuit_title: weFileLater.title }), settlement: weFileLater },
+        { claim: claim({ lawsuit_title: selfLater.title }), settlement: selfLater },
+        { claim: claim({ lawsuit_title: weFileSoon.title }), settlement: weFileSoon },
+      ],
+      NOW,
+      isFictional,
+    );
+    expect(rows.map((r) => r.title)).toEqual(['We file later', 'We file soon', 'Self soon', 'Self later']);
+    expect(rows.filter((r) => r.weFile).map((r) => r.title)).toEqual(['We file later', 'We file soon']);
+  });
+
+  it('keeps match-strength order inside Easy submit and lists those cards above self-file', () => {
+    const match = (overrides: Partial<DashboardMatch>): DashboardMatch => ({
+      id: overrides.slug ?? 'x',
+      slug: overrides.slug ?? 'x',
+      title: overrides.slug ?? 'x',
+      deadlineText: 'soon',
+      reasons: [],
+      strength: 'possible',
+      label: 'Possible match',
+      officialUrl: null,
+      score: 0.4,
+      payoutMin: null,
+      payoutMax: null,
+      ...overrides,
+    });
+    const items = [
+      match({ slug: 'self-strong', strength: 'strong', label: 'Strong match', score: 1, claimActionType: 'needs_notice_id' }),
+      match({ slug: 'easy-possible', strength: 'possible', score: 0.4, claimActionType: 'desk_file' }),
+      match({ slug: 'easy-strong', strength: 'strong', label: 'Strong match', score: 0.9, claimActionType: 'desk_file' }),
+      match({ slug: 'self-possible', strength: 'possible', score: 0.5, claimActionType: 'online_form' }),
+    ].sort((a, b) => compareDashboardMatches(a, b));
+    expect(items.map((m) => m.slug)).toEqual(['easy-strong', 'easy-possible', 'self-strong', 'self-possible']);
+    const grouped = groupDashboardMatches(items);
+    expect(grouped.strong.map((m) => m.slug)).toEqual(['easy-strong', 'easy-possible', 'self-strong']);
+    expect(grouped.possible.map((m) => m.slug)).toEqual(['self-possible']);
+  });
+
+  it('does not list a visible match or tracked claim again under Closing soon', () => {
+    const tracked = settlement({ slug: 'tracked', deadline: '2026-10-20' });
+    const matched = settlement({ slug: 'matched', deadline: '2026-10-22' });
+    const onlyClosing = settlement({ slug: 'only-closing', deadline: '2026-10-28' });
+    const later = settlement({ slug: 'later', deadline: '2026-12-31' });
+    const matches: Pick<DashboardMatch, 'id' | 'claimActionType' | 'strength'>[] = [
+      { id: matched.id, claimActionType: 'desk_file', strength: 'possible' },
+    ];
+    const shown = lawsuitIdsAlreadyOnDashboard([tracked.id], matches);
+    const items = buildClosingSoon([tracked, matched, onlyClosing, later], shown, NOW, isFictional);
+    expect(items.map((i) => i.slug)).toEqual(['only-closing', 'later']);
+    expect(items.map((i) => i.slug)).not.toContain('matched');
+    expect(items.map((i) => i.slug)).not.toContain('tracked');
   });
 });
 

@@ -190,6 +190,10 @@ beforeEach(() => {
         { id: uuid(), slug: 'breach', title: 'Breach', deadline: '2026-12-01', claim_url: 'https://www.breach-admin.com/file' },
       ),
       makeLawsuit({ states: ['CA'] }, { id: uuid(), slug: 'state-only', title: 'State only', deadline: '2026-11-01' }),
+      makeLawsuit(
+        { states: ['NY'] },
+        { id: uuid(), slug: 'ny-closing', title: 'NY closing', deadline: '2026-10-25' },
+      ),
     ],
     error: false,
   };
@@ -281,7 +285,17 @@ describe('GET /api/mobile/dashboard: the response', () => {
       ]);
     }
     expect(data.closingSoon).toMatchObject({ failed: false });
-    expect(data.closingSoon.items.map((i) => i.slug)).toEqual(['state-only', 'breach']);
+    expect(data.closingSoon.items.map((i) => i.slug)).toEqual(['ny-closing']);
+    const matchSlugs = new Set([
+      ...data.matches.strong.map((m) => m.slug),
+      ...data.matches.possible.map((m) => m.slug),
+    ]);
+    expect(matchSlugs.has('ny-closing')).toBe(false);
+    for (const slug of data.closingSoon.items.map((i) => i.slug)) {
+      expect(matchSlugs.has(slug)).toBe(false);
+    }
+    expect(data.claims.rows.some((r) => r.title === 'Tracked one')).toBe(true);
+    expect(data.closingSoon.items.map((i) => i.slug)).not.toContain('tracked-one');
 
     const json = JSON.stringify(data);
     expect(json).not.toMatch(/"score"/);
@@ -367,6 +381,11 @@ describe('the web /dashboard page, rendered from the same loader', () => {
     expect(html).toContain('Strong match');
     expect(html).toContain('href="/claim/breach"');
     expect(html).toContain('href="/claim/state-only"');
+    const closingSoonHtml = html.slice(html.indexOf('id="closing-soon-title"'));
+    expect(closingSoonHtml).toContain('NY closing');
+    expect(closingSoonHtml).not.toContain('>Breach<');
+    expect(closingSoonHtml).not.toContain('>State only<');
+    expect(closingSoonHtml).not.toContain('>Tracked one<');
     expect(html).not.toContain(ONBOARDING_CARD);
     expect(html).not.toContain('load matches right now');
   });
