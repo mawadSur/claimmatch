@@ -157,7 +157,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'blue-ridge-rural-water-company-data-breach-class-action-settlement'
    and status = 'open'
@@ -255,7 +255,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'dental-intelligence-5-75m-privacy-class-action-settlement'
    and status = 'open'
@@ -290,7 +290,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'educational-computer-systems-data-breach-class-action-settlement'
    and status = 'open'
@@ -388,7 +388,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'online_form',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'hyundai-kia-vehicle-theft'
    and status = 'open'
@@ -640,7 +640,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'online_form',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'rolling-stone-magazine-lifetime-subscription'
    and status = 'open'
@@ -661,7 +661,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'seatgeek-ticket-fees-nevada-class-action-settlement'
    and status = 'open'
@@ -696,7 +696,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'tenet-healthcare-pixel-tracking-settlement'
    and status = 'open'
@@ -738,7 +738,7 @@ update public.lawsuits
    and review_status = 'published';
 
 update public.lawsuits
-   set claim_action_type = 'needs_notice_id',
+   set claim_action_type = 'desk_file',
        claim_action = '{}'::jsonb
  where slug = 'vida-y-salud-health-systems-data-breach-class-action-settlement'
    and status = 'open'
@@ -800,4 +800,4 @@ update public.lawsuits
    and status = 'open'
    and review_status = 'published';
 
--- Applied 112 rows. Expected counts: needs_notice_id=50, online_form=17, automatic_payment=22, not_open=15, mail_in=6, desk_file=2.
+-- Applied 112 rows. Expected counts: needs_notice_id=44, online_form=15, automatic_payment=22, not_open=15, desk_file=10, mail_in=6.

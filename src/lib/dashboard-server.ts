@@ -59,6 +59,10 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
     onboarded: Boolean(profile?.onboarded),
     facts: factsFromRows(factRes.data),
   };
+  // NO_PIN_BREACH_PRIORITY_ENABLED: the same ordering option goes to both
+  // builders, so the dashboard order cannot depend on whether the match store
+  // has run. Inert until lawsuits.claim_action_type exists and is populated.
+  const matchOpts = { noPinBreachFirst: flags.noPinBreachPriority() };
   // MATCH_STORE_ENABLED: stored matches, when there are any, replace the
   // live-computed ones. Their settlements carry the official-notice guides,
   // as the catalog's rows do (claims already do: loadUserClaims).
@@ -70,13 +74,14 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
           ),
           now,
           isFictionalSettlementSlug,
+          matchOpts,
         )
       : [];
   const matches = catalog.error
     ? []
     : storedMatches.length > 0
       ? storedMatches
-      : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug);
+      : buildDashboardMatches(matchProfile, catalog.lawsuits, now, isFictionalSettlementSlug, matchOpts);
   const needsProfile = dashboardNeedsProfile(matchProfile);
 
   const firstName = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';

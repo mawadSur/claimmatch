@@ -21,6 +21,7 @@ import {
   type IsFictional,
   type SettlementFacts,
 } from '../../lib/claims';
+import { noPinBreachRank } from '../../lib/claim-priority';
 import { pickClosingSoon } from '../../lib/closing-soon';
 import { officialSiteUrl } from '../../lib/lawsuit-display';
 import {
@@ -280,6 +281,55 @@ export interface DashboardMatch {
   payoutMin: number | null;
   /** Settlement record payout_max. Null when the listing has no high figure. */
   payoutMax: number | null;
+  /**
+   * 0051 lawsuits.claim_action_type, for the no-PIN ranking only. Optional and
+   * undefined whenever the column is absent or unread; never sent to the app.
+   */
+  claimActionType?: string | null;
+  /** lawsuits.category, for the breach ranking only. Never sent to the app. */
+  category?: string | null;
+  /** lawsuits.summary, so a mis-categorised breach row is still detectable. */
+  summary?: string | null;
+}
+
+/** Options shared by both dashboard match builders. */
+export interface DashboardMatchOptions {
+  /**
+   * NO_PIN_BREACH_PRIORITY_ENABLED: within a strength band, put settlements
+   * whose official path needs no mailed notice ID first, breach classes
+   * first of all. A Possible match never jumps above a Strong one.
+   */
+  noPinBreachFirst?: boolean;
+}
+
+/**
+ * The one dashboard match comparator, used by the live and the stored builder
+ * so the order cannot depend on whether MATCH_STORE_ENABLED has run.
+ */
+export function compareDashboardMatches(
+  a: DashboardMatch,
+  b: DashboardMatch,
+  opts: DashboardMatchOptions = {},
+): number {
+  if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
+  if (opts.noPinBreachFirst) {
+    const rankA = noPinBreachRank({
+      claim_action_type: a.claimActionType,
+      category: a.category,
+      title: a.title,
+      summary: a.summary,
+    });
+    const rankB = noPinBreachRank({
+      claim_action_type: b.claimActionType,
+      category: b.category,
+      title: b.title,
+      summary: b.summary,
+    });
+    if (rankA !== rankB) return rankA - rankB;
+  }
+  // Array.prototype.sort is stable, so equal scores keep their input order
+  // exactly as they did before this comparator was extracted.
+  return b.score - a.score;
 }
 
 /** Possible matches shown after Strong; extras stay hidden behind the cap. */
@@ -322,6 +372,7 @@ export function buildDashboardMatches(
   lawsuits: Lawsuit[],
   now: Date,
   isFictional: IsFictional,
+  opts: DashboardMatchOptions = {},
 ): DashboardMatch[] {
   const open = lawsuits.filter(
     (lawsuit) => UUID_RE.test(lawsuit.id) && !isFictional(lawsuit.slug) && isOpenForClaims(lawsuit, now),
@@ -344,13 +395,13 @@ export function buildDashboardMatches(
         score: result.score,
         payoutMin: finitePayoutAmount(lawsuit.payout_min),
         payoutMax: finitePayoutAmount(lawsuit.payout_max),
+        claimActionType: lawsuit.claim_action_type ?? null,
+        category: lawsuit.category ?? null,
+        summary: lawsuit.summary ?? null,
       },
     ];
   });
-  return scored.sort((a, b) => {
-    if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
-    return b.score - a.score;
-  });
+  return scored.sort((a, b) => compareDashboardMatches(a, b, opts));
 }
 
 export function isNewStoredMatch(createdAt: string | null | undefined, now: Date): boolean {
@@ -364,6 +415,7 @@ export function buildDashboardMatchesFromStored(
   rows: Array<Match & { lawsuit?: Lawsuit | null }>,
   now: Date,
   isFictional: IsFictional,
+  opts: DashboardMatchOptions = {},
 ): DashboardMatch[] {
   return rows
     .filter((row) => {
@@ -390,12 +442,12 @@ export function buildDashboardMatchesFromStored(
         isNew: isNewStoredMatch(row.created_at, now),
         payoutMin: finitePayoutAmount(lawsuit.payout_min),
         payoutMax: finitePayoutAmount(lawsuit.payout_max),
+        claimActionType: lawsuit.claim_action_type ?? null,
+        category: lawsuit.category ?? null,
+        summary: lawsuit.summary ?? null,
       };
     })
-    .sort((a, b) => {
-      if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
-      return b.score - a.score;
-    });
+    .sort((a, b) => compareDashboardMatches(a, b, opts));
 }
 
 export function dashboardNeedsProfile(

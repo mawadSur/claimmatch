@@ -589,15 +589,22 @@ export function AuthForm({
               minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
               value={password}
               onChange={(e) => {
-                const next = e.target.value;
-                setPassword(next);
-                if (isSignup && next.length > 0 && next.length < MIN_PASSWORD_LENGTH) {
+                setPassword(e.target.value);
+                // While typing, the muted #password-hint below is the only
+                // feedback. Turning the same sentence red on keystroke 1 made a
+                // normal password look rejected, so the error waits for blur
+                // (and for submit, via validateSignupFields).
+                if (fieldErrors.password) {
+                  setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }
+              }}
+              onBlur={() => {
+                if (!isSignup || password.length === 0) return;
+                if (password.length < MIN_PASSWORD_LENGTH) {
                   setFieldErrors((prev) => ({
                     ...prev,
                     password: `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`,
                   }));
-                } else if (fieldErrors.password) {
-                  setFieldErrors((prev) => ({ ...prev, password: undefined }));
                 }
               }}
               placeholder={isSignup ? `At least ${MIN_PASSWORD_LENGTH} characters` : 'Your password'}

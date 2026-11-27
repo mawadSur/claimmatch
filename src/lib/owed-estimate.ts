@@ -101,6 +101,18 @@ export function owedRangeLabel(estimate: OwedEstimate): string {
   return `${low}–${high}`;
 }
 
+/**
+ * One settlement's listed payout as text ("$50", or "$10–$40" for a range), or
+ * null when that settlement's record states no numeric payout. Same rule and
+ * same formatting as the dashboard header: payout_min / payout_max only, never
+ * typical_payout text, never a figure we invented.
+ */
+export function statedPayoutLabel(terms: MatchPayoutTerms): string | null {
+  const range = statedPayoutRange(terms);
+  if (!range) return null;
+  return owedRangeLabel({ statedCount: 1, unstatedCount: 0, low: range.low, high: range.high });
+}
+
 export function unstatedPayoutCopy(count: number): string | null {
   if (count < 1) return null;
   if (count === 1) return '1 claim has no payout amount announced';

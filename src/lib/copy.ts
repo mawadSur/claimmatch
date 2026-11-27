@@ -38,6 +38,20 @@ export function membershipCopy(
   );
 }
 
+/**
+ * The settlement's own listed payout, shown beside the membership price so the
+ * cost sits next to the figure the listing states. `label` comes from
+ * `statedPayoutLabel` (src/lib/owed-estimate.ts) and is always the listing's
+ * own payout_min / payout_max — never estimated, rounded or promised. Callers
+ * render nothing at all when the listing states no amount.
+ */
+export function listedPayoutBesidePriceCopy(label: string): string {
+  return (
+    `This settlement lists ${label} per eligible person. ` +
+    `That is the listing’s own figure, not a prediction of what you will receive.`
+  );
+}
+
 export function startTrialCtaLabel(
   trialDays = CLAIMMATCH_TRIAL_DAYS,
   price = membershipPriceCopy(),

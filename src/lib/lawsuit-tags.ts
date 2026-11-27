@@ -69,7 +69,7 @@ function emptyTags(): LawsuitTags {
   };
 }
 
-function sourceText(item: {
+export function sourceText(item: {
   title?: string | null;
   summary?: string | null;
   description?: string | null;
@@ -122,7 +122,7 @@ function extractBrands(text: string): string[] | null {
   return unique.length > 0 ? unique : null;
 }
 
-function extractEmployers(text: string): string[] | null {
+export function extractEmployers(text: string): string[] | null {
   if (!text.trim()) return null;
   const names: string[] = [];
   const patterns = [
@@ -147,7 +147,7 @@ function extractStates(eligibility?: EligibilityCriteria | null): string[] | nul
   return unique.length > 0 ? unique : null;
 }
 
-function validIsoDate(value: string | null | undefined): string | null {
+export function validIsoDate(value: string | null | undefined): string | null {
   if (!value) return null;
   const m = ISO_DATE.exec(value.trim());
   if (!m) return null;
@@ -254,6 +254,26 @@ export function normalizeLawsuitTags(value: unknown): LawsuitTags {
     class_period_start: validIsoDate(typeof raw.class_period_start === 'string' ? raw.class_period_start : null),
     class_period_end: validIsoDate(typeof raw.class_period_end === 'string' ? raw.class_period_end : null),
   };
+}
+
+/**
+ * Employer names for a lawsuit: the stored `tags.employers` when ingest wrote
+ * them, otherwise a conservative read of the listing text. The fallback
+ * matters because tags are written only at ingest (src/lib/scraper/plan.ts),
+ * so a row whose eligibility was drafted and approved later can carry
+ * `requires` with a null `employers`.
+ */
+export function employersFromLawsuit(item: {
+  tags?: unknown;
+  title?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  eligibility_text?: string | null;
+  eligibility?: EligibilityCriteria | null;
+}): string[] | null {
+  const stored = normalizeLawsuitTags(item.tags).employers;
+  if (stored && stored.length > 0) return stored;
+  return extractEmployers(sourceText(item));
 }
 
 export function lawsuitHasStructuredTags(tags: LawsuitTags | null | undefined): boolean {

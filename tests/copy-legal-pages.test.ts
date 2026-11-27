@@ -120,4 +120,12 @@ describe('public pages', () => {
     expect(trust).not.toMatch(/official sources?\b/i);
     expect(trust).not.toMatch(/human-reviewed|We name the administrator/i);
   });
+
+  it('trust page says the trial starts with no card, not that a card is taken', () => {
+    // The Checkout Session uses payment_method_collection: 'if_required', so no
+    // card is collected up front. The copy must not claim otherwise.
+    const trust = read('src/app/trust/page.tsx');
+    expect(trust).not.toMatch(/a card is used/i);
+    expect(trust).toMatch(/free trial starts with no card/i);
+  });
 });

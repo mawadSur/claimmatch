@@ -190,15 +190,35 @@ describe('checkout and portal', () => {
         customer: 'cus_test',
         client_reference_id: USER_ID,
         line_items: [{ price: 'price_test', quantity: 1 }],
-        subscription_data: {
+        allow_promotion_codes: true,
+        payment_method_collection: 'if_required',
+        subscription_data: expect.objectContaining({
           trial_period_days: CLAIMMATCH_TRIAL_DAYS,
           metadata: { user_id: USER_ID },
-        },
+          trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+        }),
       }),
     );
     const res = await checkout(json('/api/billing/checkout', { return_to: '/settings' }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ url: 'https://checkout.stripe.test/cs_test' });
+  });
+
+  it('starts the trial without collecting a card and cancels when no card arrives', async () => {
+    const result = await createCheckoutSession({ userId: USER_ID, email: 'ada@example.com' });
+    expect(result.ok).toBe(true);
+    const params = (h.stripe?.checkout.sessions.create.mock.calls[0]?.[0] ?? {}) as {
+      payment_method_collection?: string;
+      allow_promotion_codes?: boolean;
+      subscription_data?: {
+        trial_period_days?: number;
+        trial_settings?: { end_behavior?: { missing_payment_method?: string } };
+      };
+    };
+    expect(params.payment_method_collection).toBe('if_required');
+    expect(params.allow_promotion_codes).toBe(true);
+    expect(params.subscription_data?.trial_period_days).toBe(CLAIMMATCH_TRIAL_DAYS);
+    expect(params.subscription_data?.trial_settings?.end_behavior?.missing_payment_method).toBe('cancel');
   });
 
   it('refuses checkout when the member is already trialing or active', async () => {
@@ -319,5 +339,34 @@ describe('POST /api/webhooks/stripe', () => {
     );
     expect(res.status).toBe(200);
     expect(h.upserts.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
+  });
+
+  it('revokes access when a cardless trial ends with no payment method', async () => {
+    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'trialing' };
+    h.stripe?.webhooks.constructEvent.mockReturnValue({
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: 'sub_test',
+          status: 'canceled',
+          customer: 'cus_test',
+          metadata: { user_id: USER_ID },
+          trial_end: 1_700_000_000,
+          cancel_at_period_end: false,
+        },
+      },
+    });
+    const res = await webhook(
+      new Request('http://localhost/api/webhooks/stripe', {
+        method: 'POST',
+        headers: { 'stripe-signature': 't=1,v1=x' },
+        body: '{"id":"evt_3"}',
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(h.upserts.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
+    h.row = { user_id: USER_ID, status: 'canceled', cancel_at_period_end: false };
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
+    expect(await userHasMembershipAccess({ userId: USER_ID, email: 'ada@example.com' })).toBe(false);
   });
 });

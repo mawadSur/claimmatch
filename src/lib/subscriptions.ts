@@ -267,12 +267,17 @@ export async function createCheckoutSession(args: {
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
         trial_period_days: CLAIMMATCH_TRIAL_DAYS,
+        // Cardless trial: when no payment method is added before the trial ends,
+        // Stripe cancels the subscription instead of issuing an unpayable invoice.
+        trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
         metadata: { user_id: args.userId },
       },
       metadata: { user_id: args.userId },
       success_url: canonicalUrl(successPath),
       cancel_url: canonicalUrl(cancelPath),
       allow_promotion_codes: true,
+      // The trial's first invoice is zero, so Stripe skips the card form entirely.
+      payment_method_collection: 'if_required',
     });
     if (!session.url) {
       return { ok: false, error: 'Stripe did not return a checkout URL.', code: 'service_unavailable' };

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendTransactionalEmail } from '@/lib/email-transactional';
 import { guestMatchShareUrl, parseGuestMatchEmail, renderGuestMatchEmail } from '@/lib/guest-match-email';
+import { flags } from '@/lib/flags';
 import { isJsonRequest } from '@/lib/json-request';
 import { isOpenForClaims, lookupLawsuits } from '@/lib/lawsuits';
 import { parseMatchPreviewDraft, previewMatchesForScope } from '@/lib/match-preview';
@@ -64,7 +65,9 @@ export async function POST(req: Request) {
   }
 
   const open = catalog.lawsuits.filter((lawsuit) => isOpenForClaims(lawsuit));
-  const matches = previewMatchesForScope(open, draft, null);
+  const matches = previewMatchesForScope(open, draft, null, new Date(), {
+    noPinBreachFirst: flags.noPinBreachPriority(),
+  });
   if (matches.length === 0) {
     return reply({ error: 'There are no results to email for these answers.' }, 400);
   }

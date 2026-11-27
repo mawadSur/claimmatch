@@ -44,10 +44,14 @@ export interface ClientConfig {
 }
 
 /**
- * A dashboard match without its internal score (scores are never shown) or
- * payout figures (those stay on the web owed-estimate header).
+ * A dashboard match without its internal score (scores are never shown),
+ * payout figures (those stay on the web owed-estimate header), or the
+ * ranking-only claim-action / category fields.
  */
-export type AppMatch = Omit<DashboardMatch, 'score' | 'payoutMin' | 'payoutMax'>;
+export type AppMatch = Omit<
+  DashboardMatch,
+  'score' | 'payoutMin' | 'payoutMax' | 'claimActionType' | 'category' | 'summary'
+>;
 
 /** GET /api/mobile/dashboard. A `failed` section shows the web's error copy for it. */
 export interface DashboardResponse {

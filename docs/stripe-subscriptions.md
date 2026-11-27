@@ -15,6 +15,7 @@ Set these on the Lawsuit AI Vercel project (Production, and Preview if you will 
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_PRICE_ID` | Stripe Price id for the **$19.99/month** recurring membership |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for `POST /api/webhooks/stripe` |
+| `STRIPE_PORTAL_CONFIGURATION_ID` | Optional. Billing Portal configuration id (`bpc_…`) pinning the portal to the LawsuitAI-only configuration. Unset means Stripe's default configuration. |
 
 If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is unset, public pages, CI, and builds keep working. Checkout and the Billing Portal return a clear 503.
 
@@ -31,9 +32,21 @@ When `SUBSCRIPTION_BILLING_ENABLED` is unset, Easy submit stays ungated (beta/te
    - `customer.subscription.deleted`
    - `invoice.payment_failed`
 4. Copy the endpoint signing secret into `STRIPE_WEBHOOK_SECRET`.
-5. Enable Customer Billing Portal so members can cancel or update their card.
+5. Enable Customer Billing Portal so members can cancel or add a payment method.
 
-Checkout uses `mode: "subscription"` and `subscription_data.trial_period_days: 7`. Members cancel anytime from Settings → Manage billing.
+Checkout uses `mode: "subscription"`, `subscription_data.trial_period_days: 7`,
+`payment_method_collection: "if_required"` and
+`subscription_data.trial_settings.end_behavior.missing_payment_method: "cancel"`.
+The trial therefore starts with **no card at all**: Stripe skips the card form because the
+first invoice is zero, and if the member never adds a payment method the subscription
+cancels itself at trial end rather than producing an unpayable invoice. Members cancel
+anytime from Settings → Manage billing.
+
+Two consequences worth knowing. A trialing member has no payment method on file, so day-7
+conversion depends entirely on them returning to add one — `customer.subscription.trial_will_end`
+is not in the webhook `HANDLED` set and there is no trial-ending email, so the cancellation is
+silent today. And cardless trials are cheap to repeat with a fresh email address; checkout only
+blocks a repeat when the *same* user already has a `trialing`/`active` row.
 
 ## Endpoints
 

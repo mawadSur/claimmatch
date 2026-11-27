@@ -96,6 +96,11 @@ export async function loadOneClickClaimPage(args: {
   lawsuitId: string;
   /** lawsuits.claim_action_type. Easy submit (`desk_file`) skips the match-score gate. */
   claimActionType?: string | null;
+  /**
+   * The settlement listing's own stated payout range, already formatted by
+   * `statedPayoutLabel`. Null when the listing states no numeric amount.
+   */
+  payoutLabel?: string | null;
   claim: ClaimView | null;
   context: SettlementContext;
   now: Date;
@@ -103,7 +108,7 @@ export async function loadOneClickClaimPage(args: {
   // One gate (src/lib/filing/one-click-access.ts): in test mode, INTERNAL_EMAILS testers only.
   if (!oneClickEnabledFor({ kind: 'member', email: args.accountEmail })) return null;
   const { supabase, userId, claim, context, now } = args;
-  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false, reauthWithApple: args.reauthWithApple ?? false };
+  const base: OneClickClaimProps = { view: null, lane: null, canStart: false, loadFailed: false, accountEmail: args.accountEmail, reauthWithGoogle: args.reauthWithGoogle ?? false, reauthWithApple: args.reauthWithApple ?? false, payoutLabel: args.payoutLabel ?? null };
   // Only a settlement still taking claims can start one-click (the API says so too).
   const startable = context.openForClaims && !context.deadlinePassed && !context.fictional;
   const skipMatchGate = isEasySubmitType(args.claimActionType);

@@ -1,3 +1,4 @@
+import { noPinBreachRank } from './claim-priority';
 import { ELIGIBILITY_QUESTIONS, RETIRED_QUESTION_KEYS } from './eligibility';
 import { matchProfile, matchStrengthFromScore, matchStrengthLabel, type MatchStrength } from './matching';
 import { answersFromAttributes, parseAttributeAnswers, type AttributeAnswers } from './profile-attributes';
@@ -122,32 +123,62 @@ export function previewProfileFromDraft(draft: MatchPreviewDraft): Profile {
   } as Profile;
 }
 122
+/** Ordering options for the logged-out preview. */
+export interface MatchPreviewOptions {
+  /**
+   * NO_PIN_BREACH_PRIORITY_ENABLED: within a strength band, show the
+   * settlements whose official path needs no mailed notice ID first (breach
+   * classes first of all) so the capped list is the easiest to finish.
+   * Threaded in as an option rather than read here, to keep this function pure.
+   */
+  noPinBreachFirst?: boolean;
+}
+
 export function previewMatchesFor(
   lawsuits: Lawsuit[],
   draft: MatchPreviewDraft,
   now: Date = new Date(),
+  opts: MatchPreviewOptions = {},
 ): MatchPreviewResult[] {
   const profile = previewProfileFromDraft(draft);
   const byId = new Map(lawsuits.map((row) => [row.id, row]));
-  return matchProfile(profile, lawsuits, 0.4, now)
+  const rows = matchProfile(profile, lawsuits, 0.4, now)
     .map((result) => {
       const lawsuit = byId.get(result.lawsuit_id);
       if (!lawsuit) return null;
       const strength = matchStrengthFromScore(result.score);
       const payout = lawsuit.typical_payout?.trim() || null;
       return {
-        slug: lawsuit.slug,
-        title: lawsuit.title,
-        typical_payout: payout,
-        deadline: lawsuit.deadline,
-        strength,
-        strengthLabel: matchStrengthLabel(strength),
-        reasons: result.reasons.slice(0, 3),
-        claim_action_type: isClaimActionType(lawsuit.claim_action_type) ? lawsuit.claim_action_type : null,
-      } satisfies MatchPreviewResult;
+        row: {
+          slug: lawsuit.slug,
+          title: lawsuit.title,
+          typical_payout: payout,
+          deadline: lawsuit.deadline,
+          strength,
+          strengthLabel: matchStrengthLabel(strength),
+          reasons: result.reasons.slice(0, 3),
+          claim_action_type: isClaimActionType(lawsuit.claim_action_type) ? lawsuit.claim_action_type : null,
+        } satisfies MatchPreviewResult,
+        rank: noPinBreachRank({
+          claim_action_type: lawsuit.claim_action_type,
+          category: lawsuit.category,
+          title: lawsuit.title,
+          summary: lawsuit.summary,
+        }),
+      };
     })
-    .filter((row): row is MatchPreviewResult => row !== null)
-    .slice(0, PREVIEW_RESULT_CAP);
+    .filter((item): item is { row: MatchPreviewResult; rank: 0 | 1 | 2 } => item !== null);
+
+  // Re-sort BEFORE the cap, so an easy-to-file row is not cut off by a
+  // higher-scoring one that needs a mailed notice ID. Strength band first.
+  if (opts.noPinBreachFirst) {
+    rows.sort((a, b) => {
+      if (a.row.strength !== b.row.strength) return a.row.strength === 'strong' ? -1 : 1;
+      return a.rank - b.rank;
+    });
+  }
+
+  return rows.map((item) => item.row).slice(0, PREVIEW_RESULT_CAP);
 }
 149
 export function readStoredMatchPreview(): MatchPreviewDraft | null {
@@ -225,6 +256,58 @@ export function draftFromPreviewSearch(
   return parseMatchPreviewDraft({ state: first('state') ?? '', attributes });
 }
 
+/**
+ * Server-readable mirror of the localStorage draft.
+ *
+ * The sign-up confirmation link can be opened in another browser, another
+ * device or a private window, where localStorage is gone, so /onboarding also
+ * reads the preview answers from this first-party cookie, set by
+ * POST /api/match-preview. Modeled on PENDING_NEXT_COOKIE (src/lib/safe-next.ts):
+ * same-site, one day, and cleared the moment onboarding is saved or skipped.
+ * HttpOnly, because only the server reads it — the browser already has
+ * localStorage. It holds the four yes/no answers plus the state code, never the
+ * matched settlements.
+ */
+export const MATCH_PREVIEW_COOKIE = 'cm_preview';
+
+const MATCH_PREVIEW_COOKIE_MAX_AGE = 86400;
+/** Five short pairs; anything longer did not come from previewCookieValue. */
+const MATCH_PREVIEW_COOKIE_MAX_LENGTH = 256;
+
+/** The draft as query-string pairs — the encoding matchPreviewSharePath uses. */
+export function previewCookieValue(draft: MatchPreviewDraft): string {
+  const path = matchPreviewSharePath(draft);
+  const q = path.indexOf('?');
+  return q === -1 ? '' : path.slice(q + 1);
+}
+
+/** The draft a `cm_preview` cookie carries, or null when it is absent or junk. */
+export function parsePreviewCookie(raw: string | null | undefined): MatchPreviewDraft | null {
+  if (typeof raw !== 'string' || raw.length === 0) return null;
+  if (raw.length > MATCH_PREVIEW_COOKIE_MAX_LENGTH) return null;
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  const fields: Record<string, string> = {};
+  new URLSearchParams(decoded).forEach((value, key) => {
+    fields[key] = value;
+  });
+  // parseMatchPreviewDraft keeps only known keys, booleans and real state codes.
+  return draftFromPreviewSearch(fields);
+}
+
+/** Set-Cookie for the preview mirror. */
+export function previewCookie(draft: MatchPreviewDraft, secure: boolean): string {
+  return `${MATCH_PREVIEW_COOKIE}=${encodeURIComponent(
+    previewCookieValue(draft),
+  )}; Path=/; Max-Age=${MATCH_PREVIEW_COOKIE_MAX_AGE}; HttpOnly; SameSite=Lax${
+    secure ? '; Secure' : ''
+  }`;
+}
+
 194
 /**
  * Questions for a settlement-scoped preview. Only onboarding keys the listing
@@ -258,9 +341,10 @@ export function previewMatchesForScope(
   draft: MatchPreviewDraft,
   slug: string | null,
   now: Date = new Date(),
+  opts: MatchPreviewOptions = {},
 ): MatchPreviewResult[] {
   const safe = parseSettlementScopeSlug(slug);
   const pool = safe ? lawsuits.filter((row) => row.slug === safe) : lawsuits;
-  return previewMatchesFor(pool, draft, now);
+  return previewMatchesFor(pool, draft, now, opts);
 }
 232

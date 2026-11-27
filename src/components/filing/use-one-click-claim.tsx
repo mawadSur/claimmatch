@@ -125,7 +125,7 @@ export function useOneClickClaim({
     ),
     entry:
       oneClick.needsMembership && lane ? (
-        <MembershipGate returnTo={claimPath ?? '/settings'} />
+        <MembershipGate returnTo={claimPath ?? '/settings'} payoutLabel={oneClick.payoutLabel ?? null} />
       ) : offerStart && lane ? (
         <OneClickEntry lane={lane} lawsuitId={lawsuitId} onStarted={onFilingChange} />
       ) : null,

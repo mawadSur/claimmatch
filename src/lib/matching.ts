@@ -1,6 +1,12 @@
 import type { EligibilityCriteria, Lawsuit, LawsuitTags, Profile, ProfileFact } from './types';
 import { flags } from './flags';
 import { lawsuitHasStructuredTags, normalizeLawsuitTags } from './lawsuit-tags';
+import {
+  DATE_BOUNDED_FACTLESS_SCORE_CAP,
+  classIsDateBounded,
+  classIsEmployerBounded,
+  tagMatchesFactStrictly,
+} from './match-specificity';
 import { dateRangesOverlap, factYearLabel } from './profile-facts';
 import { isDeadlinePassed } from './utils';
 
@@ -30,6 +36,8 @@ export const UNSTRUCTURED_NONE_SCORE = 0.35;
 export const UNSTRUCTURED_KEYWORD_SCORE = 0.4;
 export const UNSTRUCTURED_CATEGORY_SCORE = 0.42;
 export const UNSTRUCTURED_BOTH_SCORE = 0.45;
+/** Re-exported from ./match-specificity so the matcher has one import site. */
+export { DATE_BOUNDED_FACTLESS_SCORE_CAP };
 
 const CATEGORY_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
   'Data Breach': ['had_data_breach'],
@@ -149,6 +157,23 @@ export function scoreLawsuit(
   }
   signals += unmatchedStructuredTagSignals(tags, facts, factHits);
 
+  // MATCH_SPECIFICITY_GATE_ENABLED: an employer- or role-bounded class needs a
+  // corroborating, in-period employer fact. Without this, a generic "I worked
+  // an hourly or gig job" answer scored 1.0 against an hourly non-exempt class
+  // at one named employer, because the employer penalty signal was only added
+  // when the profile already had employer facts. Added before the signals === 0
+  // check so an employer-bounded row with no other rules cannot fall through to
+  // the 0.40-0.45 category/keyword path either.
+  const specificityGate = flags.matchSpecificityGate();
+  if (
+    specificityGate &&
+    classIsEmployerBounded(lawsuit) &&
+    !factHits.some((hit) => hit.kind === 'employer')
+  ) {
+    signals += 1;
+    hardFail = true;
+  }
+
   // No structured matching criteria → broad low-confidence, or a category /
   // keyword overlap when MATCH_UNSTRUCTURED_ENABLED=1.
   if (signals === 0) {
@@ -160,6 +185,13 @@ export function scoreLawsuit(
 
   if (eligible && isStateOnlyCriteria(criteria, tags) && flags.stateOnlyCap()) {
     score = Math.min(score, STATE_ONLY_SCORE_CAP);
+  }
+
+  // A date-bounded class and a profile with no dated facts: we cannot check the
+  // class period at all, so the row stays a Possible match. Not a hard fail —
+  // employment and purchase dates are only collected behind PROFILE_V2_ENABLED.
+  if (specificityGate && eligible && !factHits.length && classIsDateBounded(lawsuit, tags)) {
+    score = Math.min(score, DATE_BOUNDED_FACTLESS_SCORE_CAP);
   }
 
   return {
@@ -339,12 +371,20 @@ function factFitsClassPeriod(fact: ProfileFact, tags: LawsuitTags): boolean {
   );
 }
 
+/**
+ * The lawsuit tag a profile fact corroborates. With the specificity gate on,
+ * substring overlap must respect word boundaries and a minimum length, so
+ * "Acme Logistics" still matches "Acme Logistics, Inc." while a two-character
+ * fact can no longer match an unrelated employer or brand.
+ */
 function firstTagMatch(value: string, tags: string[]): string | null {
   const needle = value.trim().toLowerCase();
   if (!needle) return null;
+  const strict = flags.matchSpecificityGate();
   return (
     tags.find((tag) => {
       const hay = tag.trim().toLowerCase();
+      if (strict) return tagMatchesFactStrictly(needle, hay);
       return hay === needle || hay.includes(needle) || needle.includes(hay);
     }) ?? null
   );

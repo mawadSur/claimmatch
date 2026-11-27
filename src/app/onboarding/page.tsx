@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { CheckCircle2, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -10,6 +11,8 @@ import { ConfirmEmailBanner } from '@/components/ConfirmEmailBanner';
 import { MAY_FILE_PAGE_COPY, onboardingIntroCopy, WHAT_WE_STORE_MINIMAL } from '@/lib/copy';
 import { viewerMayFile } from '@/lib/filing/public-filing';
 import { factsFromRows } from '@/lib/profile-facts';
+import { answersFromAttributes } from '@/lib/profile-attributes';
+import { MATCH_PREVIEW_COOKIE, mergePreviewIntoAnswers, parsePreviewCookie } from '@/lib/match-preview';
 
 export function generateMetadata(): Metadata {
   return {
@@ -70,6 +73,15 @@ export default async function OnboardingPage({
         .eq('user_id', user.id)
     : { data: [] };
 
+  // /preview answers also travel in a short-lived cookie, so a confirmation
+  // link opened in another browser (where localStorage is gone) still arrives
+  // with something to prefill. Saved profile values always win.
+  const previewDraft = parsePreviewCookie((await cookies()).get(MATCH_PREVIEW_COOKIE)?.value);
+  const savedAttributes = (profile?.attributes as Record<string, unknown> | null) ?? {};
+  const initialAttributes: Record<string, unknown> = previewDraft
+    ? mergePreviewIntoAnswers(answersFromAttributes(savedAttributes), previewDraft)
+    : savedAttributes;
+
   return (
     <section className="bg-gradient-to-b from-brand-50 via-white to-white">
       <div className="container-narrow py-12 sm:py-16">
@@ -124,8 +136,8 @@ export default async function OnboardingPage({
             <OnboardingWizard
               initial={{
                 fullName: profile?.full_name ?? '',
-                state: profile?.state ?? '',
-                attributes: (profile?.attributes as Record<string, unknown> | null) ?? {},
+                state: profile?.state || previewDraft?.state || '',
+                attributes: initialAttributes,
                 facts: factsFromRows(factRows),
               }}
               email={user.email ?? null}

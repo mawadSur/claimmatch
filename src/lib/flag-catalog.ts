@@ -82,6 +82,18 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.stateOnlyCap(),
   },
   {
+    env: 'MATCH_SPECIFICITY_GATE_ENABLED',
+    description:
+      'An employer- or role-bounded class needs a matching in-period employer fact, and a date-bounded class cannot read as Strong without dated facts. Default on; set to 0 to revert.',
+    read: () => flags.matchSpecificityGate(),
+  },
+  {
+    env: 'NO_PIN_BREACH_PRIORITY_ENABLED',
+    description:
+      'Rank eligible no-PIN (desk_file / online_form) data-breach settlements first within a strength band. Ordering only; needs migration 0051 plus the owner-apply SQL to have any effect.',
+    read: () => flags.noPinBreachPriority(),
+  },
+  {
     env: 'ASSISTED_FILING_ENABLED',
     description:
       'Legacy full-service worker (retired). /api/filing/authorize returns 410. Use ONE_CLICK_FILING_ENABLED for agent filing.',

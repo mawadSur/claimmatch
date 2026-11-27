@@ -45,7 +45,12 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string; denied?: string; password?: string }>;
+  searchParams: Promise<{
+    welcome?: string;
+    denied?: string;
+    password?: string;
+    preview?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
@@ -53,7 +58,7 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/dashboard');
 
-  const { welcome, denied, password } = await searchParams;
+  const { welcome, denied, password, preview } = await searchParams;
   const now = new Date();
 
   const {
@@ -177,6 +182,18 @@ export default async function DashboardPage({
         )}
 
         {welcome === '1' && <WelcomeCard oneClick={Boolean(oneClick)} />}
+
+        {preview === '1' && (
+          <p
+            role="status"
+            className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm leading-relaxed text-ink-muted"
+          >
+            <span className="font-semibold text-ink">Your preview answers are here.</span>{' '}
+            These settlements come from the answers you gave in the free preview.
+            Each one is a possible match, and the official notice has the rules.
+            Update your answers anytime under Settings → My profile.
+          </p>
+        )}
 
         {/* Always rendered (it shows nothing without notices) so its answers stay
             on screen after router.refresh() drops the answered rows. */}
