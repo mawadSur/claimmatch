@@ -44,13 +44,13 @@ describe('<Testimonials />', () => {
     expect(renderToStaticMarkup(createElement(Testimonials, { items: few }))).toBe('');
   });
 
-  it('shows each quote with its name and a permission note once there are enough', () => {
+  it('shows a slider with the first quote, pager, and a permission note once there are enough', () => {
     const items = Array.from({ length: MIN_TESTIMONIALS }, (_, i) => entry(i + 1));
     const html = renderToStaticMarkup(createElement(Testimonials, { items }));
-    for (const t of items) {
-      expect(html).toContain(t.quote);
-      expect(html).toContain(t.name);
-    }
+    expect(html).toContain(items[0].quote);
+    expect(html).toContain(items[0].name);
+    expect(html).toContain(`1</span> of ${items.length}`);
+    expect(html).toContain('aria-label="Next review"');
     expect(html).toContain('Shared with permission');
   });
 });

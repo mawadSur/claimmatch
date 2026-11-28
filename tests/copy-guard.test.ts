@@ -181,7 +181,7 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   { file: 'src/components/LawsuitCard.tsx', rule: 'we file', reason: 'Catalog card comment still names the retired “We file for you” badge; live label is Easy submit.' },
   { file: 'src/components/LawsuitFilters.tsx', rule: 'we file', reason: 'Catalog filter for one-click settlements.' },
   { file: 'src/components/AuthForm.tsx', rule: 'we file', reason: 'Signup card can mention filing on supported settlements.' },
-  { file: 'src/app/page.tsx', rule: 'we submit', text: 'we submit it to the official claims site for you', reason: 'Home how-it-works Easy submit step, same explainer as claim-actions.' },
+  { file: 'src/app/page.tsx', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'Home how-it-works Easy submit step reuses FILE_OR_EASY_SUBMIT.' },
   { file: 'src/app/pricing/page.tsx', rule: 'we file', reason: 'Pricing page no longer lists filing under never-do when flags allow.' },
   { file: 'src/app/signup/page.tsx', rule: 'we file', reason: 'Signup page core message while Lawsuit AI may file.' },
   { file: 'src/app/how-it-works/page.tsx', rule: 'we submit', text: 'we submit it for you after you e-sign', reason: 'How-it-works Easy submit step uses FILE_OR_EASY_SUBMIT when one-click is on.' },
@@ -271,8 +271,8 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
   {
     file: 'src/app/page.tsx',
     rule: 'we submit',
-    text: 'we submit it to the official claims site for you',
-    reason: 'Home how-it-works Easy submit step, same explainer as claim-actions.',
+    text: 'we submit it for you after you e-sign',
+    reason: 'Home how-it-works Easy submit step reuses FILE_OR_EASY_SUBMIT.',
   },
   {
     file: 'src/app/lawsuits/[slug]/page.tsx',
@@ -655,4 +655,17 @@ describe('copy guard', () => {
   it('no banned phrase anywhere in src or the native app (mobile/src)', () => {
     expect(scanFiles([...sourceFiles('src'), ...sourceFiles('mobile/src')])).toEqual([]);
   }, 30_000);
+
+  it('fails if real testimonials contain placeholder sample content', async () => {
+    const { SAMPLE_TESTIMONIALS } = await import('@/lib/sample-testimonials');
+    const { TESTIMONIALS } = await import('@/lib/testimonials');
+    const sampleQuotes = new Set(SAMPLE_TESTIMONIALS.map((t) => t.quote.trim()));
+    const sampleNames = new Set(SAMPLE_TESTIMONIALS.map((t) => t.name.trim()));
+    for (const t of TESTIMONIALS) {
+      expect(sampleQuotes.has(t.quote.trim()), `placeholder quote: ${t.quote}`).toBe(false);
+      expect(sampleNames.has(t.name.trim()), `placeholder name: ${t.name}`).toBe(false);
+      expect(t.quote).not.toMatch(/lorem ipsum|sample review|placeholder|fake review/i);
+      expect(t.name).not.toMatch(/^(jordan p\.|alicia r\.|marcus t\.|priya s\.|dana k\.|luis m\.)$/i);
+    }
+  });
 });

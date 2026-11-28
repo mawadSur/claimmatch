@@ -162,7 +162,7 @@ describe('FAQ', () => {
 });
 
 describe('sample reviews', () => {
-  it('never show in production, only in development and Vercel previews', () => {
+  it('helper never enables samples in production or test', () => {
     expect(showSampleTestimonials({ NODE_ENV: 'production' } as NodeJS.ProcessEnv)).toBe(false);
     expect(showSampleTestimonials({ NODE_ENV: 'production', VERCEL_ENV: 'production' } as NodeJS.ProcessEnv)).toBe(false);
     expect(showSampleTestimonials({ NODE_ENV: 'test' } as NodeJS.ProcessEnv)).toBe(false);
@@ -170,14 +170,12 @@ describe('sample reviews', () => {
     expect(showSampleTestimonials({ NODE_ENV: 'production', VERCEL_ENV: 'preview' } as NodeJS.ProcessEnv)).toBe(true);
   });
 
-  it('render with a Sample label and disclaimer when allowed', () => {
-    const html = renderToStaticMarkup(createElement(Testimonials, { items: [], showSamples: true }));
-    expect(html).toContain('Sample reviews, not from real users');
-    expect(html).toContain(SAMPLE_TESTIMONIALS[0].name);
-    expect(html).not.toContain('Shared with permission');
+  it('homepage testimonials slider ignores samples and hides when empty', () => {
+    expect(renderToStaticMarkup(createElement(Testimonials, { items: [] }))).toBe('');
+    expect(SAMPLE_TESTIMONIALS.length).toBeGreaterThan(0);
   });
 
-  it('are replaced by real reviews once there are enough', () => {
+  it('shows a slider once there are enough real reviews', () => {
     const real: Testimonial[] = Array.from({ length: MIN_TESTIMONIALS }, (_, i) => ({
       quote: `Real ${i}`,
       name: `Real ${i}.`,
@@ -185,8 +183,9 @@ describe('sample reviews', () => {
       source: 'email',
       consentToPublish: true,
     }));
-    const html = renderToStaticMarkup(createElement(Testimonials, { items: real, showSamples: true }));
+    const html = renderToStaticMarkup(createElement(Testimonials, { items: real }));
     expect(html).toContain('Real 0');
+    expect(html).toContain('Shared with permission');
     expect(html).not.toContain(SAMPLE_TESTIMONIALS[0].name);
     expect(html).not.toContain('Sample');
   });
