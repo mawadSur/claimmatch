@@ -278,7 +278,7 @@ describe('settlement detail, open', () => {
   it('opens a FAQ answer on demand', async () => {
     const user = userEvent.setup();
     await renderFound(ACME);
-    const question = screen.getByRole('button', { name: 'Am I eligible for the Acme Data Breach?' });
+    const question = screen.getByRole('button', { name: 'Am I eligible for the Acme Data Breach settlement?' });
     expect(question).toHaveProp('accessibilityState', expect.objectContaining({ expanded: false }));
     expect(screen.queryByText(/^Our listing says:/)).not.toBeOnTheScreen();
 
