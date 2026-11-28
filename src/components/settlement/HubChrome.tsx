@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { CatalogPagination } from '@/components/CatalogPagination';
 import { LawsuitCard } from '@/components/LawsuitCard';
 import { HubLinks } from '@/components/settlement/HubLinks';
@@ -18,6 +19,7 @@ export function HubChrome({
   related,
   relatedFromSlug,
   pagination,
+  more,
 }: {
   title: string;
   lede: string;
@@ -35,6 +37,8 @@ export function HubChrome({
     prevHref: string | null;
     nextHref: string | null;
   };
+  /** Link to the full list when the hub shows only the first N rows. */
+  more?: { href: string; label: string };
 }) {
   return (
     <>
@@ -74,6 +78,16 @@ export function HubChrome({
             ))}
           </ul>
         )}
+        {more ? (
+          <p className="mt-8 text-center">
+            <Link
+              href={more.href}
+              className="btn-secondary inline-flex justify-center"
+            >
+              {more.label}
+            </Link>
+          </p>
+        ) : null}
         {pagination ? (
           <CatalogPagination
             page={pagination.page}

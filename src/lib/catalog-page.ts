@@ -265,6 +265,18 @@ export function paginateCatalog<T>(
   return paginate(items, page, pageSize);
 }
 
+/**
+ * Feed placeholders that are not a payout ("Varies" is the scraper default
+ * when a source lists no amount). Used only to decide thinness; the page still
+ * shows the listed text.
+ */
+const PLACEHOLDER_PAYOUT = /^(varies|tbd|tba|unknown|not stated|not listed|n\/?a|none|see (the )?(official )?(notice|site|website))\.?$/i;
+
+export function isPlaceholderPayout(payout: string | null | undefined): boolean {
+  const t = payout?.trim() ?? '';
+  return t === '' || PLACEHOLDER_PAYOUT.test(t);
+}
+
 /** A listing is thin when it has none of the facts a visitor comes for. */
 export function isThinSettlement(
   lawsuit: Pick<Lawsuit, 'deadline' | 'eligibility_text' | 'administrator' | 'typical_payout'>,
@@ -273,6 +285,6 @@ export function isThinSettlement(
     !lawsuit.deadline &&
     !eligibilitySummary(lawsuit.eligibility_text) &&
     !lawsuit.administrator?.trim() &&
-    !lawsuit.typical_payout?.trim()
+    isPlaceholderPayout(lawsuit.typical_payout)
   );
 }

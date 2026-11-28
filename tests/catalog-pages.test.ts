@@ -359,8 +359,9 @@ describe('settlement page', () => {
       error: null,
     };
     const full = await generateMetadata(page('amazon-return-policy-settlement'));
-    expect(full.title).toContain('Who Qualifies');
-    expect(full.title).toContain('Claim Deadline');
+    // 56-char body: the richest suffix that fits SETTLEMENT_TITLE_MAX (60).
+    expect(full.title).toBe('Amazon Return Policy Settlement: Claim Deadline & Payout');
+    expect(String(full.title).length).toBeLessThanOrEqual(60);
     expect(full.robots).toMatchObject({ index: true });
     const fullHtml = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
     expect(fullHtml).toContain('Who qualifies');
@@ -378,7 +379,7 @@ describe('settlement page', () => {
       error: null,
     };
     const thin = await generateMetadata(page('amazon-return-policy-settlement'));
-    expect(thin.title).toBe('Amazon Return Policy Settlement: Official Claim Link & What We Know');
+    expect(thin.title).toBe('Amazon Return Policy Settlement: Official Claim Link');
     expect(String(thin.description)).not.toMatch(/Who Qualifies|Claim deadline/i);
     expect(thin.robots).toMatchObject({ index: false, follow: true });
     const thinHtml = renderToStaticMarkup(await LawsuitDetailPage(page('amazon-return-policy-settlement')));
@@ -494,18 +495,36 @@ describe('catalog page', () => {
     expect(dated).not.toContain('No deadline listed');
   });
 
-  it('keeps every page indexable with a self-canonical URL including ?page=N', async () => {
+  it('indexes the catalog and ?page=N with self-canonicals; filtered views are noindex,follow', async () => {
     const page1 = await generateLawsuitsMetadata(searchParams({}));
     expect(page1.robots).toMatchObject({ index: true, follow: true });
     expect(page1.alternates).toMatchObject({
       canonical: expect.stringMatching(/\/lawsuits$/),
     });
-    const page2 = await generateLawsuitsMetadata(searchParams({ page: '2', q: 'fee' }));
+    const page2 = await generateLawsuitsMetadata(searchParams({ page: '2' }));
     expect(page2.robots).toMatchObject({ index: true, follow: true });
     expect(page2.alternates).toMatchObject({
-      canonical: expect.stringContaining('/lawsuits?q=fee&page=2'),
+      canonical: expect.stringMatching(/\/lawsuits\?page=2$/),
     });
     expect(page2.title).toContain('page 2');
+    expect(page2.description).not.toBe(page1.description);
+    expect(String(page2.description)).toContain('Page 2');
+
+    // Internal search results: crawlable links, not indexed (Google guidance).
+    const search = await generateLawsuitsMetadata(searchParams({ page: '2', q: 'fee' }));
+    expect(search.robots).toMatchObject({ index: false, follow: true });
+    expect(search.alternates).toMatchObject({
+      canonical: expect.stringContaining('/lawsuits?q=fee&page=2'),
+    });
+    const proof = await generateLawsuitsMetadata(searchParams({ proof: 'no' }));
+    expect(proof.robots).toMatchObject({ index: false, follow: true });
+
+    // A category-only view is the same list as its hub: canonicalize there.
+    const category = await generateLawsuitsMetadata(searchParams({ category: 'Data Breach' }));
+    expect(category.robots).toMatchObject({ index: true, follow: true });
+    expect(category.alternates).toMatchObject({
+      canonical: expect.stringMatching(/\/settlements\/category\/data-breach$/),
+    });
   });
 
   it('shows an error state, not sample data, when the database fails', async () => {

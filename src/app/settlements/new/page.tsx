@@ -42,19 +42,23 @@ export async function generateMetadata({
   const page = parsePage(firstParam(params.page));
   const canonical = paginatedPath(NEW_SETTLEMENTS_PATH, page);
   const title = page > 1 ? `${TITLE} (page ${page})` : TITLE;
+  const description =
+    page > 1
+      ? `Page ${page} of the newest open class-action settlements in the Lawsuit AI catalog. File free on each official site.`
+      : DESCRIPTION;
   return {
     title,
-    description: DESCRIPTION,
+    description,
     alternates: { canonical: pageUrl(canonical) },
     openGraph: {
       title: TITLE,
-      description: DESCRIPTION,
+      description,
       url: pageUrl(canonical),
       siteName: SITE.name,
       type: 'website',
       images: [SITE_OG_IMAGE],
     },
-    twitter: { card: 'summary_large_image', title, description: DESCRIPTION, images: [SITE_OG_IMAGE.url] },
+    twitter: { card: 'summary_large_image', title, description, images: [SITE_OG_IMAGE.url] },
   };
 }
 

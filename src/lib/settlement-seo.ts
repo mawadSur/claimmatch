@@ -44,7 +44,9 @@ export function truncateAtWord(text: string, max = 155): string {
   if (clean.length <= max) return clean;
   const sliced = clean.slice(0, max - 1);
   const lastSpace = sliced.lastIndexOf(' ');
-  const cut = lastSpace > 80 ? sliced.slice(0, lastSpace) : sliced;
+  // Prefer a word boundary unless it would throw away more than half the text.
+  const minKeep = max >= 155 ? 80 : Math.floor(max / 2);
+  const cut = lastSpace > minKeep ? sliced.slice(0, lastSpace) : sliced;
   return `${cut.replace(/[.,;:–-]+$/, '')}…`;
 }
 
@@ -75,6 +77,32 @@ export function settlementPath(slug: string): string {
 
 export function categoryHubPath(category: string): string {
   return `/settlements/category/${categorySlug(category)}`;
+}
+
+/**
+ * Only the unfiltered catalog (and its ?page=N pages) is indexable. A
+ * category-only view canonicalizes to its category hub; search, proof,
+ * deadline, file-for-you and opening-soon views are noindex,follow so
+ * crawlers still reach the settlement pages without indexing thin
+ * duplicate lists.
+ */
+export function catalogIndexing(filters: {
+  q?: string;
+  category?: string;
+  hasDeadline?: boolean;
+  proof?: unknown;
+  fileForYou?: boolean;
+  openingSoon?: boolean;
+  page: number;
+}): { index: boolean; canonicalPath: string | null } {
+  const other = Boolean(
+    filters.q || filters.hasDeadline || filters.proof || filters.fileForYou || filters.openingSoon,
+  );
+  if (!other && !filters.category) return { index: true, canonicalPath: null };
+  if (!other && filters.category && filters.page <= 1) {
+    return { index: true, canonicalPath: categoryHubPath(filters.category) };
+  }
+  return { index: false, canonicalPath: null };
 }
 
 export const CLOSING_SOON_PATH = '/settlements/closing-soon';
@@ -130,22 +158,84 @@ function hasDeadline(lawsuit: Pick<Lawsuit, 'deadline'>): boolean {
   return Boolean(lawsuit.deadline);
 }
 
-/** Title never names Who Qualifies or Deadline unless those fields exist. */
+/**
+ * Longest settlement title body we emit. The layout template adds
+ * " · Lawsuit AI", and Google cuts titles at roughly 60 characters, so long
+ * catalog names would otherwise lose the deadline / payout words entirely.
+ */
+export const SETTLEMENT_TITLE_MAX = 60;
+
+/**
+ * Shorter form of a catalog title for page titles: "Acme - Data Breach Class
+ * Action Settlement" → "Acme Data Breach Settlement". Only drops words; never
+ * adds or reorders facts.
+ */
+export function shortSettlementName(title: string): string {
+  return title
+    .replace(/\s+[-–—|]\s+/g, ' ')
+    .replace(/\bclass[- ]action settlement\b/gi, 'Settlement')
+    .replace(/\bclass[- ]action lawsuit\b/gi, 'Lawsuit')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Name used inside questions ("Am I eligible for the … ?"). Bare case names
+ * like "Welch" or "Naro v. Walgreen Co." read as "the Welch settlement".
+ */
+export function settlementQuestionName(title: string): string {
+  const name = title.trim();
+  return /\b(settlement|lawsuit|litigation|class action|multidistrict)\b/i.test(name)
+    ? name
+    : `${name} settlement`;
+}
+
+function titleSuffixes(
+  lawsuit: Pick<Lawsuit, 'deadline' | 'eligibility_text' | 'typical_payout'>,
+): string[] {
+  const payout = Boolean(lawsuit.typical_payout?.trim());
+  if (hasDeadline(lawsuit) && hasQualifies(lawsuit)) {
+    return payout
+      ? [
+          'Who Qualifies, Claim Deadline & Payout',
+          'Who Qualifies & Claim Deadline',
+          'Claim Deadline & Payout',
+          'Claim Deadline',
+          'Deadline',
+        ]
+      : ['Who Qualifies & Claim Deadline', 'Claim Deadline', 'Deadline'];
+  }
+  if (hasDeadline(lawsuit)) {
+    return payout
+      ? ['Claim Deadline & Payout', 'Claim Deadline', 'Deadline']
+      : ['Claim Deadline', 'Deadline'];
+  }
+  if (payout) {
+    return [`Payout & ${FALLBACK_META_SUFFIX}`, 'Payout & Official Claim Link', 'Official Claim Link'];
+  }
+  return [FALLBACK_META_SUFFIX, 'Official Claim Link'];
+}
+
+/**
+ * Title never names Who Qualifies or Deadline unless those fields exist, and
+ * stays within SETTLEMENT_TITLE_MAX characters: it drops suffix words first,
+ * then shortens the name, then truncates the name at a word boundary.
+ */
 export function settlementMetaTitle(
   lawsuit: Pick<Lawsuit, 'title' | 'deadline' | 'eligibility_text' | 'typical_payout'>,
 ): string {
   const title = lawsuit.title.trim();
-  const payout = lawsuit.typical_payout?.trim();
-  if (hasDeadline(lawsuit) && hasQualifies(lawsuit)) {
-    return payout
-      ? `${title}: Who Qualifies, Claim Deadline & Payout`
-      : `${title}: Who Qualifies & Claim Deadline`;
+  const short = shortSettlementName(title);
+  const names = short && short !== title ? [title, short] : [title];
+  for (const suffix of titleSuffixes(lawsuit)) {
+    for (const name of names) {
+      const candidate = `${name}: ${suffix}`;
+      if (candidate.length <= SETTLEMENT_TITLE_MAX) return candidate;
+    }
   }
-  if (hasDeadline(lawsuit)) {
-    return payout ? `${title}: Claim Deadline & Payout` : `${title}: Claim Deadline`;
-  }
-  if (payout) return `${title}: Payout & ${FALLBACK_META_SUFFIX}`;
-  return `${title}: ${FALLBACK_META_SUFFIX}`;
+  const name = short || title;
+  if (name.length <= SETTLEMENT_TITLE_MAX) return name;
+  return truncateAtWord(name, SETTLEMENT_TITLE_MAX);
 }
 
 export function settlementMetaDescription(
@@ -181,6 +271,26 @@ export function settlementMetaDescription(
     .filter(Boolean)
     .join(' ');
   return truncateAtWord(raw, 155);
+}
+
+/**
+ * "Listing updated" date for the page and /llms-full.txt, as the
+ * America/New_York calendar day of updated_at (the same value the Article
+ * JSON-LD sends as dateModified). Null when the timestamp is missing or bad.
+ */
+export function listingUpdatedOn(
+  updatedAt: string | null | undefined,
+): { iso: string; label: string } | null {
+  if (!updatedAt) return null;
+  const d = new Date(updatedAt);
+  if (Number.isNaN(d.getTime())) return null;
+  const iso = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+  return { iso, label: formatDeadline(iso) };
 }
 
 export function listedOrFallback(value: string | null | undefined, fallback: string): string {
@@ -233,7 +343,7 @@ export function settlementFaqs(
   /** True when this settlement has an agent lane (one-click enabled for it). */
   agentLane = false,
 ): FaqItem[] {
-  const name = lawsuit.title.trim();
+  const name = settlementQuestionName(lawsuit.title);
   const facts = settlementAnswerFacts(lawsuit);
   const eligibility = eligibilitySummary(lawsuit.eligibility_text);
   const official = officialLinkFor(lawsuit);
@@ -347,8 +457,8 @@ export function settlementArticleJsonLd(
     image: pageUrl(`/lawsuits/${lawsuit.slug}/opengraph-image`),
     dateModified: lawsuit.updated_at,
     datePublished: lawsuit.created_at,
-    author: { '@type': 'Organization', name: SITE.name, url: pageUrl('/') },
-    publisher: { '@type': 'Organization', name: SITE.name, url: pageUrl('/') },
+    author: { '@type': 'Organization', '@id': `${pageUrl('/')}/#organization`, name: SITE.name, url: pageUrl('/') },
+    publisher: { '@type': 'Organization', '@id': `${pageUrl('/')}/#organization`, name: SITE.name, url: pageUrl('/') },
     about: {
       '@type': 'Thing',
       name: lawsuit.title,

@@ -36,6 +36,7 @@ import {
   breadcrumbJsonLd,
   categoryHubPath,
   faqJsonLd,
+  listingUpdatedOn,
   pageUrl,
   settlementAnswerFacts,
   settlementArticleJsonLd,
@@ -294,6 +295,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
             qualifySlug={qualifyEnabled ? lawsuit.slug : undefined}
             qualifyLawsuitId={qualifyEnabled ? lawsuit.id : undefined}
             checkedOn={checkedLabel}
+            updatedOn={listingUpdatedOn(lawsuit.updated_at)}
             hideQualify={hideFileCtas}
           />
 

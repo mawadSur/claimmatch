@@ -30,9 +30,8 @@ describe('settlement SEO helpers', () => {
         eligibility_text: 'Anyone who got a breach notice from Acme in 2024.',
       },
     );
-    expect(settlementMetaTitle(lawsuit)).toBe(
-      'Acme Data Breach Settlement: Who Qualifies, Claim Deadline & Payout',
-    );
+    // The full suffix would be 67 characters; the title drops "Payout" first.
+    expect(settlementMetaTitle(lawsuit)).toBe('Acme Data Breach Settlement: Who Qualifies & Claim Deadline');
     const description = settlementMetaDescription(lawsuit);
     expect(description).toContain('Acme Data Breach Settlement');
     expect(description).toContain('Dec 1, 2026');

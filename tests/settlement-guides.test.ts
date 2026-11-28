@@ -289,7 +289,10 @@ describe('settlement guides', () => {
         },
       ),
     );
-    expect(settlementMetaTitle(lawsuit)).toMatch(/Who Qualifies, Claim Deadline & Payout$/);
+    const title = settlementMetaTitle(lawsuit);
+    // 52-character name: no suffix fits in 60, so the title is the name alone.
+    expect(title).toBe('Dr. Squatch "All Natural" Product Claims Settlement');
+    expect(title.length).toBeLessThanOrEqual(60);
     const description = settlementMetaDescription(lawsuit);
     expect(description).toMatch(/Nov 27, 2026/);
     expect(description.length).toBeLessThanOrEqual(155);

@@ -26,7 +26,14 @@ import { LawsuitCard } from '@/components/LawsuitCard';
 import { LawsuitFilters } from '@/components/LawsuitFilters';
 import { AccountMatchBanner } from '@/components/match-preview/AccountMatchBanner';
 import { HubLinks } from '@/components/settlement/HubLinks';
-import { pageUrl } from '@/lib/settlement-seo';
+import {
+  breadcrumbJsonLd,
+  catalogIndexing,
+  collectionJsonLd,
+  pageUrl,
+  settlementPath,
+} from '@/lib/settlement-seo';
+import { JsonLd } from '@/components/settlement/JsonLd';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { SITE } from '@/lib/utils';
 import { CATALOG_INTRO_MAY_FILE, CATALOG_INTRO_NEVER_FILES, lawsuitAiMayFile } from '@/lib/copy';
@@ -54,6 +61,11 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+/** Distinct meta description for /lawsuits?page=N (N > 1). */
+function pagedDescription(page: number): string {
+  return `Page ${page} of the open class action settlements taking claims now. Each listing links to its official site, where filing is free.`;
 }
 
 function catalogFilters(params: Record<string, string | string[] | undefined>) {
@@ -88,11 +100,12 @@ export async function generateMetadata({
     filters.page > 1
       ? `Open Class Action Settlements (page ${filters.page})`
       : 'Open Class Action Settlements';
+  const seo = catalogIndexing(filters);
   return {
     title,
-    description: DESCRIPTION,
-    alternates: { canonical: pageUrl(canonicalPath) },
-    robots: { index: true, follow: true },
+    description: filters.page > 1 ? pagedDescription(filters.page) : DESCRIPTION,
+    alternates: { canonical: pageUrl(seo.canonicalPath ?? canonicalPath) },
+    robots: seo.index ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title: 'Open Class Action Settlements',
       description: DESCRIPTION,
@@ -159,6 +172,24 @@ export default async function LawsuitsPage({ searchParams }: { searchParams: Sea
 
   return (
     <>
+      {!filtered && !catalog.error && (
+        <>
+          <JsonLd
+            data={breadcrumbJsonLd([
+              { name: 'Home', path: '/' },
+              { name: 'Open settlements', path: '/lawsuits' },
+            ])}
+          />
+          <JsonLd
+            data={collectionJsonLd({
+              name: 'Open class action settlements',
+              description: paged.page > 1 ? pagedDescription(paged.page) : DESCRIPTION,
+              path: catalogPath({ page: paged.page }),
+              items: paged.items.map((l) => ({ name: l.title, path: settlementPath(l.slug) })),
+            })}
+          />
+        </>
+      )}
       <section className="border-b border-slate-200/70 bg-white">
         <div className="container-page py-6 sm:py-14">
           <h1 className="text-3xl font-bold leading-tight sm:text-5xl">
