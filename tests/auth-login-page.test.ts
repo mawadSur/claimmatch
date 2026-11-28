@@ -1,18 +1,37 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+const query = vi.hoisted(() => ({ value: new URLSearchParams() }));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: () => undefined, refresh: () => undefined }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => query.value,
   usePathname: () => '/login',
 }));
 
 import LoginPage from '@/app/login/page';
 
-const render = async (next?: string) =>
-  renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve(next === undefined ? {} : { next }) }));
+const render = async (next?: string, confirmation?: Record<string, string>) => {
+  const params = { ...(next === undefined ? {} : { next }), ...confirmation };
+  query.value = new URLSearchParams(params);
+  return renderToStaticMarkup(await LoginPage({ searchParams: Promise.resolve(params) }));
+};
 
 describe('login page', () => {
+  it('offers a sign-in link first when email is confirmed but this browser is not signed in', async () => {
+    const html = await render('/claim/real-settlement', { confirmed: '1' });
+    expect(html).toContain('Your email is confirmed');
+    expect(html).not.toContain('type="password"');
+    expect(html).toMatch(/<button type="submit"[^>]*btn-primary[^>]*>Email me a sign-in link/);
+    expect(html).toMatch(/<button type="button"[^>]*btn-secondary[^>]*>Use a password instead/);
+  });
+
+  it('keeps password login as the default and makes both alternatives easy to tap', async () => {
+    const html = await render();
+    expect(html).toContain('type="password"');
+    expect(html).toMatch(/<button type="button"[^>]*btn-secondary[^>]*>Email me a sign-in link/);
+    expect(html).toMatch(/<a[^>]*btn-secondary[^>]*href="\/forgot-password">Forgot password\?/);
+  });
   it('greets people coming from "Start your claim" as new, with a clear way to sign up', async () => {
     const html = await render('/claim/real-settlement');
     expect(html).toContain('Log in or create a free account');

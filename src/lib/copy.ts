@@ -202,11 +202,9 @@ export const HOME_HERO_PRIMARY_CTA = 'See which settlements fit you';
 export const HOME_HERO_PAYOUT_NOTE =
   'Amounts are what each listing states. The settlement administrator decides who is paid and how much.';
 
-export function startTrialCtaLabel(
-  trialDays = CLAIMMATCH_TRIAL_DAYS,
-  price = membershipPriceCopy(),
-): string {
-  return `Start ${trialDays}-day free trial (${price}/mo after)`;
+/** Use when eligibility has not been confirmed against Stripe. */
+export function membershipCheckoutCopy(price = membershipPriceCopy()): string {
+  return `Membership is ${price}/mo, cancel anytime. First-time members can start with a ${CLAIMMATCH_TRIAL_DAYS}-day free trial.`;
 }
 
 /** @deprecated Use membershipCopy. Same public membership sentence. */
@@ -527,7 +525,7 @@ export const PREFILL_SELF_FILE_NOTE =
 export const ONE_CLICK_SELF_FILE_NOTE =
   'Lawsuit AI doesn’t file this claim for you. You finish it on the official site, then tell us here so we can keep track. Check the official site for the exact deadline time.';
 
-/** Member-safe lane reasons (MEMBER_LANE_REASONS). Disputes, kill switches and staffing are never named. */
+/** Member-safe lane reasons (MEMBER_LANE_REASONS). Disputes and kill switches stay opaque; desk capacity is named. */
 export const ONE_CLICK_LANE_REASONS = {
   not_offered_for_settlement: 'Lawsuit AI can’t file claims for this settlement right now.',
   settlement_not_open: 'This settlement isn’t taking claims right now.',
@@ -535,6 +533,10 @@ export const ONE_CLICK_LANE_REASONS = {
   state_not_covered: 'Lawsuit AI can’t file this claim for people in your state yet.',
   health_consent_needed: 'This claim asks for health information, which you haven’t agreed to share.',
   proof_not_supported: 'This claim needs proof that Lawsuit AI can’t send to this settlement’s administrator.',
+  desk_at_capacity:
+    'Lawsuit AI’s filing desk is full right now. You can finish this claim yourself on the official site, or try again later.',
+  desk_capacity_unavailable:
+    'Lawsuit AI can’t check filing-desk availability right now. You can finish this claim yourself on the official site, or try again later.',
 } as const;
 
 /** What happens after signing, per agent channel (the member never sees staffing or capacity). */

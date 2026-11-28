@@ -53,10 +53,12 @@ describe('pinAdminStatus', () => {
 
     const paper = pinAdminStatus({
       now: NOW,
-      pin_admin_email_sent_at: '2026-11-20T12:00:00Z',
+      paperFallbackEnabled: true,
+      pin_admin_email_requested_at: '2026-11-20T12:00:00Z',
     });
     expect(paper.kind).toBe('paper_fallback');
-    expect(paper.headline).toContain('7 days');
+    expect(paper.headline).toContain('Your notice ID is not on file yet');
+    expect(paper.headline).not.toMatch(/no reply|emailed/i);
   });
 
   it('queues when requested but not sent', () => {

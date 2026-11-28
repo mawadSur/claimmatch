@@ -68,6 +68,8 @@ export function ClaimFlow({
   oneClick = null,
   selfFiledReport = null,
   signedIn = true,
+  pinAdminOutreachEnabled = false,
+  paperFallbackEnabled = false,
 }: {
   settlement: ClaimFlowSettlement;
   context: SettlementContext;
@@ -77,6 +79,8 @@ export function ClaimFlow({
   oneClick?: OneClickClaimProps | null;
   selfFiledReport?: SelfFiledReportView | null;
   signedIn?: boolean;
+  pinAdminOutreachEnabled?: boolean;
+  paperFallbackEnabled?: boolean;
 }) {
   const posthog = usePostHog();
   const now = useMemo(() => new Date(nowIso), [nowIso]);
@@ -254,6 +258,8 @@ export function ClaimFlow({
           savedRequestedNoticeAt={claim?.requested_notice_at ?? null}
           pinAdminRequestedAt={claim?.pin_admin_email_requested_at ?? null}
           pinAdminSentAt={claim?.pin_admin_email_sent_at ?? null}
+          pinAdminOutreachEnabled={pinAdminOutreachEnabled}
+          paperFallbackEnabled={paperFallbackEnabled}
           formUrl={actionDetails.form_url ?? null}
         />
       )}

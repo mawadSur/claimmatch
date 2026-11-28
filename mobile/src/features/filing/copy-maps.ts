@@ -46,6 +46,8 @@ export const LANE_REASON_COPY = {
   state_not_covered: filingEvents.reasonState.text,
   health_consent_needed: filingEvents.reasonHealth.text,
   proof_not_supported: filingEvents.reasonProof.text,
+  desk_at_capacity: filingEvents.reasonDeskAtCapacity.text,
+  desk_capacity_unavailable: filingEvents.reasonDeskCapacityUnavailable.text,
 } as const;
 
 export const LANE_TIMING_COPY = {

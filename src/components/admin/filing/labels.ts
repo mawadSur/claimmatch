@@ -76,6 +76,7 @@ export const LANE_REASON_LABEL: Readonly<Record<LaneReasonCode, string>> = {
   channel_cannot_carry_documents: 'Channel cannot carry the proof this claim needs',
   form_has_challenge: 'Official form shows a check, so the desk stays off',
   desk_at_capacity: 'Filing desk at capacity',
+  desk_capacity_unavailable: 'Filing desk capacity could not be read',
   email_not_configured: 'Email sending not set up',
 };
 

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     if (!allowed) {
       return NextResponse.json(
         {
-          error: 'New-claim alerts are included with Lawsuit AI membership. Start a free trial to opt in.',
+          error: 'New-claim alerts are included with Lawsuit AI membership. Visit Settings to start or manage your membership.',
           code: 'membership_required',
         },
         { status: 402 },

@@ -366,15 +366,27 @@ export const FLAG_CATALOG: readonly FlagDefinition[] = [
     read: () => flags.collectAdminPin(),
   },
   {
+    env: 'PIN_ADMIN_OUTREACH_ENABLED',
+    description:
+      'Offer and accept new requests to email the settlement administrator for a notice ID. Off by default; manual requests remain available.',
+    read: () => flags.pinAdminOutreach(),
+  },
+  {
     env: 'PIN_ADMIN_EMAIL_ENABLED',
     description:
-      'Send PIN-gated notice-ID request emails to the settlement administrator. Off: the member’s request is recorded and nothing is sent.',
+      'Send recorded PIN-gated notice-ID request emails to the settlement administrator. Off by default; separate from request intake.',
     read: () => flags.pinAdminEmail(),
+  },
+  {
+    env: 'PAPER_FALLBACK_UI_ENABLED',
+    description:
+      'Show the paper-form fallback for eligible notice-ID requests on the claim page and dashboard. Off by default; separate from the reminder email.',
+    read: () => flags.paperFallbackUi(),
   },
   {
     env: 'PAPER_FALLBACK_REMINDER_ENABLED',
     description:
-      'Email the paper-form fallback reminder after a PIN-gated administrator email has no reply. Off: the dashboard still shows the fallback; no drip is sent.',
+      'Email the paper-form fallback reminder for eligible notice-ID requests. Off by default; separate from the fallback UI.',
     read: () => flags.paperFallbackReminder(),
   },
   {

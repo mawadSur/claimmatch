@@ -66,7 +66,10 @@ export interface LaneInput {
    * question or proof; given: the member's answer (null: not asked yet).
    */
   healthConsent: { required: boolean; given: boolean | null };
-  /** Open filing_desk jobs now; null when unknown, which counts as no capacity. */
+  /**
+   * Open filing_desk jobs now. null means the count could not be read
+   * (desk_capacity_unavailable), distinct from a full desk (desk_at_capacity).
+   */
   desk: { openJobs: number } | null;
   /** Resend can send (RESEND_API_KEY and a verified sender). */
   email: { configured: boolean };
@@ -76,6 +79,12 @@ export interface LaneInput {
    * settlement's staff_completes_captcha rule applies (authorization-text.ts).
    */
   authorizationVersion?: string;
+  /**
+   * Skip only the filing_desk capacity check. Used when this claim was already
+   * admitted to the desk (claim_events start_one_click with lane filing_desk).
+   * Kill switch, deadline, and other gates still apply.
+   */
+  skipDeskCapacity?: boolean;
 }
 
 export interface LaneDecision {

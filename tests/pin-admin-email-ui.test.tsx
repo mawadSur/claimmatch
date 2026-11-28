@@ -18,6 +18,7 @@ import {
   PAPER_FALLBACK_CTA,
   PAPER_FALLBACK_HEADING,
   PIN_ADMIN_EMAIL_CTA,
+  PIN_ADMIN_EMAIL_SIGN_IN,
   PIN_ADMIN_EMAIL_WAITING_LABEL,
 } from '@/lib/pin-admin-email';
 
@@ -44,30 +45,46 @@ describe('NoticeIdSection PIN-gated email', () => {
     expect(html).not.toContain('Lawsuit AI never emails');
   });
 
-  it('shows the email-to-administrator button once the member has asked', () => {
+  it('keeps the manual path and withholds outreach by default for members and guests', () => {
+    for (const signedIn of [true, false]) {
+      const requested = new Date().toISOString();
+      const html = notice({ signedIn, savedRequestedNoticeAt: requested, pinAdminRequestedAt: requested });
+      expect(html).toContain('Use this letter');
+      expect(html).toContain('Request marked');
+      expect(html).toContain('Official site lookup or contact');
+      expect(html).not.toContain(PIN_ADMIN_EMAIL_CTA);
+      expect(html).not.toContain(PIN_ADMIN_EMAIL_SIGN_IN);
+      expect(html).not.toContain('Email request saved');
+    }
+  });
+
+  it('shows the email-to-administrator button once outreach is enabled', () => {
     const requested = new Date().toISOString();
-    const html = notice({ pinAdminRequestedAt: requested });
+    const html = notice({ pinAdminOutreachEnabled: true, pinAdminRequestedAt: requested });
     expect(html).toContain(PIN_ADMIN_EMAIL_CTA);
-    expect(html).toContain('email them for you');
     expect(html).toContain('Email request saved');
   });
 
   it('shows waiting copy with the send date', () => {
     const sent = new Date(Date.now() - 2 * DAY).toISOString();
-    const html = notice({ pinAdminRequestedAt: sent, pinAdminSentAt: sent });
+    const html = notice({ pinAdminOutreachEnabled: true, pinAdminRequestedAt: sent, pinAdminSentAt: sent });
     expect(html).toContain(PIN_ADMIN_EMAIL_WAITING_LABEL);
   });
 
-  it('surfaces the paper-form fallback after 7 days with no reply', () => {
-    const sent = new Date(Date.now() - 8 * DAY).toISOString();
-    const html = notice({
-      pinAdminRequestedAt: sent,
-      pinAdminSentAt: sent,
-      formUrl: 'https://admin.example/paper.pdf',
-    });
-    expect(html).toContain(PAPER_FALLBACK_HEADING);
-    expect(html).toContain(PAPER_FALLBACK_CTA);
-    expect(html).toContain('href="https://admin.example/paper.pdf"');
+  it('hides a due paper fallback unless its own flag is enabled', () => {
+    const requested = new Date(Date.now() - 8 * DAY).toISOString();
+    const base = { pinAdminRequestedAt: requested, formUrl: 'https://admin.example/paper.pdf' };
+    const disabled = notice({ ...base, pinAdminOutreachEnabled: true });
+    expect(disabled).not.toContain(PAPER_FALLBACK_HEADING);
+    expect(disabled).not.toContain('paper.pdf');
+    expect(disabled).toContain('Email request saved');
+
+    const enabled = notice({ ...base, paperFallbackEnabled: true });
+    expect(enabled).toContain(PAPER_FALLBACK_HEADING);
+    expect(enabled).toContain(PAPER_FALLBACK_CTA);
+    expect(enabled).toContain('href="https://admin.example/paper.pdf"');
+    expect(enabled).not.toContain(PIN_ADMIN_EMAIL_CTA);
+    expect(enabled).not.toMatch(/no reply|emailed administrator/i);
   });
 });
 
@@ -77,11 +94,10 @@ describe('PaperFallbackCard', () => {
       createElement(PaperFallbackCard, {
         formHref: 'https://admin.example/paper.pdf',
         officialHref: 'https://admin.example/claim',
-        days: 7,
       }),
     );
     expect(html).toContain(PAPER_FALLBACK_HEADING);
-    expect(html).toContain('No reply after 7 days');
+    expect(html).toContain('Your notice ID is not on file yet');
     expect(html).toContain('href="https://admin.example/paper.pdf"');
     expect(html).toContain('href="https://admin.example/claim"');
   });

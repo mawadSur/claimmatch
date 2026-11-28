@@ -1,6 +1,6 @@
 /**
  * Stripe webhook: sync membership rows.
- * Verifies STRIPE_WEBHOOK_SECRET. Idempotent upserts on user_id.
+ * Verifies STRIPE_WEBHOOK_SECRET and guards writes against unrelated subscriptions.
  * Missing keys return 503 and never throw at import.
  */
 import type Stripe from 'stripe';
@@ -19,7 +19,6 @@ import {
 import { createServiceClient } from '@/lib/supabase/server';
 import {
   upsertFromStripeSubscription,
-  upsertSubscription,
   userIdFromStripeCustomer,
 } from '@/lib/subscriptions';
 import { sendTrialWillEndReminder } from '@/lib/trial-will-end';
@@ -99,8 +98,10 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<boolean
         (typeof sub.metadata?.user_id === 'string' && sub.metadata.user_id) ||
         (customerId ? await userIdFromStripeCustomer(customerId) : null);
       if (!userId) return true;
-      const status = event.type === 'customer.subscription.deleted' ? { ...sub, status: 'canceled' as const } : sub;
-      const ok = await upsertFromStripeSubscription({ userId, customerId, subscription: status });
+      const current = event.type === 'customer.subscription.deleted'
+        ? { ...sub, status: 'canceled' as const }
+        : await stripe.subscriptions.retrieve(sub.id);
+      const ok = await upsertFromStripeSubscription({ userId, customerId, subscription: current });
       if (ok && event.type === 'customer.subscription.created') {
         await maybeCaptureTrialStarted(userId, sub);
       }
@@ -123,22 +124,18 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<boolean
           invoice.parent?.subscription_details?.subscription,
       );
       const customerId = customerIdOf(invoice.customer);
-      if (subId) {
-        const sub = await stripe.subscriptions.retrieve(subId);
-        const userId =
-          (typeof sub.metadata?.user_id === 'string' && sub.metadata.user_id) ||
-          (customerId ? await userIdFromStripeCustomer(customerId) : null);
-        if (!userId) return true;
-        return upsertFromStripeSubscription({
-          userId,
-          customerId: customerId ?? customerIdOf(sub.customer),
-          subscription: { ...sub, status: 'past_due' },
-        });
-      }
-      if (!customerId) return true;
-      const userId = await userIdFromStripeCustomer(customerId);
+      if (!subId) return true;
+      const sub = await stripe.subscriptions.retrieve(subId);
+      const userId =
+        (typeof sub.metadata?.user_id === 'string' && sub.metadata.user_id) ||
+        (customerId ? await userIdFromStripeCustomer(customerId) : null);
       if (!userId) return true;
-      return upsertSubscription({ user_id: userId, stripe_customer_id: customerId, status: 'past_due' });
+      // A retry of an old failed invoice can arrive after Stripe recovered payment.
+      return upsertFromStripeSubscription({
+        userId,
+        customerId: customerId ?? customerIdOf(sub.customer),
+        subscription: sub,
+      });
     }
     default:
       return true;

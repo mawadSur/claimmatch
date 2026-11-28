@@ -1,7 +1,7 @@
 'use client';
 
 import { MembershipCta } from '@/components/billing/MembershipCta';
-import { listedPayoutBesidePriceCopy, membershipCopy } from '@/lib/copy';
+import { listedPayoutBesidePriceCopy, membershipCheckoutCopy } from '@/lib/copy';
 
 /**
  * Easy submit start CTA when membership is required and the member is not subscribed.
@@ -31,7 +31,7 @@ export function MembershipGate({
           {listedPayoutBesidePriceCopy(payoutLabel)}
         </p>
       ) : null}
-      <p className="mt-2 text-sm leading-relaxed text-ink">{membershipCopy()}</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink">{membershipCheckoutCopy()}</p>
       <MembershipCta returnTo={returnTo} />
       <p className="mt-4 border-t border-brand-100 pt-3 text-sm leading-relaxed text-ink-muted">
         You can still file on the official settlement site yourself, where filing is free.

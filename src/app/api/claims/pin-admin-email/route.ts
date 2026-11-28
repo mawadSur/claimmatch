@@ -7,6 +7,8 @@ import { logClaimsError, UUID_RE } from '@/lib/claims-server';
 import { officialSiteUrl } from '@/lib/lawsuit-display';
 import { recordPinAdminEmailRequest, sendPinAdminEmailForClaim } from '@/lib/pin-admin-email-send';
 import { getValidClaimUrl } from '@/lib/utils';
+import { flags } from '@/lib/flags';
+import type { ClaimView } from '@/lib/claim-input';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,11 +17,16 @@ function reply(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 }
 
-/**
- * POST /api/claims/pin-admin-email — record a PIN-gated email-to-administrator
- * request. Outbound send is gated by PIN_ADMIN_EMAIL_ENABLED (default off).
- */
+function requestState(claim: ClaimView) {
+  return {
+    pin_admin_email_requested_at: claim.pin_admin_email_requested_at ?? null,
+    pin_admin_email_sent_at: claim.pin_admin_email_sent_at ?? null,
+  };
+}
+
+/** Accept notice-ID outreach requests; delivery uses a separate flag. */
 export async function POST(req: Request) {
+  if (!flags.pinAdminOutreach()) return reply({ error: 'Administrator email requests are not available.' }, 404);
   const auth = await getRequestUser(req);
   if (!auth.user) {
     return auth.unavailable
@@ -59,7 +66,7 @@ export async function POST(req: Request) {
     .eq('id', lawsuitId)
     .maybeSingle();
   if (error || !lawsuit) {
-    return reply({ claim, send: 'queued' });
+    return reply({ claim: requestState(claim), send: 'queued' });
   }
   const row = lawsuit as {
     slug: string;
@@ -77,5 +84,5 @@ export async function POST(req: Request) {
     senderName: user.email?.split('@')[0] || user.email || 'Claimant',
     senderEmail: user.email || '',
   });
-  return reply({ claim: result.claim, send: result.status, error: result.status === 'failed' ? result.error : undefined });
+  return reply({ claim: requestState(result.claim), send: result.status, error: result.status === 'failed' ? result.error : undefined });
 }

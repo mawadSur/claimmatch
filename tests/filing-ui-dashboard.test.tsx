@@ -213,6 +213,20 @@ describe('the dashboard page', () => {
     expect(h.preview).not.toHaveBeenCalled();
   });
 
+  it('does not claim preview answers were used when the member skipped onboarding', async () => {
+    h.data = {
+      ...h.data,
+      profile: { onboarded: true, state: null, attributes: {} },
+      matchProfile: { state: null, attributes: {}, onboarded: true, facts: [] },
+      matches: [],
+      needsProfile: true,
+    };
+    const html = await render({ welcome: '1', preview: '1' });
+    expect(html).toContain('Back from the free preview');
+    expect(html).not.toContain('Your preview answers are here');
+    expect(html).not.toContain('These settlements come from the answers you gave');
+  });
+
   it('flag on: filing status with the ready count, one-click claims moved out of "Your claims", lanes for strong matches only', async () => {
     vi.stubEnv('ONE_CLICK_FILING_ENABLED', '1');
     const html = await render({ welcome: '1' });

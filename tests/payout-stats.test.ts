@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { sortCatalogValueFirst } from '@/lib/catalog-page';
 import { payoutStats } from '@/lib/payout-stats';
 import {
   PER_PERSON_CEILING,
@@ -7,9 +8,6 @@ import {
   statedDollarPayout,
 } from '@/lib/top-payouts';
 import { catalogLawsuit } from './helpers';
-
-// 10:00 in New York on Nov 1, 2026 (deadline days are counted in that zone).
-const NOW = new Date('2026-11-01T15:00:00Z');
 
 /** Payout prose copied verbatim from live listings on https://lawsuitai.org/lawsuits. */
 const LIVE = {
@@ -159,6 +157,31 @@ describe('pickTopPayouts', () => {
   });
 });
 
+describe('catalog value ranking', () => {
+  it.each([
+    '12 months of credit monitoring for purchases in 2023',
+    '$40,000 settlement fund',
+    '$15,000 service award',
+    '$5 million fund',
+    '$50,000',
+  ])('ranks a real payout above an unstated amount: %s', (typical_payout) => {
+    const rows = [
+      catalogLawsuit({ id: 'unstated', typical_payout, deadline: '2026-11-05' }),
+      catalogLawsuit({ id: 'stated', typical_payout: '$0.50 per item', deadline: null }),
+    ];
+    expect(sortCatalogValueFirst(rows).map((r) => r.id)).toEqual(['stated', 'unstated']);
+  });
+
+  it('keeps curated payouts ahead of text and falls back from invalid columns', () => {
+    const rows = [
+      catalogLawsuit({ id: 'prose', payout_max: -1, payout_min: 0, typical_payout: '$25', deadline: null }),
+      catalogLawsuit({ id: 'floor', payout_max: 50_000, payout_min: 30, typical_payout: null, deadline: null }),
+      catalogLawsuit({ id: 'cap', payout_max: 40, payout_min: 10, typical_payout: '$5', deadline: null }),
+    ];
+    expect(sortCatalogValueFirst(rows).map((r) => r.id)).toEqual(['cap', 'floor', 'prose']);
+  });
+});
+
 describe('payoutStats', () => {
   /** A spread like the live catalog: mostly sub-$100, a few at $5,000, one above. */
   const DISTRIBUTION = [
@@ -192,17 +215,11 @@ describe('payoutStats', () => {
     }),
   ];
 
-  it('counts the open rows, the ones that state a payout, and the median and maximum', () => {
-    const stats = payoutStats(rows, NOW);
-    expect(stats.open).toBe(22);
+  it('counts stated payouts and reports the median and maximum', () => {
+    const stats = payoutStats(rows);
     expect(stats.withStatedPayout).toBe(20);
     expect(stats.medianPayout).toBe(100);
     expect(stats.topPayout).toEqual({ amount: 15000, slug: 'stated-19', title: 'Stated 19' });
-  });
-
-  it('counts only deadlines inside the closing-soon window', () => {
-    expect(payoutStats(rows, NOW).closingSoon).toBe(1);
-    expect(payoutStats(rows, NOW, 365).closingSoon).toBe(21);
   });
 
   it('returns nulls, not zeros, when no row states a payout', () => {
@@ -210,27 +227,39 @@ describe('payoutStats', () => {
       catalogLawsuit({ slug: 'fund-a', typical_payout: LIVE.rentalFund }),
       catalogLawsuit({ slug: 'fund-b', typical_payout: LIVE.bareFund }),
     ];
-    const stats = payoutStats(fundsOnly, NOW);
-    expect(stats.open).toBe(2);
+    const stats = payoutStats(fundsOnly);
     expect(stats.withStatedPayout).toBe(0);
     expect(stats.medianPayout).toBeNull();
     expect(stats.topPayout).toBeNull();
   });
 
   it('reports nothing at all for an empty catalog', () => {
-    expect(payoutStats([], NOW)).toEqual({
-      open: 0,
+    expect(payoutStats([])).toEqual({
       withStatedPayout: 0,
       medianPayout: null,
       topPayout: null,
-      closingSoon: 0,
     });
   });
 
   it('takes the median from a single stated listing', () => {
     const one = [catalogLawsuit({ slug: 'only', title: 'Only', typical_payout: '$99 per person' })];
-    const stats = payoutStats(one, NOW);
+    const stats = payoutStats(one);
     expect(stats.medianPayout).toBe(99);
     expect(stats.topPayout).toEqual({ amount: 99, slug: 'only', title: 'Only' });
+  });
+
+  it('ignores curated-only columns that the card would not display', () => {
+    const rows = [
+      catalogLawsuit({
+        slug: 'column-only',
+        title: 'Column only',
+        typical_payout: null,
+        payout_max: 9000,
+      }),
+      catalogLawsuit({ slug: 'stated', title: 'Stated', typical_payout: '$100 per person' }),
+    ];
+    const stats = payoutStats(rows);
+    expect(stats.withStatedPayout).toBe(1);
+    expect(stats.topPayout).toEqual({ amount: 100, slug: 'stated', title: 'Stated' });
   });
 });

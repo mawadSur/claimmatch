@@ -80,7 +80,7 @@ export interface SettlementEnv {
 }
 
 export interface LaneEnv {
-  /** Open filing_desk jobs; null when unknown (no capacity). */
+  /** Open filing_desk jobs; null when the count could not be read. */
   deskOpenJobs: number | null;
   emailConfigured: boolean;
 }

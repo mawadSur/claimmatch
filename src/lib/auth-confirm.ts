@@ -2,7 +2,7 @@ import type { EmailOtpType } from '@supabase/supabase-js';
 import { callbackDestination } from '@/lib/safe-next';
 
 /** Email link types the scanner-safe confirm page accepts. */
-export const CONFIRM_TYPES: readonly EmailOtpType[] = ['signup', 'email', 'recovery', 'invite', 'email_change'];
+export const CONFIRM_TYPES: readonly EmailOtpType[] = ['signup', 'email', 'magiclink', 'recovery', 'invite', 'email_change'];
 
 export function parseConfirmType(raw: unknown): EmailOtpType | null {
   return typeof raw === 'string' && (CONFIRM_TYPES as readonly string[]).includes(raw)

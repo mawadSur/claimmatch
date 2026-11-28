@@ -40,6 +40,8 @@ export function NoticeIdSection({
   savedRequestedNoticeAt = null,
   pinAdminRequestedAt = null,
   pinAdminSentAt = null,
+  pinAdminOutreachEnabled = false,
+  paperFallbackEnabled = false,
   formUrl = null,
 }: {
   slug: string;
@@ -53,6 +55,8 @@ export function NoticeIdSection({
   savedRequestedNoticeAt?: string | null;
   pinAdminRequestedAt?: string | null;
   pinAdminSentAt?: string | null;
+  pinAdminOutreachEnabled?: boolean;
+  paperFallbackEnabled?: boolean;
   formUrl?: string | null;
 }) {
   const help = noticeIdHelp(administrator);
@@ -60,8 +64,9 @@ export function NoticeIdSection({
   const [value, setValue] = useState(savedNoticeId ?? '');
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [noNotice, setNoNotice] = useState(Boolean(savedRequestedNoticeAt || pinAdminRequestedAt));
-  const [requested, setRequested] = useState(Boolean(savedRequestedNoticeAt || pinAdminRequestedAt));
+  const hasRequest = Boolean(savedRequestedNoticeAt || (pinAdminOutreachEnabled && pinAdminRequestedAt));
+  const [noNotice, setNoNotice] = useState(hasRequest);
+  const [requested, setRequested] = useState(hasRequest);
   const [emailing, setEmailing] = useState(false);
   const [emailMessage, setEmailMessage] = useState('');
   const [pinRequestedAt, setPinRequestedAt] = useState(pinAdminRequestedAt);
@@ -71,7 +76,11 @@ export function NoticeIdSection({
     pin_admin_email_requested_at: pinRequestedAt,
     pin_admin_email_sent_at: pinSentAt,
     now: new Date(),
+    paperFallbackEnabled,
   });
+  const outreachHeadline = pinAdminOutreachEnabled && adminStatus.kind !== 'paper_fallback'
+    ? adminStatus.headline
+    : null;
   const paperHref = paperFormHref({ formUrl, officialHref: lookup, slug });
   const hasAdminEmail = Boolean(extractAdminEmail(administrator));
 
@@ -160,10 +169,10 @@ export function NoticeIdSection({
         This administrator asks for a notice ID or claim ID from the letter or email they sent.
         Enter that ID here. {NOTICE_PIN_NOT_COLLECTED}
       </p>
-      {adminStatus.headline && (
-        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">{adminStatus.headline}</p>
+      {outreachHeadline && (
+        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">{outreachHeadline}</p>
       )}
-      {adminStatus.kind === 'idle' && requested && (
+      {!outreachHeadline && adminStatus.kind !== 'paper_fallback' && adminStatus.kind !== 'replied' && requested && (
         <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-ink">
           You marked that you requested your notice. When the administrator replies, add the ID below.
         </p>
@@ -228,10 +237,9 @@ export function NoticeIdSection({
         {noNotice && (
           <div className="mt-3 space-y-3 rounded-xl border border-slate-200 bg-brand-50 px-4 py-3 text-sm text-ink">
             <p>
-              Use this letter to ask {help.administratorLabel} for your notice or claim ID, or ask Lawsuit AI
-              to email them for you.
+              Use this letter to ask {help.administratorLabel} for your notice or claim ID.
             </p>
-            {signedIn && lawsuitId ? (
+            {pinAdminOutreachEnabled && (signedIn && lawsuitId ? (
               <button
                 type="button"
                 className="btn-primary"
@@ -272,9 +280,9 @@ export function NoticeIdSection({
               </button>
             ) : (
               <p className="text-sm text-ink-muted">{PIN_ADMIN_EMAIL_SIGN_IN}</p>
-            )}
-            {emailMessage && <p className="text-sm text-ink-muted">{emailMessage}</p>}
-            {!hasAdminEmail && signedIn && <p className="text-sm text-ink-muted">{PIN_ADMIN_EMAIL_NO_ADDRESS}</p>}
+            ))}
+            {pinAdminOutreachEnabled && emailMessage && <p className="text-sm text-ink-muted">{emailMessage}</p>}
+            {pinAdminOutreachEnabled && !hasAdminEmail && signedIn && <p className="text-sm text-ink-muted">{PIN_ADMIN_EMAIL_NO_ADDRESS}</p>}
             <NoticeRequestLetter
               title={title}
               slug={slug}

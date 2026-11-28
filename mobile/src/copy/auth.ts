@@ -119,11 +119,11 @@ export const auth = defineCopy({
   },
   /** "{didntGetIt}" then the link {tryDifferentEmail}. */
   didntGetIt: {
-    text: 'Didn’t get it? Check your spam folder, or',
+    text: 'Didn’t get it? Check your spam folder.',
     source: 'src/components/AuthForm.tsx',
   },
   tryDifferentEmail: {
-    text: 'try a different email',
+    text: 'Try a different email',
     source: 'src/components/AuthForm.tsx',
   },
   resendConfirmation: {

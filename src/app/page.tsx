@@ -7,7 +7,7 @@ import { HOME_CATALOG_COLUMNS, slimHomeCards } from '@/lib/home-catalog';
 import { pickClosingSoon } from '@/lib/closing-soon';
 import { pickTopPayouts } from '@/lib/top-payouts';
 import { HomeFeatures } from '@/components/home/HomeFeatures';
-import { homeStats } from '@/lib/home-stats';
+import { homeStats, type HomeStats } from '@/lib/home-stats';
 import { payoutStats } from '@/lib/payout-stats';
 import {
   BROWSE_NO_ACCOUNT,
@@ -211,12 +211,7 @@ export default async function HomePage() {
   // Above the fold there is one primary action: see which settlements fit you.
   // Browsing and how-it-works are text links inside the hero.
   const heroPrimary = { href: '/preview', label: HOME_HERO_PRIMARY_CTA };
-  // Payout figures for the hero, counted from the same open rows the cards
-  // below are drawn from. Null when the catalog did not load, so the hero
-  // states no amount rather than an amount that is not true of the listings
-  // beside it; a figure payoutStats could not compute comes through as null
-  // and its line is not rendered. Changes as the catalog does, every load.
-  const heroPayout: HeroPayout | null = payoutFigures(catalog);
+  const heroPayout = stats ? payoutFigures(catalog.lawsuits, stats) : null;
 
   return (
     <>
@@ -407,25 +402,18 @@ export default async function HomePage() {
   );
 }
 
-/**
- * Hero figures from the open catalog. Returns null when the catalog failed or
- * is empty — the hero then shows no payout block at all — and leaves any
- * single figure null rather than substituting a stand-in. `closingCount`
- * counts real deadlines inside the next 30 days, which is what the hero's
- * line says; nothing here is averaged, rounded up or carried over a load.
- */
-function payoutFigures(catalog: Awaited<ReturnType<typeof loadHomeCatalog>>): HeroPayout | null {
-  if (catalog.failed || catalog.lawsuits.length === 0) return null;
-  const stats = payoutStats(catalog.lawsuits);
+/** Combine payout figures with the same live counts used by the stats strip and final CTA. */
+function payoutFigures(lawsuits: readonly Lawsuit[], counts: HomeStats): HeroPayout {
+  const stats = payoutStats(lawsuits);
   return {
     median: stats.medianPayout,
     max: stats.topPayout?.amount ?? null,
     maxTitle: stats.topPayout?.title ?? null,
     maxSlug: stats.topPayout?.slug ?? null,
-    openCount: stats.open,
+    openCount: counts.open,
     // The median's own denominator. Most open listings state no per-person
     // amount, so the hero must never print the median beside openCount alone.
     statedCount: stats.withStatedPayout,
-    closingCount: stats.closingSoon,
+    closingCount: counts.closingSoon,
   };
 }

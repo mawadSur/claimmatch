@@ -5,7 +5,6 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { ANALYTICS_EVENTS } from '@/lib/analytics/events';
 import { clientFunnelEnabled } from '@/lib/analytics/funnel-events';
-import { startTrialCtaLabel } from '@/lib/copy';
 import { withFunnelAttribution } from '@/lib/funnel';
 
 /** Starts Stripe Checkout for the signed-in member. */
@@ -57,7 +56,7 @@ export function MembershipCta({
           </>
         ) : (
           <>
-            {startTrialCtaLabel()}
+            Continue to membership checkout
             <ArrowRight className="h-4 w-4" aria-hidden />
           </>
         )}

@@ -550,7 +550,7 @@ export function renderPaperFallbackEmail(opts: PaperFallbackEmailOpts): string {
         </td></tr>
         <tr><td style="background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #ece7f6;">
           <h1 style="margin:0 0 6px 0;font-size:20px;color:#171326;font-family:Georgia,'Times New Roman',serif;">Paper form fallback</h1>
-          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} Lawsuit AI emailed the administrator about ${esc(opts.title)} ${opts.days} days ago and has not recorded a notice ID yet. You can print the paper claim form and mail it instead of waiting.</p>
+          <p style="margin:0 0 16px 0;font-size:15px;color:#43405a;line-height:1.55;">${greeting} We don’t have a notice ID on file for ${esc(opts.title)} yet. If the settlement accepts paper claims, you can review the administrator’s instructions for mailing the form.</p>
           <div>
             <a href="${esc(opts.formUrl)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 20px;border-radius:8px;">Open the paper claim form →</a>
           </div>

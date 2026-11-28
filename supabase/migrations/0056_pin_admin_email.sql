@@ -1,7 +1,10 @@
 -- ClaimMatch 0056: PIN-gated email-to-administrator + 7-day paper-form fallback.
 -- EXPAND ONLY. Do not edit 0055 or earlier.
 --
--- Feature flags (default off): PIN_ADMIN_EMAIL_ENABLED, PAPER_FALLBACK_REMINDER_ENABLED.
+-- Apply in numeric order. 0052 and 0053 add the notice columns used by the
+-- replacement public.claim_apply_change(...); 0055 adds the drip schema it extends.
+-- Feature flags (default off): PIN_ADMIN_OUTREACH_ENABLED, PIN_ADMIN_EMAIL_ENABLED,
+-- PAPER_FALLBACK_UI_ENABLED, PAPER_FALLBACK_REMINDER_ENABLED.
 -- This migration only adds columns, RPCs, and a drip kind. It does not send email.
 --
 -- Unapplied to production until an owner applies it. Safe to re-run.

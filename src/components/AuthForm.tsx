@@ -54,8 +54,9 @@ type Mode = 'login' | 'signup';
 const AUTH_TIMEOUT_MS = 12_000;
 const AUTH_TIMEOUT_MESSAGE = 'This is taking too long. Check your connection and try again.';
 
-function emailRedirectTo(): string {
-  return `${SITE.url.replace(/\/+$/, '')}/auth/callback`;
+function emailRedirectTo(next?: string | null): string {
+  const callback = `${SITE.url.replace(/\/+$/, '')}/auth/callback`;
+  return next ? `${callback}?${new URLSearchParams({ next })}` : callback;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -124,9 +125,8 @@ export function AuthForm({
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [resendNow, setResendNow] = useState(() => Date.now());
   const [alertsOptIn, setAlertsOptIn] = useState(false);
-  // Signup defaults to a magic link so people are not blocked by the 10-character password rule.
-  const [passwordMode, setPasswordMode] = useState(() => mode !== 'signup');
-  const [magicStatus, setMagicStatus] = useState<'idle' | 'sent'>('idle');
+  // Signup and confirmed-email recovery may involve accounts without a password.
+  const [passwordMode, setPasswordMode] = useState(() => mode === 'login' && !confirmed);
 
   const isSignup = mode === 'signup';
   const switchParams = attributionQuery(attr);
@@ -171,6 +171,17 @@ export function AuthForm({
     setCooldownUntil(0);
   }
 
+  function sendSignInLink() {
+    return createClient().auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        shouldCreateUser: isSignup,
+        emailRedirectTo: emailRedirectTo(isSignup ? null : next),
+        data: isSignup ? { full_name: fullName, email_opt_in: alertsOptIn, ...attributionMetadata(attr) } : undefined,
+      },
+    });
+  }
+
   async function resendConfirmation() {
     if (resendStatus === 'sending' || resendWait > 0) return;
     setResendStatus('sending');
@@ -178,11 +189,9 @@ export function AuthForm({
     setResendError(false);
     try {
       const { error: resendErr } = await withTimeout(
-        createClient().auth.resend({
-          type: 'signup',
-          email,
-          options: { emailRedirectTo: emailRedirectTo() },
-        }),
+        passwordMode
+          ? createClient().auth.resend({ type: 'signup', email, options: { emailRedirectTo: emailRedirectTo() } })
+          : sendSignInLink(),
         AUTH_TIMEOUT_MS,
         AUTH_TIMEOUT_MESSAGE,
       );
@@ -257,8 +266,6 @@ export function AuthForm({
       posthog?.capture('signup_submitted');
     }
 
-    const supabase = createClient();
-
     try {
       if (!passwordMode) {
         if (isSignup) {
@@ -266,35 +273,18 @@ export function AuthForm({
             ? pendingNextCookie(next, window.location.protocol === 'https:')
             : `${PENDING_NEXT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
         }
-        const { error: otpError } = await withTimeout(
-          supabase.auth.signInWithOtp({
-            email,
-            options: {
-              shouldCreateUser: true,
-              emailRedirectTo: emailRedirectTo(),
-              data: isSignup
-                ? {
-                    full_name: fullName,
-                    email_opt_in: alertsOptIn,
-                    ...attributionMetadata(attr),
-                  }
-                : undefined,
-            },
-          }),
-          AUTH_TIMEOUT_MS,
-          AUTH_TIMEOUT_MESSAGE,
-        );
+        const { error: otpError } = await withTimeout(sendSignInLink(), AUTH_TIMEOUT_MS, AUTH_TIMEOUT_MESSAGE);
         if (otpError) {
           if (isSignup) showSignupError(signupErrorCodeFromMessage(otpError.message));
           else setError(signupErrorMessage(signupErrorCodeFromMessage(otpError.message)));
           setStatus('idle');
           return;
         }
-        setMagicStatus('sent');
         setStatus('check-email');
         return;
       }
 
+      const supabase = createClient();
       if (isSignup) {
         // The confirmation link opens /auth/callback, which then goes to
         // onboarding; this cookie (on this device) brings the person back to
@@ -387,7 +377,9 @@ export function AuthForm({
         </div>
         <h2 className="mt-4 text-xl font-bold">Check your email</h2>
         <p className="mt-2 text-sm text-ink-muted">
-          {magicStatus === 'sent' ? OAUTH_COPY.magicLinkSent : (
+          {!passwordMode ? (
+            <>Open the sign-in link we sent to <span className="font-semibold text-ink">{email.trim()}</span>.</>
+          ) : (
             <>
               We sent a confirmation link to{' '}
               <span className="font-semibold text-ink">{email}</span>. Click it to
@@ -395,7 +387,7 @@ export function AuthForm({
             </>
           )}
         </p>
-        <p className="mt-2 text-sm text-ink-muted">{OAUTH_COPY.confirmReminder}</p>
+        {isSignup && <p className="mt-2 text-sm text-ink-muted">{OAUTH_COPY.confirmReminder}</p>}
         {next && (
           <p className="mt-2 text-sm text-ink-muted">
             Open the link on this device and we&rsquo;ll bring you back to{' '}
@@ -415,7 +407,7 @@ export function AuthForm({
                 Sending…
               </>
             ) : (
-              'Resend confirmation email'
+              passwordMode ? 'Resend confirmation email' : 'Resend sign-in link'
             )}
           </button>
           {resendWait > 0 && (
@@ -430,17 +422,10 @@ export function AuthForm({
             </p>
           )}
         </div>
-        <p className="mt-4 text-xs text-ink-soft">
-          Didn’t get it? Check your spam folder, or{' '}
-          <button
-            type="button"
-            onClick={backToSignupForm}
-            className="text-link"
-          >
-            try a different email
-          </button>
-          .
-        </p>
+        <p className="mt-4 text-sm text-ink-muted">Didn’t get it? Check your spam folder.</p>
+        <button type="button" onClick={backToSignupForm} className="btn-secondary mt-2 w-full">
+          Try a different email
+        </button>
       </div>
     );
   }
@@ -465,7 +450,12 @@ export function AuthForm({
             className="flex items-start gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm text-success-700"
           >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <span>Your email is confirmed. Log in to continue{toClaim ? ' to your claim' : ''}.</span>
+            <span>
+              {passwordMode
+                ? 'Your email is confirmed. Log in to continue'
+                : 'Your email is confirmed. Request a new sign-in link to continue'}
+              {toClaim ? ' to your claim' : ''}.
+            </span>
           </div>
         )}
         {!isSignup && linkExpired && (
@@ -623,35 +613,12 @@ export function AuthForm({
               {fieldErrors.password}
             </p>
           )}
-          {!isSignup && (
-            <p className="mt-2 text-right text-sm">
-              <Link href="/forgot-password" className="text-link">
-                Forgot password?
-              </Link>
-            </p>
-          )}
         </div>
         ) : (
-          <p className="text-sm text-ink-muted">{OAUTH_COPY.magicLinkHint}</p>
+          <p className="text-sm text-ink-muted">
+            {isSignup ? OAUTH_COPY.magicLinkHint : 'No password needed. Use the email address on your account.'}
+          </p>
         )}
-
-        <button
-          type="button"
-          onClick={() => {
-            setPasswordMode((on) => !on);
-            setError('');
-            setFieldErrors((prev) => ({ ...prev, password: undefined }));
-          }}
-          className="text-link text-sm"
-        >
-          {passwordMode
-            ? isSignup
-              ? OAUTH_COPY.passwordOptionHide
-              : OAUTH_COPY.magicLink
-            : isSignup
-              ? OAUTH_COPY.passwordOption
-              : 'Use a password instead'}
-        </button>
 
         {isSignup && (
           <label className="flex items-start gap-2.5 text-sm text-ink-muted">
@@ -703,6 +670,29 @@ export function AuthForm({
             </>
           )}
         </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            setPasswordMode((on) => !on);
+            setError('');
+            setFieldErrors((prev) => ({ ...prev, password: undefined }));
+          }}
+          className={isSignup ? 'text-link text-sm' : 'btn-secondary w-full'}
+        >
+          {passwordMode
+            ? isSignup
+              ? OAUTH_COPY.passwordOptionHide
+              : OAUTH_COPY.magicLink
+            : isSignup
+              ? OAUTH_COPY.passwordOption
+              : 'Use a password instead'}
+        </button>
+        {!isSignup && passwordMode && (
+          <Link href="/forgot-password" className="btn-secondary w-full">
+            Forgot password?
+          </Link>
+        )}
       </form>
 
       {switchPrompt && (

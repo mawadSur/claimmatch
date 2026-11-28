@@ -1,8 +1,8 @@
 /**
- * 7-day paper-form fallback after a PIN-gated administrator email has no
- * recorded notice ID. The dashboard shows the fallback from the timestamps
- * even when this drip is off. PAPER_FALLBACK_REMINDER_ENABLED (default off)
- * gates the email and the paper_fallback_at stamp.
+ * 7-day paper-form fallback reminder after a notice-ID request has no
+ * recorded notice ID. PAPER_FALLBACK_REMINDER_ENABLED (default off) gates
+ * this drip and the paper_fallback_at stamp. The claim/dashboard card is
+ * gated separately by PAPER_FALLBACK_UI_ENABLED.
  */
 import { commercialEmailPrereqs } from '@/lib/closing-soon-email';
 import { sendPaperFallbackEmail } from '@/lib/email';

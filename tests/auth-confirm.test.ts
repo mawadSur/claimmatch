@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 
 const m = vi.hoisted(() => ({ verifyOtp: vi.fn(), exchangeCodeForSession: vi.fn(), applySessionFlags: vi.fn() }));
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('@/lib/session-flags', () => ({ applySessionFlags: m.applySessionFlags }));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { verifyOtp: m.verifyOtp, exchangeCodeForSession: m.exchangeCodeForSession } }),
@@ -38,6 +39,7 @@ describe('auth-confirm helpers', () => {
   it('accepts only known link types and url-safe token hashes', () => {
     expect(parseConfirmType('signup')).toBe('signup');
     expect(parseConfirmType('recovery')).toBe('recovery');
+    expect(parseConfirmType('magiclink')).toBe('magiclink');
     expect(parseConfirmType('magiclink-evil')).toBeNull();
     expect(parseConfirmType(undefined)).toBeNull();
     expect(parseTokenHash('pkce_abcdef0123456789')).toBe('pkce_abcdef0123456789');
@@ -66,6 +68,14 @@ describe('POST /auth/confirm/verify', () => {
     expect(res.status).toBe(303);
     expect(res.headers.get('location')).toBe(`${ORIGIN}/onboarding?next=%2Fclaim%2Freal&confirmed=1`);
     expect(res.headers.get('set-cookie')).toMatch(/cm_next=;/);
+  });
+
+  it('verifies the magic-link template token on POST and lands on the next path', async () => {
+    const fields = { token_hash: 'pkce_abcdef0123456789', type: 'magiclink', next: '/claim/real' };
+    const res = await verify(fields);
+    expect(m.verifyOtp).toHaveBeenCalledWith({ token_hash: fields.token_hash, type: 'magiclink' });
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/claim/real?confirmed=1`);
   });
 
   it('sends a verified recovery link to the reset-password page', async () => {
@@ -113,6 +123,23 @@ describe('GET /auth/confirm page', () => {
     const html = renderToStaticMarkup(el);
     expect(html).toContain('action="/auth/confirm/verify"');
     expect(html).toContain('Confirm my email');
+    expect(m.verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it('renders the owner-apply magiclink template as a button form (no verify on open)', async () => {
+    const { default: ConfirmPage } = await import('@/app/auth/confirm/page');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const html = renderToStaticMarkup(
+      await ConfirmPage({
+        searchParams: Promise.resolve({
+          token_hash: 'pkce_abcdef0123456789',
+          type: 'magiclink',
+          next: '/claim/real',
+        }),
+      }),
+    );
+    expect(html).toContain('action="/auth/confirm/verify"');
+    expect(html).toContain('name="type" value="magiclink"');
     expect(m.verifyOtp).not.toHaveBeenCalled();
   });
 

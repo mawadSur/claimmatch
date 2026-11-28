@@ -203,6 +203,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 describe('GET /api/mobile/dashboard: sign-in and limits', () => {
@@ -257,6 +258,22 @@ describe('GET /api/mobile/dashboard: sign-in and limits', () => {
 });
 
 describe('GET /api/mobile/dashboard: the response', () => {
+  it('takes the paper fallback switch from the server, not the reminder flag', async () => {
+    const pin = settlement({ claim_action_type: 'needs_notice_id', claim_action: { form_url: 'https://example.test/paper.pdf' } });
+    h.claims.items = [tracked(pin, { pin_admin_email_requested_at: '2026-10-01T00:00:00Z' })];
+    vi.stubEnv('PIN_ADMIN_OUTREACH_ENABLED', '0');
+    vi.stubEnv('PAPER_FALLBACK_UI_ENABLED', '0');
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '1');
+    expect((await body()).claims.rows[0].action?.label).toBe('How to file');
+
+    vi.stubEnv('PAPER_FALLBACK_UI_ENABLED', '1');
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '0');
+    expect((await body()).claims.rows[0].action).toEqual({
+      label: 'Open the paper claim form',
+      href: 'https://example.test/paper.pdf',
+    });
+  });
+
   it('sends what the web dashboard shows, without scores or profile answers', async () => {
     const res = await get();
     expect(res.status).toBe(200);

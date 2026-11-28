@@ -49,8 +49,8 @@ function claim(overrides: Partial<ClaimView> = {}): ClaimView {
     ...overrides,
   };
 }
-function row(c: ClaimView, s: DashboardSettlement | null) {
-  return buildDashboard([{ claim: c, settlement: s }], NOW, isFictional);
+function row(c: ClaimView, s: DashboardSettlement | null, options?: Parameters<typeof buildDashboard>[3]) {
+  return buildDashboard([{ claim: c, settlement: s }], NOW, isFictional, options);
 }
 
 describe('buildDashboard', () => {
@@ -602,24 +602,31 @@ describe('PIN-gated email and paper fallback on the dashboard', () => {
         pin_admin_email_sent_at: '2026-10-15T12:05:00Z',
       }),
       pinSettlement(),
+      { pinAdminOutreachEnabled: true },
     );
     expect(rows[0].nextStep).toContain('Emailed administrator — waiting on reply');
     expect(rows[0].nextStep).toContain('Oct 15, 2026');
     expect(rows[0].action).toEqual({ label: 'View', href: '/claim/real-one#notice-id' });
   });
 
-  it('surfaces the paper-form fallback after 7 days with no notice ID', () => {
-    const { rows } = row(
-      claim({
-        status: 'self_file',
-        pin_admin_email_sent_at: '2026-10-09T12:00:00Z',
-      }),
-      pinSettlement(),
-    );
+  it('keeps ordinary self-filing by default even for a due paper fallback', () => {
+    const { rows } = row(claim({ pin_admin_email_requested_at: '2026-10-09T12:00:00Z' }), pinSettlement());
+    expect(rows[0].nextStep).toContain('file on the official site');
+    expect(rows[0].action).toEqual({ label: 'How to file', href: '/claim/real-one' });
+  });
+
+  it('offers the paper form for a due request when only the paper UI is enabled', () => {
+    const tracked = claim({ pin_admin_email_requested_at: '2026-10-09T12:00:00Z' });
+    const options = { paperFallbackEnabled: true };
+    const { rows } = row(tracked, pinSettlement(), options);
     expect(rows[0].nextStep).toContain('Paper form fallback');
+    expect(rows[0].nextStep).not.toMatch(/no reply|emailed administrator/i);
     expect(rows[0].action).toEqual({
       label: 'Open the paper claim form',
       href: 'https://admin.example/paper.pdf',
     });
+    const withId = row({ ...tracked, notice_id: 'PRIVATE-NOTICE-ID' }, pinSettlement(), options);
+    expect(withId.rows[0].action?.label).toBe('How to file');
+    expect(JSON.stringify(withId)).not.toContain('PRIVATE-NOTICE-ID');
   });
 });

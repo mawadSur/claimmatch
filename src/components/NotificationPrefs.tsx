@@ -49,8 +49,9 @@ export function NotificationPrefs({
           full_name: fullName,
           state,
           ...(collectPhone ? { phone } : {}),
-          email_opt_in: alertsRequireMembership ? false : emailOptIn,
-          email_frequency: emailFrequency,
+          // The controls are hidden without membership access. Saving other
+          // settings must not replace a choice the person can't edit here.
+          ...(!alertsRequireMembership ? { email_opt_in: emailOptIn, email_frequency: emailFrequency } : {}),
           match_metrics_consent: metricsConsent,
           attributes: answers,
         }),
