@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { categoriesOf, lookupLawsuits } from '@/lib/lawsuits';
 import { hubClosingSoon } from '@/lib/settlement-hubs';
+import { catalogPath } from '@/lib/catalog-page';
 import {
   breadcrumbJsonLd,
   CLOSING_SOON_PATH,
@@ -19,6 +20,13 @@ export const revalidate = 3600;
 export const dynamic = 'force-static';
 
 const TITLE = 'Settlements closing soon';
+
+/**
+ * The hub lists the nearest deadlines only. Rendering every dated listing made
+ * this page ~650 KB of HTML; the full dated list lives at /lawsuits?hasDeadline=1
+ * and every settlement page is in the sitemap.
+ */
+const CLOSING_SOON_HUB_LIMIT = 24;
 const DESCRIPTION =
   'Open class-action settlements with the nearest claim deadlines. Check who qualifies on the official notice and file there for free.';
 
@@ -40,7 +48,15 @@ export const metadata: Metadata = {
 export default async function ClosingSoonHubPage() {
   const catalog = await lookupLawsuits();
   if (catalog.error) throw new Error('Settlement catalog lookup failed');
-  const lawsuits = hubClosingSoon(catalog.lawsuits);
+  const allDated = hubClosingSoon(catalog.lawsuits);
+  const lawsuits = allDated.slice(0, CLOSING_SOON_HUB_LIMIT);
+  const more =
+    allDated.length > lawsuits.length
+      ? {
+          href: catalogPath({ hasDeadline: true }),
+          label: `See all ${allDated.length} open settlements with a deadline`,
+        }
+      : undefined;
   const categories = categoriesOf(catalog.lawsuits);
   const listed = new Set(lawsuits.map((row) => row.slug));
   const related = flags.relatedSettlements()
@@ -75,6 +91,7 @@ export default async function ClosingSoonHubPage() {
         emptyBody="Nothing open has a listed deadline right now. Browse every open settlement, or check new listings."
         related={related}
         relatedFromSlug="hub-closing-soon"
+        more={more}
       />
     </>
   );

@@ -16,6 +16,7 @@ export function AnswerBlock({
   qualifySlug,
   qualifyLawsuitId,
   checkedOn,
+  updatedOn,
   hideQualify = false,
 }: {
   facts: AnswerFacts;
@@ -29,6 +30,8 @@ export function AnswerBlock({
   qualifyLawsuitId?: string;
   /** Official-notice check date, shown above the fold when a guide exists. */
   checkedOn?: string | null;
+  /** When the listing was last updated (ISO day + label); matches dateModified. */
+  updatedOn?: { iso: string; label: string } | null;
   /** Hide file/qualify CTAs (automatic payment / not open). */
   hideQualify?: boolean;
 }) {
@@ -48,6 +51,17 @@ export function AnswerBlock({
         {facts.administrator && <Fact label="Administrator" value={facts.administrator} />}
         {checkedOn && <Fact label="Last verified" value={checkedOn} />}
       </dl>
+      {(updatedOn || official?.kind === 'official') && (
+        <p className="mt-4 text-xs text-ink-muted">
+          {updatedOn && (
+            <>
+              Listing updated <time dateTime={updatedOn.iso}>{updatedOn.label}</time>.
+            </>
+          )}
+          {updatedOn && official?.kind === 'official' && ' '}
+          {official?.kind === 'official' && <>Source: the official settlement site ({official.host}).</>}
+        </p>
+      )}
       {facts.missing.length > 0 && (
         <MissingDetailsBlock missing={facts.missing} official={official} />
       )}

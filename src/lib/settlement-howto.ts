@@ -4,7 +4,7 @@
  * "We file this claim for you" is used only when filingMode is agent.
  */
 import { guideFilingCopy, type SettlementFilingMode } from './copy';
-import { pageUrl, settlementMetaDescription, settlementPath } from './settlement-seo';
+import { pageUrl, settlementMetaDescription, settlementPath, settlementQuestionName } from './settlement-seo';
 import type { Lawsuit } from './types';
 
 export interface HowToStep {
@@ -32,7 +32,7 @@ export function settlementHowToJsonLd(lawsuit: Lawsuit, mode: SettlementFilingMo
   return {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
-    name: `How to file a claim for the ${lawsuit.title.trim()}`,
+    name: `How to file a claim for the ${settlementQuestionName(lawsuit.title)}`,
     description: settlementMetaDescription(lawsuit, mode),
     url: pageUrl(settlementPath(lawsuit.slug)),
     step: steps.map((step, i) => ({

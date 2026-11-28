@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import { SITE } from '@/lib/utils';
 import { jsonLd } from '@/lib/jsonld';
+import { siteJsonLd } from '@/lib/site-jsonld';
 import { SITE_OG_IMAGE } from '@/lib/site-metadata';
 import { Nav } from '@/components/Nav';
 import { Footer } from '@/components/Footer';
@@ -55,25 +56,7 @@ export const metadata: Metadata = {
   },
 };
 
-const orgJsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Organization',
-      name: SITE.name,
-      url: SITE.url,
-      logo: `${SITE.url.replace(/\/$/, '')}/opengraph-image`,
-      image: `${SITE.url.replace(/\/$/, '')}/opengraph-image`,
-      description: SITE.description,
-    },
-    {
-      '@type': 'WebSite',
-      name: SITE.name,
-      url: SITE.url,
-      description: SITE.description,
-    },
-  ],
-};
+const orgJsonLd = siteJsonLd();
 
 export default function RootLayout({
   children,
