@@ -74,6 +74,10 @@ export const HOME_HERO_HEADLINE = `${HOME_HERO_HEADLINE_LEAD} ${HOME_HERO_HEADLI
 export const HOME_HERO_SUBHEAD =
   'Search open US class-action settlements, read who qualifies on the official notice, and keep every claim and deadline in one list.';
 
+/** Short hero subline (keep ≤15 words). Uses approved free / no-card language only. */
+export const HOME_HERO_SUBLINE =
+  'Match open settlements for free — no card to start.';
+
 /**
  * "Open now: settlements listing up to $5,000 per person". `label` is one
  * settlement's own stated maximum, already formatted; the caller names the

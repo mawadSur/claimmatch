@@ -55,9 +55,9 @@ export function HomeCatalogProof({ stats }: { stats: CatalogProofStats | null })
           <h2 id="catalog-proof-heading" className="mt-3 text-4xl font-medium leading-[1.08] sm:text-5xl">
             Real numbers from settlements open today
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-ink-muted">
-            Counted from the Lawsuit AI catalog{updated ? `, refreshed ${updated}` : ''}. These are
-            listing counts, not money anyone has received through Lawsuit AI.
+          <p className="mt-4 text-base leading-relaxed text-ink-muted sm:text-lg">
+            Counted from the Lawsuit AI catalog{updated ? `, refreshed ${updated}` : ''}. Listing
+            counts only — not money anyone has received through Lawsuit AI.
           </p>
         </div>
         <dl className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

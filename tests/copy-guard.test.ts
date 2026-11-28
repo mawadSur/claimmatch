@@ -171,7 +171,6 @@ const ALLOWLIST: ReadonlyArray<{ file: string; rule: string; reason: string; tex
     reason: 'Jackson County official notice states a 15% 2023 reassessment cap; not the Lawsuit AI fee.' },
 
   { file: 'src/lib/faq.ts', rule: 'we file', reason: 'FAQ reuses whoFilesAnswer.' },
-  { file: 'src/components/home/HomeHero.tsx', rule: 'we file', reason: 'Home hero bullet while Lawsuit AI may file.' },
   { file: 'src/components/home/HomeFaq.tsx', rule: 'we file', reason: 'Home FAQ reuses whoFilesAnswer.' },
   { file: 'src/components/home/HomeFeatures.tsx', rule: 'we file', reason: 'Home features mention filing on supported settlements when one-click is on.' },
   { file: 'src/components/TrustBadges.tsx', rule: 'we file', reason: 'Trust badge uses WE_FILE_SUPPORTED when flags allow.' },
