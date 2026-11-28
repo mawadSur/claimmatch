@@ -43,18 +43,17 @@ describe('HOME_HTML_TRIM_ENABLED', () => {
     expect((slim as { description?: string }).description).toBeUndefined();
   });
 
-  it('ships catalog blocks as a client island when the flag is on, without changing SEO metadata', () => {
+  it('always loads slim catalog columns and lazy-loads below-the-fold islands', () => {
     const page = read('src/app/page.tsx');
-    expect(page).toContain('flags.homeHtmlTrim()');
-    expect(page).toContain('HomeTrimCatalog');
-    expect(page).not.toContain('HOME_HTML_MEASURE_CARDS');
-    expect(page).toContain("dynamic(() => import('@/components/home/HowItWorks')");
-    expect(page).toContain("import('@/components/home/HomeTrimCatalog')");
-    expect(page).toContain("import('@/components/home/Testimonials')");
     expect(page).toContain('HOME_CATALOG_COLUMNS');
+    expect(page).toContain('slimHomeCards');
+    expect(page).toContain('BROWSE_TEASER_LIMIT');
+    expect(page).toContain("dynamic(() => import('@/components/home/HowItWorks')");
+    expect(page).toContain("import('@/components/home/HomeBrowseTeaser')");
+    expect(page).toContain("import('@/components/home/HomeSimplifyBelow')");
+    expect(page).toContain("import('@/components/home/Testimonials')");
+    expect(page).not.toContain('HomeTrimCatalog');
     expect(page).toContain("path: '/'");
-    expect(read('src/components/home/HomeTrimCatalog.tsx')).toContain("'use client'");
-    expect(read('src/components/home/HomeTrimCatalog.tsx')).toContain('Biggest payouts still open');
     expect(read('src/components/home/HomeSettlementList.tsx')).not.toContain(
       "from '@/lib/settlement-guides'",
     );

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Lawsuit } from '@/lib/types';
-import { HOME_HERO_PRIMARY_CTA } from '@/lib/copy';
+import { HOME_HERO_PRIMARY_CTA, HOME_HERO_SUBLINE, OPERATOR_LEGAL_NAME } from '@/lib/copy';
 import { makeLawsuit } from './helpers';
 
 const catalog = vi.hoisted(() => ({ lawsuits: [] as Lawsuit[], error: false }));
@@ -15,12 +15,14 @@ vi.mock('@/lib/lawsuits', async (importOriginal) => ({
 
 vi.mock('next/dynamic', async () => {
   const { HowItWorks } = await import('@/components/home/HowItWorks');
-  const { HomeTrimCatalog } = await import('@/components/home/HomeTrimCatalog');
+  const { HomeBrowseTeaser } = await import('@/components/home/HomeBrowseTeaser');
+  const { HomeSimplifyBelow } = await import('@/components/home/HomeSimplifyBelow');
   const { Testimonials } = await import('@/components/home/Testimonials');
   return {
     default: (load: () => Promise<unknown>) => {
       const src = String(load);
-      if (src.includes('HomeTrimCatalog')) return HomeTrimCatalog;
+      if (src.includes('HomeBrowseTeaser')) return HomeBrowseTeaser;
+      if (src.includes('HomeSimplifyBelow')) return HomeSimplifyBelow;
       if (src.includes('Testimonials')) return Testimonials;
       return HowItWorks;
     },
@@ -59,8 +61,8 @@ describe('home page redesign', () => {
   it('states who we are, not a law firm, and keeps the trust lines that are true', async () => {
     const html = await render();
     expect(html).toMatch(/not a law firm/i);
-    expect(html).toContain('Lawsuit AI LLC');
-    expect(html).toContain('We never handle settlement payments');
+    expect(html).toContain(OPERATOR_LEGAL_NAME);
+    expect(html).toContain('We never touch your payout');
     expect(html).toContain('We never ask for your Social Security number or bank account details');
   });
 
@@ -98,7 +100,7 @@ describe('home page redesign', () => {
     expect(empty).not.toContain('open settlements taking claims right now');
   });
 
-  it('uses the same open-to-file and 30-day counts for the payout line and stats strip', async () => {
+  it('uses live open and closing counts in catalog proof and the final CTA', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-02T02:00:00Z')); // Still Nov 1 in New York.
     catalog.lawsuits = [
@@ -108,25 +110,39 @@ describe('home page redesign', () => {
       makeLawsuit({}, { id: 'undated', deadline: null, typical_payout: 'Varies' }),
     ];
     const html = await render();
-    expect(html).toContain('4 open now');
-    expect(html).toContain('2 settlements close in the next 30 days');
-    expect(html).toMatch(/>open settlements taking claims(?: right now)?<\/dt>\s*<dd[^>]*>(?:<span[^>]*>)*4</);
+    expect(html).toMatch(/>open settlements taking claims right now<\/dt>\s*<dd[^>]*>(?:<span[^>]*>)*4</);
     expect(html).toMatch(/>close in the next 30 days<\/dt>\s*<dd[^>]*>(?:<span[^>]*>)*2</);
     expect(html).toContain('4 settlements are taking claims right now.');
   });
 
-  it.each(['', '1'])('shows non-affiliation next to featured listings (trim=%j)', async (trim) => {
-    vi.stubEnv('HOME_HTML_TRIM_ENABLED', trim);
-    catalog.lawsuits = [
-      makeLawsuit({}, { id: 'closing', title: 'Closing Settlement', deadline: '2099-01-10' }),
-      makeLawsuit({}, { id: 'top', title: 'Top Settlement', deadline: null, typical_payout: '$25' }),
-    ];
+  it('shows one browse teaser of at most 6 cards with the non-affiliation note', async () => {
+    catalog.lawsuits = Array.from({ length: 8 }, (_, i) =>
+      makeLawsuit(
+        {},
+        {
+          id: `row-${i}`,
+          slug: `row-${i}`,
+          title: `Settlement ${i}`,
+          deadline: `2099-0${(i % 9) + 1}-10`,
+          typical_payout: `$${10 + i}`,
+        },
+      ),
+    );
     const html = await render();
-    for (const [heading, title] of [['top-heading', 'Top Settlement'], ['open-heading', 'Closing Settlement']]) {
-      const section = html.split(`aria-labelledby="${heading}"`)[1]?.split('</section>')[0];
-      expect(section).toMatch(/not affiliated with the settlements listed here or their administrators/i);
-      expect(section).toContain(title);
-    }
+    const section = html.split('aria-labelledby="browse-heading"')[1]?.split('</section>')[0];
+    expect(section).toBeTruthy();
+    expect(section).toMatch(/not affiliated with the settlements listed here or their administrators/i);
+    expect(section).toContain('Browse settlements');
+    // At most 6 cards: each card title link uses /lawsuits/<slug>
+    const cardLinks = section!.match(/href="\/lawsuits\/row-\d+"/g) ?? [];
+    // Each card has title + details links; count unique slugs via titles instead.
+    const titles = [...section!.matchAll(/>Settlement (\d+)</g)].map((m) => m[1]);
+    expect(titles.length).toBeLessThanOrEqual(6);
+    expect(titles.length).toBeGreaterThan(0);
+    expect(cardLinks.length).toBeGreaterThan(0);
+    expect(html).not.toContain('Biggest payouts still open');
+    expect(html).not.toContain('id="top-heading"');
+    expect(html).not.toContain('id="open-heading"');
   });
 
   it('lets visitors see matching settlements before an account', async () => {
@@ -134,8 +150,8 @@ describe('home page redesign', () => {
     const html = await render();
     expect(html).toContain(HOME_HERO_PRIMARY_CTA);
     expect(html).toContain('href="/preview"');
+    expect(html).toContain(HOME_HERO_SUBLINE);
     expect(html).toContain('Is Lawsuit AI legit?');
-    expect(html).toContain('hello@lawsuitai.org');
     expect(html).not.toMatch(/15\s*%/);
     const matchAt = html.indexOf(HOME_HERO_PRIMARY_CTA);
     const browseAt = html.indexOf('See open settlements');
@@ -149,10 +165,17 @@ describe('home page redesign', () => {
     expect(html).not.toContain('Sample reviews');
   });
 
+  it('drops duplicate explainer sections from the homepage', async () => {
+    const html = await render();
+    expect(html).not.toContain('Everything you need to stay on top of your claims');
+    expect(html).not.toContain('Start with a type of settlement');
+    expect(html).not.toContain('id="public-trust-heading"');
+  });
+
   it('every screenshot it references exists, at the size the page declares', () => {
     const src = readFileSync(root('src/app/page.tsx'), 'utf8');
     const screens = [...src.matchAll(/src: '(\/screens\/[^']+\.webp)',\s*width: (\d+),\s*height: (\d+)/g)];
-    expect(screens.length).toBeGreaterThanOrEqual(3);
+    expect(screens.length).toBeGreaterThanOrEqual(2);
     for (const [, file, width, height] of screens) {
       const path = root(`public${file}`);
       expect(existsSync(path), file).toBe(true);

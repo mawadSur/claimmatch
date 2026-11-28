@@ -38,10 +38,6 @@ export function homeFaqItems(
         ? feeEveryClaimCopy()
         : `${publicBetaFeeCopy()} We don’t run ads or sell paid plans today, and we do not sell your personal information.`,
     },
-    {
-      q: 'Are these listings verified?',
-      a: 'Most listings come from public sources and we have not checked them yet. Always confirm the deadline, who qualifies, and how to file on the official settlement site.',
-    },
   ];
 }
 

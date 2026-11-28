@@ -18,6 +18,22 @@ vi.mock('@/lib/lawsuits', () => ({
   lookupLawsuits: async () => ({ lawsuits: listed.lawsuits, openingSoon: [], error: false }),
 }));
 
+vi.mock('next/dynamic', async () => {
+  const { HowItWorks } = await import('@/components/home/HowItWorks');
+  const { HomeBrowseTeaser } = await import('@/components/home/HomeBrowseTeaser');
+  const { HomeSimplifyBelow } = await import('@/components/home/HomeSimplifyBelow');
+  const { Testimonials } = await import('@/components/home/Testimonials');
+  return {
+    default: (load: () => Promise<unknown>) => {
+      const src = String(load);
+      if (src.includes('HomeBrowseTeaser')) return HomeBrowseTeaser;
+      if (src.includes('HomeSimplifyBelow')) return HomeSimplifyBelow;
+      if (src.includes('Testimonials')) return Testimonials;
+      return HowItWorks;
+    },
+  };
+});
+
 import HomePage from '@/app/page';
 
 describe('C17 home narrowing', () => {
@@ -30,7 +46,7 @@ describe('C17 home narrowing', () => {
     expect(html).not.toMatch(/\bmatch/i);
   });
 
-  it('stays off the home page unless a wedge flag is exactly 1 and the catalog can back it', async () => {
+  it('stays off the simplified homepage even when the wedge flag is on', async () => {
     const off = renderToStaticMarkup(await HomePage());
     expect(off).not.toContain('No proof required');
     expect(off).not.toContain('Start with a type of settlement');
@@ -43,10 +59,10 @@ describe('C17 home narrowing', () => {
     ];
     vi.stubEnv('HOME_WEDGE_ENTRIES_ENABLED', '1');
     const on = renderToStaticMarkup(await HomePage());
-    expect(on).toContain('Start with a type of settlement');
-    expect(on).toContain('No proof required');
-    expect(on).toContain('Data breach');
+    expect(on).not.toContain('Start with a type of settlement');
+    expect(on).not.toContain('No proof required');
     expect(on).toContain(HOME_HERO_PRIMARY_CTA);
+    expect(on).toContain('Browse settlements');
   });
 
   it('only offers filters the catalog can honestly fill', () => {
