@@ -1,14 +1,29 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ExternalLink, FileSearch, HandCoins, Lock } from 'lucide-react';
+import { ArrowRight, Building2, ExternalLink, FileSearch, HandCoins, Lock, Scale } from 'lucide-react';
 import { HowWeMakeMoney } from '@/components/HowWeMakeMoney';
-import { filingFact } from '@/lib/copy';
+import {
+  NO_SSN_OR_BANK_TO_MATCH,
+  OPERATOR_LEGAL_NAME,
+  filingFact,
+  operatorLine,
+} from '@/lib/copy';
 
 /**
  * Trust facts. Every line must stay literally true of the product today;
  * add one only when the product does it (same rule as TrustBadges).
  */
 const OTHER_FACTS = [
+  {
+    icon: Building2,
+    title: 'Who we are',
+    body: `${operatorLine(OPERATOR_LEGAL_NAME)} Lawsuit AI is a claim assistant, not a law firm, and does not give legal advice.`,
+  },
+  {
+    icon: Scale,
+    title: 'Matching never asks for bank details',
+    body: NO_SSN_OR_BANK_TO_MATCH,
+  },
   {
     icon: HandCoins,
     title: 'We never handle settlement payments',

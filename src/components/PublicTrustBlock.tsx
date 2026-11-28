@@ -30,7 +30,10 @@ export function PublicTrustBlock({
   const disclose = flags.feeDisclosure();
   const checked = trustFactsCheckedLabel();
   const points = [
-    { icon: Building2, text: operatorLine(entity) },
+    {
+      icon: Building2,
+      text: `${operatorLine(entity)} Lawsuit AI is a claim assistant, not a law firm, and does not give legal advice.`,
+    },
     {
       icon: HandCoins,
       text: disclose ? `${NEVER_CHARGE_UPFRONT} ${howWeMakeMoneyFact(true)}` : howWeMakeMoneyFact(false),

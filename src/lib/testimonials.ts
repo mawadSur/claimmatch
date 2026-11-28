@@ -33,6 +33,7 @@ export interface Testimonial {
   consentToPublish: true;
 }
 
+// TODO: Add real, written-consent reviews here. Until then the home slider hides.
 export const TESTIMONIALS: readonly Testimonial[] = [];
 
 /** One or two quotes look thin; the section waits until there are this many. */

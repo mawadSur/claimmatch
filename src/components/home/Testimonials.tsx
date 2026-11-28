@@ -1,32 +1,37 @@
-import type { CSSProperties } from 'react';
-import { Quote } from 'lucide-react';
-import { MIN_TESTIMONIALS, publishableTestimonials, type Testimonial } from '@/lib/testimonials';
-import {
-  SAMPLE_TESTIMONIALS,
-  showSampleTestimonials,
-  type SampleTestimonial,
-} from '@/lib/sample-testimonials';
+'use client';
 
-type Card = Pick<Testimonial, 'quote' | 'name' | 'location' | 'context'>;
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { MIN_TESTIMONIALS, publishableTestimonials, type Testimonial } from '@/lib/testimonials';
+import { cn } from '@/lib/utils';
 
 /**
- * Reviews from real users, verbatim and with permission (see
- * src/lib/testimonials.ts). Until there are enough of them, production renders
- * nothing; local development and Vercel previews show clearly labeled sample
- * placeholders (src/lib/sample-testimonials.ts) so the layout can be reviewed.
+ * Reviews slider. Fed only from real, consented reviews in
+ * src/lib/testimonials.ts. Until there are MIN_TESTIMONIALS publishable
+ * entries, this component renders nothing — no sample quotes, no empty shell.
+ *
+ * TODO: Add real, written-consent reviews to src/lib/testimonials.ts when we
+ * have them. Never invent names, quotes, or payouts.
  */
 export function Testimonials({
   items = publishableTestimonials(),
-  samples = SAMPLE_TESTIMONIALS,
-  showSamples = showSampleTestimonials(),
 }: {
   items?: Testimonial[];
-  samples?: readonly SampleTestimonial[];
-  showSamples?: boolean;
 }) {
-  const real = items.length >= MIN_TESTIMONIALS;
-  if (!real && !showSamples) return null;
-  const cards: Card[] = real ? items : [...samples];
+  const cards = items.length >= MIN_TESTIMONIALS ? items : [];
+  const [index, setIndex] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }, []);
+
+  if (cards.length === 0) return null;
+
+  const current = cards[index % cards.length]!;
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + cards.length) % cards.length);
+  };
 
   return (
     <section aria-labelledby="reviews-heading" className="section-y bg-white">
@@ -36,48 +41,58 @@ export function Testimonials({
           <h2 id="reviews-heading" className="mt-3 text-4xl font-medium leading-[1.08] sm:text-5xl">
             From people who used Lawsuit AI
           </h2>
-          {!real && (
-            <p className="mt-4 rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
-              <strong className="font-semibold">Sample reviews, not from real users.</strong>{' '}
-              Shown only in development and preview builds. Replace them with real, consented
-              reviews in src/lib/testimonials.ts ({items.length} of {MIN_TESTIMONIALS} so far).
-            </p>
+        </div>
+
+        <div className="relative mx-auto mt-10 max-w-3xl" data-reveal>
+          <figure className="rounded-3xl bg-brand-50 p-6 shadow-sm ring-1 ring-slate-200 sm:p-10">
+            <Quote className="h-7 w-7 text-gold-400" aria-hidden />
+            <blockquote
+              key={current.name + current.receivedOn}
+              className={cn(
+                'mt-5 text-lg leading-relaxed text-ink sm:text-xl',
+                !reduceMotion && 'transition-opacity duration-300',
+              )}
+            >
+              “{current.quote}”
+            </blockquote>
+            <figcaption className="mt-6 text-sm">
+              <span className="font-semibold text-ink">{current.name}</span>
+              {current.location && <span className="text-ink-muted"> · {current.location}</span>}
+              {current.context && <span className="mt-1 block text-ink-muted">{current.context}</span>}
+            </figcaption>
+          </figure>
+
+          {cards.length > 1 && (
+            <div className="mt-6 flex items-center justify-between gap-4">
+              <p className="text-sm text-ink-muted" aria-live="polite">
+                <span className="tabular text-ink">{index + 1}</span> of {cards.length}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary min-h-tap min-w-tap px-3"
+                  aria-label="Previous review"
+                  onClick={() => go(-1)}
+                >
+                  <ChevronLeft className="h-5 w-5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary min-h-tap min-w-tap px-3"
+                  aria-label="Next review"
+                  onClick={() => go(1)}
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden />
+                </button>
+              </div>
+            </div>
           )}
         </div>
-        <ul className="mt-12 grid gap-6 md:grid-cols-3">
-          {cards.slice(0, 6).map((t, i) => (
-            <li
-              key={`${t.name}-${i}`}
-              data-reveal
-              style={{ '--reveal-at': (i % 3) * 6 } as CSSProperties}
-            >
-              <figure className="surface flex h-full flex-col p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <Quote className="h-6 w-6 text-gold-400" aria-hidden />
-                  {!real && (
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-                      Sample
-                    </span>
-                  )}
-                </div>
-                <blockquote className="mt-4 flex-1 text-base leading-relaxed text-ink">
-                  “{t.quote}”
-                </blockquote>
-                <figcaption className="mt-6 border-t border-slate-100 pt-4 text-sm">
-                  <span className="font-semibold text-ink">{t.name}</span>
-                  {t.location && <span className="text-ink-muted"> · {t.location}</span>}
-                  {t.context && <span className="mt-1 block text-ink-muted">{t.context}</span>}
-                </figcaption>
-              </figure>
-            </li>
-          ))}
-        </ul>
-        {real && (
-          <p className="mt-6 text-xs text-ink-muted">
-            Shared with permission by Lawsuit AI users. Each settlement sets its own payments, so
-            results vary.
-          </p>
-        )}
+
+        <p className="mt-6 text-xs text-ink-muted">
+          Shared with permission by Lawsuit AI users. Each settlement sets its own payments, so
+          results vary.
+        </p>
       </div>
     </section>
   );

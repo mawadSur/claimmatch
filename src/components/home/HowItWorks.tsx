@@ -1,29 +1,27 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import { Check } from 'lucide-react';
+import { animate } from 'motion';
 import { cn } from '@/lib/utils';
-import { PhoneFrame } from './DeviceFrame';
+import { HowIllustration } from './HowIllustrations';
 import type { HowStep } from './how-it-works-types';
 
 export type { HowStep };
 
 /**
- * "How it works" as a scroll story. On large screens a phone stays pinned
- * beside the steps and swaps to each step's real app screen as that step
- * crosses the middle of the viewport. On small screens every step shows its
- * own screen inline. Without JavaScript all steps stay fully visible and the
- * pinned phone shows the first screen.
+ * Three-step "How it works" with Motion. SVG illustrations stay light for the
+ * HTML budget. On large screens the illustration swaps as each step crosses
+ * mid-viewport; without JS every step stays fully readable.
  */
 export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: string }) {
   const [active, setActive] = useState(0);
   const [enhanced, setEnhanced] = useState(false);
   const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const artRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setEnhanced(true);
-    // A thin band across the middle of the viewport: the step crossing it is active.
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -32,13 +30,23 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
           }
         }
       },
-      { rootMargin: '-48% 0px -48% 0px', threshold: 0 },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 },
     );
     for (const el of stepRefs.current) if (el) observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  const first = steps[0]?.screen;
+  useEffect(() => {
+    const el = artRef.current;
+    if (!el || !enhanced) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    animate(el, { opacity: [0.55, 1], transform: ['translateY(8px)', 'translateY(0px)'] }, {
+      duration: 0.35,
+      ease: 'easeOut',
+    });
+  }, [active, enhanced]);
+
+  const current = steps[active] ?? steps[0];
 
   return (
     <section
@@ -46,19 +54,19 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
       aria-labelledby="how-heading"
       className="section-y relative border-y border-slate-200/70 bg-brand-50"
     >
-      <div className="container-page grid gap-16 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-20 xl:gap-28">
+      <div className="container-page grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-20">
         <div>
           <div className="max-w-2xl" data-reveal>
             <p className="eyebrow">How it works</p>
             <h2 id="how-heading" className="mt-3 text-4xl font-medium leading-[1.08] sm:text-5xl">
-              From open settlement to the official claim form
+              Three calm steps from questions to a filed claim
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-ink-muted">
-              Four steps, all in one place. These are real screens from the app.
+              Matching is free. You never need a card to see what may fit you.
             </p>
           </div>
 
-          <ol className="mt-14 space-y-20 lg:mt-0 lg:space-y-0">
+          <ol className="mt-12 space-y-16 lg:mt-0 lg:space-y-0">
             {steps.map((step, i) => {
               const state = !enhanced || i === active ? 'active' : i < active ? 'done' : 'next';
               return (
@@ -68,12 +76,11 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
                     stepRefs.current[i] = el;
                   }}
                   data-step={i}
-                  className="lg:flex lg:min-h-[64vh] lg:items-center"
+                  className="lg:flex lg:min-h-[52vh] lg:items-center"
                 >
                   <div
                     className={cn(
                       'transition-opacity duration-500',
-                      // Dimmed, not faded out: inactive steps stay readable (WCAG contrast).
                       state === 'active' ? 'opacity-100' : 'lg:opacity-70',
                     )}
                   >
@@ -81,7 +88,7 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
                       <span
                         aria-hidden
                         className={cn(
-                          'grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold tabular ring-1 transition-colors duration-500',
+                          'grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-bold tabular ring-1 transition-colors duration-500',
                           state === 'active' && 'bg-brand-700 text-white ring-brand-700',
                           state === 'done' && 'bg-brand-100 text-brand-700 ring-brand-200',
                           state === 'next' && 'bg-white text-ink-muted ring-slate-300',
@@ -107,14 +114,8 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
                         </li>
                       ))}
                     </ul>
-                    {/* Small screens: each step carries its own screen. */}
-                    <div className="mt-10 flex justify-center lg:hidden" data-reveal="scale">
-                      <PhoneFrame
-                        screen={step.screen}
-                        className="w-[16.5rem]"
-                        sizes="16.5rem"
-                        priority={i === 0}
-                      />
+                    <div className="mt-8 lg:hidden" data-reveal="scale">
+                      <HowIllustration kind={step.illustration} className="mx-auto h-auto w-full max-w-xs" />
                     </div>
                   </div>
                 </li>
@@ -122,44 +123,20 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
             })}
           </ol>
 
-          <p className="mt-16 text-sm text-ink-muted lg:mt-0">{caption}</p>
+          <p className="mt-12 text-sm text-ink-muted lg:mt-0">{caption}</p>
         </div>
 
-        {/* Large screens: one pinned phone whose screen follows the active step. */}
         <div className="hidden lg:block">
-          <div className="sticky top-[max(5.5rem,calc(50vh_-_20.5rem))]">
-            <div className="relative">
-              <div
-                aria-hidden
-                className="absolute -inset-10 -z-10 rounded-full bg-gradient-to-b from-brand-200/70 via-brand-100/40 to-transparent blur-2xl"
-              />
-              <PhoneFrame className="mx-auto w-[18rem]">
-                <div
-                  className="relative"
-                  style={{ aspectRatio: first ? `${first.width} / ${first.height}` : '390 / 844' }}
-                >
-                  {steps.map((step, i) =>
-                    i === active || i === 0 ? (
-                      <Image
-                        key={step.screen.src}
-                        src={step.screen.src}
-                        alt={step.screen.alt}
-                        width={step.screen.width}
-                        height={step.screen.height}
-                        sizes="18rem"
-                        priority={i === 0}
-                        aria-hidden={i !== active}
-                        className={cn(
-                          'absolute inset-0 h-full w-full object-cover object-top transition-[opacity,transform] duration-500 ease-out',
-                          i === active ? 'scale-100 opacity-100' : 'scale-[0.985] opacity-0',
-                        )}
-                      />
-                    ) : null,
-                  )}
-                </div>
-              </PhoneFrame>
+          <div className="sticky top-[max(5.5rem,calc(50vh_-_10rem))]">
+            <div
+              ref={artRef}
+              className="rounded-3xl bg-white p-6 shadow-card ring-1 ring-slate-200"
+            >
+              {current && (
+                <HowIllustration kind={current.illustration} className="h-auto w-full" />
+              )}
             </div>
-            <div className="mx-auto mt-6 w-[18rem]" aria-hidden>
+            <div className="mt-6" aria-hidden>
               <div className="flex gap-1.5">
                 {steps.map((step, i) => (
                   <span
@@ -173,7 +150,7 @@ export function HowItWorks({ steps, caption }: { steps: HowStep[]; caption: stri
               </div>
               <p className="mt-3 text-center text-sm font-semibold text-ink-muted">
                 <span className="tabular text-ink">Step {active + 1}</span> of {steps.length} ·{' '}
-                {steps[active]?.title}
+                {current?.title}
               </p>
             </div>
           </div>
