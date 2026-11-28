@@ -60,6 +60,7 @@ const CLAIM = {
   created_at: '2026-11-27T12:00:00Z',
   pin_admin_email_requested_at: '2026-11-27T12:00:00Z',
   pin_admin_email_sent_at: null,
+  notice_id: 'PRIVATE-NOTICE-ID',
 };
 
 function json(body: unknown) {
@@ -76,6 +77,8 @@ beforeEach(() => {
   n += 1;
   h.user = { id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, email: 'ada@example.com' };
   h.unavailable = false;
+  vi.stubEnv('PIN_ADMIN_OUTREACH_ENABLED', '1');
+  vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '0');
   h.record.mockReset();
   h.send.mockReset();
   h.record.mockResolvedValue(CLAIM);
@@ -87,6 +90,14 @@ afterEach(() => {
 });
 
 describe('POST /api/claims/pin-admin-email', () => {
+  it('blocks new requests by default, even if outbound sending is enabled', async () => {
+    vi.stubEnv('PIN_ADMIN_OUTREACH_ENABLED', undefined);
+    vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '1');
+    expect((await POST(json({ lawsuit_id: LAWSUIT }))).status).toBe(404);
+    expect(h.record).not.toHaveBeenCalled();
+    expect(h.send).not.toHaveBeenCalled();
+  });
+
   it('requires a signed-in user', async () => {
     h.user = null;
     expect((await POST(json({ lawsuit_id: LAWSUIT }))).status).toBe(401);
@@ -105,6 +116,7 @@ describe('POST /api/claims/pin-admin-email', () => {
     const body = await res.json();
     expect(body.send).toBe('queued');
     expect(body.claim.pin_admin_email_requested_at).toBe(CLAIM.pin_admin_email_requested_at);
+    expect(body.claim).not.toHaveProperty('notice_id');
     expect(h.record).toHaveBeenCalledWith(h.user!.id, LAWSUIT);
     expect(h.send).toHaveBeenCalled();
   });

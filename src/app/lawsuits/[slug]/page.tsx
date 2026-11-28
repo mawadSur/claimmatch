@@ -460,6 +460,7 @@ export default async function LawsuitDetailPage({ params }: Params) {
                 administrator={lawsuit.administrator}
                 officialHref={official?.kind === 'official' ? official.href : null}
                 signedIn={false}
+                pinAdminOutreachEnabled={flags.pinAdminOutreach()}
               />
             </div>
           )}

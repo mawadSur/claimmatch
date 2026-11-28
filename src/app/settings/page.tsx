@@ -10,8 +10,8 @@ import { DeleteAccount } from '@/components/DeleteAccount';
 import { DownloadMyData } from '@/components/DownloadMyData';
 import { ManageBillingButton, MembershipCta } from '@/components/billing/MembershipCta';
 import { flags } from '@/lib/flags';
-import { membershipCopy } from '@/lib/copy';
-import { isPaidMembershipStatus, loadSubscription, userHasMembershipAccess } from '@/lib/subscriptions';
+import { membershipCheckoutCopy } from '@/lib/copy';
+import { hasOngoingSubscription, isPaidMembershipStatus, loadSubscription, userHasMembershipAccess } from '@/lib/subscriptions';
 
 export const metadata: Metadata = { title: 'Settings' };
 
@@ -125,15 +125,17 @@ export default async function SettingsPage() {
         {billingOn && (
           <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
             <h2 className="text-lg font-bold">Membership</h2>
-            <p className="mt-1 text-sm text-ink-muted">{membershipCopy()}</p>
-            {hasMembership ? (
+            <p className="mt-1 text-sm text-ink-muted">{membershipCheckoutCopy()}</p>
+            {hasMembership || hasOngoingSubscription(subscription) ? (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-ink">
                   {subscription?.status === 'trialing'
                     ? 'Your free trial is active.'
                     : isPaidMembershipStatus(subscription?.status)
                       ? 'Your membership is active.'
-                      : 'Staff access: Easy submit and alerts are available for testing.'}
+                      : hasMembership
+                        ? 'Staff access: Easy submit and alerts are available for testing.'
+                        : 'Manage your existing subscription to restore membership access.'}
                 </p>
                 <ManageBillingButton />
               </div>

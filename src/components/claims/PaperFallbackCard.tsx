@@ -1,13 +1,11 @@
-import { PAPER_FALLBACK_CTA, PAPER_FALLBACK_HEADING, PAPER_FALLBACK_OFFICIAL_CTA, paperFallbackBody } from '@/lib/pin-admin-email';
+import { PAPER_FALLBACK_BODY, PAPER_FALLBACK_CTA, PAPER_FALLBACK_HEADING, PAPER_FALLBACK_OFFICIAL_CTA } from '@/lib/pin-admin-email';
 
 export function PaperFallbackCard({
   formHref,
   officialHref,
-  days,
 }: {
   formHref: string;
   officialHref?: string | null;
-  days?: number;
 }) {
   const official = officialHref && officialHref !== formHref ? officialHref : null;
   return (
@@ -18,7 +16,7 @@ export function PaperFallbackCard({
       <h3 id="paper-fallback-title" className="font-bold">
         {PAPER_FALLBACK_HEADING}
       </h3>
-      <p className="mt-1 leading-relaxed">{paperFallbackBody(days)}</p>
+      <p className="mt-1 leading-relaxed">{PAPER_FALLBACK_BODY}</p>
       <p className="mt-3">
         <a href={formHref} className="font-semibold text-brand-700 underline underline-offset-2" target={formHref.startsWith('http') ? '_blank' : undefined} rel={formHref.startsWith('http') ? 'noopener noreferrer' : undefined}>
           {PAPER_FALLBACK_CTA}

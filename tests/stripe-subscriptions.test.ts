@@ -6,13 +6,15 @@ const USER_ID = '00000000-0000-4000-8000-000000000002';
 
 const h = vi.hoisted(() => ({
   row: null as Record<string, unknown> | null,
-  upserts: [] as Record<string, unknown>[],
+  writes: [] as Record<string, unknown>[],
+  readError: false,
+  writeError: false,
   profile: { is_admin: false, is_internal: false } as { is_admin: boolean; is_internal: boolean },
   stripe: null as {
     customers: { create: ReturnType<typeof vi.fn>; retrieve: ReturnType<typeof vi.fn> };
-    checkout: { sessions: { create: ReturnType<typeof vi.fn> } };
+    checkout: { sessions: { create: ReturnType<typeof vi.fn>; list: ReturnType<typeof vi.fn>; expire: ReturnType<typeof vi.fn> } };
     billingPortal: { sessions: { create: ReturnType<typeof vi.fn> } };
-    subscriptions: { retrieve: ReturnType<typeof vi.fn> };
+    subscriptions: { retrieve: ReturnType<typeof vi.fn>; list: ReturnType<typeof vi.fn> };
     webhooks: { constructEvent: ReturnType<typeof vi.fn> };
   } | null,
   user: null as { id: string; email?: string } | null,
@@ -22,17 +24,39 @@ vi.mock('@/lib/supabase/server', () => ({
   createServiceClient: () => ({
     from: (table: string) => {
       const chain: Record<string, unknown> = {};
+      const filters: Record<string, unknown> = {};
+      let patch: Record<string, unknown> | undefined;
       chain.select = () => chain;
-      chain.eq = () => chain;
+      chain.eq = chain.is = (key: string, value: unknown) => {
+        filters[key] = value;
+        return chain;
+      };
       chain.in = () => chain;
+      chain.update = (row: Record<string, unknown>) => {
+        patch = row;
+        return chain;
+      };
       chain.maybeSingle = async () => {
         if (table === 'profiles') return { data: h.profile, error: null };
-        if (table === 'subscriptions') return { data: h.row, error: null };
-        return { data: null, error: null };
+        if (table !== 'subscriptions') return { data: null, error: null };
+        if (patch) {
+          if (h.writeError) return { data: null, error: { code: 'write_error' } };
+          if (h.row) h.row.updated_at ??= '2026-11-27T00:00:00Z';
+          if (!h.row || !Object.entries(filters).every(([key, value]) => (h.row?.[key] ?? null) === value)) {
+            return { data: null, error: null };
+          }
+          h.writes.push(patch);
+          h.row = { ...h.row, ...patch };
+        }
+        return h.readError
+          ? { data: null, error: { code: 'read_error' } }
+          : { data: h.row && { updated_at: '2026-11-27T00:00:00Z', ...h.row }, error: null };
       };
-      chain.upsert = async (row: Record<string, unknown>) => {
-        h.upserts.push(row);
-        h.row = { ...(h.row ?? {}), ...row };
+      chain.insert = async (row: Record<string, unknown>) => {
+        if (h.writeError) return { error: { code: 'write_error' } };
+        if (h.row) return { error: { code: '23505' } };
+        h.writes.push(row);
+        h.row = { ...row };
         return { error: null };
       };
       chain.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
@@ -88,7 +112,9 @@ function json(url: string, body?: unknown) {
 
 beforeEach(() => {
   h.row = null;
-  h.upserts = [];
+  h.writes = [];
+  h.readError = false;
+  h.writeError = false;
   h.profile = { is_admin: false, is_internal: false };
   h.user = { id: USER_ID, email: 'ada@example.com' };
   h.stripe = {
@@ -99,6 +125,8 @@ beforeEach(() => {
     checkout: {
       sessions: {
         create: vi.fn(async () => ({ url: 'https://checkout.stripe.test/cs_test' })),
+        list: vi.fn(async () => ({ data: [] })),
+        expire: vi.fn(async () => ({ status: 'expired' })),
       },
     },
     billingPortal: {
@@ -107,6 +135,7 @@ beforeEach(() => {
       },
     },
     subscriptions: {
+      list: vi.fn(() => []),
       retrieve: vi.fn(async () => ({
         id: 'sub_test',
         status: 'trialing',
@@ -124,7 +153,7 @@ beforeEach(() => {
   vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_x');
   vi.stubEnv('STRIPE_PRICE_ID', 'price_test');
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test');
-  vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '');
+  vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
   resetStripeClientForTests();
 });
 
@@ -151,6 +180,7 @@ describe('membership access', () => {
   });
 
   it('is ungated when SUBSCRIPTION_BILLING_ENABLED is off', async () => {
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '');
     expect(await userHasMembershipAccess({ userId: USER_ID })).toBe(true);
   });
 
@@ -163,6 +193,58 @@ describe('membership access', () => {
 });
 
 describe('checkout and portal', () => {
+  it('does not touch Stripe when membership checkout is disabled', async () => {
+    vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '');
+    const res = await checkout(json('/api/billing/checkout'));
+    expect(res.status).toBe(404);
+    expect((await res.json()).code).toBe('billing_disabled');
+    expect(h.stripe?.customers.create).not.toHaveBeenCalled();
+    expect(h.stripe?.checkout.sessions.list).not.toHaveBeenCalled();
+    expect(h.stripe?.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['trialing', 'active', 'past_due', 'unpaid', 'incomplete', 'paused'])(
+    'checks Stripe and refuses an ongoing %s subscription even when the local row is stale', async (status) => {
+      h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'canceled' };
+      h.stripe?.subscriptions.list.mockReturnValue((async function* () {
+        yield { status: 'canceled' };
+        yield { status };
+      })());
+      const res = await checkout(json('/api/billing/checkout'));
+      expect(res.status).toBe(409);
+      expect(h.stripe?.subscriptions.list).toHaveBeenCalledWith({ customer: 'cus_test', status: 'all' });
+      expect(h.stripe?.checkout.sessions.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns the existing open checkout instead of creating another', async () => {
+    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'incomplete' };
+    h.stripe?.checkout.sessions.list.mockResolvedValue({ data: [{
+      id: 'cs_open', status: 'open', mode: 'subscription', client_reference_id: USER_ID,
+      url: 'https://checkout.stripe.test/cs_open',
+    }] });
+    const res = await checkout(json('/api/billing/checkout'));
+    expect(await res.json()).toEqual({ url: 'https://checkout.stripe.test/cs_open' });
+    expect(h.stripe?.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if it cannot read the subscription or persist the customer', async () => {
+    h.readError = true;
+    expect((await checkout(json('/api/billing/checkout'))).status).toBe(503);
+    expect(h.stripe?.customers.create).not.toHaveBeenCalled();
+    h.readError = false;
+    h.writeError = true;
+    expect((await checkout(json('/api/billing/checkout'))).status).toBe(503);
+    expect(h.stripe?.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it('fails closed if Stripe cannot list subscriptions', async () => {
+    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'incomplete' };
+    h.stripe?.subscriptions.list.mockImplementation(() => { throw new Error('Stripe timed out'); });
+    expect((await checkout(json('/api/billing/checkout'))).status).toBe(503);
+    expect(h.stripe?.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
   it('returns 503 from checkout when Stripe keys are missing', async () => {
     h.stripe = null;
     vi.stubEnv('STRIPE_SECRET_KEY', '');
@@ -183,7 +265,7 @@ describe('checkout and portal', () => {
     expect(h.stripe?.customers.create).toHaveBeenCalledWith({
       email: 'ada@example.com',
       metadata: { user_id: USER_ID },
-    });
+    }, { idempotencyKey: `membership-customer:${USER_ID}` });
     expect(h.stripe?.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: 'subscription',
@@ -198,6 +280,7 @@ describe('checkout and portal', () => {
           trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
         }),
       }),
+      { idempotencyKey: 'membership-checkout:cus_test:first' },
     );
     const res = await checkout(json('/api/billing/checkout', { return_to: '/settings' }));
     expect(res.status).toBe(200);
@@ -306,7 +389,7 @@ describe('POST /api/webhooks/stripe', () => {
     );
     expect(res.status).toBe(200);
     expect(h.stripe?.subscriptions.retrieve).toHaveBeenCalledWith('sub_test');
-    expect(h.upserts.at(-1)).toEqual(
+    expect(h.writes.at(-1)).toEqual(
       expect.objectContaining({
         user_id: USER_ID,
         stripe_customer_id: 'cus_test',
@@ -317,7 +400,12 @@ describe('POST /api/webhooks/stripe', () => {
   });
 
   it('marks the row canceled on customer.subscription.deleted', async () => {
-    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'active' };
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      stripe_subscription_id: 'sub_test',
+      status: 'active',
+    };
     h.stripe?.webhooks.constructEvent.mockReturnValue({
       type: 'customer.subscription.deleted',
       data: {
@@ -338,11 +426,78 @@ describe('POST /api/webhooks/stripe', () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(h.upserts.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
+    expect(h.writes.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
+  });
+
+  it('ignores a deleted event for an abandoned subscription', async () => {
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      stripe_subscription_id: 'sub_live',
+      status: 'active',
+    };
+    h.stripe?.webhooks.constructEvent.mockReturnValue({
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          id: 'sub_old',
+          status: 'canceled',
+          customer: 'cus_test',
+          metadata: { user_id: USER_ID },
+          cancel_at_period_end: false,
+        },
+      },
+    });
+    const res = await webhook(
+      new Request('http://localhost/api/webhooks/stripe', {
+        method: 'POST',
+        headers: { 'stripe-signature': 't=1,v1=x' },
+        body: '{"id":"evt_old"}',
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(h.writes).toHaveLength(0);
+    expect(h.row).toEqual(expect.objectContaining({ stripe_subscription_id: 'sub_live', status: 'active' }));
+  });
+
+  it('does not reopen a terminal subscription from a stale live read', async () => {
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      stripe_subscription_id: 'sub_test',
+      status: 'canceled',
+    };
+    h.stripe?.webhooks.constructEvent.mockReturnValue({
+      type: 'customer.subscription.updated',
+      data: { object: { id: 'sub_test', customer: 'cus_test', metadata: { user_id: USER_ID } } },
+    });
+    const res = await webhook(new Request('http://localhost/api/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': 't=1,v1=x' },
+      body: '{}',
+    }));
+    expect(res.status).toBe(200);
+    expect(h.stripe?.subscriptions.retrieve).toHaveBeenCalledWith('sub_test');
+    expect(h.writes).toHaveLength(0);
+    expect(h.row.status).toBe('canceled');
   });
 
   it('revokes access when a cardless trial ends with no payment method', async () => {
-    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'trialing' };
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      stripe_subscription_id: 'sub_test',
+      status: 'trialing',
+    };
+    h.stripe?.subscriptions.retrieve.mockResolvedValue({
+      id: 'sub_test',
+      status: 'canceled',
+      customer: 'cus_test',
+      trial_end: 1_700_000_000,
+      current_period_end: 1_700_000_000,
+      cancel_at_period_end: false,
+      metadata: { user_id: USER_ID },
+    });
     h.stripe?.webhooks.constructEvent.mockReturnValue({
       type: 'customer.subscription.updated',
       data: {
@@ -364,9 +519,48 @@ describe('POST /api/webhooks/stripe', () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(h.upserts.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
+    expect(h.writes.at(-1)).toEqual(expect.objectContaining({ status: 'canceled' }));
     h.row = { user_id: USER_ID, status: 'canceled', cancel_at_period_end: false };
     vi.stubEnv('SUBSCRIPTION_BILLING_ENABLED', '1');
     expect(await userHasMembershipAccess({ userId: USER_ID, email: 'ada@example.com' })).toBe(false);
+  });
+
+  it('starts a paid checkout with no trial after the first subscription ends', async () => {
+    h.row = {
+      user_id: USER_ID,
+      stripe_customer_id: 'cus_test',
+      stripe_subscription_id: 'sub_old',
+      status: 'canceled',
+      trial_end: '2026-01-01T00:00:00.000Z',
+    };
+    h.stripe?.subscriptions.list.mockReturnValue((async function* () {
+      yield { status: 'canceled' };
+    })());
+    const result = await createCheckoutSession({ userId: USER_ID, email: 'ada@example.com' });
+    expect(result.ok).toBe(true);
+    const params = (h.stripe?.checkout.sessions.create.mock.calls[0]?.[0] ?? {}) as {
+      subscription_data?: { trial_period_days?: number; trial_settings?: unknown };
+    };
+    expect(params.subscription_data?.trial_period_days).toBeUndefined();
+    expect(params.subscription_data?.trial_settings).toBeUndefined();
+    expect(h.stripe?.checkout.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ payment_method_collection: 'always' }), expect.anything(),
+    );
+  });
+
+  it('expires an old trial checkout when Stripe shows a prior subscription', async () => {
+    h.row = { user_id: USER_ID, stripe_customer_id: 'cus_test', status: 'incomplete' };
+    h.stripe?.subscriptions.list.mockReturnValue([{ status: 'canceled' }]);
+    h.stripe?.checkout.sessions.list.mockResolvedValue({ data: [{
+      id: 'cs_legacy_trial', status: 'open', mode: 'subscription', client_reference_id: USER_ID,
+      url: 'https://checkout.stripe.test/cs_legacy_trial',
+    }] });
+    const result = await createCheckoutSession({ userId: USER_ID, email: null });
+    expect(result).toEqual({ ok: true, url: 'https://checkout.stripe.test/cs_test' });
+    expect(h.stripe?.checkout.sessions.expire).toHaveBeenCalledWith('cs_legacy_trial');
+    expect(h.stripe?.checkout.sessions.create).toHaveBeenCalledWith(expect.objectContaining({
+      payment_method_collection: 'always',
+      subscription_data: { metadata: { user_id: USER_ID } },
+    }), expect.anything());
   });
 });

@@ -29,6 +29,13 @@ export const MEMBERSHIP_STATUSES = [
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 
 const PAID_ACCESS = new Set<MembershipStatus>(['trialing', 'active']);
+const TERMINAL_STATUSES = new Set<MembershipStatus>(['canceled', 'incomplete_expired']);
+
+/** A customer-only row is created before checkout, so it isn't itself a subscription. */
+export function hasOngoingSubscription(row: SubscriptionRow | null): boolean {
+  return Boolean(row && (isPaidMembershipStatus(row.status) ||
+    (row.stripe_subscription_id && !TERMINAL_STATUSES.has(row.status))));
+}
 
 export function isPaidMembershipStatus(status: string | null | undefined): boolean {
   return typeof status === 'string' && PAID_ACCESS.has(status as MembershipStatus);
@@ -109,6 +116,16 @@ export async function userHasMembershipAccess(args: {
 }
 
 export async function loadSubscription(userId: string): Promise<SubscriptionRow | null> {
+  try {
+    return await readSubscription(userId);
+  } catch (err) {
+    console.error('[subscriptions] read failed', err instanceof Error ? err.name : typeof err);
+    return null;
+  }
+}
+
+// Checkout and webhook writes must distinguish an unreadable row from no row.
+async function readSubscription(userId: string): Promise<SubscriptionRow | null> {
   const db = createServiceClient();
   const { data, error } = await db
     .from('subscriptions')
@@ -117,13 +134,10 @@ export async function loadSubscription(userId: string): Promise<SubscriptionRow 
     )
     .eq('user_id', userId)
     .maybeSingle();
-  if (error) {
-    console.error('[subscriptions] read failed', { code: error.code });
-    return null;
-  }
+  if (error) throw error;
   if (!data) return null;
   const status = asMembershipStatus(data.status);
-  if (!status) return null;
+  if (!status) throw new Error('Unknown membership status');
   return {
     user_id: data.user_id as string,
     stripe_customer_id: (data.stripe_customer_id as string | null) ?? null,
@@ -162,7 +176,7 @@ export type UpsertSubscriptionPatch = {
   cancel_at_period_end?: boolean;
 };
 
-export async function upsertSubscription(patch: UpsertSubscriptionPatch): Promise<boolean> {
+async function writeSubscription(patch: UpsertSubscriptionPatch, expected: SubscriptionRow | null): Promise<boolean> {
   const db = createServiceClient();
   const row = {
     user_id: patch.user_id,
@@ -178,12 +192,21 @@ export async function upsertSubscription(patch: UpsertSubscriptionPatch): Promis
       ? { cancel_at_period_end: patch.cancel_at_period_end }
       : {}),
   };
-  const { error } = await db.from('subscriptions').upsert(row, { onConflict: 'user_id' });
-  if (error) {
-    console.error('[subscriptions] upsert failed', { code: error.code });
-    return false;
+  if (!expected) {
+    // If another writer initialized this row, retry the webhook rather than
+    // overwriting a subscription we haven't seen.
+    const { error } = await db.from('subscriptions').insert(row);
+    if (error && error.code !== '23505') console.error('[subscriptions] insert failed', { code: error.code });
+    return !error;
   }
-  return true;
+  let update = db.from('subscriptions').update(row).eq('user_id', patch.user_id)
+    .eq('status', expected.status).eq('updated_at', expected.updated_at);
+  update = expected.stripe_subscription_id === null
+    ? update.is('stripe_subscription_id', null)
+    : update.eq('stripe_subscription_id', expected.stripe_subscription_id);
+  const { data, error } = await update.select('user_id').maybeSingle();
+  if (error) console.error('[subscriptions] update failed', { code: error.code });
+  return !error && Boolean(data);
 }
 
 export async function upsertFromStripeSubscription(args: {
@@ -198,17 +221,34 @@ export async function upsertFromStripeSubscription(args: {
     items?: { data?: Array<{ current_period_end?: unknown }> };
   };
 }): Promise<boolean> {
-  const status = asMembershipStatus(args.subscription.status) ?? 'incomplete';
+  const status = asMembershipStatus(args.subscription.status);
   const subId = typeof args.subscription.id === 'string' ? args.subscription.id : null;
-  return upsertSubscription({
+  if (!status || !subId) return false;
+  const existing = await readSubscription(args.userId);
+  if (existing?.stripe_customer_id && args.customerId && existing.stripe_customer_id !== args.customerId) {
+    console.warn('[subscriptions] ignored event for a different customer');
+    return true;
+  }
+  // A live read started before cancellation can finish after the terminal
+  // event has already synced. Terminal Stripe subscriptions cannot restart.
+  if (existing?.stripe_subscription_id === subId && TERMINAL_STATUSES.has(existing.status) &&
+      !TERMINAL_STATUSES.has(status)) return true;
+  // A new ongoing subscription can replace an ended one. An unrelated old
+  // subscription's terminal event must never revoke the tracked membership.
+  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== subId &&
+      (hasOngoingSubscription(existing) || TERMINAL_STATUSES.has(status))) {
+    console.warn('[subscriptions] ignored event for a different subscription');
+    return true;
+  }
+  return writeSubscription({
     user_id: args.userId,
-    stripe_customer_id: args.customerId,
+    stripe_customer_id: args.customerId ?? existing?.stripe_customer_id,
     stripe_subscription_id: subId,
     status,
     trial_end: unixToIso(args.subscription.trial_end),
     current_period_end: unixToIso(subscriptionPeriodEndUnix(args.subscription)),
     cancel_at_period_end: Boolean(args.subscription.cancel_at_period_end),
-  });
+  }, existing);
 }
 
 export type CheckoutResult =
@@ -216,7 +256,7 @@ export type CheckoutResult =
   | {
       ok: false;
       error: string;
-      code: 'stripe_not_configured' | 'already_subscribed' | 'service_unavailable' | 'invalid_request';
+      code: 'billing_disabled' | 'stripe_not_configured' | 'already_subscribed' | 'service_unavailable';
     };
 
 export async function createCheckoutSession(args: {
@@ -224,61 +264,80 @@ export async function createCheckoutSession(args: {
   email: string | null;
   returnPath?: string;
 }): Promise<CheckoutResult> {
+  if (!flags.subscriptionBilling()) {
+    return { ok: false, error: 'Membership checkout is not available right now.', code: 'billing_disabled' };
+  }
   const stripe = stripeClient();
   const priceId = stripePriceId();
   if (!stripe) return { ok: false, error: STRIPE_NOT_CONFIGURED, code: 'stripe_not_configured' };
   if (!priceId) return { ok: false, error: STRIPE_PRICE_NOT_CONFIGURED, code: 'stripe_not_configured' };
 
-  const existing = await loadSubscription(args.userId);
-  if (isPaidMembershipStatus(existing?.status ?? null)) {
-    return {
-      ok: false,
-      error: 'You already have a Lawsuit AI membership. Manage it from Settings.',
-      code: 'already_subscribed',
-    };
-  }
-
-  let customerId = existing?.stripe_customer_id ?? null;
-  if (!customerId) {
-    try {
-      const customer = await stripe.customers.create({
-        email: args.email || undefined,
-        metadata: { user_id: args.userId },
-      });
-      customerId = customer.id;
-      await upsertSubscription({
-        user_id: args.userId,
-        stripe_customer_id: customerId,
-        status: 'incomplete',
-      });
-    } catch (err) {
-      console.error('[subscriptions] customer create failed', err instanceof Error ? err.name : typeof err);
-      return { ok: false, error: 'Stripe could not create a billing customer.', code: 'service_unavailable' };
-    }
-  }
-
+  const alreadySubscribed = {
+    ok: false, error: 'You already have a Lawsuit AI subscription. Manage it from Settings.', code: 'already_subscribed',
+  } as const;
   const successPath = safeReturnPath(args.returnPath, '/settings?billing=success');
   const cancelPath = '/pricing?billing=canceled';
   try {
+    const existing = await readSubscription(args.userId);
+    if (hasOngoingSubscription(existing)) return alreadySubscribed;
+
+    let customerId = existing?.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: args.email || undefined,
+        metadata: { user_id: args.userId },
+      }, { idempotencyKey: `membership-customer:${args.userId}` });
+      customerId = customer.id;
+      if (!await writeSubscription({
+        user_id: args.userId,
+        stripe_customer_id: customerId,
+        status: existing?.status ?? 'incomplete',
+      }, existing)) throw new Error('Could not persist billing customer');
+    }
+
+    const { data: [latestSession] } = await stripe.checkout.sessions.list({ customer: customerId, limit: 1 });
+    // One trial per Stripe customer. A later paid checkout is fine; a second
+    // trial is not. Refuse while any non-terminal subscription still exists.
+    let trialEligible = !(existing?.trial_end || existing?.stripe_subscription_id);
+    for await (const subscription of stripe.subscriptions.list({ customer: customerId, status: 'all' })) {
+      const status = asMembershipStatus(subscription.status);
+      if (!status || !TERMINAL_STATUSES.has(status)) return alreadySubscribed;
+      trialEligible = false;
+    }
+    if (latestSession?.mode === 'subscription' && latestSession.status === 'open' &&
+        latestSession.client_reference_id === args.userId) {
+      if (trialEligible || latestSession.metadata?.membership_checkout === 'paid') {
+        if (!latestSession.url) throw new Error('Open checkout is missing its URL');
+        return { ok: true, url: latestSession.url };
+      }
+      // Legacy open sessions may still grant a repeat trial. If expiration
+      // races with completion, Stripe rejects it and the member can retry.
+      await stripe.checkout.sessions.expire(latestSession.id);
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       client_reference_id: args.userId,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        trial_period_days: CLAIMMATCH_TRIAL_DAYS,
-        // Cardless trial: when no payment method is added before the trial ends,
-        // Stripe cancels the subscription instead of issuing an unpayable invoice.
-        trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+        ...(trialEligible
+          ? {
+              trial_period_days: CLAIMMATCH_TRIAL_DAYS,
+              // Cardless trial: when no payment method is added before the trial ends,
+              // Stripe cancels the subscription instead of issuing an unpayable invoice.
+              trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+            }
+          : {}),
         metadata: { user_id: args.userId },
       },
-      metadata: { user_id: args.userId },
+      metadata: { user_id: args.userId, membership_checkout: trialEligible ? 'trial' : 'paid' },
       success_url: canonicalUrl(successPath),
       cancel_url: canonicalUrl(cancelPath),
       allow_promotion_codes: true,
       // The trial's first invoice is zero, so Stripe skips the card form entirely.
-      payment_method_collection: 'if_required',
-    });
+      payment_method_collection: trialEligible ? 'if_required' : 'always',
+    }, { idempotencyKey: `membership-checkout:${customerId}:${latestSession?.id ?? 'first'}` });
     if (!session.url) {
       return { ok: false, error: 'Stripe did not return a checkout URL.', code: 'service_unavailable' };
     }
@@ -304,7 +363,7 @@ export async function createPortalSession(args: {
   if (!customerId) {
     return {
       ok: false,
-      error: 'No billing account yet. Start a free trial first.',
+      error: 'No billing account yet. Start membership from Settings first.',
       code: 'no_customer',
     };
   }

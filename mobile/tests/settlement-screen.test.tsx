@@ -180,7 +180,8 @@ afterEach(() => {
 
 describe('settlement detail, open', () => {
   it('shows every section in the web’s order, with the sidebar inline and the legal disclaimer last', async () => {
-    await renderFound(ACME);
+    // Section order only needs the loaded screen. Other tests cover fetching from a cold cache.
+    await renderSettlement(ACME.slug, { catalog: [ACME] });
     expect(sectionOrder()).toEqual([
       'header',
       'answer',

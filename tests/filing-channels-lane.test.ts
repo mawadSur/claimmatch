@@ -144,7 +144,19 @@ describe('chooseLane: channels in the policy’s order', () => {
     expect(chooseLane(input({ spec: { id: SPEC_ID, version: 1, status: 'approved', content: challenged } })).reasons).toEqual(['form_has_challenge']);
     expect(chooseLane(input({ desk: { openJobs: 20 } })).reasons).toEqual(['desk_at_capacity']);
     expect(chooseLane(input({ desk: { openJobs: 19 } })).lane).toBe('filing_desk');
-    expect(chooseLane(input({ desk: null })).reasons).toEqual(['desk_at_capacity']);
+  });
+
+  it.each([
+    [{ openJobs: 20 }, 'desk_at_capacity'],
+    [null, 'desk_capacity_unavailable'],
+  ] as const)('distinguishes a full desk from an unreadable count (%j)', (deskLoad, reason) => {
+    const decision = chooseLane(input({ desk: deskLoad }));
+    expect(decision).toMatchObject({ lane: 'self_file', reasons: [reason] });
+    expect(toLaneView(decision, null).reasons).toEqual([reason]);
+
+    const fallback = chooseLane(input({ desk: deskLoad, policy: policyOf(allowed([desk, email])) }));
+    expect(fallback.lane).toBe('administrator_email');
+    expect(toLaneView(fallback, null).reasons).toEqual([]);
   });
 
   it('skips channels that cannot carry the proof the claim needs', () => {

@@ -1,9 +1,8 @@
 /**
  * PIN-gated settlements (Notice ID / PIN on the official site): the member
  * can ask Lawsuit AI to email the administrator for a notice or claim ID.
- * Sending is gated by PIN_ADMIN_EMAIL_ENABLED (default off). The 7-day paper
- * form fallback is a separate UI state; its reminder email is gated by
- * PAPER_FALLBACK_REMINDER_ENABLED.
+ * Request intake, outbound sending, the paper fallback UI, and the reminder
+ * email each have their own default-off switch.
  *
  * A recorded response is the notice_id on this claim. Lawsuit AI never
  * collects the official site's login PIN or password.
@@ -89,9 +88,8 @@ export function pinAdminQueuedCopy(requestedAt: string): string {
     : 'Email request saved. Lawsuit AI will email the administrator when sending is available.';
 }
 
-export function paperFallbackBody(days = paperFallbackAfterDays()): string {
-  return `No reply after ${days} days. You can print the paper claim form and mail it instead of waiting.`;
-}
+export const PAPER_FALLBACK_BODY =
+  'Your notice ID is not on file yet. If the settlement accepts paper claims, you can print and mail the claim form.';
 
 export interface PinAdminStatus {
   kind: 'idle' | 'queued' | 'waiting' | 'replied' | 'paper_fallback';
@@ -106,19 +104,15 @@ export function pinAdminStatus(input: {
   pin_admin_email_sent_at?: string | null;
   now: Date;
   days?: number;
+  paperFallbackEnabled?: boolean;
 }): PinAdminStatus {
   const requestedAt = input.pin_admin_email_requested_at ?? null;
   const sentAt = input.pin_admin_email_sent_at ?? null;
   if (hasPinAdminEmailResponse(input.notice_id)) {
     return { kind: 'replied', requestedAt, sentAt, headline: null };
   }
-  if (paperFallbackDue({ ...input, now: input.now, days: input.days })) {
-    return {
-      kind: 'paper_fallback',
-      requestedAt,
-      sentAt,
-      headline: paperFallbackBody(input.days ?? paperFallbackAfterDays()),
-    };
+  if (input.paperFallbackEnabled && paperFallbackDue(input)) {
+    return { kind: 'paper_fallback', requestedAt, sentAt, headline: PAPER_FALLBACK_BODY };
   }
   if (sentAt) {
     return { kind: 'waiting', requestedAt, sentAt, headline: pinAdminWaitingCopy(sentAt) };

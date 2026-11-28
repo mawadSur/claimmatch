@@ -41,14 +41,7 @@ export async function POST(req: Request) {
     returnPath,
   });
   if (!result.ok) {
-    const status =
-      result.code === 'stripe_not_configured'
-        ? 503
-        : result.code === 'already_subscribed'
-          ? 409
-          : result.code === 'invalid_request'
-            ? 400
-            : 503;
+    const status = result.code === 'billing_disabled' ? 404 : result.code === 'already_subscribed' ? 409 : 503;
     return NextResponse.json({ error: result.error, code: result.code }, { status });
   }
   return NextResponse.json({ url: result.url });

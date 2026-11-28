@@ -495,16 +495,12 @@ export const flags = {
    * fields (NEVER_COLLECTED_LABEL_RE). This flag is a documented future switch.
    */
   collectAdminPin: () => on('COLLECT_ADMIN_PIN_ENABLED'),
-  /**
-   * Send the PIN-gated “email the administrator for a notice ID” message
-   * through Resend. Default off: the member’s request is recorded, nothing
-   * is sent until this is exactly "1".
-   */
+  /** Offer and accept new requests to email the administrator for a notice ID. Default off. */
+  pinAdminOutreach: () => on('PIN_ADMIN_OUTREACH_ENABLED'),
+  /** Send recorded notice-ID requests through Resend. Independent of request intake; default off. */
   pinAdminEmail: () => on('PIN_ADMIN_EMAIL_ENABLED'),
-  /**
-   * 7-day paper-form fallback reminder after a PIN-gated administrator
-   * email has no recorded notice ID. Default off: the dashboard still shows
-   * the fallback; this flag only sends the drip.
-   */
+  /** Show the paper-form fallback on the claim page and dashboard. Default off. */
+  paperFallbackUi: () => on('PAPER_FALLBACK_UI_ENABLED'),
+  /** Send the paper-form fallback reminder. Independent of the fallback UI; default off. */
   paperFallbackReminder: () => on('PAPER_FALLBACK_REMINDER_ENABLED'),
 };

@@ -208,10 +208,10 @@ export default async function DashboardPage({
             role="status"
             className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm leading-relaxed text-ink-muted"
           >
-            <span className="font-semibold text-ink">Your preview answers are here.</span>{' '}
-            These settlements come from the answers you gave in the free preview.
-            Each one is a possible match, and the official notice has the rules.
-            Update your answers anytime under Settings → My profile.
+            <span className="font-semibold text-ink">Back from the free preview?</span>{' '}
+            Add or update your matching answers anytime in{' '}
+            <Link href="/settings" className="text-link">Settings</Link>.
+            Check the official settlement notice to see if you qualify.
           </p>
         )}
 

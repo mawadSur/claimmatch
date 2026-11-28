@@ -46,9 +46,10 @@ vi.mock('@/lib/jev/index', async () => {
   const f = await import('./filing-v2-fixtures');
   return { JEV_ENGINE_VERSION: 'jev-1', runJev: (i: never) => f.fakeRunJev(h.jev, i), validateJevRules: () => ({ ok: true, rules: [] }) };
 });
-vi.mock('@/lib/filing/channels/index', async () => {
-  const f = await import('./filing-v2-fixtures');
-  return { chooseLane: f.fakeChooseLane, toLaneView: f.fakeToLaneView, resolveEffectivePolicy: f.fakeResolvePolicy, getChannelAdapter: vi.fn() };
+vi.mock('@/lib/filing/channels/index', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/filing/channels/index')>();
+  const { fakeResolvePolicy } = await import('./filing-v2-fixtures');
+  return { ...actual, resolveEffectivePolicy: fakeResolvePolicy };
 });
 vi.mock('@/lib/filing/v2/jobs', async () => {
   const f = await import('./filing-v2-fixtures');
@@ -183,6 +184,48 @@ describe('POST .../sign: refusals', () => {
     h.cookieUser = { id: USER_B };
     h.claims = signInClaims(USER_B);
     expect(await json(await sign(id, body), 404)).toMatchObject({ code: 'not_found' });
+  });
+});
+
+describe('filing desk admission', () => {
+  function fillDesk() {
+    for (let i = 0; i < 20; i++) {
+      h.db.insertRow('claim_filing_jobs', { channel: 'filing_desk', status: 'queued' });
+    }
+  }
+
+  it('keeps an admitted packet editable and signable while turning away new desk work', async () => {
+    const { id, sign: body } = await readyClaim();
+    fillDesk();
+
+    const existing = await json(await VIEW(jsonRequest(`/api/filing/claims/${id}`, 'GET'), params(id)), 200);
+    expect(existing.filing.lane).toMatchObject({ lane: 'filing_desk', reasons: [] });
+    expect(existing.filing.actions).toMatchObject({ can_edit: true, can_sign: true });
+
+    h.cookieUser = { id: USER_B };
+    const newClaim = await json(await START(jsonRequest('/api/filing/claims', 'POST', { lawsuit_id: LAWSUIT })), 201);
+    expect(newClaim.filing.lane).toMatchObject({ lane: 'self_file', reasons: ['desk_at_capacity'] });
+
+    h.cookieUser = { id: USER_A };
+    expect((await json(await sign(id, body), 200)).filing.claim.status).toBe('queued');
+  });
+
+  it('still blocks an admitted packet when policy turns off the desk', async () => {
+    const { id, sign: body } = await readyClaim();
+    fillDesk();
+    h.db.insertRow('filing_controls', { lawsuit_id: LAWSUIT, kill_switch: true });
+    expect(await json(await sign(id, body), 409)).toMatchObject({ code: 'lane_unavailable' });
+    expect(h.db.rows('claim_signatures')).toHaveLength(0);
+  });
+
+  it('reports a failed count on the claim view without saying the desk is full', async () => {
+    fillDesk();
+    const res = await json(await START(jsonRequest('/api/filing/claims', 'POST', { lawsuit_id: LAWSUIT })), 201);
+    const id = res.filing.claim.id;
+    h.db.failNext('claim_filing_jobs', 'select', { code: '57014', message: 'test count timeout' });
+    const view = await json(await VIEW(jsonRequest(`/api/filing/claims/${id}`, 'GET'), params(id)), 200);
+    expect(ClaimFilingResponseSchema.safeParse(view).success).toBe(true);
+    expect(view.filing.lane).toMatchObject({ lane: 'self_file', reasons: ['desk_capacity_unavailable'] });
   });
 });
 

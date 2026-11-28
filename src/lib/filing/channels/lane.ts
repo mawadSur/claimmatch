@@ -87,9 +87,15 @@ function decide(input: LaneInput): LaneDecision {
       reasons.push('email_not_configured');
       continue;
     }
-    if (config.type === 'filing_desk' && (!input.desk || input.desk.openJobs >= config.daily_capacity * config.sla_business_days)) {
-      reasons.push('desk_at_capacity');
-      continue;
+    if (config.type === 'filing_desk' && !input.skipDeskCapacity) {
+      if (!input.desk) {
+        reasons.push('desk_capacity_unavailable');
+        continue;
+      }
+      if (input.desk.openJobs >= config.daily_capacity * config.sla_business_days) {
+        reasons.push('desk_at_capacity');
+        continue;
+      }
     }
     return {
       lane: config.type,

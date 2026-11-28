@@ -341,4 +341,22 @@ describe('claim profile and action CTAs (default on)', () => {
     expect(flags.pinAdminEmail()).toBe(true);
     expect(flags.paperFallbackReminder()).toBe(true);
   });
+
+  it('keeps outreach intake and paper UI off even when emails are enabled', () => {
+    vi.stubEnv('PIN_ADMIN_OUTREACH_ENABLED', undefined);
+    vi.stubEnv('PAPER_FALLBACK_UI_ENABLED', undefined);
+    vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '1');
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '1');
+    expect(flags.pinAdminOutreach()).toBe(false);
+    expect(flags.paperFallbackUi()).toBe(false);
+
+    vi.stubEnv('PIN_ADMIN_OUTREACH_ENABLED', '1');
+    vi.stubEnv('PAPER_FALLBACK_UI_ENABLED', '1');
+    vi.stubEnv('PIN_ADMIN_EMAIL_ENABLED', '0');
+    vi.stubEnv('PAPER_FALLBACK_REMINDER_ENABLED', '0');
+    expect(flags.pinAdminOutreach()).toBe(true);
+    expect(flags.paperFallbackUi()).toBe(true);
+    expect(flags.pinAdminEmail()).toBe(false);
+    expect(flags.paperFallbackReminder()).toBe(false);
+  });
 });

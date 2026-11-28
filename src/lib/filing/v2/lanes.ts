@@ -99,6 +99,8 @@ export function computeLane(args: {
   memberState: string | null;
   health: HealthFacts;
   now: Date;
+  /** Skip desk capacity when this claim was already admitted to filing_desk. */
+  skipDeskCapacity?: boolean;
 }): LaneResult {
   const { env, now } = args;
   const spec: SpecRecord | null = env.approvedSpec;
@@ -123,6 +125,7 @@ export function computeLane(args: {
       healthConsent: { required: args.health.required, given: args.health.given },
       desk: args.laneEnv.deskOpenJobs === null ? null : { openJobs: args.laneEnv.deskOpenJobs },
       email: { configured: args.laneEnv.emailConfigured },
+      skipDeskCapacity: args.skipDeskCapacity,
     });
   } catch (error) {
     logFilingError('chooseLane failed', { code: error instanceof Error ? error.name : null });

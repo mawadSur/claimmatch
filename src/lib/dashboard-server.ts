@@ -71,7 +71,10 @@ export async function loadDashboardData(supabase: SupabaseClient, userId: string
       : Promise.resolve({ data: null, error: null }),
   ]);
 
-  const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug);
+  const { rows, notices } = buildDashboard(claims.items, now, isFictionalSettlementSlug, {
+    pinAdminOutreachEnabled: flags.pinAdminOutreach(),
+    paperFallbackEnabled: flags.paperFallbackUi(),
+  });
   const matchProfile = {
     state: (profile?.state as string | null) ?? null,
     attributes: ((profile?.attributes as Profile['attributes'] | null) ?? {}) as Profile['attributes'],

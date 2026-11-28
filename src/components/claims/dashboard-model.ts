@@ -135,18 +135,26 @@ export function deadlineText(deadline: string | null, now: Date): string {
   return `Deadline ${formatDeadline(deadline)} · ${countdown}`;
 }
 
+interface DashboardNoticeOptions {
+  pinAdminOutreachEnabled?: boolean;
+  paperFallbackEnabled?: boolean;
+}
+
 function pinDashboardStep(
   claim: ClaimView,
   settlement: DashboardSettlement,
   href: string | null,
   now: Date,
+  options: DashboardNoticeOptions,
 ): { nextStep: string; action: DashboardRow['action'] } | null {
   if (settlement.claim_action_type !== 'needs_notice_id') return null;
+  if (!options.pinAdminOutreachEnabled && !options.paperFallbackEnabled) return null;
   const status = pinAdminStatus({
     notice_id: claim.notice_id,
     pin_admin_email_requested_at: claim.pin_admin_email_requested_at,
     pin_admin_email_sent_at: claim.pin_admin_email_sent_at,
     now,
+    paperFallbackEnabled: options.paperFallbackEnabled,
   });
   if (status.kind === 'paper_fallback') {
     const formHref = paperFormHref({
@@ -159,9 +167,9 @@ function pinDashboardStep(
       action: { label: PAPER_FALLBACK_CTA, href: formHref },
     };
   }
-  if (status.kind === 'waiting' || status.kind === 'queued') {
+  if (options.pinAdminOutreachEnabled && status.headline && (status.kind === 'waiting' || status.kind === 'queued')) {
     return {
-      nextStep: status.headline ?? 'Emailed administrator — waiting on reply',
+      nextStep: status.headline,
       action: href ? { label: 'View', href: `${href}#notice-id` } : null,
     };
   }
@@ -172,6 +180,7 @@ export function buildDashboard(
   inputs: { claim: ClaimView; settlement: DashboardSettlement | null }[],
   now: Date,
   isFictional: IsFictional,
+  options: DashboardNoticeOptions = {},
 ): { rows: DashboardRow[]; notices: NoticeItem[] } {
   const rows: DashboardRow[] = [];
   const notices: NoticeItem[] = [];
@@ -236,7 +245,7 @@ export function buildDashboard(
           nextStep = 'Our list marks this settlement closed. Check the official site before you file.';
           action = href ? { label: 'How to file', href } : null;
         } else {
-          const pin = pinDashboardStep(claim, settlement, href, now);
+          const pin = pinDashboardStep(claim, settlement, href, now, options);
           if (pin) {
             nextStep = pin.nextStep;
             action = pin.action;

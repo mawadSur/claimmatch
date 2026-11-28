@@ -309,6 +309,14 @@ export const filingEvents = defineCopy({
     text: 'This claim needs proof that Lawsuit AI can’t send to this settlement’s administrator.',
     source: COPY,
   },
+  reasonDeskAtCapacity: {
+    text: 'Lawsuit AI’s filing desk is full right now. You can finish this claim yourself on the official site, or try again later.',
+    source: COPY,
+  },
+  reasonDeskCapacityUnavailable: {
+    text: 'Lawsuit AI can’t check filing-desk availability right now. You can finish this claim yourself on the official site, or try again later.',
+    source: COPY,
+  },
 
   timingDesk: {
     text: 'After you sign, a Lawsuit AI team member enters your signed claim on the official site, usually within a few business days.',

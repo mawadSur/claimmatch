@@ -57,7 +57,13 @@ async function queue(signatureId: string, decision: LaneDecision, now: Date): Pr
 
 /** A retry of a signing that already happened: queue it if that step failed, then show the claim. */
 async function replay(caller: FilingCaller, req: Request, claimId: string): Promise<Response> {
-  const loaded = await loadClaimContext({ supabase: caller.supabase, userId: caller.user.id, claimId, now: new Date() });
+  const loaded = await loadClaimContext({
+    supabase: caller.supabase,
+    userId: caller.user.id,
+    claimId,
+    now: new Date(),
+    withEvents: true,
+  });
   if (loaded.ok) await queueIfSigned(loaded.ctx);
   return viewResponse({ caller, req, claimId });
 }
@@ -76,7 +82,13 @@ export async function signClaim(args: { caller: FilingCaller; req: Request; clai
   if (prior.kind === 'conflict') return fail('idempotency_conflict');
   if (prior.kind === 'replay') return replay(caller, req, claimId);
 
-  const loaded = await loadClaimContext({ supabase: caller.supabase, userId: caller.user.id, claimId, now });
+  const loaded = await loadClaimContext({
+    supabase: caller.supabase,
+    userId: caller.user.id,
+    claimId,
+    now,
+    withEvents: true,
+  });
   if (!loaded.ok) return fail(loaded.code);
   const ctx = loaded.ctx;
   const packet = ctx.packet;

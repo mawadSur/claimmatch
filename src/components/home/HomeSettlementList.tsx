@@ -55,7 +55,7 @@ export function HomeSettlementList({
   noticeChecked?: Readonly<Record<string, string | null>>;
 }) {
   const approvedIds = idSet(easySubmitIds);
-  return (
+  const cards = (
     <ul className="divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
       {lawsuits.map((lawsuit, i) => {
         const open = isOpenForClaims(lawsuit);
@@ -168,6 +168,14 @@ export function HomeSettlementList({
         );
       })}
     </ul>
+  );
+  return (
+    <div>
+      {cards}
+      <p className="mt-4 text-sm leading-relaxed text-ink-muted">
+        Lawsuit AI is not affiliated with the settlements listed here or their administrators.
+      </p>
+    </div>
   );
 }
 

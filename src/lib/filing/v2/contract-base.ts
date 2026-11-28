@@ -118,11 +118,12 @@ export const LANE_REASON_CODES = [
   'channel_cannot_carry_documents',
   'form_has_challenge',
   'desk_at_capacity',
+  'desk_capacity_unavailable',
   'email_not_configured',
 ] as const;
 export type LaneReasonCode = (typeof LANE_REASON_CODES)[number];
 
-/** What a member may be told. Disputes, kill switches and staffing are never shown. */
+/** What a member may be told. Disputes and kill switches stay opaque; desk capacity is stated plainly. */
 export const MEMBER_LANE_REASONS = [
   'not_offered_for_settlement',
   'settlement_not_open',
@@ -130,6 +131,8 @@ export const MEMBER_LANE_REASONS = [
   'state_not_covered',
   'health_consent_needed',
   'proof_not_supported',
+  'desk_at_capacity',
+  'desk_capacity_unavailable',
 ] as const;
 export type MemberLaneReason = (typeof MEMBER_LANE_REASONS)[number];
 
@@ -152,7 +155,8 @@ export const MEMBER_LANE_REASON_OF: Readonly<Record<LaneReasonCode, MemberLaneRe
   channel_config_invalid: 'not_offered_for_settlement',
   channel_cannot_carry_documents: 'proof_not_supported',
   form_has_challenge: 'not_offered_for_settlement',
-  desk_at_capacity: 'not_offered_for_settlement',
+  desk_at_capacity: 'desk_at_capacity',
+  desk_capacity_unavailable: 'desk_capacity_unavailable',
   email_not_configured: 'not_offered_for_settlement',
 };
 
@@ -291,7 +295,7 @@ export const FILING_ERROR_MESSAGES: Readonly<Record<FilingErrorCode, string>> = 
   service_unavailable: 'Something went wrong on our side. Please try again in a minute.',
   settlement_closed: 'This settlement is closed to new claims. Check the official site to be sure.',
   membership_required:
-    'Easy submit is included with Lawsuit AI membership. Start a 7-day free trial, then $19.99 a month.',
+    'Easy submit is included with Lawsuit AI membership. Visit Settings to start or manage your membership.',
   settlement_unavailable: 'We couldn’t load this settlement right now. Please try again.',
   already_filed: 'This claim has already been sent or reported, so it can’t be started again here.',
   lane_unavailable: 'This claim can’t be sent from Lawsuit AI right now. You can finish it on the official site.',

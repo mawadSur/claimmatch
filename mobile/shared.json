@@ -28,6 +28,7 @@
     "lib/settlement-guides-nov25.ts",
     "lib/settlement-guides.ts",
     "lib/catalog-page.ts",
+    "lib/top-payouts.ts",
     "lib/recently-closed.ts",
     "lib/claim-screen.ts",
     "lib/mobile-contract.ts",

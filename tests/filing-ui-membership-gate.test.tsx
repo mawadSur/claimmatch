@@ -9,7 +9,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { listedPayoutBesidePriceCopy, membershipCopy, startTrialCtaLabel } from '@/lib/copy';
+import { listedPayoutBesidePriceCopy, membershipCheckoutCopy } from '@/lib/copy';
 import { statedPayoutLabel } from '@/lib/owed-estimate';
 import { MembershipGate } from '@/components/filing/MembershipGate';
 
@@ -36,10 +36,10 @@ describe('Easy submit paywall payout', () => {
     expect(body).toContain(listedPayoutBesidePriceCopy('$25–$75'));
     // The figure sits beside the price sentence, not instead of it.
     expect(body).toContain('$25–$75');
-    expect(body).toContain(membershipCopy());
+    expect(body).toContain(membershipCheckoutCopy());
     expect(body).toMatch(/not a prediction of what you will receive/);
     // The payout line comes before the price line.
-    expect(body.indexOf('$25–$75')).toBeLessThan(body.indexOf(membershipCopy()));
+    expect(body.indexOf('$25–$75')).toBeLessThan(body.indexOf(membershipCheckoutCopy()));
   });
 
   it('renders the price line alone when the listing states no payout', () => {
@@ -48,18 +48,19 @@ describe('Easy submit paywall payout', () => {
     // Byte-identical to the gate with no payoutLabel prop at all.
     expect(nullLabel).toBe(render(undefined));
     const body = text(nullLabel);
-    expect(body).toContain(membershipCopy());
+    expect(body).toContain(membershipCheckoutCopy());
     expect(body).not.toContain('This settlement lists');
     expect(body).not.toMatch(/not stated|Estimated|per eligible person/i);
     // The only dollar figures left are the membership price sentence's own.
     expect(body).not.toMatch(/\$25|\$75/);
   });
 
-  it('keeps the self-file escape hatch and the trial CTA either way', () => {
+  it('keeps the self-file escape hatch without promising a trial in the checkout CTA', () => {
     for (const label of ['$40', null]) {
       const body = text(render(label));
       expect(body).toContain('You can still file on the official settlement site yourself');
-      expect(body).toContain(startTrialCtaLabel());
+      expect(body).toContain('Continue to membership checkout');
+      expect(body).toContain('First-time members can start with a 7-day free trial.');
       expect(body).toContain('Easy submit is included with membership');
     }
   });

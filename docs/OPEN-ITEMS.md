@@ -4,8 +4,21 @@ Verified against `main` at `164035d` on 2026-11-27. Every item carries
 `file:line` evidence. Produced by seven read-only reviewers, one per area,
 each required to return `cannot_determine` rather than guess.
 
-**None of these are fixed.** PRs #86 and #87 fixed the homepage payout-ranking
-and above-the-fold copy defects; everything below is what they did not touch.
+PRs #86 and #87 fixed the homepage payout-ranking and above-the-fold copy
+issues. The checklist below preserves the original audit findings and line
+references. Follow-up status is recorded here; fixes are local until deployed.
+
+| Area | Follow-up status |
+| --- | --- |
+| Billing | Checkout respects the billing flag, refuses a second ongoing subscription, and uses Stripe subscription history to allow only paid checkout for returning customers. Checkout buttons no longer promise a trial. Webhooks protect the tracked row against events from unrelated subscriptions. The trial limit is per Stripe customer, not per person. |
+| Settings and auth | Gated settings saves preserve email consent. Confirmed web login offers a sign-in link first and makes password alternatives easier to tap. The dashboard no longer says discarded preview answers were used. Applying the Supabase email template and deciding whether Skip should retain answers are separate. |
+| Filing desk | A full desk and an unreadable capacity count now have distinct copy. Already-admitted packets can still be signed when capacity fills; dashboard list summaries do not yet carry the admission history. The ceiling policy and stuck-job reaper remain open. |
+| Public surfaces and payout | The featured settlement list has a non-affiliation notice. Paper fallback UI and emails no longer assert outreach was sent. Catalog value ranking shares the per-person payout parser, and homepage surfaces share the same settlement counts. Parser limits and homepage audience ordering remain open. |
+| Flags and migrations | PIN outreach intake and the paper fallback card have separate default-off gates. Missing flag names were added to `.env.example`. Migration 0056 documents prerequisites; production application is still unverified. |
+| Mobile and local hygiene | Expo dependencies were aligned; Expo Doctor passed 20/20 checks locally. The current checkout has one worktree and no local `worktree-wf_*` branches to prune. No remote branches were touched. |
+
+Terms and fee promises, trial email consent policy, coverage disclosures, production
+flag values and migration state, and mobile required-check policy are still open.
 
 There are **no conversion or drop-off figures anywhere in this document**. There
 is no analytics access, and the funnel events added in #84 only began collecting
@@ -19,7 +32,7 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
 
 ## Blockers
 
-- [ ] **The 7-day trial restarts indefinitely.** `DECIDE`
+- [x] **The 7-day trial restarts indefinitely.** `DECIDE`
   The only guard is `PAID_ACCESS = new Set(['trialing','active'])`
   (`src/lib/subscriptions.ts:31`), checked at `:233`. The other six statuses in
   the enum at `:19-28` — `past_due, canceled, incomplete, incomplete_expired,
@@ -32,7 +45,7 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   or a refusal? Exposure is gated on `SUBSCRIPTION_BILLING_ENABLED`
   (`src/lib/flags.ts:208`), whose deployed value cannot be read from the repo.
 
-- [ ] **A second Stripe subscription can be created on the same customer.** `1H`
+- [x] **A second Stripe subscription can be created on the same customer.** `1H`
   `past_due` passes the guard, and checkout reuses the existing customer id
   (`src/lib/subscriptions.ts:241`, session created at `:263-266`). Nothing
   enumerates the customer's existing subscriptions: `grep -rn
@@ -56,7 +69,7 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
 
 ## Billing and the trial
 
-- [ ] **One subscription row per user, last writer wins.** `HALF`
+- [x] **One subscription row per user, last writer wins.** `HALF`
   `src/lib/subscriptions.ts:181` upserts `onConflict: 'user_id'`, and `:206`
   writes whichever `stripe_subscription_id` arrived last. The webhook never
   checks that an event's subscription is the one the row holds
@@ -74,12 +87,14 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   in `src/` or `supabase/migrations/`. Stripe has no built-in once-per-customer
   trial, and this code adds none. Inferring from `trial_end` is unsafe because
   it is overwritten by whichever subscription wrote last.
+  Follow-up: checkout now uses Stripe subscription history and local subscription
+  identity; no separate local `trial_used` field was added.
 
-- [ ] **The restart is the normal UI path, not just a reachable API.** `1H`
+- [x] **The restart is the normal UI path, not just a reachable API.** `1H`
   `src/app/settings/page.tsx:138-140` renders the start-trial CTA for any
   non-paid status.
 
-- [ ] **Checkout is not gated on the billing flag.** `1H`
+- [x] **Checkout is not gated on the billing flag.** `1H`
   `createCheckoutSession` never calls `flags.subscriptionBilling()`, so a real
   Stripe trial can be started while billing is flagged off.
 
@@ -95,7 +110,7 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
 - [ ] **Nothing on the subscribe path turns that opt-in on.** `DECIDE`
   So the gate above is normally closed.
 
-- [ ] **Saving Settings without membership access clears the opt-in.** `1H`
+- [x] **Saving Settings without membership access clears the opt-in.** `1H`
   The notification-preferences save posts `email_opt_in: false`, silently
   disabling the notice the trial depends on.
 
@@ -111,16 +126,16 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   the `cm_preview` cookie — leaving an empty matching profile, so the product
   looks as though it has nothing for the visitor.
 
-- [ ] **The dashboard banner still claims it used those answers.** `1H`
+- [x] **The dashboard banner still claims it used those answers.** `1H`
   After Skip, the banner asserts the list was built from preview answers that
   were discarded.
 
-- [ ] **Magic-link signup dead-ends on a password form.** `1H`
+- [x] **Magic-link signup dead-ends on a password form.** `1H`
   `AuthForm` defaults signup to OTP; `/login` opens in password mode on
   `confirmed=1`. Opening the link in another browser — the common mobile case —
   presents a password form for an account that may have no password.
 
-- [ ] **Both escape routes there are small text links, not buttons.** `1H`
+- [x] **Both escape routes there are small text links, not buttons.** `1H`
 
 ---
 
@@ -134,17 +149,18 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   `needs_attention` and `exported` are open statuses with no age filter and no
   reaper, so the queue degrades monotonically toward a permanent stop.
 
-- [ ] **Hitting the ceiling blames the settlement, not the queue.** `1H`
+- [x] **Hitting the ceiling blames the settlement, not the queue.** `1H`
   `desk_at_capacity` maps to `not_offered_for_settlement`
   (`src/lib/filing/v2/contract-base.ts:155`), so the member is told this
   settlement cannot be filed.
 
-- [ ] **A failed count *read* reports `desk_at_capacity`.** `1H`
+- [x] **A failed count *read* reports `desk_at_capacity`.** `1H`
   Producing the same member-facing message for an infrastructure error.
 
 - [ ] **Crossing the ceiling moves mid-packet members to self-file.** `HALF`
   Partially mitigated: the background hand-back sweep deliberately ignores
-  capacity. Signing is still blocked mid-packet.
+  capacity. Follow-up: signing now preserves prior admission. The dashboard
+  list summary still lacks the history used by that check.
 
 ---
 
@@ -166,12 +182,12 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   The membership is priced on Easy submit, which works on a minority of the
   catalog, and the hero conveys this only with the word "eligible".
 
-- [ ] **No non-affiliation statement on the homepage.** `1H`
+- [x] **No non-affiliation statement on the homepage.** `1H`
   None appears near the featured third-party settlement names; it exists only in
   `/terms` and the e-sign authorization. This is the cheap half of the
   disclosure exposure in `docs/legal`.
 
-- [ ] **The paper-fallback headline asserts "No reply after 7 days".** `1H`
+- [x] **The paper-fallback headline asserts "No reply after 7 days".** `1H`
   Shown even when no administrator email was ever sent.
 
 ---
@@ -202,14 +218,14 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   true of today's rows and nothing else. Data-breach settlements routinely cap
   documented losses well above $50k.
 
-- [ ] **A second, looser payout reader still ships.** `1H`
+- [x] **A second, looser payout reader still ships.** `1H`
   `src/lib/catalog-page.ts` holds `listedPayoutAmount` / `sortCatalogValueFirst`
   with no ceiling, no fund guards, and a regex whose dollar sign is **optional**,
   so it reads years and quantities as dollars. Gated behind
   `CATALOG_VALUE_RANK_ENABLED` (off), so not live — but the repo now holds two
   contradictory definitions of "this listing's payout".
 
-- [ ] **`payout-stats.ts` duplicates `home-stats.ts`.** `1H`
+- [x] **`payout-stats.ts` duplicates `home-stats.ts`.** `1H`
   It re-derives `open` and `closingSoon`, and `src/app/page.tsx` calls both over
   the same rows. They agree today; any future change to one caller's row set
   makes the hero and the stats strip disagree.
@@ -221,21 +237,22 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
 - [ ] **`0056` has an apply-order hazard.** `1H`
   `supabase/migrations/0056_pin_admin_email.sql:48` does
   `create or replace function public.claim_apply_change(...)`, so it assumes
-  0052 and 0053 are already applied. Nothing in the repo records that they are.
+  0052 and 0053 are already applied. Follow-up: the migration header now
+  documents its dependencies, including 0055. Production order remains unverified.
 
-- [ ] **The PIN-admin outreach CTA and its write endpoint are ungated.** `1H`
+- [x] **The PIN-admin outreach CTA and its write endpoint are ungated.** `1H`
   `src/app/api/claims/pin-admin-email/route.ts:20` states it plainly: "Outbound
   send is gated by `PIN_ADMIN_EMAIL_ENABLED` (default off)". Only the *send* is
   gated. The CTA (`src/components/claims/NoticeIdSection.tsx:243`) and the write
   path run with no flag. PIN-gated administrator outreach was explicitly
   deferred pending product and legal decisions.
 
-- [ ] **The mail-in paper-form card has no flag at all.** `1H`
+- [x] **The mail-in paper-form card has no flag at all.** `1H`
   `PAPER_FALLBACK_REMINDER_ENABLED` gates only the drip email, not
   `src/components/claims/PaperFallbackCard.tsx`. Mail-in paper workflows were
   also explicitly deferred.
 
-- [ ] **Twelve catalog flags are missing from `.env.example`.** `1H`
+- [x] **Twelve catalog flags are missing from `.env.example`.** `1H`
   Including `ONE_CLICK_FILING_ENABLED`, `DASHBOARD_VALUE_ENABLED` and
   `NO_PIN_BREACH_PRIORITY_ENABLED`.
 
@@ -250,7 +267,7 @@ hour &middot; **HALF** about half a day &middot; **ENV** an environment variable
   (required: `verify`, `db-migrations`). So the job is red by design and carries
   no signal. Either make it required or tolerate the step.
 
-- [ ] **85 local branches and 25 git worktrees.** `1H`
+- [x] **85 local branches and 25 git worktrees.** `1H`
   Twenty are `worktree-wf_*` left by workflow runs. Prune the unchanged ones.
 
 ---

@@ -127,9 +127,9 @@ export async function loadClaimContext(args: {
     supabase.from('claim_signature_voids').select('signature_id').eq('claim_id', claimId),
     supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle(),
     supabase.from('esign_consents').select(CONSENT_COLUMNS).eq('user_id', userId).is('withdrawn_at', null),
-    args.withEvents
-      ? supabase.from('claim_events').select(EVENT_COLUMNS).eq('claim_id', claimId).order('created_at', { ascending: true })
-      : Promise.resolve({ data: [], error: null }),
+    args.withEvents === false
+      ? Promise.resolve({ data: [], error: null })
+      : supabase.from('claim_events').select(EVENT_COLUMNS).eq('claim_id', claimId).order('created_at', { ascending: true }),
     loadSettlementEnvs([claim.lawsuit_id], args.now),
   ]);
   for (const read of [packetRead, docsRead, sigRead, voidRead, profileRead, consentRead, eventRead] as Result<unknown>[]) {
@@ -213,8 +213,25 @@ function answersWithProfileDefaults(
   return { ...seed.answers, ...stored };
 }
 
+/** Open statuses where a prior desk admission still governs capacity. */
+const OPEN_AGENT_PACKET_STATUSES = new Set(['preparing', 'ready', 'needs_you']);
+
+/** True when claim_events recorded a desk admission for this open packet. */
+export function admittedToFilingDesk(
+  events: readonly Record<string, unknown>[],
+  status: string,
+): boolean {
+  if (!OPEN_AGENT_PACKET_STATUSES.has(status)) return false;
+  return events.some((event) => {
+    const detail = event.detail;
+    if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return false;
+    const row = detail as Record<string, unknown>;
+    return row.action === 'start_one_click' && row.lane === 'filing_desk';
+  });
+}
+
 export function derivePacketState(
-  ctx: Pick<ClaimContext, 'claim' | 'env' | 'laneEnv' | 'profile' | 'claimProfile' | 'now'>,
+  ctx: Pick<ClaimContext, 'claim' | 'env' | 'laneEnv' | 'profile' | 'claimProfile' | 'now' | 'events'>,
   content: PacketContent,
   spec: SpecRecord | null,
   documents: DocumentRecord[],
@@ -254,7 +271,15 @@ export function derivePacketState(
     draft,
     consent: { at: content.health_consent_at, textSha256: content.health_consent_text_sha256 },
   });
-  const lane = computeLane({ env: ctx.env, laneEnv: ctx.laneEnv, draft, memberState: draft.member.address.state, health, now: ctx.now });
+  const lane = computeLane({
+    env: ctx.env,
+    laneEnv: ctx.laneEnv,
+    draft,
+    memberState: draft.member.address.state,
+    health,
+    now: ctx.now,
+    skipDeskCapacity: admittedToFilingDesk(ctx.events ?? [], ctx.claim.status),
+  });
   if (!spec) return { spec, draft, canonical: null, hash: null, missing: ['spec'], lane, health };
   const canonical = toCanonicalPacket(draft, spec.content, { lane: lane.view.lane, daysToDeadline: lane.daysToDeadline });
   return canonical.ok
